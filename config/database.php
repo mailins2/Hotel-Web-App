@@ -109,8 +109,7 @@ return [
             'charset' => 'utf8',
             'prefix' => '',
             'prefix_indexes' => true,
-
-            'encrypt' => 'no', // 👈 QUAN TRỌNG
+            'encrypt' => 'no',
             'trust_server_certificate' => true,
         ],
 
