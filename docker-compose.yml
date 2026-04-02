@@ -28,15 +28,35 @@ services:
       - laravel
 
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: laravel_sqlserver
+    image: mysql:8.0
+    container_name: laravel_mysql
+    restart: always
     environment:
-      SA_PASSWORD: "YourStrong@Pass123"
-      ACCEPT_EULA: "Y"
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: QLKS
+      MYSQL_USER: laravel          # 👈 thêm
+      MYSQL_PASSWORD: laravel      # 👈 thêm
     ports:
-      - "1433:1433"
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql      # 👈 thêm (giữ data)
+    networks:
+      - laravel
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: laravel_pma
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+    depends_on:
+      - db
     networks:
       - laravel
 
 networks:
   laravel:
+
+volumes:
+  dbdata:   # 👈 thêm
