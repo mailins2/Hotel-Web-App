@@ -1,0 +1,340 @@
+/* ===== Brand palette ===== */
+:root,
+body,
+body[class*="theme-color-"] {
+    --bs-primary: #6f1d01;
+    --bs-primary-rgb: 111, 29, 1;
+    --bs-primary-text-emphasis: #49120f;
+    --bs-primary-bg-subtle: #eee4e1;
+    --bs-primary-border-subtle: #c97a3e;
+    --bs-link-color: #6f1d01;
+    --bs-link-hover-color: #49120f;
+    --bs-focus-ring-color: rgba(111, 29, 1, 0.22);
+    --bs-primary-shade-80: #160600;
+    --bs-primary-shade-60: #2c0c00;
+    --bs-primary-shade-40: #431101;
+    --bs-primary-shade-20: #591701;
+    --bs-primary-tint-80: #e2d2cc;
+    --bs-primary-tint-60: #c5a599;
+    --bs-primary-tint-40: #a97767;
+    --bs-primary-tint-20: #8c4a34;
+    --bs-primary-tint-88: #eee4e1;
+
+    --brand-start: #6f1d01;
+    --brand-mid: #854023;
+    --brand-end: #c97a3e;
+    --brand-dark: #49120f;
+    --brand-light: #e8be97;
+    --brand-white: #ffffff;
+    --brand-surface: #fffaf7;
+    --brand-border: rgba(111, 29, 1, 0.12);
+    --brand-shadow: 0 18px 45px -24px rgba(111, 29, 1, 0.32);
+}
+
+body {
+    background:
+        radial-gradient(circle at top left, rgba(201, 122, 62, 0.16), transparent 28%),
+        linear-gradient(180deg, #fffaf7 0%, #fff4ec 100%);
+    color: #49120f;
+}
+
+/* link / text primary */
+a,
+.text-primary,
+.btn-link {
+    color: #6f1d01 !important;
+}
+
+a:hover,
+.btn-link:hover {
+    color: #49120f !important;
+}
+
+/* bg primary */
+.bg-primary {
+    background: linear-gradient(90deg, #6f1d01, #c97a3e) !important;
+    border-color: #6f1d01 !important;
+}
+
+.border-primary {
+    border-color: #6f1d01 !important;
+}
+
+/* button primary */
+.btn-primary {
+    background: linear-gradient(90deg, #6f1d01, #c97a3e) !important;
+    border-color: #6f1d01 !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary.active,
+.show > .btn-primary.dropdown-toggle {
+    background: linear-gradient(90deg, #49120f, #854023) !important;
+    border-color: #49120f !important;
+    color: #fff !important;
+    box-shadow: 0 0 0 0.2rem rgba(111, 29, 1, 0.22) !important;
+}
+
+.btn-check:focus + .btn-primary,
+.btn-primary:focus-visible {
+    box-shadow: 0 0 0 0.2rem rgba(111, 29, 1, 0.22) !important;
+}
+
+/* outline primary */
+.btn-outline-primary {
+    color: #6f1d01 !important;
+    border-color: #6f1d01 !important;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active {
+    background: #6f1d01 !important;
+    border-color: #6f1d01 !important;
+    color: #fff !important;
+}
+
+/* navbar màu chính */
+.iq-navbar.navs-color {
+    background: linear-gradient(90deg, #6f1d01, #c97a3e) !important;
+}
+
+.iq-navbar.navs-color,
+.iq-navbar.navs-color .navbar-brand,
+.iq-navbar.navs-color .nav-link,
+.iq-navbar.navs-color .navbar-toggler,
+.iq-navbar.navs-color .caption-title,
+.iq-navbar.navs-color .caption-sub-title,
+.iq-navbar.navs-color .input-group-text,
+.iq-navbar.navs-color .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.92) !important;
+}
+
+.iq-navbar.navs-color .search-input .input-group-text,
+.iq-navbar.navs-color .search-input .form-control {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+.iq-navbar.navs-color .search-input .form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.14) !important;
+}
+
+.iq-navbar-header,
+.iq-navbar-header .iq-header-img {
+    background: linear-gradient(135deg, #6f1d01 0%, #854023 45%, #c97a3e 100%) !important;
+}
+
+/* sidebar màu chính */
+.sidebar-color {
+    background: linear-gradient(
+        180deg,
+        #6f1d01 0%,
+        #854023 45%,
+        #c97a3e 100%
+    ) !important;
+}
+
+/* chữ trong sidebar */
+.sidebar-color .navbar-brand .logo-title,
+.sidebar-color .navbar-nav .nav-item .nav-link:not(.disabled),
+.sidebar-color .navbar-nav .nav-item .nav-link.disabled {
+    color: rgba(255, 255, 255, 0.88) !important;
+}
+
+/* item active trong sidebar */
+.sidebar-color .navbar-nav .nav-item .nav-link:not(.disabled).active,
+.sidebar-color
+    .navbar-nav
+    .nav-item
+    .nav-link:not(.disabled)[aria-expanded="true"] {
+    background: #fff !important;
+    color: #6f1d01 !important;
+    box-shadow: 0 10px 20px -10px rgba(111, 29, 1, 0.35) !important;
+}
+
+/* item hover */
+.sidebar-color
+    .navbar-nav
+    .nav-item
+    .nav-link:not(.disabled):hover:not(.active):not([aria-expanded="true"]) {
+    background: rgba(255, 255, 255, 0.12) !important;
+    color: #fff !important;
+}
+
+.sidebar-color .sidebar-header,
+.sidebar-color .sidebar-footer {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.sidebar-color .navbar-brand svg,
+.sidebar-color .navbar-nav .nav-item .nav-link .icon,
+.sidebar-color .navbar-nav .nav-item .nav-link .right-icon {
+    color: inherit !important;
+}
+
+/* tab / nav pill / pagination / checked controls */
+.nav-pills .nav-link.active,
+.page-item.active .page-link,
+.form-check-input:checked,
+.form-check-input:focus,
+.dropdown-item:active {
+    background-color: #6f1d01 !important;
+    border-color: #6f1d01 !important;
+}
+
+.page-link,
+.nav-link.active,
+.dropdown-item:active {
+    color: #fff;
+}
+
+.page-link {
+    border-color: var(--brand-border) !important;
+}
+
+.page-link:hover,
+.page-link:focus {
+    color: #6f1d01 !important;
+    background: #f8ebe2 !important;
+    box-shadow: none !important;
+}
+
+/* soft background dùng cho card nhỏ hoặc badge nhẹ */
+.badge.bg-soft-primary,
+.alert.alert-primary {
+    background: #e8be97 !important;
+    color: #49120f !important;
+    border-color: #c97a3e !important;
+}
+
+.card,
+.dropdown-menu,
+.modal-content,
+.offcanvas,
+.list-group-item,
+.table,
+.accordion-item,
+.auth-card {
+    border-color: var(--brand-border) !important;
+}
+
+.card,
+.dropdown-menu,
+.modal-content,
+.offcanvas,
+.auth-card {
+    box-shadow: var(--brand-shadow) !important;
+}
+
+.card,
+.modal-content,
+.offcanvas,
+.dropdown-menu,
+.auth-card,
+.table thead th,
+.table td,
+.table th {
+    background-color: rgba(255, 255, 255, 0.94);
+}
+
+.card-header,
+.card-footer,
+.modal-header,
+.modal-footer,
+.accordion-button:not(.collapsed) {
+    background: #fff4ec !important;
+    border-color: var(--brand-border) !important;
+    color: #49120f !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus,
+.list-group-item:hover {
+    background: #fff4ec !important;
+    color: #6f1d01 !important;
+}
+
+.form-control,
+.form-select,
+.input-group-text,
+.form-check-input,
+.form-range::-webkit-slider-thumb {
+    border-color: rgba(111, 29, 1, 0.18) !important;
+}
+
+.form-control,
+.form-select,
+.input-group-text {
+    background-color: rgba(255, 255, 255, 0.96) !important;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: #c97a3e !important;
+    box-shadow: 0 0 0 0.2rem rgba(111, 29, 1, 0.14) !important;
+}
+
+.form-check-input:not(:checked) {
+    background-color: #fffaf7 !important;
+}
+
+.table thead th {
+    color: #6f1d01 !important;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: #fff4ec !important;
+    color: #49120f !important;
+}
+
+.badge.bg-primary,
+.bg-soft-primary,
+.alert-primary .alert-heading {
+    color: #49120f !important;
+}
+
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+    color: #6f1d01 !important;
+    border-color: rgba(111, 29, 1, 0.18) rgba(111, 29, 1, 0.18) #fff !important;
+}
+
+.nav-tabs .nav-link:hover,
+.nav-tabs .nav-link:focus {
+    color: #854023 !important;
+}
+
+.progress-bar,
+.bg-success,
+.btn-success {
+    background-image: linear-gradient(90deg, #854023, #c97a3e) !important;
+}
+
+.login-content .row.bg-white,
+.login-content .card.card-transparent,
+.wrapper {
+    background: transparent !important;
+}
+
+.login-content .col-md-6.d-md-block.d-none.bg-primary {
+    background: linear-gradient(160deg, #49120f 0%, #6f1d01 48%, #c97a3e 100%) !important;
+}
+
+.sign-bg svg rect {
+    fill: #c97a3e !important;
+}
+
+.text-muted,
+.text-secondary,
+.caption-sub-title,
+.form-label,
+.table tbody,
+.table td,
+.table th {
+    color: rgba(73, 18, 15, 0.78) !important;
+}
