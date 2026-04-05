@@ -10,7 +10,7 @@
                     <a href="{{ route('hotel.' . $moduleKey . '.index') }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại danh sách</a>
                 </div>
                 <div class="card-body">
-                    <form action="{{ $isEdit ? route('hotel.' . $moduleKey . '.update', $record[$module['primary_key']]) : route('hotel.' . $moduleKey . '.store') }}" method="POST">
+                    <form action="{{ $isEdit ? route('hotel.' . $moduleKey . '.update', ['recordId' => $record[$module['primary_key']]]) : route('hotel.' . $moduleKey . '.store') }}" method="POST">
                         @csrf
                         @if($isEdit)
                             @method('PATCH')

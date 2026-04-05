@@ -110,7 +110,7 @@
                                         <td>
                                             <div class="d-flex flex-wrap gap-2">
                                                 <a
-                                                    href="{{ route('hotel.' . $moduleKey . '.show', $record[$module['primary_key']]) }}"
+                                                    href="{{ route('hotel.' . $moduleKey . '.show', ['recordId' => $record[$module['primary_key']]]) }}"
                                                     class="btn btn-sm btn-icon text-white"
                                                     style="background-color: #22c55e; border-color: #22c55e;"
                                                     title="Xem chi tiết"
@@ -123,7 +123,7 @@
                                                     </span>
                                                 </a>
                                                 <a
-                                                    href="{{ route('hotel.' . $moduleKey . '.edit', $record[$module['primary_key']]) }}"
+                                                    href="{{ route('hotel.' . $moduleKey . '.edit', ['recordId' => $record[$module['primary_key']]]) }}"
                                                     class="btn btn-sm btn-warning btn-icon"
                                                     title="Chỉnh sửa"
                                                 >
@@ -134,7 +134,7 @@
                                                         </svg>
                                                     </span>
                                                 </a>
-                                                <form action="{{ route('hotel.' . $moduleKey . '.destroy', $record[$module['primary_key']]) }}" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa {{ $module['singular'] }} này?')">
+                                                <form action="{{ route('hotel.' . $moduleKey . '.destroy', ['recordId' => $record[$module['primary_key']]]) }}" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa {{ $module['singular'] }} này?')">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger btn-icon" title="Xóa">

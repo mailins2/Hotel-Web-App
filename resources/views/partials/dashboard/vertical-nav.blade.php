@@ -5,17 +5,28 @@
             <span class="mini-icon">-</span>
         </a>
     </li>
+
     <li class="nav-item">
         <a class="nav-link {{activeRoute(route('dashboard'))}}" aria-current="page" href="{{route('dashboard')}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path opacity="0.4" d="M16.0756 2H19.4616C20.8639 2 22.0001 3.14585 22.0001 4.55996V7.97452C22.0001 9.38864 20.8639 10.5345 19.4616 10.5345H16.0756C14.6734 10.5345 13.5371 9.38864 13.5371 7.97452V4.55996C13.5371 3.14585 14.6734 2 16.0756 2Z" fill="currentColor"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.53852 2H7.92449C9.32676 2 10.463 3.14585 10.463 4.55996V7.97452C10.463 9.38864 9.32676 10.5345 7.92449 10.5345H4.53852C3.13626 10.5345 2 9.38864 2 7.97452V4.55996C2 3.14585 3.13626 2 4.53852 2ZM4.53852 13.4655H7.92449C9.32676 13.4655 10.463 14.6114 10.463 16.0255V19.44C10.463 20.8532 9.32676 22 7.92449 22H4.53852C3.13626 22 2 20.8532 2 19.44V16.0255C2 14.6114 3.13626 13.4655 4.53852 13.4655ZM19.4615 13.4655H16.0755C14.6732 13.4655 13.537 14.6114 13.537 16.0255V19.44C13.537 20.8532 14.6732 22 16.0755 22H19.4615C20.8637 22 22 20.8532 22 19.44V16.0255C22 14.6114 20.8637 13.4655 19.4615 13.4655Z" fill="currentColor"></path>
+                    <path opacity="0.4" d="M6 11C6 9.89543 6.89543 9 8 9H9C10.1046 9 11 9.89543 11 11V18C11 19.1046 10.1046 20 9 20H8C6.89543 20 6 19.1046 6 18V11Z" fill="currentColor"></path>
+                    <path opacity="0.4" d="M13 6C13 4.89543 13.8954 4 15 4H16C17.1046 4 18 4.89543 18 6V18C18 19.1046 17.1046 20 16 20H15C13.8954 20 13 19.1046 13 18V6Z" fill="currentColor"></path>
+                    <path d="M3 15C3 13.8954 3.89543 13 5 13H6C7.10457 13 8 13.8954 8 15V18C8 19.1046 7.10457 20 6 20H5C3.89543 20 3 19.1046 3 18V15Z" fill="currentColor"></path>
+                    <path d="M20 2C20.5523 2 21 2.44772 21 3V18C21 19.1046 20.1046 20 19 20H18V5C18 3.34315 19.3431 2 21 2H20Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Dashboard</span>
+            <span class="item-name">Báo Cáo Thống Kê</span>
         </a>
     </li>
+
+     <li class="nav-item static-item">
+        <a class="nav-link static-item disabled" href="#" tabindex="-1">
+            <span class="default-icon">Quản Lý</span>
+            <span class="mini-icon">-</span>
+        </a>
+    </li>
+
     <li class="nav-item">
         <a class="nav-link {{activeRoute(route('hotel.customers.index'))}}" href="{{route('hotel.customers.index')}}">
             <i class="icon">
@@ -28,7 +39,7 @@
                     <path d="M3.32156 13.5127C2.21752 13.7297 1.49225 14.1719 1.19139 14.8167C0.936203 15.3453 0.936203 15.9586 1.19139 16.4872C1.65163 17.4851 3.13531 17.8066 3.71195 17.8885C3.83104 17.9065 3.92595 17.8038 3.91342 17.6832C3.61883 14.9167 5.9621 13.6046 6.56918 13.3029C6.59425 13.2885 6.59962 13.2677 6.59694 13.2542C6.59515 13.2452 6.5853 13.2317 6.5656 13.2299C5.25294 13.2047 3.84358 13.3848 3.32156 13.5127Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Khách Hàng</span>
+            <span class="item-name">Khách Hàng</span>
         </a>
     </li>
 
@@ -42,7 +53,7 @@
                     <path d="M12 11C10.619 11 9.5 12.119 9.5 13.5C9.5 14.476 10.059 15.32 10.875 15.73V17C10.875 17.621 11.379 18.125 12 18.125C12.621 18.125 13.125 17.621 13.125 17V15.73C13.941 15.32 14.5 14.476 14.5 13.5C14.5 12.119 13.381 11 12 11Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Tài Khoản</span>
+            <span class="item-name">Tài Khoản</span>
         </a>
     </li>
 
@@ -56,7 +67,7 @@
                     <path d="M18.5 6C19.8807 6 21 7.11929 21 8.5C21 9.88071 19.8807 11 18.5 11C17.1193 11 16 9.88071 16 8.5C16 7.11929 17.1193 6 18.5 6Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Nhân Viên</span>
+            <span class="item-name">Nhân Viên</span>
         </a>
     </li>
 
@@ -70,7 +81,7 @@
                     <path d="M9 13H15C15.5523 13 16 13.4477 16 14C16 14.5523 15.5523 15 15 15H9C8.44772 15 8 14.5523 8 14C8 13.4477 8.44772 13 9 13Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Phòng</span>
+            <span class="item-name">Lý Phòng</span>
         </a>
     </li>
 
@@ -85,7 +96,7 @@
                     <path d="M8 20C8 18.8954 8.89543 18 10 18H14C15.1046 18 16 18.8954 16 20V21H8V20Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Dịch Vụ</span>
+            <span class="item-name">Dịch Vụ</span>
         </a>
     </li>
     
@@ -99,7 +110,7 @@
                     <path d="M15.5 13C16.3284 13 17 13.6716 17 14.5C17 15.3284 16.3284 16 15.5 16C14.6716 16 14 15.3284 14 14.5C14 13.6716 14.6716 13 15.5 13Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Khuyến Mãi</span>
+            <span class="item-name">Khuyến Mãi</span>
         </a>
     </li>
 
@@ -113,7 +124,7 @@
                     <path d="M14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5C19 16.8807 17.8807 18 16.5 18C15.1193 18 14 16.8807 14 15.5Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Thanh Toán</span>
+            <span class="item-name">Thanh Toán</span>
         </a>
     </li>
 
@@ -125,22 +136,7 @@
                     <path d="M12 7.5L13.2361 10.0044C13.3816 10.2994 13.6631 10.5039 13.9889 10.5513L16.7526 10.9529L14.7526 12.9024C14.5168 13.1323 14.4091 13.4635 14.4648 13.788L14.9365 16.5401L12.4648 15.2401C12.1738 15.087 11.8262 15.087 11.5352 15.2401L9.06353 16.5401L9.53519 13.788C9.59085 13.4635 9.4832 13.1323 9.24736 12.9024L7.24736 10.9529L10.0111 10.5513C10.3369 10.5039 10.6184 10.2994 10.7639 10.0044L12 7.5Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Đánh Giá</span>
+            <span class="item-name">Đánh Giá</span>
         </a>
     </li>
-
-    <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.reports.index'))}}" href="{{route('hotel.reports.index')}}">
-            <i class="icon">
-                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path opacity="0.4" d="M5 12C5 10.8954 5.89543 10 7 10H9C10.1046 10 11 10.8954 11 12V18C11 19.1046 10.1046 20 9 20H7C5.89543 20 5 19.1046 5 18V12Z" fill="currentColor"></path>
-                    <path opacity="0.4" d="M13 6C13 4.89543 13.8954 4 15 4H17C18.1046 4 19 4.89543 19 6V18C19 19.1046 18.1046 20 17 20H15C13.8954 20 13 19.1046 13 18V6Z" fill="currentColor"></path>
-                    <path d="M9 14C9.55228 14 10 14.4477 10 15V18C10 18.5523 9.55228 19 9 19C8.44772 19 8 18.5523 8 18V15C8 14.4477 8.44772 14 9 14Z" fill="currentColor"></path>
-                    <path d="M17 8C17.5523 8 18 8.44772 18 9V18C18 18.5523 17.5523 19 17 19C16.4477 19 16 18.5523 16 18V9C16 8.44772 16.4477 8 17 8Z" fill="currentColor"></path>
-                </svg>
-            </i>
-            <span class="item-name">Báo Cáo Thống Kê</span>
-        </a>
-    </li>
-
 </ul>

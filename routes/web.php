@@ -17,15 +17,28 @@ Route::post('/logout', function () {
 })->name('logout');
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
-    Route::get('/reports', [HotelManagementController::class, 'report'])->name('reports.index');
+    Route::redirect('/reports', '/dashboard')->name('reports.index');
 
     foreach (array_keys(config('hotel-management.modules', [])) as $moduleKey) {
-        Route::get("/{$moduleKey}", [HotelManagementController::class, 'index'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.index');
-        Route::get("/{$moduleKey}/create", [HotelManagementController::class, 'create'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.create');
-        Route::post("/{$moduleKey}", [HotelManagementController::class, 'store'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.store');
-        Route::get("/{$moduleKey}/{recordId}", [HotelManagementController::class, 'show'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.show');
-        Route::get("/{$moduleKey}/{recordId}/edit", [HotelManagementController::class, 'edit'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.edit');
-        Route::match(['put', 'patch'], "/{$moduleKey}/{recordId}", [HotelManagementController::class, 'update'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.update');
-        Route::delete("/{$moduleKey}/{recordId}", [HotelManagementController::class, 'destroy'])->defaults('moduleKey', $moduleKey)->name($moduleKey . '.destroy');
+        Route::get("/{$moduleKey}", fn (HotelManagementController $controller) => $controller->index($moduleKey))
+            ->name($moduleKey . '.index');
+
+        Route::get("/{$moduleKey}/create", fn (HotelManagementController $controller) => $controller->create($moduleKey))
+            ->name($moduleKey . '.create');
+
+        Route::post("/{$moduleKey}", fn (\Illuminate\Http\Request $request, HotelManagementController $controller) => $controller->store($request, $moduleKey))
+            ->name($moduleKey . '.store');
+
+        Route::get("/{$moduleKey}/{recordId}", fn (HotelManagementController $controller, string $recordId) => $controller->show($moduleKey, $recordId))
+            ->name($moduleKey . '.show');
+
+        Route::get("/{$moduleKey}/{recordId}/edit", fn (HotelManagementController $controller, string $recordId) => $controller->edit($moduleKey, $recordId))
+            ->name($moduleKey . '.edit');
+
+        Route::match(['put', 'patch'], "/{$moduleKey}/{recordId}", fn (\Illuminate\Http\Request $request, HotelManagementController $controller, string $recordId) => $controller->update($request, $moduleKey, $recordId))
+            ->name($moduleKey . '.update');
+
+        Route::delete("/{$moduleKey}/{recordId}", fn (HotelManagementController $controller, string $recordId) => $controller->destroy($moduleKey, $recordId))
+            ->name($moduleKey . '.destroy');
     }
 });

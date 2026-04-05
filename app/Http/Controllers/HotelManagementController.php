@@ -87,7 +87,7 @@ class HotelManagementController extends Controller
         $this->validateRequest($request, $module);
 
         return redirect()
-            ->route('hotel.' . $moduleKey . '.show', $recordId)
+            ->route('hotel.' . $moduleKey . '.show', ['recordId' => $recordId])
             ->with('success', 'Đã cập nhật ' . $module['singular'] . ' trong giao diện mẫu.');
     }
 

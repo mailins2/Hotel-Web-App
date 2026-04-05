@@ -8,7 +8,7 @@
                         <p class="mb-0 text-muted">{{ $module['title'] }}</p>
                     </div>
                     <div class="d-flex gap-2">
-                        <a href="{{ route('hotel.' . $moduleKey . '.edit', $record[$module['primary_key']]) }}" class="btn btn-sm btn-warning" style="padding: 10px;">Chỉnh sửa</a>
+                        <a href="{{ route('hotel.' . $moduleKey . '.edit', ['recordId' => $record[$module['primary_key']]]) }}" class="btn btn-sm btn-warning" style="padding: 10px;">Chỉnh sửa</a>
                         <a href="{{ route('hotel.' . $moduleKey . '.index') }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại</a>
                     </div>
                 </div>

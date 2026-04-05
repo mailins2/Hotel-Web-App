@@ -169,10 +169,10 @@ return [
     'reports' => [
         'title' => 'Báo Cáo Thống Kê',
         'summary_cards' => [
-            ['label' => 'Khách hàng', 'value' => '128', 'description' => 'Khách hàng đang lưu trong hệ thống'],
-            ['label' => 'Phòng đang sử dụng', 'value' => '42', 'description' => 'Số phòng hiện có khách lưu trú'],
-            ['label' => 'Doanh thu hôm nay', 'value' => '32.500.000 VNĐ', 'description' => 'Tổng thanh toán phát sinh trong ngày'],
-            ['label' => 'Đánh giá trung bình', 'value' => '4.6 / 5', 'description' => 'Tổng hợp từ phản hồi khách hàng'],
+            ['label' => 'Khách hàng', 'value' => '128', 'description' => 'Khách hàng đang lưu trong hệ thống', 'icon' => 'customers', 'icon_class' => 'text-primary'],
+            ['label' => 'Phòng đang sử dụng', 'value' => '42', 'description' => 'Số phòng hiện có khách lưu trú', 'icon' => 'rooms', 'icon_class' => 'text-success'],
+            ['label' => 'Doanh thu hôm nay', 'value' => '32.500.000 VNĐ', 'description' => 'Tổng thanh toán phát sinh trong ngày', 'icon' => 'revenue', 'icon_class' => 'revenue-icon-blue'],
+            ['label' => 'Đánh giá trung bình', 'value' => '4.6 / 5', 'description' => 'Tổng hợp từ phản hồi khách hàng', 'icon' => 'reviews', 'icon_class' => 'text-warning'],
         ],
         'monthly_revenue' => [
             ['month' => 'Tháng 1', 'value' => 210000000],
