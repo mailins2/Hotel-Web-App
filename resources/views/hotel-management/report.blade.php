@@ -43,7 +43,7 @@
                                     </svg>
                                 @endif
                             </div>
-                            <div class="fw-bold text-uppercase mb-0">{{ $card['label'] }}</div>
+                            <div class="fw-bold text-uppercase mb-0" style="font-size: 14px; line-height: 1.3;">{{ $card['label'] }}</div>
                         </div>
                         <h3 class="mb-0">{{ $card['value'] }}</h3>
                     </div>

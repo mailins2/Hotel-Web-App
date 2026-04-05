@@ -73,7 +73,7 @@ class HotelManagementController extends Controller
     public function store(Request $request, string $moduleKey): RedirectResponse
     {
         $module = $this->getModule($moduleKey);
-        $this->validateRequest($request, $module);
+        $this->validateRequest($request, $moduleKey, $module);
 
         return redirect()
             ->route('hotel.' . $moduleKey . '.index')
@@ -83,8 +83,8 @@ class HotelManagementController extends Controller
     public function update(Request $request, string $moduleKey, string $recordId): RedirectResponse
     {
         $module = $this->getModule($moduleKey);
-        $this->findRecord($module, $recordId);
-        $this->validateRequest($request, $module);
+        $record = $this->findRecord($module, $recordId);
+        $this->validateRequest($request, $moduleKey, $module, $record);
 
         return redirect()
             ->route('hotel.' . $moduleKey . '.show', ['recordId' => $recordId])
@@ -130,11 +130,27 @@ class HotelManagementController extends Controller
         abort(404);
     }
 
-    protected function validateRequest(Request $request, array $module): void
+    protected function validateRequest(Request $request, string $moduleKey, array $module, array $record = []): void
     {
         $rules = [];
+        $fields = $module['fields'];
 
-        foreach ($module['fields'] as $fieldKey => $field) {
+        if ($moduleKey === 'accounts' && !empty($record)) {
+            $accountType = (string) ($record['LoaiTaiKhoan'] ?? '');
+
+            if ($accountType === '0') {
+                $fields = [
+                    'TrangThai' => $module['fields']['TrangThai'],
+                ];
+            } elseif ($accountType === '1') {
+                $fields = [
+                    'MatKhau' => ['label' => 'Mật khẩu', 'type' => 'password', 'required' => false],
+                    'TrangThai' => $module['fields']['TrangThai'],
+                ];
+            }
+        }
+
+        foreach ($fields as $fieldKey => $field) {
             if ($field['readonly'] ?? false) {
                 continue;
             }

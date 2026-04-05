@@ -10,6 +10,13 @@
                     <a href="{{ route('hotel.' . $moduleKey . '.index') }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại danh sách</a>
                 </div>
                 <div class="card-body">
+                    @php
+                        $isAccountModule = $moduleKey === 'accounts';
+                        $accountType = (string) ($record['LoaiTaiKhoan'] ?? old('LoaiTaiKhoan', ''));
+                        $isCustomerAccount = $isAccountModule && $isEdit && $accountType === '0';
+                        $isEmployeeAccount = $isAccountModule && $isEdit && $accountType === '1';
+                    @endphp
+
                     <form action="{{ $isEdit ? route('hotel.' . $moduleKey . '.update', ['recordId' => $record[$module['primary_key']]]) : route('hotel.' . $moduleKey . '.store') }}" method="POST">
                         @csrf
                         @if($isEdit)
@@ -21,7 +28,16 @@
                                 @php
                                     $value = old($fieldKey, $record[$fieldKey] ?? '');
                                     $inputType = $field['type'] ?? 'text';
+                                    $shouldHideField = false;
+                                    $isLockedAccountIdentityField = ($isCustomerAccount || $isEmployeeAccount) && in_array($fieldKey, ['MaTK', 'Email'], true);
+
+                                    if ($isCustomerAccount) {
+                                        $shouldHideField = in_array($fieldKey, ['MatKhau', 'LoaiTaiKhoan'], true);
+                                    } elseif ($isEmployeeAccount) {
+                                        $shouldHideField = in_array($fieldKey, ['LoaiTaiKhoan'], true);
+                                    }
                                 @endphp
+                                @continue($shouldHideField)
                                 <div class="form-group col-md-6">
                                     <label class="form-label" for="{{ $fieldKey }}">
                                         {{ $field['label'] }}
@@ -54,11 +70,18 @@
                                             id="{{ $fieldKey }}"
                                             name="{{ $fieldKey }}"
                                             value="{{ $inputType === 'password' ? '' : $value }}"
-                                            placeholder="{{ $field['label'] }}"
+                                            placeholder="{{ $fieldKey === 'MatKhau' && $isEmployeeAccount ? 'Nhập mật khẩu mới nếu muốn thay đổi' : $field['label'] }}"
+                                            style="{{ $isLockedAccountIdentityField ? 'background-color: #f3f4f6; color: #6b7280; border-color: #cbd5e1; cursor: not-allowed;' : '' }}"
                                             {{ isset($field['step']) ? 'step=' . $field['step'] : '' }}
-                                            {{ ($field['required'] ?? false) ? 'required' : '' }}
-                                            {{ ($field['readonly'] ?? false) ? 'readonly' : '' }}
+                                            {{ (($field['required'] ?? false) && !($fieldKey === 'MatKhau' && $isEmployeeAccount)) ? 'required' : '' }}
+                                            {{ (($field['readonly'] ?? false) || $isLockedAccountIdentityField) ? 'readonly' : '' }}
                                         >
+                                        @if($isLockedAccountIdentityField)
+                                            <small class="text-muted d-block mt-2" style="color: #9ca3af !important;">Admin không được chỉnh sửa trường này.</small>
+                                        @endif
+                                        @if($fieldKey === 'MatKhau' && $isEmployeeAccount)
+                                            <small class="text-muted d-block mt-2">Để trống nếu không muốn đổi mật khẩu hiện tại.</small>
+                                        @endif
                                     @endif
                                 </div>
                             @endforeach
