@@ -10,8 +10,12 @@ class DichVu extends Model
     protected $primaryKey = 'MaDV';
     public $timestamps = false;
     protected $guarded = [];
-     public function suDungs()
+    public function suDungs()
     {
         return $this->hasMany(SuDungDichVu::class, 'MaDV');
+    }
+    public function hinhs()
+    {
+        return $this->hasMany(Hinh::class, 'MaDV');
     }
 }

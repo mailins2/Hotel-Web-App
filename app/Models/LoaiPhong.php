@@ -23,4 +23,8 @@ class LoaiPhong extends Model
     {
         return $this->hasMany(ChiTietHoaDon::class, 'MaLoaiPhong');
     }
+    public function hinhs()
+    {
+        return $this->hasMany(Hinh::class, 'MaLoaiPhong');
+    }
 }
