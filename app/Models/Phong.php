@@ -9,7 +9,11 @@ class Phong extends Model
     protected $table = 'Phong';
     protected $primaryKey = 'MaPhong';
     public $timestamps = false;
-    protected $guarded = [];
+      protected $fillable = [
+        'SoPhong',
+        'MaLoaiPhong',
+        'TinhTrang'
+    ];
 
     public function loaiPhong()
     {

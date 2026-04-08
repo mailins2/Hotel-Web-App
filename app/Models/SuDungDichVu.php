@@ -9,7 +9,12 @@ class SuDungDichVu extends Model
     protected $table = 'SuDungDichVu';
     protected $primaryKey = 'MaSuDung';
     public $timestamps = false;
-    protected $guarded = [];
+     protected $fillable = [
+        'MaDatPhong',
+        'MaDV',
+        'SoLuong',
+        'ThoiGian'
+    ];
 
     public function datPhong()
     {

@@ -9,10 +9,21 @@ class TienNghi extends Model
     protected $table = 'TienNghi';
     protected $primaryKey = 'MaTienNghi';
     public $timestamps = false;
-    protected $guarded = [];
-    public function tienNghiPhongs()
+    protected $fillable = [
+        'TenTienNghi'
+    ];
+
+    /**
+     * MANY TO MANY: Tiện nghi ↔ Loại phòng
+     */
+    public function loaiPhongs()
     {
-        return $this->hasMany(TienNghiPhong::class, 'MaTienNghi');
+        return $this->belongsToMany(
+            LoaiPhong::class,
+            'TienNghiPhong',   // bảng trung gian
+            'MaTienNghi',      // FK của bảng này
+            'MaLoaiPhong'      // FK của bảng kia
+        );
     }
 
 }
