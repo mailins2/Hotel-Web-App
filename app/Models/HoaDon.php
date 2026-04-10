@@ -15,4 +15,21 @@ class HoaDon extends Model
     {
         return $this->belongsTo(DatPhong::class, 'MaDatPhong');
     }
+     public function chiTietHoaDons()
+    {
+        return $this->hasMany(ChiTietHoaDon::class, 'MaHD');
+    }
+    public function thanhToans()
+    {
+        return $this->hasMany(ThanhToan::class, 'MaHD');
+    }
+
+    public function nhanVien()
+    {
+        return $this->belongsTo(NhanVien::class, 'MaNV');
+    }
+      public function khuyenMai()
+    {
+        return $this->belongsTo(KhuyenMai::class, 'MaKM');
+    }
 }

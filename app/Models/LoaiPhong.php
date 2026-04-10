@@ -9,7 +9,11 @@ class LoaiPhong extends Model
     protected $table = 'LoaiPhong';
     protected $primaryKey = 'MaLoaiPhong';
     public $timestamps = false;
-    protected $guarded = [];
+    protected $fillable = [
+    'TenLoaiPhong',
+    'Mota',
+    'SoNguoiToiDa'
+    ];
 
     public function phongs()
     {
@@ -26,5 +30,14 @@ class LoaiPhong extends Model
     public function hinhs()
     {
         return $this->hasMany(Hinh::class, 'MaLoaiPhong');
+    }
+        public function tienNghis()
+    {
+        return $this->belongsToMany(
+            TienNghi::class,
+            'TienNghiPhong',
+            'MaLoaiPhong',
+            'MaTienNghi'
+        );
     }
 }
