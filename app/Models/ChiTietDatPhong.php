@@ -12,7 +12,6 @@ class ChiTietDatPhong extends Model
      protected $fillable = [
         'MaDatPhong',
         'MaPhong',
-        'SoLuong'
     ];
 
 

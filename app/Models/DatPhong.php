@@ -14,6 +14,7 @@ class DatPhong extends Model
         'NgayDat',
         'NgayNhanPhong',
         'NgayTraPhong',
+        'SoLuong',
         'TinhTrang'
     ];
 

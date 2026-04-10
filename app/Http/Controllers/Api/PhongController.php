@@ -105,9 +105,8 @@ class PhongController extends Controller
     //=============================================================================
     // kiểm tra phòng trống 
     //GET /api/phong/trong?checkIn=2026-04-10&checkOut=2026-04-12
-    public function phongTrong(Request $request)
+  public function phongTrong(Request $request)
     {
-
         $data = $request->validate([
             'checkIn' => 'required|date',
             'checkOut' => 'required|date|after:checkIn'
@@ -116,13 +115,17 @@ class PhongController extends Controller
         $checkIn = $data['checkIn'];
         $checkOut = $data['checkOut'];
 
-       $phongs = Phong::with([
-            'loaiPhong.tienNghis',
-            'loaiPhong.bangGias'
-        ])->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
-            $q->where('NgayNhanPhong', '<', $checkOut)
-            ->where('NgayTraPhong', '>', $checkIn);
-        })->get();
+        $phongs = Phong::with([
+                'loaiPhong.tienNghis',
+                'loaiPhong.bangGias'
+            ])
+            ->where('TinhTrang', 0)
+            ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
+                $q->whereIn('TinhTrang', [0,1])
+                ->where('NgayNhanPhong', '<', $checkOut)
+                ->where('NgayTraPhong', '>', $checkIn);
+            })
+            ->get();
 
         return response()->json($phongs);
     }
