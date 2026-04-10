@@ -9,7 +9,12 @@ class KhoKhuyenMai extends Model
     protected $table = 'KhoKhuyenMai';
     public $timestamps = false;
     protected $guarded = [];
-     public function khachHang()
+    
+    // Thêm dòng này vì bảng không có cột 'id' tăng tự động
+    public $incrementing = false; 
+    protected $primaryKey = ['MaKM', 'MaKH'];
+    
+    public function khachHang()
     {
         return $this->belongsTo(KhachHang::class, 'MaKH');
     }

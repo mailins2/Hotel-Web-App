@@ -10,4 +10,9 @@ class KhuyenMai extends Model
     protected $primaryKey = 'MaKM';
     public $timestamps = false;
     protected $guarded = [];
+
+    public function khoKhuyenMai()
+    {
+        return $this->hasMany(KhoKhuyenMai::class, 'MaKM');
+    }
 }
