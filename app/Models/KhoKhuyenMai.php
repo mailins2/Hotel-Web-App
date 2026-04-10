@@ -22,5 +22,4 @@ class KhoKhuyenMai extends Model
     {
         return $this->belongsTo(KhuyenMai::class, 'MaKM');
     }
-
 }

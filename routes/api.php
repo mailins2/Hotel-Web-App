@@ -15,6 +15,11 @@ use App\Http\Controllers\Api\NhanVienController;
 use App\Http\Controllers\Api\DenBuHuHongController;
 use App\Http\Controllers\Api\KhuyenMaiController;
 use App\Http\Controllers\Api\KhoKhuyenMaiController;
+use App\Http\Controllers\Api\HoaDonController;
+use App\Http\Controllers\Api\ChiTietHoaDonController;
+use App\Http\Controllers\Api\ThanhToanController;
+use App\Http\Controllers\Api\DanhGiaController;
+use App\Http\Controllers\Api\HinhController;
 
 Route::get('/bang-gia', [BangGiaController::class, 'index']);
 Route::post('/bang-gia', [BangGiaController::class, 'store']);
@@ -49,15 +54,27 @@ Route::get(
 );
 Route::apiResource('su-dung-dich-vu', \App\Http\Controllers\Api\SuDungDichVuController::class);
 
-
 Route::apiResource('tai-khoan', TaiKhoanController::class);
 
 Route::apiResource('nhan-vien', NhanVienController::class);
 
-Route::apiResource('khachhang', KhachHangController::class);
+Route::apiResource('khach-hang', KhachHangController::class);
 
 Route::apiResource('den-bu', DenBuHuHongController::class);
 
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
 Route::apiResource('kho-khuyen-mai', KhoKhuyenMaiController::class);
+
+Route::apiResource('hoa-don', HoaDonController::class);
+
+Route::apiResource('chi-tiet-hoa-don', ChiTietHoaDonController::class);
+
+Route::get('thanh-toan', [ThanhToanController::class, 'index']);
+Route::post('thanh-toan', [ThanhToanController::class, 'store']);
+Route::get('thanh-toan/{id}', [ThanhToanController::class, 'show']);
+Route::get('thanh-toan/hoa-don/{maHD}', [ThanhToanController::class, 'getByHoaDon']);
+
+Route::apiResource('danh-gia', DanhGiaController::class);
+
+Route::apiResource('hinh-anh', HinhController::class);
