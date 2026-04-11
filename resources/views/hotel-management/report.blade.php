@@ -1,7 +1,75 @@
 <x-app-layout :assets="$assets ?? []">
+    @php
+        $revenueChart = $report['revenue_chart'] ?? [];
+        $revenueChartJson = json_encode(
+            $revenueChart,
+            JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+        );
+        $defaultRevenuePeriod = $revenueChart['default_period'] ?? 'month';
+        $defaultRevenueItems = $revenueChart['periods'][$defaultRevenuePeriod]['items'] ?? [];
+        $defaultRevenueListLimit = match ($defaultRevenuePeriod) {
+            'day' => 7,
+            'year' => 5,
+            default => 6,
+        };
+        $defaultRevenueListItems = array_slice($defaultRevenueItems, -$defaultRevenueListLimit);
+        $defaultRevenueHeading = match ($defaultRevenuePeriod) {
+            'day' => 'Ngày',
+            'year' => 'Năm',
+            default => 'Tháng',
+        };
+    @endphp
+
     <style>
         .revenue-icon-blue {
             color: #2f80ed;
+        }
+
+        .report-revenue-chart {
+            min-height: 320px;
+            margin-bottom: 1.5rem;
+        }
+
+        .report-revenue-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .report-revenue-filter {
+            min-width: 180px;
+        }
+
+        .report-revenue-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .report-revenue-date-filter {
+            min-width: 180px;
+        }
+
+        .room-status-card .card-header {
+            padding-bottom: 1.25rem;
+        }
+
+        .room-status-card .card-body {
+            padding-top: 1.5rem;
+        }
+
+        @media (max-width: 575.98px) {
+            .report-revenue-filter {
+                width: 100%;
+            }
+
+            .report-revenue-date-filter {
+                width: 100%;
+            }
         }
     </style>
 
@@ -45,7 +113,7 @@
                             </div>
                             <div class="fw-bold text-uppercase mb-0" style="font-size: 14px; line-height: 1.3;">{{ $card['label'] }}</div>
                         </div>
-                        <h3 class="mb-0">{{ $card['value'] }}</h3>
+                        <h3 class="mb-0 text-center">{{ $card['value'] }}</h3>
                     </div>
                 </div>
             </div>
@@ -55,24 +123,42 @@
     <div class="row">
         <div class="col-lg-7">
             <div class="card">
-                <div class="card-header pb-2">
-                    <div class="header-title">
-                        <h4 class="card-title mb-0">Doanh thu theo tháng</h4>
+                <div class="card-header">
+                    <div class="report-revenue-toolbar">
+                        <div class="header-title">
+                            <h4 class="card-title mb-0" id="revenue-chart-title">
+                                {{ $revenueChart['periods'][$revenueChart['default_period'] ?? 'month']['title'] ?? 'Doanh thu theo tháng' }}
+                            </h4>
+                        </div>
+                        <div class="report-revenue-controls">
+                            <div class="report-revenue-filter">
+                                <select class="form-select" id="revenue-period-select" aria-label="Chọn kiểu thống kê doanh thu">
+                                    <option value="day" @selected($defaultRevenuePeriod === 'day')>Theo ngày</option>
+                                    <option value="month" @selected($defaultRevenuePeriod === 'month')>Theo tháng</option>
+                                    <option value="year" @selected($defaultRevenuePeriod === 'year')>Theo năm</option>
+                                </select>
+                            </div>
+                            <div class="report-revenue-date-filter" id="revenue-time-filter"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body pt-4">
+                <div class="card-body">
+                    @if(!empty($revenueChart['periods']))
+                        <div id="monthly-revenue-chart" class="report-revenue-chart"></div>
+                    @endif
+
                     <div class="table-responsive">
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th>Tháng</th>
+                                    <th id="revenue-list-heading">{{ $defaultRevenueHeading }}</th>
                                     <th>Doanh thu</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($report['monthly_revenue'] as $item)
+                            <tbody id="revenue-list-body">
+                                @foreach($defaultRevenueListItems as $item)
                                     <tr>
-                                        <td>{{ $item['month'] }}</td>
+                                        <td>{{ $item['label'] ?? $item['month'] ?? $item['key'] ?? '' }}</td>
                                         <td>{{ number_format($item['value'], 0, ',', '.') }} VNĐ</td>
                                     </tr>
                                 @endforeach
@@ -83,13 +169,13 @@
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="card">
-                <div class="card-header pb-2">
+            <div class="card room-status-card">
+                <div class="card-header">
                     <div class="header-title">
                         <h4 class="card-title mb-0">Tình trạng phòng</h4>
                     </div>
                 </div>
-                <div class="card-body pt-4">
+                <div class="card-body">
                     @foreach($report['room_status'] as $status)
                         <div class="d-flex justify-content-between align-items-center border-bottom py-3">
                             <span>{{ $status['label'] }}</span>
@@ -100,4 +186,282 @@
             </div>
         </div>
     </div>
+
+    <div id="revenue-chart-data" data-chart="{{ $revenueChartJson }}" hidden></div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const chartElement = document.querySelector('#monthly-revenue-chart');
+                const periodSelectElement = document.querySelector('#revenue-period-select');
+                const timeFilterElement = document.querySelector('#revenue-time-filter');
+                const chartTitleElement = document.querySelector('#revenue-chart-title');
+                const revenueListHeadingElement = document.querySelector('#revenue-list-heading');
+                const revenueListBodyElement = document.querySelector('#revenue-list-body');
+                const revenueChartDataElement = document.querySelector('#revenue-chart-data');
+                const revenueChart = revenueChartDataElement
+                    ? JSON.parse(revenueChartDataElement.dataset.chart || '{}')
+                    : null;
+
+                if (!chartElement || !periodSelectElement || !timeFilterElement || !revenueListBodyElement || !revenueChart || !revenueChart.periods || typeof window.ApexCharts === 'undefined') {
+                    return;
+                }
+
+                const listHeadingMap = {
+                    day: 'Ngày',
+                    month: 'Tháng',
+                    year: 'Năm',
+                };
+
+                const formatCurrency = function (value) {
+                    return new Intl.NumberFormat('vi-VN', {
+                        style: 'currency',
+                        currency: 'VND',
+                        maximumFractionDigits: 0,
+                    }).format(value);
+                };
+
+                const formatCompactCurrency = function (value) {
+                    if (value >= 1000000000) {
+                        return (value / 1000000000).toFixed(value % 1000000000 === 0 ? 0 : 1) + ' tỷ';
+                    }
+
+                    if (value >= 1000000) {
+                        return (value / 1000000).toFixed(value % 1000000 === 0 ? 0 : 1) + ' triệu';
+                    }
+
+                    return new Intl.NumberFormat('vi-VN').format(value);
+                };
+
+                const getPeriodItems = function (periodKey) {
+                    const period = revenueChart.periods[periodKey];
+
+                    if (!period || !Array.isArray(period.items)) {
+                        return [];
+                    }
+
+                    return period.items;
+                };
+
+                const getDefaultFilterKey = function (periodKey) {
+                    const items = getPeriodItems(periodKey);
+
+                    if (items.length === 0) {
+                        return '';
+                    }
+
+                    return items[items.length - 1].key || '';
+                };
+
+                const normalizeFilterKey = function (periodKey, filterKey) {
+                    const items = getPeriodItems(periodKey);
+
+                    if (items.some(function (item) {
+                        return item.key === filterKey;
+                    })) {
+                        return filterKey;
+                    }
+
+                    return getDefaultFilterKey(periodKey);
+                };
+
+                const getVisibleItems = function (periodKey, filterKey) {
+                    const items = getPeriodItems(periodKey);
+                    const normalizedFilterKey = normalizeFilterKey(periodKey, filterKey);
+                    const filteredItems = items.filter(function (item) {
+                        return (item.key || '') <= normalizedFilterKey;
+                    });
+
+                    const limit = periodKey === 'day'
+                        ? 7
+                        : (periodKey === 'year' ? 5 : 6);
+
+                    return filteredItems.slice(-limit);
+                };
+
+                const defaultPeriod = revenueChart.default_period && revenueChart.periods[revenueChart.default_period]
+                    ? revenueChart.default_period
+                    : 'month';
+
+                periodSelectElement.value = defaultPeriod;
+                let currentFilterKey = getDefaultFilterKey(defaultPeriod);
+
+                const chart = new window.ApexCharts(chartElement, {
+                    chart: {
+                        type: 'line',
+                        height: 320,
+                        toolbar: {
+                            show: false,
+                        },
+                        zoom: {
+                            enabled: false,
+                        },
+                    },
+                    series: [
+                        {
+                            name: 'Doanh thu',
+                            data: [],
+                        },
+                    ],
+                    colors: ['#2f80ed'],
+                    dataLabels: {
+                        enabled: false,
+                    },
+                    stroke: {
+                        curve: 'smooth',
+                        width: 4,
+                    },
+                    markers: {
+                        size: 5,
+                        strokeWidth: 0,
+                        hover: {
+                            size: 7,
+                        },
+                    },
+                    grid: {
+                        borderColor: 'rgba(138, 146, 166, 0.18)',
+                        strokeDashArray: 4,
+                        padding: {
+                            left: 10,
+                            right: 18,
+                            top: 10,
+                        },
+                    },
+                    xaxis: {
+                        categories: [],
+                        axisBorder: {
+                            show: false,
+                        },
+                        axisTicks: {
+                            show: false,
+                        },
+                        labels: {
+                            style: {
+                                colors: '#8a92a6',
+                                fontSize: '12px',
+                            },
+                        },
+                    },
+                    yaxis: {
+                        labels: {
+                            formatter: function (value) {
+                                return formatCompactCurrency(value);
+                            },
+                            style: {
+                                colors: '#8a92a6',
+                                fontSize: '12px',
+                            },
+                        },
+                    },
+                    tooltip: {
+                        y: {
+                            formatter: function (value) {
+                                return formatCurrency(value);
+                            },
+                        },
+                    },
+                    legend: {
+                        show: false,
+                    },
+                });
+
+                chart.render();
+
+                const renderTable = function (periodKey, items) {
+                    if (revenueListHeadingElement) {
+                        revenueListHeadingElement.textContent = listHeadingMap[periodKey] || 'Thời gian';
+                    }
+
+                    revenueListBodyElement.innerHTML = items.map(function (item) {
+                        return '<tr><td>' + (item.label || item.key || '') + '</td><td>' + formatCurrency(item.value || 0) + '</td></tr>';
+                    }).join('');
+                };
+
+                const renderTimeFilter = function (periodKey, filterKey) {
+                    const items = getPeriodItems(periodKey);
+                    const normalizedFilterKey = normalizeFilterKey(periodKey, filterKey);
+                    const firstKey = items.length > 0 ? (items[0].key || '') : '';
+                    const lastKey = items.length > 0 ? (items[items.length - 1].key || '') : '';
+
+                    if (periodKey === 'year') {
+                        timeFilterElement.innerHTML = '<select class="form-select" id="revenue-time-input" aria-label="Chọn năm xem doanh thu">' +
+                            items.map(function (item) {
+                                const selected = item.key === normalizedFilterKey ? ' selected' : '';
+
+                                return '<option value="' + item.key + '"' + selected + '>' + item.label + '</option>';
+                            }).join('') +
+                            '</select>';
+                    } else {
+                        const inputType = periodKey === 'day' ? 'date' : 'month';
+                        const ariaLabel = periodKey === 'day' ? 'Chọn ngày xem doanh thu' : 'Chọn tháng xem doanh thu';
+
+                        timeFilterElement.innerHTML = '<input class="form-control" id="revenue-time-input" type="' + inputType + '" min="' + firstKey + '" max="' + lastKey + '" value="' + normalizedFilterKey + '" aria-label="' + ariaLabel + '">';
+                    }
+
+                    const timeInputElement = document.querySelector('#revenue-time-input');
+
+                    if (!timeInputElement) {
+                        return;
+                    }
+
+                    timeInputElement.addEventListener('change', function (event) {
+                        renderPeriod(periodKey, event.target.value, true);
+                    });
+                };
+
+                const renderPeriod = function (periodKey, filterKey, keepCurrentFilterControl) {
+                    const period = revenueChart.periods[periodKey];
+
+                    if (!period) {
+                        return;
+                    }
+
+                    const normalizedFilterKey = normalizeFilterKey(periodKey, filterKey);
+                    const visibleItems = getVisibleItems(periodKey, normalizedFilterKey);
+
+                    if (visibleItems.length === 0) {
+                        return;
+                    }
+
+                    currentFilterKey = normalizedFilterKey;
+
+                    if (!keepCurrentFilterControl) {
+                        renderTimeFilter(periodKey, normalizedFilterKey);
+                    }
+
+                    if (chartTitleElement) {
+                        chartTitleElement.textContent = period.title || 'Biểu đồ doanh thu';
+                    }
+
+                    chart.updateOptions({
+                        xaxis: {
+                            categories: visibleItems.map(function (item) {
+                                return item.label;
+                            }),
+                        },
+                    });
+
+                    chart.updateSeries([
+                        {
+                            name: 'Doanh thu',
+                            data: visibleItems.map(function (item) {
+                                return Number(item.value) || 0;
+                            }),
+                        },
+                    ]);
+
+                    renderTable(periodKey, visibleItems);
+                };
+
+                renderPeriod(defaultPeriod, currentFilterKey, false);
+
+                periodSelectElement.addEventListener('change', function (event) {
+                    const nextPeriod = event.target.value;
+                    const nextFilterKey = getDefaultFilterKey(nextPeriod);
+
+                    renderPeriod(nextPeriod, nextFilterKey, false);
+                });
+            });
+        </script>
+    @endpush
 </x-app-layout>
