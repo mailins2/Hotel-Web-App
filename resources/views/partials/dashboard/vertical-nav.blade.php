@@ -5,19 +5,44 @@
             <span class="mini-icon">-</span>
         </a>
     </li>
+
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('dashboard'))}}" aria-current="page" href="{{route('dashboard')}}">
+        <a class="nav-link {{activeRoute(route('admin.dashboard'))}}" aria-current="page" href="{{route('admin.dashboard')}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path opacity="0.4" d="M16.0756 2H19.4616C20.8639 2 22.0001 3.14585 22.0001 4.55996V7.97452C22.0001 9.38864 20.8639 10.5345 19.4616 10.5345H16.0756C14.6734 10.5345 13.5371 9.38864 13.5371 7.97452V4.55996C13.5371 3.14585 14.6734 2 16.0756 2Z" fill="currentColor"></path>
-                    <path fill-rule="evenodd" clip-rule="evenodd" d="M4.53852 2H7.92449C9.32676 2 10.463 3.14585 10.463 4.55996V7.97452C10.463 9.38864 9.32676 10.5345 7.92449 10.5345H4.53852C3.13626 10.5345 2 9.38864 2 7.97452V4.55996C2 3.14585 3.13626 2 4.53852 2ZM4.53852 13.4655H7.92449C9.32676 13.4655 10.463 14.6114 10.463 16.0255V19.44C10.463 20.8532 9.32676 22 7.92449 22H4.53852C3.13626 22 2 20.8532 2 19.44V16.0255C2 14.6114 3.13626 13.4655 4.53852 13.4655ZM19.4615 13.4655H16.0755C14.6732 13.4655 13.537 14.6114 13.537 16.0255V19.44C13.537 20.8532 14.6732 22 16.0755 22H19.4615C20.8637 22 22 20.8532 22 19.44V16.0255C22 14.6114 20.8637 13.4655 19.4615 13.4655Z" fill="currentColor"></path>
+                    <path opacity="0.4" d="M6 11C6 9.89543 6.89543 9 8 9H9C10.1046 9 11 9.89543 11 11V18C11 19.1046 10.1046 20 9 20H8C6.89543 20 6 19.1046 6 18V11Z" fill="currentColor"></path>
+                    <path opacity="0.4" d="M13 6C13 4.89543 13.8954 4 15 4H16C17.1046 4 18 4.89543 18 6V18C18 19.1046 17.1046 20 16 20H15C13.8954 20 13 19.1046 13 18V6Z" fill="currentColor"></path>
+                    <path d="M3 15C3 13.8954 3.89543 13 5 13H6C7.10457 13 8 13.8954 8 15V18C8 19.1046 7.10457 20 6 20H5C3.89543 20 3 19.1046 3 18V15Z" fill="currentColor"></path>
+                    <path d="M20 2C20.5523 2 21 2.44772 21 3V18C21 19.1046 20.1046 20 19 20H18V5C18 3.34315 19.3431 2 21 2H20Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Dashboard</span>
+            <span class="item-name">Báo Cáo Thống Kê</span>
         </a>
     </li>
+
+     <li class="nav-item static-item">
+        <a class="nav-link static-item disabled" href="#" tabindex="-1">
+            <span class="default-icon">Quản Lý</span>
+            <span class="mini-icon">-</span>
+        </a>
+    </li>
+
+
+      <li class="nav-item">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'accounts']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'accounts'])}}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M12 2C9.238 2 7 4.238 7 7V8H6C4.895 8 4 8.895 4 10V18C4 19.105 4.895 20 6 20H18C19.105 20 20 19.105 20 18V10C20 8.895 19.105 8 18 8H17V7C17 4.238 14.762 2 12 2Z" fill="currentColor"></path>
+                    <path d="M12 5C10.895 5 10 5.895 10 7V8H14V7C14 5.895 13.105 5 12 5Z" fill="currentColor"></path>
+                    <path d="M12 11C10.619 11 9.5 12.119 9.5 13.5C9.5 14.476 10.059 15.32 10.875 15.73V17C10.875 17.621 11.379 18.125 12 18.125C12.621 18.125 13.125 17.621 13.125 17V15.73C13.941 15.32 14.5 14.476 14.5 13.5C14.5 12.119 13.381 11 12 11Z" fill="currentColor"></path>
+                </svg>
+            </i>
+            <span class="item-name">Tài Khoản</span>
+        </a>
+    </li>
+
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.customers.index'))}}" href="{{route('hotel.customers.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'customers']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'customers'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M11.9488 14.54C8.49884 14.54 5.58789 15.1038 5.58789 17.2795C5.58789 19.4562 8.51765 20.0001 11.9488 20.0001C15.3988 20.0001 18.3098 19.4364 18.3098 17.2606C18.3098 15.084 15.38 14.54 11.9488 14.54Z" fill="currentColor"></path>
@@ -28,27 +53,12 @@
                     <path d="M3.32156 13.5127C2.21752 13.7297 1.49225 14.1719 1.19139 14.8167C0.936203 15.3453 0.936203 15.9586 1.19139 16.4872C1.65163 17.4851 3.13531 17.8066 3.71195 17.8885C3.83104 17.9065 3.92595 17.8038 3.91342 17.6832C3.61883 14.9167 5.9621 13.6046 6.56918 13.3029C6.59425 13.2885 6.59962 13.2677 6.59694 13.2542C6.59515 13.2452 6.5853 13.2317 6.5656 13.2299C5.25294 13.2047 3.84358 13.3848 3.32156 13.5127Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Khách Hàng</span>
+            <span class="item-name">Khách Hàng</span>
         </a>
     </li>
 
-
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.accounts.index'))}}" href="{{route('hotel.accounts.index')}}">
-            <i class="icon">
-                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path opacity="0.4" d="M12 2C9.238 2 7 4.238 7 7V8H6C4.895 8 4 8.895 4 10V18C4 19.105 4.895 20 6 20H18C19.105 20 20 19.105 20 18V10C20 8.895 19.105 8 18 8H17V7C17 4.238 14.762 2 12 2Z" fill="currentColor"></path>
-                    <path d="M12 5C10.895 5 10 5.895 10 7V8H14V7C14 5.895 13.105 5 12 5Z" fill="currentColor"></path>
-                    <path d="M12 11C10.619 11 9.5 12.119 9.5 13.5C9.5 14.476 10.059 15.32 10.875 15.73V17C10.875 17.621 11.379 18.125 12 18.125C12.621 18.125 13.125 17.621 13.125 17V15.73C13.941 15.32 14.5 14.476 14.5 13.5C14.5 12.119 13.381 11 12 11Z" fill="currentColor"></path>
-                </svg>
-            </i>
-            <span class="item-name">Quản Lý Tài Khoản</span>
-        </a>
-    </li>
-
-
-    <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.employees.index'))}}" href="{{route('hotel.employees.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'employees']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'employees'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M16 13C18.7614 13 21 15.0147 21 17.5V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V17.5C3 15.0147 5.23858 13 8 13H16Z" fill="currentColor"></path>
@@ -56,13 +66,26 @@
                     <path d="M18.5 6C19.8807 6 21 7.11929 21 8.5C21 9.88071 19.8807 11 18.5 11C17.1193 11 16 9.88071 16 8.5C16 7.11929 17.1193 6 18.5 6Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Nhân Viên</span>
+            <span class="item-name">Nhân Viên</span>
         </a>
     </li>
 
+    <li class="nav-item">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'room-types']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'room-types'])}}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M5 5C5 4.44772 5.44772 4 6 4H11C11.5523 4 12 4.44772 12 5V10C12 10.5523 11.5523 11 11 11H6C5.44772 11 5 10.5523 5 10V5Z" fill="currentColor"></path>
+                    <path opacity="0.4" d="M12 14C12 13.4477 12.4477 13 13 13H18C18.5523 13 19 13.4477 19 14V19C19 19.5523 18.5523 20 18 20H13C12.4477 20 12 19.5523 12 19V14Z" fill="currentColor"></path>
+                    <path d="M14 5C14 4.44772 14.4477 4 15 4H18C18.5523 4 19 4.44772 19 5V8C19 8.55228 18.5523 9 18 9H15C14.4477 9 14 8.55228 14 8V5Z" fill="currentColor"></path>
+                    <path d="M5 16C5 15.4477 5.44772 15 6 15H9C9.55228 15 10 15.4477 10 16V19C10 19.5523 9.55228 20 9 20H6C5.44772 20 5 19.5523 5 19V16Z" fill="currentColor"></path>
+                </svg>
+            </i>
+            <span class="item-name">Loại Phòng</span>
+        </a>
+    </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.rooms.index'))}}" href="{{route('hotel.rooms.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'rooms']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'rooms'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 10C4 7.79086 5.79086 6 8 6H16C18.2091 6 20 7.79086 20 10V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V10Z" fill="currentColor"></path>
@@ -70,12 +93,12 @@
                     <path d="M9 13H15C15.5523 13 16 13.4477 16 14C16 14.5523 15.5523 15 15 15H9C8.44772 15 8 14.5523 8 14C8 13.4477 8.44772 13 9 13Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Phòng</span>
+            <span class="item-name">Phòng</span>
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.services.index'))}}" href="{{route('hotel.services.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'services']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'services'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M5 7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V16C19 17.1046 18.1046 18 17 18H7C5.89543 18 5 17.1046 5 16V7Z" fill="currentColor"></path>
@@ -85,12 +108,12 @@
                     <path d="M8 20C8 18.8954 8.89543 18 10 18H14C15.1046 18 16 18.8954 16 20V21H8V20Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Dịch Vụ</span>
+            <span class="item-name">Dịch Vụ</span>
         </a>
     </li>
     
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.promotions.index'))}}" href="{{route('hotel.promotions.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'promotions']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'promotions'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 8C4 6.89543 4.89543 6 6 6H12.5C13.0304 6 13.5391 6.21071 13.9142 6.58579L15.4142 8.08579C15.7893 8.46086 16.298 8.67157 16.8284 8.67157H18C19.1046 8.67157 20 9.56699 20 10.6716V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V8Z" fill="currentColor"></path>
@@ -99,12 +122,26 @@
                     <path d="M15.5 13C16.3284 13 17 13.6716 17 14.5C17 15.3284 16.3284 16 15.5 16C14.6716 16 14 15.3284 14 14.5C14 13.6716 14.6716 13 15.5 13Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Khuyến Mãi</span>
+            <span class="item-name">Khuyến Mãi</span>
+        </a>
+    </li>
+
+      <li class="nav-item">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'invoices']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'invoices'])}}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M7 3H14.5858C14.851 3 15.1054 3.10536 15.2929 3.29289L19.7071 7.70711C19.8946 7.89464 20 8.149 20 8.41421V18C20 19.1046 19.1046 20 18 20H7C5.89543 20 5 19.1046 5 18V5C5 3.89543 5.89543 3 7 3Z" fill="currentColor"></path>
+                    <path d="M14 3.5V7C14 8.10457 14.8954 9 16 9H19.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M8.5 12H16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path d="M8.5 15.5H16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </i>
+            <span class="item-name">Hóa Đơn</span>
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.payments.index'))}}" href="{{route('hotel.payments.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'payments']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'payments'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 7C4 5.89543 4.89543 5 6 5H18C19.1046 5 20 5.89543 20 7V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V7Z" fill="currentColor"></path>
@@ -113,34 +150,19 @@
                     <path d="M14 15.5C14 14.1193 15.1193 13 16.5 13C17.8807 13 19 14.1193 19 15.5C19 16.8807 17.8807 18 16.5 18C15.1193 18 14 16.8807 14 15.5Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Thanh Toán</span>
+            <span class="item-name">Thanh Toán</span>
         </a>
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.reviews.index'))}}" href="{{route('hotel.reviews.index')}}">
+        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'reviews']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'reviews'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M12 4L14.4721 9.00872L20 9.8123L16 13.7106L16.9443 19.2154L12 16.6154L7.05573 19.2154L8 13.7106L4 9.8123L9.52786 9.00872L12 4Z" fill="currentColor"></path>
                     <path d="M12 7.5L13.2361 10.0044C13.3816 10.2994 13.6631 10.5039 13.9889 10.5513L16.7526 10.9529L14.7526 12.9024C14.5168 13.1323 14.4091 13.4635 14.4648 13.788L14.9365 16.5401L12.4648 15.2401C12.1738 15.087 11.8262 15.087 11.5352 15.2401L9.06353 16.5401L9.53519 13.788C9.59085 13.4635 9.4832 13.1323 9.24736 12.9024L7.24736 10.9529L10.0111 10.5513C10.3369 10.5039 10.6184 10.2994 10.7639 10.0044L12 7.5Z" fill="currentColor"></path>
                 </svg>
             </i>
-            <span class="item-name">Quản Lý Đánh Giá</span>
+            <span class="item-name">Đánh Giá</span>
         </a>
     </li>
-
-    <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.reports.index'))}}" href="{{route('hotel.reports.index')}}">
-            <i class="icon">
-                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path opacity="0.4" d="M5 12C5 10.8954 5.89543 10 7 10H9C10.1046 10 11 10.8954 11 12V18C11 19.1046 10.1046 20 9 20H7C5.89543 20 5 19.1046 5 18V12Z" fill="currentColor"></path>
-                    <path opacity="0.4" d="M13 6C13 4.89543 13.8954 4 15 4H17C18.1046 4 19 4.89543 19 6V18C19 19.1046 18.1046 20 17 20H15C13.8954 20 13 19.1046 13 18V6Z" fill="currentColor"></path>
-                    <path d="M9 14C9.55228 14 10 14.4477 10 15V18C10 18.5523 9.55228 19 9 19C8.44772 19 8 18.5523 8 18V15C8 14.4477 8.44772 14 9 14Z" fill="currentColor"></path>
-                    <path d="M17 8C17.5523 8 18 8.44772 18 9V18C18 18.5523 17.5523 19 17 19C16.4477 19 16 18.5523 16 18V9C16 8.44772 16.4477 8 17 8Z" fill="currentColor"></path>
-                </svg>
-            </i>
-            <span class="item-name">Báo Cáo Thống Kê</span>
-        </a>
-    </li>
-
 </ul>

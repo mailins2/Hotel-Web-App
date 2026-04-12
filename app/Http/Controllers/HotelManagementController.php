@@ -2,39 +2,51 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DichVu;
+use App\Models\Hinh;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class HotelManagementController extends Controller
 {
     public function dashboard(): View
     {
+        $this->requireManagerRole();
+
         return view('hotel-management.report', [
-            'assets' => ['animation'],
+            'assets' => ['animation', 'chart'],
             'report' => config('hotel-management.reports', []),
         ]);
     }
 
     public function report(): View
     {
+        $this->requireManagerRole();
+
         return $this->dashboard();
     }
 
     public function index(string $moduleKey): View
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
+        $records = $this->applyModuleFilters(request(), $module);
 
         return view('hotel-management.index', [
             'assets' => ['animation'],
             'moduleKey' => $moduleKey,
             'module' => $module,
-            'records' => $module['records'] ?? [],
+            'records' => $records,
         ]);
     }
 
     public function show(string $moduleKey, string $recordId): View
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
         $record = $this->findRecord($module, $recordId);
 
@@ -48,10 +60,15 @@ class HotelManagementController extends Controller
 
     public function create(string $moduleKey): View
     {
+        $this->requireManagerRole();
+
+        $module = $this->getModule($moduleKey);
+        abort_unless($this->moduleAllows($module, 'create'), 404);
+
         return view('hotel-management.form', [
             'assets' => ['animation'],
             'moduleKey' => $moduleKey,
-            'module' => $this->getModule($moduleKey),
+            'module' => $module,
             'record' => [],
             'isEdit' => false,
         ]);
@@ -59,7 +76,10 @@ class HotelManagementController extends Controller
 
     public function edit(string $moduleKey, string $recordId): View
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
+        abort_unless($this->moduleAllows($module, 'edit'), 404);
 
         return view('hotel-management.form', [
             'assets' => ['animation'],
@@ -72,37 +92,48 @@ class HotelManagementController extends Controller
 
     public function store(Request $request, string $moduleKey): RedirectResponse
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
-        $this->validateRequest($request, $module);
+        abort_unless($this->moduleAllows($module, 'create'), 404);
+        $this->validateRequest($request, $moduleKey, $module);
 
         return redirect()
-            ->route('hotel.' . $moduleKey . '.index')
+            ->route('hotel.modules.index', ['moduleKey' => $moduleKey])
             ->with('success', 'Đã tạo ' . $module['singular'] . ' trong giao diện mẫu.');
     }
 
     public function update(Request $request, string $moduleKey, string $recordId): RedirectResponse
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
-        $this->findRecord($module, $recordId);
-        $this->validateRequest($request, $module);
+        abort_unless($this->moduleAllows($module, 'edit'), 404);
+        $record = $this->findRecord($module, $recordId);
+        $this->validateRequest($request, $moduleKey, $module, $record);
 
         return redirect()
-            ->route('hotel.' . $moduleKey . '.show', $recordId)
+            ->route('hotel.modules.show', ['moduleKey' => $moduleKey, 'recordId' => $recordId])
             ->with('success', 'Đã cập nhật ' . $module['singular'] . ' trong giao diện mẫu.');
     }
 
     public function destroy(string $moduleKey, string $recordId): RedirectResponse
     {
+        $this->requireManagerRole();
+
         $module = $this->getModule($moduleKey);
+        abort_unless($this->moduleAllows($module, 'delete'), 404);
         $this->findRecord($module, $recordId);
 
         return redirect()
-            ->route('hotel.' . $moduleKey . '.index')
+            ->route('hotel.modules.index', ['moduleKey' => $moduleKey])
             ->with('success', 'Đã xóa ' . $module['singular'] . ' trong giao diện mẫu.');
     }
 
     public function termOfUse(): View
     {
+        $this->requireManagerRole();
+
         return view('hotel-management.term-of-use', [
             'assets' => ['animation'],
         ]);
@@ -114,7 +145,25 @@ class HotelManagementController extends Controller
 
         abort_unless(isset($modules[$moduleKey]), 404);
 
-        return $modules[$moduleKey];
+        $module = $modules[$moduleKey];
+
+        if ($moduleKey === 'accounts') {
+            return $this->enrichAccountsModule($module, $modules);
+        }
+
+        if ($moduleKey === 'customers') {
+            return $this->enrichCustomersModule($module);
+        }
+
+        if ($moduleKey === 'invoices') {
+            return $this->enrichInvoicesModule($module, $modules);
+        }
+
+        if ($moduleKey === 'services') {
+            return $this->enrichServicesModule($module);
+        }
+
+        return $module;
     }
 
     protected function findRecord(array $module, string $recordId): array
@@ -130,11 +179,31 @@ class HotelManagementController extends Controller
         abort(404);
     }
 
-    protected function validateRequest(Request $request, array $module): void
+    protected function validateRequest(Request $request, string $moduleKey, array $module, array $record = []): void
     {
-        $rules = [];
+        if ($moduleKey === 'customers') {
+            $this->prepareCustomerAddressRequest($request);
+        }
 
-        foreach ($module['fields'] as $fieldKey => $field) {
+        $rules = [];
+        $fields = $module['fields'];
+
+        if ($moduleKey === 'accounts' && !empty($record)) {
+            $accountType = (string) ($record['LoaiTaiKhoan'] ?? '');
+
+            if ($accountType === '0') {
+                $fields = [
+                    'TrangThai' => $module['fields']['TrangThai'],
+                ];
+            } elseif ($accountType === '1') {
+                $fields = [
+                    'MatKhau' => ['label' => 'Mật khẩu', 'type' => 'password', 'required' => false],
+                    'TrangThai' => $module['fields']['TrangThai'],
+                ];
+            }
+        }
+
+        foreach ($fields as $fieldKey => $field) {
             if ($field['readonly'] ?? false) {
                 continue;
             }
@@ -160,5 +229,649 @@ class HotelManagementController extends Controller
         }
 
         $request->validate($rules);
+    }
+
+    protected function enrichCustomersModule(array $module): array
+    {
+        $addressOptions = $this->customerAddressOptions();
+
+        $module['address_options'] = $addressOptions;
+        $module['records'] = array_map(function (array $record) use ($addressOptions) {
+            return $this->normalizeCustomerAddressRecord($record, $addressOptions);
+        }, $module['records'] ?? []);
+
+        return $module;
+    }
+
+    protected function enrichAccountsModule(array $module, array $modules): array
+    {
+        $module['fields'] = $this->withAccountFullNameField($module['fields'] ?? []);
+        $module['list_columns'] = $this->withAccountFullNameColumn($module['list_columns'] ?? []);
+
+        $fullNameByAccountId = $this->buildAccountFullNameMap($modules);
+
+        $module['records'] = array_map(function (array $record) use ($fullNameByAccountId) {
+            $record['HoTen'] = $fullNameByAccountId[(string) ($record['MaTK'] ?? '')] ?? '';
+
+            return $record;
+        }, $module['records'] ?? []);
+
+        return $module;
+    }
+
+    protected function withAccountFullNameField(array $fields): array
+    {
+        if (isset($fields['HoTen'])) {
+            return $fields;
+        }
+
+        $result = [];
+        $inserted = false;
+
+        foreach ($fields as $fieldKey => $field) {
+            $result[$fieldKey] = $field;
+
+            if ($fieldKey === 'Email') {
+                $result['HoTen'] = [
+                    'label' => 'Họ tên',
+                    'type' => 'text',
+                    'readonly' => true,
+                ];
+                $inserted = true;
+            }
+        }
+
+        if (!$inserted) {
+            $result['HoTen'] = [
+                'label' => 'Họ tên',
+                'type' => 'text',
+                'readonly' => true,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function withAccountFullNameColumn(array $columns): array
+    {
+        if (in_array('HoTen', $columns, true)) {
+            return $columns;
+        }
+
+        $result = [];
+        $inserted = false;
+
+        foreach ($columns as $column) {
+            $result[] = $column;
+
+            if ($column === 'Email') {
+                $result[] = 'HoTen';
+                $inserted = true;
+            }
+        }
+
+        if (!$inserted) {
+            $result[] = 'HoTen';
+        }
+
+        return $result;
+    }
+
+    protected function buildAccountFullNameMap(array $modules): array
+    {
+        $fullNameByAccountId = [];
+
+        foreach ($modules['customers']['records'] ?? [] as $customer) {
+            $accountId = (string) ($customer['MaTK'] ?? '');
+
+            if ($accountId !== '') {
+                $fullNameByAccountId[$accountId] = $customer['TenKH'] ?? '';
+            }
+        }
+
+        foreach ($modules['employees']['records'] ?? [] as $employee) {
+            $accountId = (string) ($employee['MaTK'] ?? '');
+
+            if ($accountId !== '' && !isset($fullNameByAccountId[$accountId])) {
+                $fullNameByAccountId[$accountId] = $employee['TenNV'] ?? '';
+            }
+        }
+
+        return $fullNameByAccountId;
+    }
+
+    protected function enrichInvoicesModule(array $module, array $modules): array
+    {
+        $module['fields'] = $this->withInvoiceEmployeeNameField($module['fields'] ?? []);
+        $module['list_columns'] = $this->withInvoiceEmployeeNameColumn($module['list_columns'] ?? []);
+
+        $employeeNameById = $this->buildEmployeeNameMap($modules);
+
+        $module['records'] = array_map(function (array $record) use ($employeeNameById) {
+            $record['TenNV'] = $employeeNameById[(string) ($record['MaNV'] ?? '')] ?? '';
+
+            return $record;
+        }, $module['records'] ?? []);
+
+        return $module;
+    }
+
+    protected function enrichServicesModule(array $module): array
+    {
+        $module['fields'] = $this->withServiceImageField($module['fields'] ?? []);
+        $module['service_categories'] = $this->serviceCategoryBlueprint();
+        $module['records'] = $this->buildServiceRecords($module['records'] ?? []);
+
+        return $module;
+    }
+
+    protected function withServiceImageField(array $fields): array
+    {
+        if (isset($fields['ServiceImage'])) {
+            return $fields;
+        }
+
+        $result = [];
+        $inserted = false;
+
+        foreach ($fields as $fieldKey => $field) {
+            $result[$fieldKey] = $field;
+
+            if ($fieldKey === 'GiaDV') {
+                $result['ServiceImage'] = [
+                    'label' => 'Ảnh dịch vụ',
+                    'type' => 'text',
+                    'required' => false,
+                ];
+                $inserted = true;
+            }
+        }
+
+        if (!$inserted) {
+            $result['ServiceImage'] = [
+                'label' => 'Ảnh dịch vụ',
+                'type' => 'text',
+                'required' => false,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function buildServiceRecords(array $fallbackRecords): array
+    {
+        $databaseRecords = $this->loadServiceRecordsFromDatabase();
+        $records = empty($databaseRecords) ? $fallbackRecords : $databaseRecords;
+
+        $normalizedRecords = array_map(function (array $record) {
+            return $this->normalizeServiceRecord($record);
+        }, $records);
+
+        $mappedRecords = array_values(array_filter($normalizedRecords, fn (array $record) => isset($record['ServiceItemKey'])));
+
+        if (!empty($mappedRecords)) {
+            return $mappedRecords;
+        }
+
+        if (empty($fallbackRecords)) {
+            return [];
+        }
+
+        $normalizedFallbackRecords = array_map(function (array $record) {
+            return $this->normalizeServiceRecord($record);
+        }, $fallbackRecords);
+
+        return array_values(array_filter($normalizedFallbackRecords, fn (array $record) => isset($record['ServiceItemKey'])));
+    }
+
+    protected function loadServiceRecordsFromDatabase(): array
+    {
+        try {
+            $services = DichVu::query()->get();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        if ($services->isEmpty()) {
+            return [];
+        }
+
+        $imagesByServiceId = $this->loadServiceImagesByServiceId();
+
+        return $services->map(function (DichVu $service) use ($imagesByServiceId) {
+            $record = $service->getAttributes();
+            $serviceId = (string) ($record['MaDV'] ?? '');
+
+            if ($serviceId !== '' && isset($imagesByServiceId[$serviceId])) {
+                $record['ServiceImage'] = $imagesByServiceId[$serviceId];
+            }
+
+            return $record;
+        })->all();
+    }
+
+    protected function loadServiceImagesByServiceId(): array
+    {
+        try {
+            $images = Hinh::query()->whereNotNull('MaDV')->get();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        $imagesByServiceId = [];
+
+        foreach ($images as $image) {
+            $record = $image->getAttributes();
+            $serviceId = (string) ($record['MaDV'] ?? '');
+
+            if ($serviceId === '' || isset($imagesByServiceId[$serviceId])) {
+                continue;
+            }
+
+            $imagePath = $this->extractImagePathFromRecord($record);
+
+            if ($imagePath !== null) {
+                $imagesByServiceId[$serviceId] = $imagePath;
+            }
+        }
+
+        return $imagesByServiceId;
+    }
+
+    protected function extractImagePathFromRecord(array $record): ?string
+    {
+        $candidateKeys = [
+            'DuongDan',
+            'DuongDanAnh',
+            'HinhAnh',
+            'Anh',
+            'Url',
+            'URL',
+            'ImageUrl',
+            'LinkAnh',
+            'TenHinh',
+            'Path',
+            'FilePath',
+            'Src',
+            'src',
+        ];
+
+        foreach ($candidateKeys as $key) {
+            $value = $record[$key] ?? null;
+
+            if (!is_string($value) || trim($value) === '') {
+                continue;
+            }
+
+            return trim($value);
+        }
+
+        foreach ($record as $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            $trimmed = trim($value);
+
+            if ($trimmed === '') {
+                continue;
+            }
+
+            if (Str::startsWith($trimmed, ['http://', 'https://', '/', 'storage/', 'images/'])) {
+                return $trimmed;
+            }
+        }
+
+        return null;
+    }
+
+    protected function normalizeServiceRecord(array $record): array
+    {
+        $serviceName = (string) ($record['TenDV'] ?? '');
+        $serviceItemKey = $this->findServiceItemKey($serviceName);
+
+        if ($serviceItemKey === null) {
+            return $record;
+        }
+
+        $serviceCategoryKey = $this->findServiceCategoryByItemKey($serviceItemKey);
+
+        if ($serviceCategoryKey === null) {
+            return $record;
+        }
+
+        $categoryCode = $this->serviceCategoryCode($serviceCategoryKey);
+
+        $record['ServiceItemKey'] = $serviceItemKey;
+        $record['ServiceCategoryKey'] = $serviceCategoryKey;
+        $record['LoaiDV'] = $categoryCode;
+
+        return $record;
+    }
+
+    protected function findServiceCategoryByItemKey(string $itemKey): ?string
+    {
+        foreach ($this->serviceCategoryBlueprint() as $category) {
+            if (in_array($itemKey, array_keys($category['items']), true)) {
+                return $category['key'];
+            }
+        }
+
+        return null;
+    }
+
+    protected function findServiceItemKey(string $serviceName): ?string
+    {
+        $normalizedName = $this->normalizeSearchValue($serviceName);
+
+        if ($normalizedName === '') {
+            return null;
+        }
+
+        foreach ($this->serviceCategoryBlueprint() as $category) {
+            foreach ($category['items'] as $itemKey => $item) {
+                $aliases = array_merge([$item['label']], $item['aliases'] ?? []);
+
+                foreach ($aliases as $alias) {
+                    if ($this->normalizeSearchValue($alias) === $normalizedName) {
+                        return $itemKey;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    protected function normalizeSearchValue(string $value): string
+    {
+        $value = Str::of($value)->ascii()->lower()->value();
+        $value = preg_replace('/[^a-z0-9]+/', ' ', $value);
+
+        return trim((string) $value);
+    }
+
+    protected function serviceCategoryCode(string $categoryKey): int
+    {
+        return $this->tryServiceCategoryCode($categoryKey) ?? 2;
+    }
+
+    protected function tryServiceCategoryCode(string $categoryKey): ?int
+    {
+        return match ($categoryKey) {
+            'food' => 0,
+            'room' => 1,
+            'entertainment' => 2,
+            default => null,
+        };
+    }
+
+    protected function serviceCategoryBlueprint(): array
+    {
+        return [
+            [
+                'key' => 'food',
+                'label' => 'Dịch vụ ăn uống',
+                'items' => [
+                    'banh-mi' => ['label' => 'Bánh mì', 'aliases' => ['Banh mi']],
+                    'com-chien' => ['label' => 'Cơm chiên', 'aliases' => ['Com chien']],
+                    'bun-bo' => ['label' => 'Bún bò', 'aliases' => ['Bun bo']],
+                    'bun-thai' => ['label' => 'Bún thái', 'aliases' => ['Bun thai']],
+                    'ca-phe-sua' => ['label' => 'Cà phê sữa', 'aliases' => ['Ca phe sua']],
+                ],
+            ],
+            [
+                'key' => 'room',
+                'label' => 'Dịch vụ phòng',
+                'items' => [
+                    'giat-ui' => ['label' => 'Giặt ủi', 'aliases' => ['Giat ui', 'Giat ui nhanh']],
+                    've-sinh' => ['label' => 'Vệ sinh', 'aliases' => ['Ve sinh', 'Don phong theo yeu cau']],
+                    'doi-phong' => ['label' => 'Đổi phòng', 'aliases' => ['Doi phong', 'Ho tro doi phong']],
+                    'huy-phong' => ['label' => 'Hủy phòng', 'aliases' => ['Huy phong', 'Phi huy phong linh hoat']],
+                    'them-giuong-phu' => ['label' => 'Thêm giường phụ', 'aliases' => ['Them giuong phu']],
+                ],
+            ],
+            [
+                'key' => 'entertainment',
+                'label' => 'Dịch vụ giải trí',
+                'items' => [
+                    'spa' => ['label' => 'Spa', 'aliases' => ['Goi spa thu gian']],
+                    'cuoi-ngua' => ['label' => 'Cưỡi ngựa', 'aliases' => ['Cuoi ngua', 'Trai nghiem cuoi ngua']],
+                    'golf' => ['label' => 'Golf', 'aliases' => ['Goi choi golf cuoi tuan']],
+                ],
+            ],
+        ];
+    }
+
+    protected function withInvoiceEmployeeNameField(array $fields): array
+    {
+        if (isset($fields['TenNV'])) {
+            return $fields;
+        }
+
+        $result = [];
+        $inserted = false;
+
+        foreach ($fields as $fieldKey => $field) {
+            $result[$fieldKey] = $field;
+
+            if ($fieldKey === 'MaNV') {
+                $result['TenNV'] = [
+                    'label' => 'Họ tên nhân viên',
+                    'type' => 'text',
+                    'readonly' => true,
+                ];
+                $inserted = true;
+            }
+        }
+
+        if (!$inserted) {
+            $result['TenNV'] = [
+                'label' => 'Họ tên nhân viên',
+                'type' => 'text',
+                'readonly' => true,
+            ];
+        }
+
+        return $result;
+    }
+
+    protected function withInvoiceEmployeeNameColumn(array $columns): array
+    {
+        if (in_array('TenNV', $columns, true)) {
+            return $columns;
+        }
+
+        $result = [];
+        $inserted = false;
+
+        foreach ($columns as $column) {
+            $result[] = $column;
+
+            if ($column === 'MaNV') {
+                $result[] = 'TenNV';
+                $inserted = true;
+            }
+        }
+
+        if (!$inserted) {
+            $result[] = 'TenNV';
+        }
+
+        return $result;
+    }
+
+    protected function buildEmployeeNameMap(array $modules): array
+    {
+        $employeeNameById = [];
+
+        foreach ($modules['employees']['records'] ?? [] as $employee) {
+            $employeeId = (string) ($employee['MaNV'] ?? '');
+
+            if ($employeeId !== '') {
+                $employeeNameById[$employeeId] = $employee['TenNV'] ?? '';
+            }
+        }
+
+        return $employeeNameById;
+    }
+
+    protected function prepareCustomerAddressRequest(Request $request): void
+    {
+        $street = trim((string) $request->input('DiaChiDuong', ''));
+        $district = trim((string) $request->input('DiaChiHuyen', ''));
+        $province = trim((string) $request->input('DiaChiTinh', ''));
+
+        if ($street === '' && $district === '' && $province === '') {
+            return;
+        }
+
+        $request->merge([
+            'DiaChi' => $this->composeCustomerAddress($street, $district, $province),
+        ]);
+    }
+
+    protected function normalizeCustomerAddressRecord(array $record, array $addressOptions): array
+    {
+        $street = trim((string) ($record['DiaChiDuong'] ?? ''));
+        $district = trim((string) ($record['DiaChiHuyen'] ?? ''));
+        $province = trim((string) ($record['DiaChiTinh'] ?? ''));
+
+        if ($street === '' && $district === '' && $province === '') {
+            $parts = $this->parseCustomerAddress((string) ($record['DiaChi'] ?? ''), $addressOptions);
+            $street = $parts['street'];
+            $district = $parts['district'];
+            $province = $parts['province'];
+        }
+
+        $record['DiaChiDuong'] = $street;
+        $record['DiaChiHuyen'] = $district;
+        $record['DiaChiTinh'] = $province;
+        $record['DiaChi'] = $this->composeCustomerAddress($street, $district, $province);
+
+        return $record;
+    }
+
+    protected function parseCustomerAddress(string $fullAddress, array $addressOptions): array
+    {
+        $segments = array_values(array_filter(array_map('trim', explode(',', $fullAddress)), static fn ($segment) => $segment !== ''));
+
+        if ($segments === []) {
+            return [
+                'street' => '',
+                'district' => '',
+                'province' => '',
+            ];
+        }
+
+        if (count($segments) === 1) {
+            return [
+                'street' => $segments[0],
+                'district' => '',
+                'province' => '',
+            ];
+        }
+
+        if (count($segments) === 2) {
+            return [
+                'street' => $segments[0],
+                'district' => '',
+                'province' => $segments[1],
+            ];
+        }
+
+        $province = (string) array_pop($segments);
+        $district = (string) array_pop($segments);
+        $street = implode(', ', $segments);
+
+        if (!isset($addressOptions[$province])) {
+            return [
+                'street' => $street,
+                'district' => $district,
+                'province' => $province,
+            ];
+        }
+
+        return [
+            'street' => $street,
+            'district' => $district,
+            'province' => $province,
+        ];
+    }
+
+    protected function composeCustomerAddress(string $street, string $district, string $province): string
+    {
+        return implode(', ', array_values(array_filter([
+            trim($street),
+            trim($district),
+            trim($province),
+        ], static fn ($value) => $value !== '')));
+    }
+
+    protected function customerAddressOptions(): array
+    {
+        return [
+            'TP.HCM' => ['Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Bình Thạnh', 'Gò Vấp', 'Thủ Đức'],
+            'Hà Nội' => ['Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Cầu Giấy', 'Thanh Xuân', 'Nam Từ Liêm'],
+            'Đà Nẵng' => ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
+            'Cần Thơ' => ['Ninh Kiều', 'Bình Thủy', 'Cái Răng', 'Ô Môn', 'Thốt Nốt'],
+            'Hải Phòng' => ['Hồng Bàng', 'Ngô Quyền', 'Lê Chân', 'Hải An', 'Kiến An', 'Dương Kinh'],
+            'Khánh Hòa' => ['Nha Trang', 'Cam Ranh', 'Ninh Hòa', 'Diên Khánh', 'Vạn Ninh'],
+        ];
+    }
+
+    protected function moduleAllows(array $module, string $action): bool
+    {
+        return (bool) ($module['allow_' . $action] ?? true);
+    }
+
+    protected function applyModuleFilters(Request $request, array $module): array
+    {
+        $records = $module['records'] ?? [];
+        $filters = $module['filters'] ?? [];
+
+        foreach ($filters as $queryKey => $filter) {
+            $rawValue = $request->query($queryKey);
+
+            if ($rawValue === null || $rawValue === '') {
+                continue;
+            }
+
+            $field = $filter['field'] ?? null;
+            $operator = $filter['operator'] ?? '=';
+
+            if ($field === null) {
+                continue;
+            }
+
+            $records = array_values(array_filter($records, function (array $record) use ($field, $operator, $rawValue) {
+                $recordValue = $record[$field] ?? null;
+
+                if ($recordValue === null || $recordValue === '') {
+                    return false;
+                }
+
+                return match ($operator) {
+                    '>=' => (string) $recordValue >= (string) $rawValue,
+                    '<=' => (string) $recordValue <= (string) $rawValue,
+                    default => (string) $recordValue === (string) $rawValue,
+                };
+            }));
+        }
+
+        $serviceCategoryKey = (string) $request->query('service_category', '');
+        $hasServiceCategories = !empty($module['service_categories']);
+
+        if ($hasServiceCategories && $serviceCategoryKey !== '' && $serviceCategoryKey !== 'all') {
+            $serviceCategoryCode = $this->tryServiceCategoryCode($serviceCategoryKey);
+
+            if ($serviceCategoryCode !== null) {
+                $records = array_values(array_filter($records, function (array $record) use ($serviceCategoryCode) {
+                    return (string) ($record['LoaiDV'] ?? '') === (string) $serviceCategoryCode;
+                }));
+            }
+        }
+
+        return $records;
     }
 }

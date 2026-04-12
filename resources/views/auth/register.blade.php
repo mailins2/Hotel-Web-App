@@ -16,10 +16,9 @@
                               <rect x="10.5366" y="16.3945" width="16" height="4" rx="2" transform="rotate(45 10.5366 16.3945)" fill="currentColor"/>
                               <rect x="10.5562" y="-0.556152" width="28" height="4" rx="2" transform="rotate(45 10.5562 -0.556152)" fill="currentColor"/>
                            </svg>
-                           <h4 class="logo-title ms-3">{{env('APP_NAME')}}</h4>
+                           <h4 class="logo-title ms-3">Quản Lý Khách Sạn</h4>
                         </a>
-                        <h2 class="mb-2 text-center">Sign Up</h2>
-                        <p class="text-center">Create your {{env('APP_NAME')}} account.</p>
+                        <h2 class="mb-2 text-center">Đăng ký</h2>
                         <x-auth-session-status class="mb-4" :status="session('status')" />
 
                         <!-- Validation Errors -->
@@ -29,13 +28,13 @@
                            <div class="row">
                               <div class="col-lg-6">
                                  <div class="form-group">
-                                    <label for="full-name" class="form-label">Full Name</label>
+                                    <label for="full-name" class="form-label">Tên</label>
                                     <input id="name"  name="first_name" value="{{old('first_name')}}" class="form-control" type="text" placeholder=" "  required autofocus >
                                  </div>
                               </div>
                               <div class="col-lg-6">
                                  <div class="form-group">
-                                    <label for="last-name" class="form-label">Last Name</label>
+                                    <label for="last-name" class="form-label">Họ</label>
                                     <input class="form-control" type="text" name="last_name" placeholder=" " value="{{old('last_name')}}" required>
                                  </div>
                               </div>
@@ -47,86 +46,28 @@
                               </div>
                               <div class="col-lg-6">
                                  <div class="form-group">
-                                    <label for="phone" class="form-label">Phone No.</label>
+                                    <label for="phone" class="form-label">Số điện thoại</label>
                                     <input class="form-control" type="text" name="phone_number" placeholder=" ">
                                  </div>
                               </div>
                               <div class="col-lg-6">
                                  <div class="form-group">
-                                    <label for="password" class="form-label">Password</label>
+                                    <label for="password" class="form-label">Mật khẩu</label>
                                     <input class="form-control" type="password" placeholder=" " id="password" name="password" required autocomplete="new-password" >
                                  </div>
                               </div>
                               <div class="col-lg-6">
                                  <div class="form-group">
-                                    <label for="confirm-password" class="form-label">Confirm Password</label>
+                                    <label for="confirm-password" class="form-label">Xác nhận mật khẩu</label>
                                     <input id="password_confirmation" class="form-control" type="password" placeholder=" " name="password_confirmation" required >
                                  </div>
                               </div>
-                              <div class="col-lg-12 mb-3">
-                                 <label class="form-label mb-3" style="color: #8c3f1c; font-size: 1.75rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;">Loại tài khoản</label>
-                                 <div style="display: flex; flex-direction: column; gap: 14px;">
-                                    <label style="display: block; cursor: pointer;">
-                                       <input type="radio" name="account_type" value="customer" {{ old('account_type', 'customer') === 'customer' ? 'checked' : '' }} style="display: none;">
-                                       <div style="border: 1px solid #ead8cf; border-radius: 20px; background: #fffdfb; padding: 18px 20px;">
-                                          <div style="color: #8c3f1c; font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">Khách hàng</div>
-                                          <span style="display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 14px; font-size: 0.98rem; font-weight: 700; background: #ffe1d8; color: #af5636;">
-                                             <span style="width: 10px; height: 10px; border-radius: 50%; background: #af5636; display: inline-block;"></span>
-                                             Đang sử dụng
-                                          </span>
-                                       </div>
-                                    </label>
-                                    <label style="display: block; cursor: pointer;">
-                                       <input type="radio" name="account_type" value="employee" {{ old('account_type') === 'employee' ? 'checked' : '' }} style="display: none;">
-                                       <div style="border: 1px solid #ead8cf; border-radius: 20px; background: #fffdfb; padding: 18px 20px;">
-                                          <div style="color: #8c3f1c; font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">Nhân viên</div>
-                                          <span style="display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 14px; font-size: 0.98rem; font-weight: 700; background: #e0e6ff; color: #5663a9;">
-                                             <span style="width: 10px; height: 10px; border-radius: 50%; background: #5663a9; display: inline-block;"></span>
-                                             Đã đặt
-                                          </span>
-                                       </div>
-                                    </label>
-                                    <label style="display: block; cursor: pointer;">
-                                       <input type="radio" name="account_type" value="manager" {{ old('account_type') === 'manager' ? 'checked' : '' }} style="display: none;">
-                                       <div style="border: 1px solid #ead8cf; border-radius: 20px; background: #fffdfb; padding: 18px 20px;">
-                                          <div style="color: #8c3f1c; font-size: 1.2rem; font-weight: 600; margin-bottom: 10px;">Quản lý</div>
-                                          <span style="display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 14px; font-size: 0.98rem; font-weight: 700; background: #ddf5e6; color: #2f8750;">
-                                             <span style="width: 10px; height: 10px; border-radius: 50%; background: #2f8750; display: inline-block;"></span>
-                                             Ưu tiên
-                                          </span>
-                                       </div>
-                                    </label>
-                                 </div>
-                              </div>
-                              <div class="d-flex justify-content-center">
-                                 <div class="form-check mb-3">
-                                    <label class="form-check-label" for="customCheck1">I agree with the terms of use</label>
-                                    <input type="checkbox" class="custom-control-input" id="customCheck1" required>
-                                 </div>
-                              </div>
                            </div>
                            <div class="d-flex justify-content-center">
-                              <button type="submit" class="btn btn-primary"> {{ __('sign up') }}</button>
-                           </div>
-                           <p class="text-center my-3">or sign in with other accounts?</p>
-                           <div class="d-flex justify-content-center">
-                              <ul class="list-group list-group-horizontal list-group-flush">
-                                 <li class="list-group-item border-0 pb-0">
-                                    <a href="#"><img src="{{asset('images/brands/fb.svg')}}" alt="fb"></a>
-                                 </li>
-                                 <li class="list-group-item border-0 pb-0">
-                                    <a href="#"><img src="{{asset('images/brands/gm.svg')}}" alt="gm"></a>
-                                 </li>
-                                 <li class="list-group-item border-0 pb-0">
-                                    <a href="#"><img src="{{asset('images/brands/im.svg')}}" alt="im"></a>
-                                 </li>
-                                 <li class="list-group-item border-0 pb-0">
-                                    <a href="#"><img src="{{asset('images/brands/li.svg')}}" alt="li"></a>
-                                 </li>
-                              </ul>
+                              <button type="submit" class="btn btn-primary">Đăng ký</button>
                            </div>
                            <p class="mt-3 text-center">
-                              Already have an Account  <a href="{{route('auth.signin')}}" class="text-underline">Sign In</a>
+                              Đã có tài khoản? <a href="{{route('auth.signin')}}" class="text-underline">Đăng nhập</a>
                            </p>
                         </form>
                      </div>

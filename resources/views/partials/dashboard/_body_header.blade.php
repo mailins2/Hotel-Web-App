@@ -1,6 +1,9 @@
+@php($isAuthenticated = isMockAuthenticated())
+@php($dashboardRoute = portalDashboardRoute())
+
 <nav class="nav navbar navbar-expand-lg navbar-light iq-navbar navs-color">
   <div class="container-fluid navbar-inner">
-    <a href="{{route('dashboard')}}" class="navbar-brand">
+    <a href="{{ $dashboardRoute }}" class="navbar-brand">
       <svg width="30" class="text-primary" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="-0.757324" y="19.2427" width="28" height="4" rx="2" transform="rotate(-45 -0.757324 19.2427)" fill="currentColor"/>
         <rect x="7.72803" y="27.728" width="28" height="4" rx="2" transform="rotate(-45 7.72803 27.728)" fill="currentColor"/>
@@ -23,7 +26,7 @@
           <path d="M18.0186 18.4851L21.5426 22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </span>
-      <input type="search" class="form-control" placeholder="Tìm kiếm...">
+      <input type="search" class="form-control" placeholder="{{ isReceptionist() ? 'Tìm booking, khách hàng, hóa đơn...' : 'Tìm kiếm...' }}">
     </div>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -44,26 +47,19 @@
               </svg>
             </span>
             <div class="caption d-none d-md-block">
-              <h6 class="mb-0 caption-title">{{ auth()->check() ? 'Admin' : 'Admin' }}</h6>
+              <h6 class="mb-0 caption-title">{{ $isAuthenticated ? currentUserName() : 'Khách' }}</h6>
+              <small class="text-muted">{{ $isAuthenticated ? currentUserRoleLabel() : 'Chưa đăng nhập' }}</small>
             </div>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-            @if (Route::has('logout'))
-              <li>
-                <form method="POST" action="{{ route('logout') }}">
-                  @csrf
-                  <a
-                    href="javascript:void(0)"
-                    class="dropdown-item"
-                    onclick="event.preventDefault(); this.closest('form').submit();"
-                  >
-                    Đăng xuất
-                  </a>
-                </form>
-              </li>
-            @else
-              <li><span class="dropdown-item-text text-muted">Chưa cấu hình đăng xuất</span></li>
-            @endif
+            <li>
+              <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="dropdown-item">
+                  Đăng xuất
+                </button>
+              </form>
+            </li>
           </ul>
         </li>
       </ul>

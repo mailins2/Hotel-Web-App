@@ -1,6 +1,6 @@
 <aside class="sidebar sidebar-default sidebar-color navs-rounded-all">
     <div class="sidebar-header d-flex align-items-center justify-content-start">
-        <a href="{{route('dashboard')}}" class="navbar-brand">
+        <a href="{{ portalDashboardRoute() }}" class="navbar-brand">
             <svg width="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <rect x="-0.757324" y="19.2427" width="28" height="4" rx="2" transform="rotate(-45 -0.757324 19.2427)" fill="currentColor"/>
                 <rect x="7.72803" y="27.728" width="28" height="4" rx="2" transform="rotate(-45 7.72803 27.728)" fill="currentColor"/>
@@ -20,7 +20,11 @@
     </div>
     <div class="sidebar-body pt-0 data-scrollbar">
         <div class="sidebar-list" id="sidebar">
-        @include('partials.dashboard.vertical-nav') 
+        @if(isReceptionist())
+            @include('partials.dashboard.vertical-nav-receptionist')
+        @else
+            @include('partials.dashboard.vertical-nav')
+        @endif
         </div>
     </div>
     <div class="sidebar-footer"></div>
