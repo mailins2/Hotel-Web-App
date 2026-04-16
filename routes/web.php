@@ -5,10 +5,26 @@ use App\Http\Controllers\MockAuthController;
 use App\Http\Controllers\ReceptionistController;
 use Illuminate\Support\Facades\Route;
 
+Route::view('/customer', 'customer.index')->name('customer.home');
+Route::view('/customer/about', 'customer.about')->name('customer.about');
+Route::view('/customer/blog', 'customer.blog')->name('customer.blog');
+Route::view('/customer/blog-single', 'customer.blog-single')->name('customer.blog-single');
+Route::view('/customer/contact', 'customer.contact')->name('customer.contact');
+Route::view('/customer/restaurant', 'customer.restaurant')->name('customer.restaurant');
+Route::view('/customer/rooms', 'customer.rooms')->name('customer.rooms');
+Route::view('/customer/rooms-single', 'customer.rooms-single')->name('customer.rooms-single');
+Route::view('/customer/rooms-search', 'customer.rooms-search')->name('customer.rooms-search');
+Route::view('/customer/booking', 'customer.booking')->name('customer.booking');
+Route::view('/customer/payment', 'customer.payment')->name('customer.payment');
+Route::redirect('/customer/room-single.html', '/customer/rooms-single');
+Route::redirect('/room-single.html', '/customer/rooms-single');
 Route::redirect('/', '/dashboard');
 
 Route::get('/login', [MockAuthController::class, 'create'])->name('login');
 Route::post('/login', [MockAuthController::class, 'store']);
+Route::redirect('/admin/login', '/login');
+Route::redirect('/reception/login', '/login');
+Route::get('/auth/google', [MockAuthController::class, 'google'])->name('auth.google');
 Route::view('/forgot-password', 'auth.recoverpw')->name('auth.recoverpw');
 Route::view('/sign-up', 'auth.register')->name('auth.signup');
 Route::get('/sign-in', function () {

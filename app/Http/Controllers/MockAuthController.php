@@ -66,15 +66,23 @@ class MockAuthController extends Controller
                 ->withInput($request->except('password'));
         }
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        $request->session()->regenerate();
-        $request->session()->put('mock_auth', [
-            'email' => $matchedUser['email'],
-            'name' => $matchedUser['name'],
-            'role' => $matchedUser['role'],
-            'role_label' => $matchedUser['role_label'],
-        ]);
+        $this->loginDemoUser($request, $matchedUser);
+
+        return redirect()->route('dashboard');
+    }
+
+    public function google(Request $request): RedirectResponse
+    {
+        $demoUser = collect(config('hotel-management.demo_auth.users', []))
+            ->first(fn (array $user) => (int) ($user['status'] ?? 1) === 1);
+
+        if (! is_array($demoUser)) {
+            return redirect()
+                ->route('login')
+                ->withErrors(['email' => 'Chưa có tài khoản demo khả dụng để đăng nhập bằng Google.']);
+        }
+
+        $this->loginDemoUser($request, $demoUser);
 
         return redirect()->route('dashboard');
     }
@@ -87,5 +95,18 @@ class MockAuthController extends Controller
             'receptionist' => redirect()->route('reception.dashboard'),
             default => redirect()->route('admin.dashboard'),
         };
+    }
+
+    protected function loginDemoUser(Request $request, array $matchedUser): void
+    {
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        $request->session()->regenerate();
+        $request->session()->put('mock_auth', [
+            'email' => $matchedUser['email'],
+            'name' => $matchedUser['name'],
+            'role' => $matchedUser['role'],
+            'role_label' => $matchedUser['role_label'],
+        ]);
     }
 }

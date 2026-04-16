@@ -2,7 +2,7 @@
    <section class="login-content">
       <div class="row m-0 align-items-center bg-white vh-100">
          <div class="col-md-6 d-md-block d-none bg-primary p-0 mt-n1 vh-100 overflow-hidden">
-            <img src="{{asset('images/auth/02.png')}}" class="img-fluid gradient-main animated-scaleX" alt="images">
+            <img src="{{asset('images/auth/khachsan.jpg')}}" class="img-fluid gradient-main animated-scaleX" alt="images">
          </div>
          <div class="col-md-6 p-0">               
             <div class="card card-transparent auth-card shadow-none d-flex justify-content-center mb-0">
@@ -14,7 +14,7 @@
                         <rect x="10.5366" y="16.3945" width="16" height="4" rx="2" transform="rotate(45 10.5366 16.3945)" fill="currentColor"/>
                         <rect x="10.5562" y="-0.556152" width="28" height="4" rx="2" transform="rotate(45 10.5562 -0.556152)" fill="currentColor"/>
                      </svg>
-                     <h4 class="logo-title ms-3">Quản Lý Khách Sạn</h4>
+                     <h4 class="logo-title ms-3">Khách Sạn Peach Valley</h4>
                   </a>
                   <h2 class="mb-2">Quên mật khẩu</h2>
                   <p>Nhập địa chỉ email để nhận hướng dẫn đặt lại mật khẩu.</p>
