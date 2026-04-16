@@ -9,7 +9,15 @@ class KhachHang extends Model
     protected $table = 'KhachHang';
     protected $primaryKey = 'MaKH';
     public $timestamps = false;
-    protected $guarded = [];
+    protected $fillable = [
+        'MaTK',
+        'TenKH',
+        'SoDienThoai',
+        'CCCD',
+        'NgaySinh',
+        'GioiTinh',
+        'DiaChi'
+    ];
 
     public function taiKhoan()
     {

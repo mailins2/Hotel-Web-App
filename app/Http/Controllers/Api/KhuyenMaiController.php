@@ -11,6 +11,7 @@ use Carbon\Carbon;
 class KhuyenMaiController extends Controller
 {
     // 1. Lấy danh sách khuyến mãi (Có thể lọc các KM còn hạn)
+    // get /api/khuyen-mai
     public function index()
     {
         $khuyenMais = KhuyenMai::all();
@@ -18,6 +19,7 @@ class KhuyenMaiController extends Controller
     }
 
     // 2. Tạo chương trình khuyến mãi mới
+    //post /api/khuyen-mai
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -42,6 +44,7 @@ class KhuyenMaiController extends Controller
     }
 
     // 3. Xem chi tiết 1 khuyến mãi
+    //get /api/khuyen-mai/id
     public function show($id)
     {
         $khuyenMai = KhuyenMai::with('khoKhuyenMai')->find($id);
@@ -54,27 +57,50 @@ class KhuyenMaiController extends Controller
     }
 
     // 4. Cập nhật khuyến mãi
-    public function update(Request $request, $id)
-    {
-        $khuyenMai = KhuyenMai::find($id);
-        if (!$khuyenMai) {
-            return response()->json(['message' => 'Không tìm thấy khuyến mãi'], 404);
+    //put /api/khuyen-mai/id
+   public function update(Request $request, $id)
+        {
+            $khuyenMai = KhuyenMai::find($id);
+
+            if (!$khuyenMai) {
+                return response()->json([
+                    'message' => 'Không tìm thấy khuyến mãi'
+                ], 404);
+            }
+
+            // Validate đầy đủ các field có thể update
+            $validator = Validator::make($request->all(), [
+                'TenKM' => 'sometimes|string|max:100',
+                'MoTa' => 'sometimes|string|max:200',
+                'Diem' => 'sometimes|integer|min:0',
+                'NgayBatDau' => 'sometimes|date',
+                'NgayKetThuc' => 'sometimes|date|after_or_equal:NgayBatDau',
+                'PhanTramGiamGia' => 'sometimes|numeric|between:0,100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Chỉ update field cho phép (anti-hack 💀)
+            $khuyenMai->update($request->only([
+                'TenKM',
+                'MoTa',
+                'Diem',
+                'NgayBatDau',
+                'NgayKetThuc',
+                'PhanTramGiamGia'
+            ]));
+
+            return response()->json([
+                'message' => 'Cập nhật thành công',
+                'data' => $khuyenMai
+            ], 200);
         }
-
-        $validator = Validator::make($request->all(), [
-            'NgayKetThuc'      => 'sometimes|date|after_or_equal:NgayBatDau',
-            'PhanTramGiamGia'  => 'sometimes|numeric|between:0,100',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $khuyenMai->update($request->all());
-        return response()->json(['message' => 'Cập nhật thành công', 'data' => $khuyenMai], 200);
-    }
-
     // 5. Xóa khuyến mãi
+    // delete /api/khuyen-mai/id
     public function destroy($id)
     {
         $khuyenMai = KhuyenMai::find($id);
