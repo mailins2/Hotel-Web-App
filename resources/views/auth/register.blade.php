@@ -1,90 +1,172 @@
 <x-guest-layout>
    <section class="login-content">
-      <div class="row m-0 align-items-center bg-white vh-100">            
-         <div class="col-md-6 d-md-block d-none bg-primary p-0 mt-n1 vh-100 overflow-hidden">
-            <img src="{{asset('images/auth/05.png')}}" class="img-fluid gradient-main animated-scaleX" alt="images">
-         </div>
-         <div class="col-md-6">           
+      <style>
+         .auth-panel {
+            min-height: 100vh;
+         }
+
+         .auth-copy {
+            color: #64748b;
+         }
+
+         .auth-side-visual {
+            position: relative;
+            background: #0f172a;
+         }
+
+         .auth-side-visual::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.12) 0%, rgba(15, 23, 42, 0.4) 100%);
+            pointer-events: none;
+         }
+
+         .auth-side-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+         }
+
+         .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0 1rem;
+            color: #94a3b8;
+            font-size: 0.95rem;
+         }
+
+         .auth-divider::before,
+         .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+         }
+
+         .auth-google-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            width: 70%;
+            margin: 0 auto;
+            padding: 0.7rem 1rem;
+            border: 1px solid #dbe4f0;
+            border-radius: 500px;
+            background: #fff;
+            color: #0f172a;
+            font-weight: 400;
+            transition: all 0.2s ease;
+         }
+
+         .auth-google-button:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 12px 30px rgba(30, 34, 44, 0.08);
+            color: #0f172a;
+         }
+
+         .auth-google-icon {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            object-fit: contain;
+         }
+
+         .auth-image-caption {
+            position: absolute;
+            left: 3rem;
+            right: 3rem;
+            bottom: 3rem;
+            z-index: 1;
+            color: #fff;
+         }
+
+         .auth-image-caption p {
+            max-width: 32rem;
+            color: rgba(255, 255, 255, 0.82);
+         }
+
+         @media (max-width: 767.98px) {
+            .auth-panel {
+               min-height: auto;
+            }
+         }
+      </style>
+      <div class="row m-0 align-items-center bg-white auth-panel">
+         <div class="col-md-6">
             <div class="row justify-content-center">
                <div class="col-md-10">
                   <div class="card card-transparent auth-card shadow-none d-flex justify-content-center mb-0">
                      <div class="card-body">
-                        <a href="{{route('dashboard')}}" class="navbar-brand d-flex align-items-center mb-3">
+                        <a href="{{ route('dashboard') }}" class="navbar-brand d-flex align-items-center mb-3">
                            <svg width="30" class="text-primary" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
                               <rect x="-0.757324" y="19.2427" width="28" height="4" rx="2" transform="rotate(-45 -0.757324 19.2427)" fill="currentColor"/>
                               <rect x="7.72803" y="27.728" width="28" height="4" rx="2" transform="rotate(-45 7.72803 27.728)" fill="currentColor"/>
                               <rect x="10.5366" y="16.3945" width="16" height="4" rx="2" transform="rotate(45 10.5366 16.3945)" fill="currentColor"/>
                               <rect x="10.5562" y="-0.556152" width="28" height="4" rx="2" transform="rotate(45 10.5562 -0.556152)" fill="currentColor"/>
                            </svg>
-                           <h4 class="logo-title ms-3">Quản Lý Khách Sạn</h4>
+                           <h4 class="logo-title ms-3">Khách Sạn Peach Valley</h4>
                         </a>
                         <h2 class="mb-2 text-center">Đăng ký</h2>
                         <x-auth-session-status class="mb-4" :status="session('status')" />
-
-                        <!-- Validation Errors -->
                         <x-auth-validation-errors class="mb-4" :errors="$errors" />
-                        <form method="POST" action="{{route('register')}}" data-toggle="validator">
-                            {{csrf_field()}}
+                        <form method="POST" action="{{ route('register') }}" data-toggle="validator">
+                           {{ csrf_field() }}
                            <div class="row">
-                              <div class="col-lg-6">
+                              <div class="col-lg-12">
                                  <div class="form-group">
-                                    <label for="full-name" class="form-label">Tên</label>
-                                    <input id="name"  name="first_name" value="{{old('first_name')}}" class="form-control" type="text" placeholder=" "  required autofocus >
+                                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="email" placeholder="Nhập email của bạn" id="email" name="email" value="{{ old('email') }}" required>
                                  </div>
                               </div>
-                              <div class="col-lg-6">
+                              <div class="col-lg-12">
                                  <div class="form-group">
-                                    <label for="last-name" class="form-label">Họ</label>
-                                    <input class="form-control" type="text" name="last_name" placeholder=" " value="{{old('last_name')}}" required>
+                                    <label for="password" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
+                                    <input class="form-control" type="password" placeholder="Tạo mật khẩu" id="password" name="password" required autocomplete="new-password">
                                  </div>
                               </div>
-                              <div class="col-lg-6">
+                              <div class="col-lg-12">
                                  <div class="form-group">
-                                       <label>Email <span class="text-danger">*</span></label>
-                                       <input class="form-control" type="email" placeholder=" " id="email"  name="email" value="{{old('email')}}" required>
-                                 </div>
-                              </div>
-                              <div class="col-lg-6">
-                                 <div class="form-group">
-                                    <label for="phone" class="form-label">Số điện thoại</label>
-                                    <input class="form-control" type="text" name="phone_number" placeholder=" ">
-                                 </div>
-                              </div>
-                              <div class="col-lg-6">
-                                 <div class="form-group">
-                                    <label for="password" class="form-label">Mật khẩu</label>
-                                    <input class="form-control" type="password" placeholder=" " id="password" name="password" required autocomplete="new-password" >
-                                 </div>
-                              </div>
-                              <div class="col-lg-6">
-                                 <div class="form-group">
-                                    <label for="confirm-password" class="form-label">Xác nhận mật khẩu</label>
-                                    <input id="password_confirmation" class="form-control" type="password" placeholder=" " name="password_confirmation" required >
+                                    <label for="password_confirmation" class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
+                                    <input id="password_confirmation" class="form-control" type="password" placeholder="Nhập lại mật khẩu" name="password_confirmation" required>
                                  </div>
                               </div>
                            </div>
-                           <div class="d-flex justify-content-center">
-                              <button type="submit" class="btn btn-primary">Đăng ký</button>
+                           <div class="d-flex justify-content-center mt-4">
+                              <button type="submit" class="btn btn-primary px-5">Đăng ký</button>
                            </div>
-                           <p class="mt-3 text-center">
-                              Đã có tài khoản? <a href="{{route('auth.signin')}}" class="text-underline">Đăng nhập</a>
-                           </p>
                         </form>
+
+                        <div class="auth-divider">Hoặc đăng ký với</div>
+                        <a href="{{ route('auth.google', ['source' => 'register']) }}" class="auth-google-button text-decoration-none">
+                           <img src="{{ asset('images/brands/gm.svg') }}" class="auth-google-icon" alt="Google">
+                           Tiếp tục với Google
+                        </a>
+
+                        <p class="mt-4 text-center">
+                           Đã có tài khoản? <a href="{{ route('auth.signin') }}" class="text-underline">Đăng nhập</a>
+                        </p>
                      </div>
-                  </div> 
+                  </div>
                </div>
-            </div>    
+            </div>
             <div class="sign-bg sign-bg-right">
                <svg width="280" height="230" viewBox="0 0 431 398" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g opacity="0.05">
-                  <rect x="-157.085" y="193.773" width="543" height="77.5714" rx="38.7857" transform="rotate(-45 -157.085 193.773)" fill="#3B8AFF"/>
-                  <rect x="7.46875" y="358.327" width="543" height="77.5714" rx="38.7857" transform="rotate(-45 7.46875 358.327)" fill="#3B8AFF"/>
-                  <rect x="61.9355" y="138.545" width="310.286" height="77.5714" rx="38.7857" transform="rotate(45 61.9355 138.545)" fill="#3B8AFF"/>
-                  <rect x="62.3154" y="-190.173" width="543" height="77.5714" rx="38.7857" transform="rotate(45 62.3154 -190.173)" fill="#3B8AFF"/>
+                     <rect x="-157.085" y="193.773" width="543" height="77.5714" rx="38.7857" transform="rotate(-45 -157.085 193.773)" fill="#3B8AFF"/>
+                     <rect x="7.46875" y="358.327" width="543" height="77.5714" rx="38.7857" transform="rotate(-45 7.46875 358.327)" fill="#3B8AFF"/>
+                     <rect x="61.9355" y="138.545" width="310.286" height="77.5714" rx="38.7857" transform="rotate(45 61.9355 138.545)" fill="#3B8AFF"/>
+                     <rect x="62.3154" y="-190.173" width="543" height="77.5714" rx="38.7857" transform="rotate(45 62.3154 -190.173)" fill="#3B8AFF"/>
                   </g>
                </svg>
             </div>
-         </div>   
+         </div>
+         <div class="col-md-6 d-md-block d-none p-0 mt-n1 vh-100 overflow-hidden auth-side-visual">
+            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khách sạn Peach Valley">
+         </div>
       </div>
    </section>
 </x-guest-layout>
