@@ -21,7 +21,7 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -sf /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -sf /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-<<<<<<< HEAD
+
 # THIẾT LẬP THƯ MỤC LÀM VIỆC
 WORKDIR /var/www/html
 
@@ -36,12 +36,10 @@ RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cac
 
 # LỆNH CHẠY
 CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
-=======
-WORKDIR /var/www
 
 COPY docker/app-entrypoint.sh /usr/local/bin/app-entrypoint.sh
 RUN chmod +x /usr/local/bin/app-entrypoint.sh
 
 ENTRYPOINT ["app-entrypoint.sh"]
 CMD ["php-fpm"]
->>>>>>> 6f64d19 (cap nhat dockerfile)
+
