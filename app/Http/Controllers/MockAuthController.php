@@ -11,7 +11,9 @@ class MockAuthController extends Controller
     public function create(): View|RedirectResponse
     {
         if (isMockAuthenticated()) {
-            return redirect()->route('dashboard');
+            return currentUserRole() === 'customer'
+                ? redirect()->route('customer.home')
+                : redirect()->route('dashboard');
         }
 
         return view('auth.login', [
@@ -25,7 +27,7 @@ class MockAuthController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
-            'role' => ['nullable', 'in:manager,receptionist'],
+            'role' => ['nullable', 'in:manager,receptionist,customer'],
         ]);
 
         $demoUsers = collect(config('hotel-management.demo_auth.users', []));
@@ -92,6 +94,7 @@ class MockAuthController extends Controller
         $user = $this->requireMockAuthentication();
 
         return match ($user['role'] ?? null) {
+            'customer' => redirect()->route('customer.home'),
             'receptionist' => redirect()->route('reception.dashboard'),
             default => redirect()->route('admin.dashboard'),
         };

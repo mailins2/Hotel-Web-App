@@ -352,6 +352,14 @@ return [
         'password' => '123456',
         'users' => [
             [
+                'email' => 'minhan@gmail.com',
+                'password' => '123456',
+                'name' => 'Nguyễn Minh An',
+                'role' => 'customer',
+                'role_label' => 'Khách hàng',
+                'status' => 1,
+            ],
+            [
                 'email' => 'admin@peachvalley.vn',
                 'password' => '123456',
                 'name' => 'Nguyễn Hải Đăng',

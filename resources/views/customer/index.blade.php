@@ -199,7 +199,7 @@
 	            <h2 class="mb-4">Khách Sạn Peach Valley là lựa chọn của nhiều du khách khi đến Đà Lạt</h2>
 	          </div>
 	          <p>Peach Valley mang đến không gian nghỉ dưỡng tinh tế và ấm áp, với phòng nghỉ rộng rãi, gam màu dịu mắt, chăn ga mềm mại tạo cảm giác thư giãn như được vỗ về. Ban công rộng mở đón nắng mai, kết hợp cùng ánh đèn vàng dịu nhẹ, tạo nên bầu không khí yên bình và dễ chịu mỗi khi chiều xuống.</p>
-	          <p><a href="#" class="btn btn-secondary rounded">Đặt Phòng Ngay Bây Giờ</a></p>
+	          <p><a href="{{ route('customer.rooms-search') }}" class="btn btn-secondary rounded">Đặt Phòng Ngay Bây Giờ</a></p>
 					</div>
 				</div>
 			</div>
