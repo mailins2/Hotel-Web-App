@@ -15,11 +15,43 @@
         <li class="nav-item{{ ($active ?? '') === 'contact' ? ' active' : '' }}"><a href="{{ route('customer.contact') }}" class="nav-link">Liên Hệ</a></li>
       </ul>
 
-
-
-      
+      @php
+        $navUser = mockUser();
+      @endphp
       <div class="nav-cta-group">
-        <a href="{{ route('login') }}" class="nav-cta-secondary">Đăng nhập / Đăng ký</a>
+        @if ($navUser)
+          <div class="dropdown customer-user-menu">
+            <button
+              type="button"
+              class="nav-cta-secondary customer-user-toggle dropdown-toggle"
+              id="customerUserMenu"
+              data-toggle="dropdown"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              Xin chào, {{ $navUser['name'] ?? 'Khách hàng' }}
+            </button>
+            <div class="dropdown-menu dropdown-menu-right customer-user-dropdown" aria-labelledby="customerUserMenu">
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.profile') }}">
+                <span class="customer-user-dropdown-icon ion-ios-person"></span>
+                <span>Thông tin cá nhân</span>
+              </a>
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.my-bookings') }}">
+                <span class="customer-user-dropdown-icon ion-ios-briefcase"></span>
+                <span>Đặt phòng của bạn</span>
+              </a>
+              <form method="POST" action="{{ route('logout') }}" class="customer-user-logout-form">
+                {{ csrf_field() }}
+                <button type="submit" class="dropdown-item customer-user-dropdown-item customer-user-logout">
+                  <span class="customer-user-dropdown-icon ion-ios-log-out"></span>
+                  <span>Đăng xuất</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        @else
+          <a href="{{ route('login') }}" class="nav-cta-secondary">Đăng nhập / Đăng ký</a>
+        @endif
       </div>
     </div>
   </div>

@@ -7,6 +7,59 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Docker setup for team
+
+Sau khi pull project ve may, khong can push `vendor` hoac `node_modules` len GitHub. Docker se tu cai dependency khi container `app` khoi dong.
+
+Chay lan dau:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Neu dung PowerShell tren Windows:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate
+```
+
+Neu chay voi MySQL trong Docker, kiem tra `.env` co cac gia tri nay:
+
+```env
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=QLKS
+DB_USERNAME=laravel
+DB_PASSWORD=laravel
+```
+
+Build frontend production:
+
+```bash
+docker compose exec app npm run build
+```
+
+Chay Vite dev server trong container:
+
+```bash
+docker compose exec app npm run dev -- --host 0.0.0.0
+```
+
+Neu muon truy cap Vite dev server tu browser tren may host, can mo them port `5173` trong `docker-compose.yml`. Neu khong, dung lenh build production o tren.
+
+Ung dung Nginx chay tai:
+
+```text
+http://localhost:8000
+```
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

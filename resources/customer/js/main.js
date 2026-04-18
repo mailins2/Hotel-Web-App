@@ -290,8 +290,11 @@
 
 
   $('.checkin_date, .checkout_date').datepicker({
-	  'format': 'm/d/yyyy',
-	  'autoclose': true
+	  'format': 'dd/mm/yyyy',
+	  'autoclose': true,
+	  'language': 'vi',
+	  'weekStart': 1,
+	  'todayHighlight': true
 	});
 
 

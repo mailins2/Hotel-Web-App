@@ -3,6 +3,7 @@
 use App\Http\Controllers\HotelManagementController;
 use App\Http\Controllers\MockAuthController;
 use App\Http\Controllers\ReceptionistController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/customer', 'customer.index')->name('customer.home');
@@ -11,11 +12,108 @@ Route::view('/customer/blog', 'customer.blog')->name('customer.blog');
 Route::view('/customer/blog-single', 'customer.blog-single')->name('customer.blog-single');
 Route::view('/customer/contact', 'customer.contact')->name('customer.contact');
 Route::view('/customer/restaurant', 'customer.restaurant')->name('customer.restaurant');
+Route::post('/customer/service-booking', function (Request $request) {
+    if (! isMockAuthenticated()) {
+        return redirect()->route('login');
+    }
+
+    $serviceTypes = collect(config('hotel-management.modules.services.records', []))
+        ->pluck('LoaiDV')
+        ->unique()
+        ->map(fn ($type) => (string) $type)
+        ->implode(',');
+    $serviceIds = collect(config('hotel-management.modules.services.records', []))
+        ->pluck('MaDV')
+        ->map(fn ($id) => (string) $id)
+        ->implode(',');
+    $user = mockUser() ?? [];
+    $account = collect(config('hotel-management.modules.accounts.records', []))->firstWhere('Email', $user['email'] ?? '');
+    $customer = $account
+        ? collect(config('hotel-management.modules.customers.records', []))->firstWhere('MaTK', $account['MaTK'] ?? null)
+        : null;
+    $bookingIds = collect(config('hotel-management.reception.bookings.records', []))
+        ->where('MaKH', $customer['MaKH'] ?? null)
+        ->pluck('MaDatPhong')
+        ->map(fn ($id) => (string) $id)
+        ->implode(',');
+
+    $validated = $request->validate([
+        'MaDatPhong' => ['required', 'integer', 'in:' . $bookingIds],
+        'LoaiDV' => ['required', 'integer', 'in:' . $serviceTypes],
+        'MaDV' => ['required', 'integer', 'in:' . $serviceIds],
+        'SoLuong' => ['required', 'integer', 'min:1', 'max:20'],
+        'ThoiGian' => ['required', 'date', 'after_or_equal:today'],
+        'GhiChu' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $service = collect(config('hotel-management.modules.services.records', []))
+        ->firstWhere('MaDV', (int) $validated['MaDV']);
+
+    if (! $service || (int) $service['LoaiDV'] !== (int) $validated['LoaiDV']) {
+        return back()
+            ->withErrors(['MaDV' => 'Dịch vụ không thuộc đúng loại đã chọn.'])
+            ->withInput();
+    }
+
+    $requests = $request->session()->get('service_bookings', []);
+    $requests[] = [
+        'MaSuDung' => count($requests) + 1,
+        'MaDatPhong' => (int) $validated['MaDatPhong'],
+        'MaDV' => (int) $validated['MaDV'],
+        'SoLuong' => (int) $validated['SoLuong'],
+        'ThoiGian' => $validated['ThoiGian'],
+        'GhiChu' => $validated['GhiChu'] ?? null,
+    ];
+
+    $request->session()->put('service_bookings', $requests);
+
+    return redirect()
+        ->route('customer.restaurant')
+        ->with('service_booking_saved', 'Yêu cầu của quý khách đã được ghi nhận.');
+})->name('customer.service-booking.store');
 Route::view('/customer/rooms', 'customer.rooms')->name('customer.rooms');
 Route::view('/customer/rooms-single', 'customer.rooms-single')->name('customer.rooms-single');
 Route::view('/customer/rooms-search', 'customer.rooms-search')->name('customer.rooms-search');
 Route::view('/customer/booking', 'customer.booking')->name('customer.booking');
 Route::view('/customer/payment', 'customer.payment')->name('customer.payment');
+Route::get('/customer/profile', function () {
+    if (! isMockAuthenticated()) {
+        return redirect()->route('login');
+    }
+
+    return view('customer.profile');
+})->name('customer.profile');
+Route::post('/customer/profile', function (Request $request) {
+    if (! isMockAuthenticated()) {
+        return redirect()->route('login');
+    }
+
+    $validated = $request->validate([
+        'display_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s]+$/u'],
+        'phone' => ['required', 'regex:/^0[0-9]{9}$/'],
+        'cccd' => ['required', 'regex:/^[0-9]{12}$/'],
+        'birthday' => ['required', 'date', 'before_or_equal:today'],
+        'gender' => ['required', 'in:0,1,2'],
+        'province' => ['required', 'in:TP. Hồ Chí Minh,Hà Nội,Lâm Đồng,Đà Nẵng'],
+        'district' => ['required', 'string', 'max:80'],
+        'street' => ['required', 'string', 'max:80', 'regex:/^[0-9\pL\s.\/-]+$/u'],
+        'house_number' => ['required', 'string', 'max:20', 'regex:/^[0-9\pL\s.\/-]+$/u'],
+        'address' => ['required', 'string', 'max:255'],
+    ]);
+
+    $request->session()->put('customer_profile', $validated);
+
+    return redirect()
+        ->route('customer.profile')
+        ->with('profile_saved', 'Thông tin đã được cập nhật.');
+})->name('customer.profile.update');
+Route::get('/customer/my-bookings', function () {
+    if (! isMockAuthenticated()) {
+        return redirect()->route('login');
+    }
+
+    return view('customer.my-bookings');
+})->name('customer.my-bookings');
 Route::redirect('/customer/room-single.html', '/customer/rooms-single');
 Route::redirect('/room-single.html', '/customer/rooms-single');
 Route::redirect('/', '/dashboard');

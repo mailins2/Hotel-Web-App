@@ -254,23 +254,23 @@
             <h4>Tiện ích trong phòng:</h4>
             <div class="room-amenities-grid">
               <div class="room-amenities-col">
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-briefcase-outline"></span><span>Tủ quần áo</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-close-circle-outline"></span><span>Phòng không hút thuốc</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-snowy"></span><span>Điều hòa</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-color-wand-outline"></span><span>Máy sấy tóc</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-shirt"></span><span>Tủ quần áo</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-logo-no-smoking"></span><span>Phòng không hút thuốc</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-snow"></span><span>Điều hòa</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-flashlight"></span><span>Máy sấy tóc</span></div>
                 <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-wifi"></span><span>Wifi</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-list-box-outline"></span><span>Khăn tắm</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-bulb-outline"></span><span>Đèn bàn</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-monitor-outline"></span><span>Bàn làm việc</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-square-outline"></span><span>Khăn tắm</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-bulb"></span><span>Đèn bàn</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-desktop"></span><span>Bàn làm việc</span></div>
               </div>
               <div class="room-amenities-col">
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-grid-view-outline"></span><span>Ga trải giường, gối</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-rainy-outline"></span><span>Vòi sen</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-loop-strong"></span><span>Dịch vụ giặt ủi</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-water-outline"></span><span>Phòng có bồn tắm</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-medkit-outline"></span><span>Đồ phòng tắm</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-telephone-outline"></span><span>Điện thoại</span></div>
-                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-monitor-outline"></span><span>Truyền hình cáp/Vệ tinh</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-bed"></span><span>Ga trải giường, gối</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-water"></span><span>Vòi sen</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-shirt"></span><span>Dịch vụ giặt ủi</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-water"></span><span>Phòng có bồn tắm</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-medkit"></span><span>Đồ phòng tắm</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-call"></span><span>Điện thoại</span></div>
+                <div class="room-amenity-item"><span class="room-amenity-icon ion-ios-tv"></span><span>Truyền hình cáp/Vệ tinh</span></div>
               </div>
             </div>
           </div>
