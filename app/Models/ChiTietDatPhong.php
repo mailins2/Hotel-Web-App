@@ -9,7 +9,11 @@ class ChiTietDatPhong extends Model
     protected $table = 'ChiTietDatPhong';
     protected $primaryKey = 'MaCTDP';
     public $timestamps = false;
-    protected $guarded = [];
+     protected $fillable = [
+        'MaDatPhong',
+        'MaPhong',
+    ];
+
 
     public function phong()
     {

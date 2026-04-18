@@ -9,7 +9,14 @@ class DatPhong extends Model
     protected $table = 'DatPhong';
     protected $primaryKey = 'MaDatPhong';
     public $timestamps = false;
-    protected $guarded = [];
+    protected $fillable = [
+        'MaKH',
+        'NgayDat',
+        'NgayNhanPhong',
+        'NgayTraPhong',
+        'SoLuong',
+        'TinhTrang'
+    ];
 
     public function khachHang()
     {
@@ -32,7 +39,7 @@ class DatPhong extends Model
     {
         return $this->hasMany(SuDungDichVu::class, 'MaDatPhong');
     }
-    public function chiTietDatPhongs()
+    public function chiTietDatPhong()
     {
         return $this->hasMany(ChiTietDatPhong::class, 'MaDatPhong');
     }
