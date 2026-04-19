@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\DatPhong;
 use App\Models\ChiTietDatPhong;
+use App\Models\Phong;
+use App\Models\HoaDon;
+use App\Models\ChiTietHoaDon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -27,245 +30,302 @@ class DatPhongController extends Controller
         ], $code);
     }
 
-    // =========================================
-    // GET /api/dat-phong
+    // =========================
+    // 🔹 GET ALL
     public function index()
     {
-        $data = DatPhong::with('chiTietDatPhong')->get();
-        return $this->success($data, 'Lấy danh sách đặt phòng thành công');
+        return $this->success(
+            DatPhong::with('chiTietDatPhong.phong')->get()
+        );
     }
 
-    // =========================================
-    // GET /api/dat-phong/{id}
-    public function show($id)
-    {
-        $datPhong = DatPhong::with('chiTietDatPhong')->find($id);
-
-        if (!$datPhong) {
-            return $this->error('Không tìm thấy đơn đặt phòng', 404);
-        }
-
-        return $this->success($datPhong, 'Lấy chi tiết đặt phòng thành công');
-    }
-
-    // =========================================
-    //so luog nam trong dat phong 
-    // POST /api/dat-phong
+    // =========================
+    // 🔹 CREATE (AUTO ASSIGN + TẠO HÓA ĐƠN)
     public function store(Request $request)
-{
-    $data = $request->validate([
-        'MaKH' => 'required|exists:KhachHang,MaKH',
-        'NgayNhanPhong' => 'required|date',
-        'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
-        'phongs' => 'required|array|min:1'
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        $exists = ChiTietDatPhong::whereIn('MaPhong', $data['phongs'])
-            ->whereHas('datPhong', function ($q) use ($data) {
-                $q->where('NgayNhanPhong', '<', $data['NgayTraPhong'])
-                  ->where('NgayTraPhong', '>', $data['NgayNhanPhong']);
-            })->exists();
-
-        if ($exists) {
-            return $this->error('Có phòng đã được đặt trong khoảng thời gian này', 400);
-        }
-
-        $datPhong = DatPhong::create([
-            'MaKH' => $data['MaKH'],
-            'NgayDat' => now(),
-            'NgayNhanPhong' => $data['NgayNhanPhong'],
-            'NgayTraPhong' => $data['NgayTraPhong'],
-            'SoLuong' => count($data['phongs']), 
-            'TinhTrang' => 0
-        ]);
-
-        foreach ($data['phongs'] as $maPhong) {
-            ChiTietDatPhong::create([
-                'MaDatPhong' => $datPhong->MaDatPhong,
-                'MaPhong' => $maPhong
-            ]);
-        }
-
-        DB::commit();
-
-        return $this->success(
-            $datPhong->load('chiTietDatPhong'),
-            'Đặt phòng thành công',
-            201
-        );
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return $this->error($e->getMessage(), 500);
-    }
-}
-
-    // =========================================
-    // PUT /api/dat-phong/{id}
-    public function update(Request $request, $id)
-{
-    $datPhong = DatPhong::find($id);
-
-    if (!$datPhong) {
-        return $this->error('Không tìm thấy đơn đặt phòng', 404);
-    }
-
-    $data = $request->validate([
-        'NgayNhanPhong' => 'required|date',
-        'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
-        'phongs' => 'required|array|min:1'
-    ]);
-
-    DB::beginTransaction();
-
-    try {
-        $exists = ChiTietDatPhong::whereIn('MaPhong', $data['phongs'])
-            ->whereHas('datPhong', function ($q) use ($data, $id) {
-                $q->where('MaDatPhong', '!=', $id)
-                  ->where('NgayNhanPhong', '<', $data['NgayTraPhong'])
-                  ->where('NgayTraPhong', '>', $data['NgayNhanPhong']);
-            })->exists();
-
-        if ($exists) {
-            return $this->error('Có phòng bị trùng lịch', 400);
-        }
-
-        $datPhong->update([
-            'NgayNhanPhong' => $data['NgayNhanPhong'],
-            'NgayTraPhong' => $data['NgayTraPhong'],
-            'SoLuong' => count($data['phongs']) // ✅ FIX
-        ]);
-
-        ChiTietDatPhong::where('MaDatPhong', $id)->delete();
-
-        foreach ($data['phongs'] as $maPhong) {
-            ChiTietDatPhong::create([
-                'MaDatPhong' => $id,
-                'MaPhong' => $maPhong
-            ]);
-        }
-
-        DB::commit();
-
-        return $this->success(
-            $datPhong->load('chiTietDatPhong'),
-            'Cập nhật đặt phòng thành công'
-        );
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        return $this->error($e->getMessage(), 500);
-    }
-}
-
-    // =========================================
-    // DELETE /api/dat-phong/{id}
-    public function destroy($id)
     {
-        $datPhong = DatPhong::find($id);
-
-        if (!$datPhong) {
-            return $this->error('Không tìm thấy đơn đặt phòng', 404);
-        }
+        $data = $request->validate([
+            'MaKH' => 'required|exists:KhachHang,MaKH',
+            'NgayNhanPhong' => 'required|date',
+            'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
+            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
+            'SoLuong' => 'required|integer|min:1'
+        ]);
 
         DB::beginTransaction();
 
         try {
-            ChiTietDatPhong::where('MaDatPhong', $id)->delete();
-            $datPhong->delete();
+            // 🔥 tìm phòng trống
+            $phongTrong = Phong::where('MaLoaiPhong', $data['MaLoaiPhong'])
+                ->whereNotIn('MaPhong', function ($query) use ($data) {
+                    $query->select('MaPhong')
+                        ->from('ChiTietDatPhong')
+                        ->join('DatPhong', 'DatPhong.MaDatPhong', '=', 'ChiTietDatPhong.MaDatPhong')
+                        ->where('NgayNhanPhong', '<', $data['NgayTraPhong'])
+                        ->where('NgayTraPhong', '>', $data['NgayNhanPhong']);
+                })
+                ->limit($data['SoLuong'])
+                ->get();
+
+            if ($phongTrong->count() < $data['SoLuong']) {
+                DB::rollBack();
+                return $this->error('Không đủ phòng trống');
+            }
+
+            // 🔥 tạo đặt phòng
+            $datPhong = DatPhong::create([
+                'MaKH' => $data['MaKH'],
+                'NgayDat' => now(),
+                'NgayNhanPhong' => $data['NgayNhanPhong'],
+                'NgayTraPhong' => $data['NgayTraPhong'],
+                'SoLuong' => $data['SoLuong'],
+                'TinhTrang' => 0
+            ]);
+
+            // 🔥 gán phòng
+            foreach ($phongTrong as $p) {
+                ChiTietDatPhong::create([
+                    'MaDatPhong' => $datPhong->MaDatPhong,
+                    'MaPhong' => $p->MaPhong
+                ]);
+            }
+
+            // 🔥 TẠO HÓA ĐƠN NGAY
+            $hoaDon = HoaDon::create([
+                'MaDatPhong' => $datPhong->MaDatPhong,
+                'NgayLapHD' => now(),
+                'MaNV' => null,
+                'TrangThai' => 0,
+                'TongTien' => 0,
+                'DaThanhToan' => 0
+            ]);
 
             DB::commit();
 
-            return $this->success(null, 'Xóa đặt phòng thành công');
+            return $this->success([
+                'datPhong' => $datPhong->load('chiTietDatPhong.phong'),
+                'hoaDon' => $hoaDon
+            ], 'Đặt phòng thành công', 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
         }
     }
-    //====
-    //POST /api/dat-phong/{id}/phong
-    public function addPhong(Request $request, $id)
+
+    // =========================
+    // 🔹 SHOW
+    public function show($id)
+    {
+        $data = DatPhong::with('chiTietDatPhong.phong')->find($id);
+
+        if (!$data) {
+            return $this->error('Không tìm thấy', 404);
+        }
+
+        return $this->success($data);
+    }
+
+    // =========================
+    // 🔹 CHECK-IN
+    public function checkIn($id)
     {
         $datPhong = DatPhong::find($id);
 
         if (!$datPhong) {
-            return $this->error('Không tìm thấy đơn đặt phòng', 404);
+            return $this->error('Không tìm thấy', 404);
         }
 
-        $data = $request->validate([
+        if ($datPhong->TinhTrang != 0) {
+            return $this->error('Không hợp lệ');
+        }
+
+        $datPhong->update(['TinhTrang' => 1]);
+
+        return $this->success($datPhong, 'Check-in thành công');
+    }
+
+    // =========================
+    // 🔹 CHECK-OUT (🔥 CHỐT TIỀN)
+    public function checkOut(Request $request, $id)
+{
+    // 🔥 validate nhân viên
+    $request->validate([
+        'MaNV' => 'required|exists:NhanVien,MaNV'
+    ]);
+
+    $datPhong = DatPhong::with('chiTietDatPhong.phong')->find($id);
+
+    if (!$datPhong) {
+        return $this->error('Không tìm thấy', 404);
+    }
+
+    // ❌ chưa check-in
+    if ($datPhong->TinhTrang == 0) {
+        return $this->error('Chưa check-in');
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $hoaDon = HoaDon::with('khuyenMai', 'chiTietHoaDons')
+            ->where('MaDatPhong', $id)
+            ->first();
+
+        if (!$hoaDon) {
+            return $this->error('Không tìm thấy hóa đơn');
+        }
+
+        // ❌ đã checkout rồi
+        if ($datPhong->TinhTrang == 2) {
+            return $this->error('Đã check-out');
+        }
+
+        // ❌ đã thanh toán xong
+        if ($hoaDon->TrangThai == 1) {
+            return $this->error('Hóa đơn đã thanh toán');
+        }
+
+        // 🔥 gán nhân viên checkout
+        $hoaDon->update([
+            'MaNV' => $request->MaNV
+        ]);
+        $bangGia = BangGia::where('MaLoaiPhong', $ct->phong->MaLoaiPhong)
+            ->where('Mua', 1) // hoặc logic mùa
+            ->first();
+
+        $donGia = $bangGia ? $bangGia->Gia : 0;
+
+        // ❗ tránh add phòng nhiều lần
+        if (
+            !$hoaDon->chiTietHoaDons()
+                ->whereNotNull('MaLoaiPhong')
+                ->exists()
+        ) {
+            foreach ($datPhong->chiTietDatPhong as $ct) {
+               ChiTietHoaDon::create([
+                    'MaHD' => $hoaDon->MaHD,
+                    'MaLoaiPhong' => $ct->phong->MaLoaiPhong,
+                    'SoLuong' => $soNgay,
+                    'DonGia' => $donGia
+                ]);
+            }
+        }
+
+        // 🔥 tính tổng tiền
+        $tong = ChiTietHoaDon::where('MaHD', $hoaDon->MaHD)
+            ->sum(DB::raw('SoLuong * DonGia'));
+
+        // 🔥 áp dụng khuyến mãi
+        if ($hoaDon->MaKM && $hoaDon->khuyenMai) {
+            $tong -= ($tong * $hoaDon->khuyenMai->PhanTramGiamGia / 100);
+        }
+
+        $hoaDon->update([
+            'TongTien' => $tong
+        ]);
+
+        // 🔥 update trạng thái đặt phòng
+        $datPhong->update(['TinhTrang' => 2]);
+
+        DB::commit();
+
+        return $this->success([
+            'datPhong' => $datPhong,
+            'hoaDon' => $hoaDon->load('chiTietHoaDons')
+        ], 'Check-out thành công');
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return $this->error($e->getMessage(), 500);
+    }
+}
+
+    // =========================
+    // 🔹 CHANGE ROOM
+    public function changeRoom(Request $request, $id)
+    {
+        $request->validate([
+            'oldPhong' => 'required|exists:Phong,MaPhong',
+            'newPhong' => 'required|exists:Phong,MaPhong'
+        ]);
+
+        $datPhong = DatPhong::find($id);
+
+        if (!$datPhong) {
+            return $this->error('Không tìm thấy', 404);
+        }
+
+        if ($datPhong->TinhTrang != 1) {
+            return $this->error('Chỉ được đổi khi đang ở');
+        }
+
+        $ct = ChiTietDatPhong::where('MaDatPhong', $id)
+            ->where('MaPhong', $request->oldPhong)
+            ->first();
+
+        if (!$ct) {
+            return $this->error('Không tìm thấy phòng cũ');
+        }
+
+        $ct->update(['MaPhong' => $request->newPhong]);
+
+        return $this->success($ct, 'Đổi phòng thành công');
+    }
+
+    // =========================
+    // 🔹 ADD ROOM
+    public function addRoom(Request $request, $id)
+    {
+        $request->validate([
             'MaPhong' => 'required|exists:Phong,MaPhong'
         ]);
 
-        DB::beginTransaction();
+        $datPhong = DatPhong::find($id);
 
-        try {
-            $exists = ChiTietDatPhong::where('MaPhong', $data['MaPhong'])
-                ->whereHas('datPhong', function ($q) use ($datPhong) {
-                    $q->where('MaDatPhong', '!=', $datPhong->MaDatPhong)
-                    ->where('NgayNhanPhong', '<', $datPhong->NgayTraPhong)
-                    ->where('NgayTraPhong', '>', $datPhong->NgayNhanPhong);
-                })->exists();
-
-            if ($exists) {
-                return $this->error('Phòng đã được đặt trong khoảng thời gian này', 400);
-            }
-
-            $already = ChiTietDatPhong::where('MaDatPhong', $id)
-                ->where('MaPhong', $data['MaPhong'])
-                ->exists();
-
-            if ($already) {
-                return $this->error('Phòng đã có trong đơn', 400);
-            }
-
-            ChiTietDatPhong::create([
-                'MaDatPhong' => $id,
-                'MaPhong' => $data['MaPhong']
-            ]);
-
-            // update lại số lượng
-            $datPhong->increment('SoLuong');
-
-            DB::commit();
-
-            return $this->success(
-                $datPhong->load('chiTietDatPhong'),
-                'Thêm phòng thành công'
-            );
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return $this->error($e->getMessage(), 500);
+        if (!$datPhong) {
+            return $this->error('Không tìm thấy', 404);
         }
+
+        if ($datPhong->TinhTrang != 1) {
+            return $this->error('Chỉ được thêm khi đang ở');
+        }
+
+        $ct = ChiTietDatPhong::create([
+            'MaDatPhong' => $id,
+            'MaPhong' => $request->MaPhong
+        ]);
+
+        $datPhong->increment('SoLuong');
+
+        return $this->success($ct, 'Thêm phòng thành công');
     }
-    //====
-    //DELETE /api/dat-phong/{id}/phong/{maPhong}
-   public function removePhong($id, $maPhong)
+
+    // =========================
+    // 🔹 REMOVE ROOM
+    public function removeRoom($id, $maPhong)
     {
         $datPhong = DatPhong::find($id);
 
         if (!$datPhong) {
-            return $this->error('Không tìm thấy đơn đặt phòng', 404);
+            return $this->error('Không tìm thấy', 404);
         }
 
-        $deleted = ChiTietDatPhong::where('MaDatPhong', $id)
+        if ($datPhong->TinhTrang != 1) {
+            return $this->error('Chỉ được xóa khi đang ở');
+        }
+
+        $ct = ChiTietDatPhong::where('MaDatPhong', $id)
             ->where('MaPhong', $maPhong)
-            ->delete();
+            ->first();
 
-        if (!$deleted) {
-            return $this->error('Phòng không tồn tại trong đơn', 404);
+        if (!$ct) {
+            return $this->error('Không tìm thấy phòng');
         }
 
-        // cập nhật lại số lượng
+        $ct->delete();
+
         $datPhong->decrement('SoLuong');
 
-        return $this->success(
-            $datPhong->load('chiTietDatPhong'),
-            'Xóa phòng khỏi đơn thành công'
-        );
+        return $this->success(null, 'Đã xóa phòng');
     }
 }

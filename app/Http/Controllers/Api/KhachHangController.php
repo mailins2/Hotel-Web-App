@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Validator;
 class KhachHangController extends Controller
 {
     // 1. Lấy danh sách khách hàng
+    //get /api/khach-hang
     public function index()
     {
         $khachHangs = KhachHang::with('taiKhoan')->get();
@@ -19,6 +20,7 @@ class KhachHangController extends Controller
     }
 
     // 2. Thêm mới khách hàng
+    //post /api/khach-hang
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -44,6 +46,7 @@ class KhachHangController extends Controller
     }
 
     // 3. Xem chi tiết 1 khách hàng
+    // get /api/khach-hang/id
     public function show($id)
     {
         $khachHang = KhachHang::with(['taiKhoan', 'datPhongs'])->find($id);
@@ -56,6 +59,7 @@ class KhachHangController extends Controller
     }
 
     // 4. Cập nhật thông tin
+    // put /api/khach-hang
     public function update(Request $request, $id)
     {
         $khachHang = KhachHang::find($id);
@@ -68,6 +72,7 @@ class KhachHangController extends Controller
     }
 
     // 5. Xóa khách hàng
+    //delete /api/khach-hang/{id}
     public function destroy($id)
     {
         $khachHang = KhachHang::find($id);

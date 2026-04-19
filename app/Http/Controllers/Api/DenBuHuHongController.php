@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class DenBuHuHongController extends Controller
 {
+    //get /api/den-bu
     // 1. Lấy danh sách các khoản đền bù
     public function index()
     {
@@ -17,6 +18,7 @@ class DenBuHuHongController extends Controller
     }
 
     // 2. Tạo mới một khoản đền bù (Thường gọi khi check-out)
+    //post /api/den-bu
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,7 +38,7 @@ class DenBuHuHongController extends Controller
             'data' => $denBu
         ], 201);
     }
-
+    // get /api/den-bu/id
     // 3. Xem chi tiết 1 khoản đền bù
     public function show($id)
     {
@@ -50,6 +52,7 @@ class DenBuHuHongController extends Controller
     }
 
     // 4. Cập nhật mô tả hoặc số tiền
+    //put /api/den-bu/id
     public function update(Request $request, $id)
     {
         $denBu = DenBuHuHong::find($id);
@@ -72,6 +75,7 @@ class DenBuHuHongController extends Controller
     }
 
     // 5. Xóa (Nếu nhập nhầm)
+    //delete /api/den-bu/id
     public function destroy($id)
     {
         $denBu = DenBuHuHong::find($id);
