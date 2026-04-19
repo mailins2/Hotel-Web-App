@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Peach Valley Hotel</title>
+    <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
@@ -12,7 +13,7 @@
   </head>
   <body>
 
-    @include('customer.partials.nav', ['active' => 'about'])
+    @include('customer.partials.nav', ['active' => 'promotion'])
     <!-- END nav -->
 		<div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/bg_3.jpg') }}">
       <div class="overlay"></div>
@@ -105,7 +106,7 @@
 			<div class="container">
 				<div class="row no-gutters">
 					<div class="col-md-7 order-md-last d-flex">
-						<div class="img img-1 mr-md-2 ftco-animate" data-bg-image="{{ Vite::asset('resources/customer/images/about-1.jpg') }}"></div>
+						<div class="img img-1 mr-md-2 ftco-animate" data-bg-image="{{ Vite::asset('resources/customer/images/about-2.jpg') }}"></div>
 						<div class="img img-2 ml-md-2 ftco-animate" data-bg-image="{{ Vite::asset('resources/customer/images/about-2.jpg') }}"></div>
 					</div>
 					<div class="col-md-5 wrap-about pb-md-3 ftco-animate pr-md-5 pb-md-5 pt-md-4">
@@ -124,7 +125,7 @@
       <div class="container">
         <div class="row no-gutters ftco-animate justify-content-center">
         	<div class="col-md-5 d-flex">
-        		<div class="testimony-img aside-stretch-2" data-bg-image="{{ Vite::asset('resources/customer/images/testimony-img.jpg') }}"></div>
+        		<div class="testimony-img aside-stretch-2" data-bg-image="{{ Vite::asset('resources/customer/images/room-5.jpg') }}"></div>
         	</div>
           <div class="col-md-7 py-5 pl-md-5">
           	<div class="py-md-5">

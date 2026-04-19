@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
@@ -114,7 +115,7 @@
 	        			</div>
 	        			<div class="col-md d-flex">
 	        				<div class="form-group d-flex align-self-stretch">
-			              <a href="{{ route('customer.rooms-search') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block"><span>Tìm kiếm</span></a>
+			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block"><span>Tìm kiếm</span></a>
 			            </div>
 	        			</div>
 	        		</div>
@@ -199,7 +200,7 @@
 	            <h2 class="mb-4">Khách Sạn Peach Valley là lựa chọn của nhiều du khách khi đến Đà Lạt</h2>
 	          </div>
 	          <p>Peach Valley mang đến không gian nghỉ dưỡng tinh tế và ấm áp, với phòng nghỉ rộng rãi, gam màu dịu mắt, chăn ga mềm mại tạo cảm giác thư giãn như được vỗ về. Ban công rộng mở đón nắng mai, kết hợp cùng ánh đèn vàng dịu nhẹ, tạo nên bầu không khí yên bình và dễ chịu mỗi khi chiều xuống.</p>
-	          <p><a href="{{ route('customer.rooms-search') }}" class="btn btn-secondary rounded">Đặt Phòng Ngay Bây Giờ</a></p>
+	          <p><a href="{{ route('customer.rooms-booking') }}" class="btn btn-secondary rounded">Đặt Phòng Ngay Bây Giờ</a></p>
 					</div>
 				</div>
 			</div>

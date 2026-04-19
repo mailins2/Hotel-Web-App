@@ -33,7 +33,11 @@ body[class*="theme-color-"] {
 
 body {
     background:
-        radial-gradient(circle at top left, rgba(201, 122, 62, 0.16), transparent 28%),
+        radial-gradient(
+            circle at top left,
+            rgba(201, 122, 62, 0.16),
+            transparent 28%
+        ),
         linear-gradient(180deg, #fffaf7 0%, #fff4ec 100%);
     color: #49120f;
 }
@@ -125,7 +129,12 @@ a:hover,
 
 .iq-navbar-header,
 .iq-navbar-header .iq-header-img {
-    background: linear-gradient(135deg, #6f1d01 0%, #854023 45%, #c97a3e 100%) !important;
+    background: linear-gradient(
+        135deg,
+        #6f1d01 0%,
+        #854023 45%,
+        #c97a3e 100%
+    ) !important;
 }
 
 /* sidebar màu chính */
@@ -174,6 +183,110 @@ a:hover,
 .sidebar-color .navbar-nav .nav-item .nav-link .icon,
 .sidebar-color .navbar-nav .nav-item .nav-link .right-icon {
     color: inherit !important;
+}
+
+.hotel-brand-logo,
+.auth-brand-logo {
+    flex: 0 0 auto;
+    object-fit: contain;
+    display: inline-block;
+}
+
+.hotel-brand-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: #fff;
+    padding: 3px;
+}
+
+.hotel-brand-logo-navbar {
+    box-shadow: 0 8px 20px rgba(73, 18, 15, 0.16);
+}
+
+.auth-brand-logo {
+    width: min(160px, 58vw) !important;
+    height: auto !important;
+    max-height: 102px;
+    border-radius: 0;
+}
+
+.auth-card .navbar-brand {
+    justify-content: center;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-right: 0;
+    white-space: normal;
+}
+
+.auth-card .navbar-brand .logo-title {
+    margin-left: 0 !important;
+    margin-bottom: 0;
+    text-align: center;
+    font-size: 1.1rem;
+    line-height: 1.25;
+}
+
+.auth-google-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    width: min(100%, 320px);
+    min-height: 48px;
+    margin: 0 auto;
+    padding: 0.7rem 1rem;
+    border: 1px solid #dbe4f0;
+    border-radius: 999px;
+    background: #fff;
+    color: #854023 !important;
+    font-weight: 500;
+    line-height: 1.2;
+    text-align: center;
+    box-sizing: border-box;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        color 0.2s ease;
+}
+
+.auth-google-button:hover,
+.auth-google-button:focus {
+    border-color: #cbd5e1;
+    box-shadow: 0 12px 30px rgba(30, 34, 44, 0.08);
+    color: #854023 !important;
+}
+
+.auth-google-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    object-fit: contain;
+}
+
+.auth-google-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+@media (max-width: 575.98px) {
+    .auth-brand-logo {
+        width: min(150px, 68vw) !important;
+        max-height: 112px;
+    }
+
+    .auth-card .card-body {
+        padding-right: 1rem;
+        padding-left: 1rem;
+    }
+
+    .auth-google-button {
+        width: 100%;
+        max-width: 320px;
+        gap: 0.55rem;
+        padding-right: 0.85rem;
+        padding-left: 0.85rem;
+    }
 }
 
 /* tab / nav pill / pagination / checked controls */
@@ -322,7 +435,12 @@ a:hover,
 }
 
 .login-content .col-md-6.d-md-block.d-none.bg-primary {
-    background: linear-gradient(160deg, #49120f 0%, #6f1d01 48%, #c97a3e 100%) !important;
+    background: linear-gradient(
+        160deg,
+        #49120f 0%,
+        #6f1d01 48%,
+        #c97a3e 100%
+    ) !important;
 }
 
 .sign-bg svg rect {

@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:200,300,400,600,700&display=swap" rel="stylesheet">
@@ -13,7 +14,7 @@
     <section class="booking-section">
       <div class="container">
         <div class="booking-header">
-          <a href="{{ route('customer.booking') }}" class="booking-back">
+          <a href="{{ route('customer.info-booking') }}" class="booking-back">
             <span class="icon ion-ios-arrow-back"></span>
             Quay lại
           </a>

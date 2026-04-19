@@ -7,11 +7,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/customer', 'customer.index')->name('customer.home');
-Route::view('/customer/about', 'customer.about')->name('customer.about');
+Route::view('/customer/promotion', 'customer.promotion')->name('customer.promotion');
 Route::view('/customer/blog', 'customer.blog')->name('customer.blog');
 Route::view('/customer/blog-single', 'customer.blog-single')->name('customer.blog-single');
 Route::view('/customer/contact', 'customer.contact')->name('customer.contact');
-Route::view('/customer/restaurant', 'customer.restaurant')->name('customer.restaurant');
+Route::view('/customer/services', 'customer.services')->name('customer.services');
 Route::post('/customer/service-booking', function (Request $request) {
     if (! isMockAuthenticated()) {
         return redirect()->route('login');
@@ -68,13 +68,13 @@ Route::post('/customer/service-booking', function (Request $request) {
     $request->session()->put('service_bookings', $requests);
 
     return redirect()
-        ->route('customer.restaurant')
+        ->route('customer.services')
         ->with('service_booking_saved', 'Yêu cầu của quý khách đã được ghi nhận.');
 })->name('customer.service-booking.store');
 Route::view('/customer/rooms', 'customer.rooms')->name('customer.rooms');
 Route::view('/customer/rooms-single', 'customer.rooms-single')->name('customer.rooms-single');
-Route::view('/customer/rooms-search', 'customer.rooms-search')->name('customer.rooms-search');
-Route::view('/customer/booking', 'customer.booking')->name('customer.booking');
+Route::view('/customer/rooms-booking', 'customer.rooms-booking')->name('customer.rooms-booking');
+Route::view('/customer/info-booking', 'customer.info-booking')->name('customer.info-booking');
 Route::view('/customer/payment', 'customer.payment')->name('customer.payment');
 Route::get('/customer/profile', function () {
     if (! isMockAuthenticated()) {
@@ -116,6 +116,10 @@ Route::get('/customer/my-bookings', function () {
 })->name('customer.my-bookings');
 Route::redirect('/customer/room-single.html', '/customer/rooms-single');
 Route::redirect('/room-single.html', '/customer/rooms-single');
+Route::redirect('/customer/about', '/customer/promotion');
+Route::redirect('/customer/restaurant', '/customer/services');
+Route::redirect('/customer/rooms-search', '/customer/rooms-booking');
+Route::redirect('/customer/booking', '/customer/info-booking');
 Route::redirect('/', '/dashboard');
 
 Route::get('/login', [MockAuthController::class, 'create'])->name('login');

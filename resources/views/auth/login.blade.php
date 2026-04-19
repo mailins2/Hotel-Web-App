@@ -46,35 +46,6 @@
             background: #e2e8f0;
          }
 
-         .auth-google-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            width: 70%;
-            margin: 0 auto;
-            padding: 0.7rem 1rem;
-            border: 1px solid #dbe4f0;
-            border-radius: 500px;
-            background: #fff;
-            color: #0f172a;
-            font-weight: 400;
-            transition: all 0.2s ease;
-         }
-
-         .auth-google-button:hover {
-            border-color: #cbd5e1;
-            box-shadow: 0 12px 30px rgba(30, 34, 44, 0.08);
-            color: #0f172a;
-         }
-
-         .auth-google-icon {
-            width: 22px;
-            height: 22px;
-            flex-shrink: 0;
-            object-fit: contain;
-         }
-
          .auth-field-error {
             display: block;
             margin-top: 0.5rem;
@@ -110,13 +81,7 @@
                   <div class="card card-transparent shadow-none d-flex justify-content-center mb-0 auth-card">
                      <div class="card-body">
                         <a href="{{ route('dashboard') }}" class="navbar-brand d-flex align-items-center mb-3">
-                           <svg width="30" class="text-primary" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <rect x="-0.757324" y="19.2427" width="28" height="4" rx="2" transform="rotate(-45 -0.757324 19.2427)" fill="currentColor"/>
-                              <rect x="7.72803" y="27.728" width="28" height="4" rx="2" transform="rotate(-45 7.72803 27.728)" fill="currentColor"/>
-                              <rect x="10.5366" y="16.3945" width="16" height="4" rx="2" transform="rotate(45 10.5366 16.3945)" fill="currentColor"/>
-                              <rect x="10.5562" y="-0.556152" width="28" height="4" rx="2" transform="rotate(45 10.5562 -0.556152)" fill="currentColor"/>
-                           </svg>
-                           <h4 class="logo-title ms-3">Khách Sạn Peach Valley</h4>
+                           <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                         </a>
                         <h2 class="mb-2 text-center">Đăng nhập</h2>
                         <x-auth-session-status class="mb-4" :status="session('status')" />
@@ -153,7 +118,7 @@
                         <div class="auth-divider">Hoặc tiếp tục với</div>
                         <a href="{{ route('auth.google', ['source' => 'login']) }}" class="auth-google-button text-decoration-none">
                            <img src="{{ asset('images/brands/gm.svg') }}" class="auth-google-icon" alt="Google">
-                           Đăng nhập với Google
+                           <span class="auth-google-label">Đăng nhập với Google</span>
                         </a>
 
                         <p class="mt-4 text-center">
