@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ChiTietHoaDonController;
 use App\Http\Controllers\Api\ThanhToanController;
 use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
+use App\Http\Controllers\Api\ZaloPay\PaymentController;
 
 Route::get('/bang-gia', [BangGiaController::class, 'index']);
 Route::post('/bang-gia', [BangGiaController::class, 'store']);
@@ -85,3 +86,9 @@ Route::get('thanh-toan/hoa-don/{maHD}', [ThanhToanController::class, 'getByHoaDo
 Route::apiResource('danh-gia', DanhGiaController::class);
 
 Route::apiResource('hinh-anh', HinhController::class);
+
+// Route để thực hiện tạo đơn hàng và lấy link thanh toán
+Route::post('/zalopay-payment', [PaymentController::class, 'createPayment']);
+
+// Route để ZaloPay gọi về (Callback) báo kết quả thanh toán
+Route::post('/zalopay-callback', [PaymentController::class, 'callback']);
