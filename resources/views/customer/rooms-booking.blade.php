@@ -76,19 +76,25 @@
           <div class="search-summary-item">
             <span class="search-summary-label">Ngày nhận</span>
             <input
-              type="date"
+              type="text"
               class="search-summary-input"
               data-search-checkin
-              value="{{ $searchSummary['checkin'] }}"
+              value="{{ \Carbon\Carbon::parse($searchSummary['checkin'])->format('d/m/Y') }}"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="dd/mm/yyyy"
             >
           </div>
           <div class="search-summary-item">
             <span class="search-summary-label">Ngày trả</span>
             <input
-              type="date"
+              type="text"
               class="search-summary-input"
               data-search-checkout
-              value="{{ $searchSummary['checkout'] }}"
+              value="{{ \Carbon\Carbon::parse($searchSummary['checkout'])->format('d/m/Y') }}"
+              inputmode="numeric"
+              autocomplete="off"
+              placeholder="dd/mm/yyyy"
             >
           </div>
           <div class="search-summary-item">
@@ -133,7 +139,14 @@
         <div class="row">
           <div class="col-lg-8">
             @foreach ($roomResults as $room)
-              <div class="room-result-card">
+              <div
+                class="room-result-card"
+                data-room-card-trigger
+                data-room-title="{{ $room['tenLoaiPhong'] }}"
+                data-room-area="{{ $room['dienTich'] }} m²"
+                data-room-desc="{{ $room['moTaDayDu'] }}"
+                data-room-images="{{ collect($room['images'])->map(fn ($image) => Vite::asset($image))->implode('|') }}"
+              >
                 <div class="room-result-slider" data-room-slider>
                   <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
                     <span class="icon ion-ios-arrow-back"></span>
@@ -180,21 +193,21 @@
                       </span>
                     </div>
                     <div class="room-result-actions">
-                      <select class="room-result-qty" data-room-qty>
-                        <option value="0" selected>0 phòng</option>
-                        @for ($i = 1; $i <= 5; $i++)
-                          <option value="{{ $i }}">{{ $i }} phòng</option>
-                        @endfor
-                      </select>
-                      <button
-                        type="button"
-                        class="btn btn-primary room-result-btn"
-                        data-room-select
-                        data-room-name="{{ $room['tenLoaiPhong'] }}"
-                        data-room-price="{{ $room['giaPhong'] }}"
-                      >
-                        Chọn phòng
-                      </button>
+                      <div class="room-result-qty-stepper" data-room-qty-stepper>
+                        <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
+                        <input
+                          type="hidden"
+                          value="0"
+                          min="0"
+                          max="5"
+                          data-room-qty
+                          data-room-qty-input
+                          data-room-name="{{ $room['tenLoaiPhong'] }}"
+                          data-room-price="{{ $room['giaPhong'] }}"
+                        >
+                        <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
+                        <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -309,12 +322,51 @@
           }
         ];
 
+        function parseSearchDate(value) {
+          const normalizedValue = String(value || '').trim();
+          let match = normalizedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+          if (match) {
+            const [, day, month, year] = match;
+            return createSearchDate(Number(year), Number(month), Number(day));
+          }
+
+          match = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+          if (match) {
+            const [, year, month, day] = match;
+            return createSearchDate(Number(year), Number(month), Number(day));
+          }
+
+          const parsedDate = new Date(normalizedValue);
+          return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+        }
+
+        function createSearchDate(year, month, day) {
+          const date = new Date(year, month - 1, day);
+
+          if (
+            date.getFullYear() !== year ||
+            date.getMonth() !== month - 1 ||
+            date.getDate() !== day
+          ) {
+            return null;
+          }
+
+          return date;
+        }
+
         function filterRooms() {
-          const checkIn = new Date(checkInInput.value);
-          const checkOut = new Date(checkOutInput.value);
+          const checkIn = parseSearchDate(checkInInput.value);
+          const checkOut = parseSearchDate(checkOutInput.value);
           const adults = parseInt(adultCount.textContent);
           const children = parseInt(childrenCount.textContent);
           const totalGuests = adults + children;
+
+          if (!checkIn || !checkOut) {
+            alert('Vui lòng nhập ngày theo định dạng dd/mm/yyyy');
+            return;
+          }
 
           console.log('[v0] Filtering with:', {
             checkIn: checkIn.toLocaleDateString('vi-VN'),

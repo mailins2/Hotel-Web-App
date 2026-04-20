@@ -1,7 +1,6 @@
 <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
   <div class="container">
     <a class="navbar-brand brand-logo" href="{{ route('customer.home') }}">
-      <!-- <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="customer-brand-logo"> -->
       <span class="brand-peach">Peach</span><span class="brand-valley">Valley</span>
     </a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
@@ -14,8 +13,7 @@
         <li class="nav-item{{ ($active ?? '') === 'rooms' ? ' active' : '' }}"><a href="{{ route('customer.rooms') }}" class="nav-link">Phòng</a></li>
         <li class="nav-item{{ ($active ?? '') === 'services' ? ' active' : '' }}"><a href="{{ route('customer.services') }}" class="nav-link">Dịch Vụ</a></li>
         <li class="nav-item{{ ($active ?? '') === 'promotion' ? ' active' : '' }}"><a href="{{ route('customer.promotion') }}" class="nav-link">Khuyến Mãi</a></li>
-        <li class="nav-item{{ ($active ?? '') === 'blog' ? ' active' : '' }}"><a href="{{ route('customer.blog') }}" class="nav-link">Về Chúng Tôi</a></li>
-        <li class="nav-item{{ ($active ?? '') === 'contact' ? ' active' : '' }}"><a href="{{ route('customer.contact') }}" class="nav-link">Liên Hệ</a></li>
+        <li class="nav-item{{ ($active ?? '') === 'blog' ? ' active' : '' }}"><a href="{{ route('customer.blog-single') }}" class="nav-link">Về Chúng Tôi</a></li>
       </ul>
 
       @php
@@ -42,6 +40,10 @@
               <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.my-bookings') }}">
                 <span class="customer-user-dropdown-icon ion-ios-briefcase"></span>
                 <span>Đặt phòng của bạn</span>
+              </a>
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.promotion-wallet') }}">
+                <span class="customer-user-dropdown-icon ion-ios-pricetag"></span>
+                <span>Kho khuyến mãi</span>
               </a>
               <form method="POST" action="{{ route('logout') }}" class="customer-user-logout-form">
                 {{ csrf_field() }}

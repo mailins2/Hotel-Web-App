@@ -60,6 +60,14 @@
             color: rgba(255, 255, 255, 0.82);
          }
 
+         .auth-field-error {
+            display: block;
+            margin-top: 0.5rem;
+            color: #dc2626;
+            font-size: 0.875rem;
+            font-weight: 600;
+         }
+
          @media (max-width: 767.98px) {
             .auth-panel {
                min-height: auto;
@@ -77,26 +85,34 @@
                         </a>
                         <h2 class="mb-2 text-center">Đăng ký</h2>
                         <x-auth-session-status class="mb-4" :status="session('status')" />
-                        <x-auth-validation-errors class="mb-4" :errors="$errors" />
                         <form method="POST" action="{{ route('register') }}" data-toggle="validator">
                            {{ csrf_field() }}
                            <div class="row">
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input class="form-control" type="email" placeholder="Nhập email của bạn" id="email" name="email" value="{{ old('email') }}" required>
+                                    <input class="form-control @error('email') is-invalid @enderror" type="email" placeholder="Nhập email của bạn" id="email" name="email" value="{{ old('email') }}" required>
+                                    @error('email')
+                                       <span class="auth-field-error">{{ $message }}</span>
+                                    @enderror
                                  </div>
                               </div>
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                                    <input class="form-control" type="password" placeholder="Tạo mật khẩu" id="password" name="password" required autocomplete="new-password">
+                                    <input class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Tạo mật khẩu" id="password" name="password" required autocomplete="new-password">
+                                    @error('password')
+                                       <span class="auth-field-error">{{ $message }}</span>
+                                    @enderror
                                  </div>
                               </div>
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password_confirmation" class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
-                                    <input id="password_confirmation" class="form-control" type="password" placeholder="Nhập lại mật khẩu" name="password_confirmation" required>
+                                    <input id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" type="password" placeholder="Nhập lại mật khẩu" name="password_confirmation" required>
+                                    @error('password_confirmation')
+                                       <span class="auth-field-error">{{ $message }}</span>
+                                    @enderror
                                  </div>
                               </div>
                            </div>

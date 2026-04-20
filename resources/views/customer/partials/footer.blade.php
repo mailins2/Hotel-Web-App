@@ -12,10 +12,8 @@
         <div class="ftco-footer-widget mb-4 ml-md-5">
           <h2 class="ftco-heading-2">Useful Links</h2>
           <ul class="list-unstyled">
-            <li><a href="{{ route('customer.blog') }}" class="py-2 d-block">Blog</a></li>
             <li><a href="{{ route('customer.rooms') }}" class="py-2 d-block">Rooms</a></li>
             <li><a href="{{ route('customer.services') }}" class="py-2 d-block">Restaurant</a></li>
-            <li><a href="{{ route('customer.contact') }}" class="py-2 d-block">Contact</a></li>
           </ul>
         </div>
       </div> -->
@@ -26,7 +24,6 @@
             <li><a href="{{ route('customer.promotion') }}" class="py-2 d-block">About Us</a></li>
             <li><a href="{{ route('customer.rooms') }}" class="py-2 d-block">Room Types</a></li>
             <li><a href="{{ route('customer.services') }}" class="py-2 d-block">Dining</a></li>
-            <li><a href="{{ route('customer.blog') }}" class="py-2 d-block">Travel Journal</a></li>
           </ul>
         </div>
       </div> -->

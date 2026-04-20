@@ -6,9 +6,9 @@
   ];
 
   $serviceTypeOptions = [
-    1 => 'Dịch vụ phòng',
-    2 => 'Dịch vụ giải trí',
     0 => 'Dịch vụ ăn uống',
+    2 => 'Dịch vụ giải trí',
+    1 => 'Dịch vụ phòng',
   ];
 
   $serviceImageMap = [
@@ -25,6 +25,11 @@
     11 => 'resources/customer/images/dv_spa.jpg',
     12 => 'resources/customer/images/dv_fb.webp',
     13 => 'resources/customer/images/dv_golf.jpg',
+    14 => 'resources/customer/images/menu-6.jpg',
+    15 => 'resources/customer/images/menu-7.jpg',
+    16 => 'resources/customer/images/menu-8.jpg',
+    17 => 'resources/customer/images/menu-9.jpg',
+    18 => 'resources/customer/images/resto.jpg',
   ];
 
   $services = collect(config('hotel-management.modules.services.records', []))
@@ -39,6 +44,28 @@
         'ImagePath' => $serviceImageMap[$serviceId] ?? 'resources/customer/images/resto.jpg',
       ]);
     });
+
+  $servicesByType = $services->groupBy('LoaiDV');
+  $serviceSections = [
+    [
+      'type' => 0,
+      'subheading' => 'Dịch vụ ăn uống',
+      'title' => 'Thực đơn của khách sạn',
+      'empty' => 'Chưa có món ăn nào.',
+    ],
+    [
+      'type' => 2,
+      'subheading' => 'Dịch vụ giải trí',
+      'title' => 'Loại hình giải trí của khách sạn',
+      'empty' => 'Chưa có nội dung giải trí nào.',
+    ],
+    [
+      'type' => 1,
+      'subheading' => 'Dịch vụ phòng',
+      'title' => 'Dịch vụ phòng của khách sạn',
+      'empty' => 'Chưa có dịch vụ phòng nào.',
+    ],
+  ];
 
   $serviceOptions = $services
     ->map(fn (array $service) => [
@@ -119,48 +146,59 @@
       </div>
     </section>
 
-    <section class="ftco-section ftco-menu bg-light">
-      <div class="container">
-        <div class="row justify-content-center mb-5 pb-3">
-          <div class="col-md-7 heading-section text-center ftco-animate">
-            <span class="subheading">Dịch vụ khách sạn</span>
-            <h2>Danh sách dịch vụ</h2>
+    @if ($errors->any())
+      <div class="service-booking-alert service-booking-alert-error" role="alert">{{ $errors->first() }}</div>
+    @endif
+
+    @foreach ($serviceSections as $section)
+      @php
+        $sectionServices = ($servicesByType[$section['type']] ?? collect())->values();
+      @endphp
+      <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
+        <div class="container">
+          <div class="row justify-content-center mb-5 pb-3">
+            <div class="col-md-7 heading-section text-center ftco-animate">
+              <span class="subheading">{{ $section['subheading'] }}</span>
+              <h2>{{ $section['title'] }}</h2>
+            </div>
           </div>
-        </div>
 
-        @if ($errors->any())
-          <div class="service-booking-alert service-booking-alert-error" role="alert">{{ $errors->first() }}</div>
-        @endif
-
-        <div class="row">
-          @foreach ($services as $service)
-            <div class="col-lg-6 col-xl-6 d-flex">
-              <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
-                <div class="img" data-bg-image="{{ Vite::asset($service['ImagePath']) }}"></div>
-                <div class="desc p-4">
-                  <div class="d-md-flex text align-items-start">
-                    <h3><span>{{ $service['TenDV'] }}</span></h3>
-                    <span class="price">{{ number_format($service['GiaDV'], 0, ',', '.') }} VNĐ</span>
-                  </div>
-                  <div class="d-block">
-                    <p class="service-type-label">{{ $service['LoaiDVLabel'] }}</p>
-                    <button
-                      class="service-booking-trigger"
-                      type="button"
-                      data-service-booking-trigger
-                      data-service-id="{{ $service['MaDV'] }}"
-                      data-service-type="{{ $service['LoaiDV'] }}"
-                    >
-                      Đặt dịch vụ
-                    </button>
+          @if ($sectionServices->isNotEmpty())
+            <div class="row service-page-grid" data-service-page-grid>
+              @foreach ($sectionServices as $service)
+                <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+                  <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+                    <div class="img" data-bg-image="{{ Vite::asset($service['ImagePath']) }}"></div>
+                    <div class="desc p-4">
+                      <div class="d-md-flex text align-items-start">
+                        <h3><span>{{ $service['TenDV'] }}</span></h3>
+                        <span class="price">{{ number_format($service['GiaDV'], 0, ',', '.') }} VNĐ</span>
+                      </div>
+                      <div class="d-block">
+                        <p class="service-type-label">{{ $service['LoaiDVLabel'] }}</p>
+                        <button
+                          class="service-booking-trigger"
+                          type="button"
+                          data-service-booking-trigger
+                          data-service-id="{{ $service['MaDV'] }}"
+                          data-service-type="{{ $service['LoaiDV'] }}"
+                        >
+                          Đặt dịch vụ
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              @endforeach
             </div>
-          @endforeach
+
+            <div class="service-pagination" data-service-pagination hidden></div>
+          @else
+            <div class="customer-empty">{{ $section['empty'] }}</div>
+          @endif
         </div>
-      </div>
-    </section>
+      </section>
+    @endforeach
 
     <div
       class="service-booking-modal"
@@ -261,6 +299,52 @@
 
     <script>
       (() => {
+        const initServicePagination = () => {
+          document.querySelectorAll('[data-service-section]').forEach((section) => {
+            const items = Array.from(section.querySelectorAll('[data-service-page-item]'));
+            const pagination = section.querySelector('[data-service-pagination]');
+            const pageSize = 6;
+            const pageCount = Math.ceil(items.length / pageSize);
+
+            if (! pagination || pageCount <= 1) {
+              return;
+            }
+
+            let currentPage = 1;
+
+            const render = () => {
+              items.forEach((item, index) => {
+                const itemPage = Math.floor(index / pageSize) + 1;
+                item.hidden = itemPage !== currentPage;
+              });
+
+              pagination.querySelectorAll('button').forEach((button) => {
+                const page = Number(button.dataset.servicePage);
+                button.classList.toggle('is-active', page === currentPage);
+                button.setAttribute('aria-current', page === currentPage ? 'page' : 'false');
+              });
+            };
+
+            pagination.hidden = false;
+            pagination.innerHTML = '';
+
+            for (let page = 1; page <= pageCount; page += 1) {
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.dataset.servicePage = String(page);
+              button.textContent = String(page);
+              button.setAttribute('aria-label', `Trang ${page}`);
+              button.addEventListener('click', () => {
+                currentPage = page;
+                render();
+              });
+              pagination.append(button);
+            }
+
+            render();
+          });
+        };
+
         const initServiceBooking = () => {
         const modal = document.querySelector('[data-service-booking-modal]');
 
@@ -418,10 +502,12 @@
 
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', () => {
+            initServicePagination();
             initServiceBooking();
             initServiceBookingSuccessModal();
           }, { once: true });
         } else {
+          initServicePagination();
           initServiceBooking();
           initServiceBookingSuccessModal();
         }

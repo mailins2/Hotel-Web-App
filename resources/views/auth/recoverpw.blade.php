@@ -1,5 +1,14 @@
 <x-guest-layout>
    <section class="login-content">
+      <style>
+         .auth-field-error {
+            display: block;
+            margin-top: 0.5rem;
+            color: #dc2626;
+            font-size: 0.875rem;
+            font-weight: 600;
+         }
+      </style>
       <div class="row m-0 align-items-center bg-white vh-100">
          <div class="col-md-6 d-md-block d-none bg-primary p-0 mt-n1 vh-100 overflow-hidden">
             <img src="{{asset('images/auth/khachsan.jpg')}}" class="img-fluid gradient-main animated-scaleX" alt="images">
@@ -9,17 +18,19 @@
                <div class="card-body">
                   <a href="{{route('dashboard')}}" class="navbar-brand d-flex align-items-center mb-3">
                      <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
-                     <h4 class="logo-title ms-3">Peach Valley Hotel</h4>
                   </a>
                   <h2 class="mb-2">Quên mật khẩu</h2>
                   <p>Nhập địa chỉ email để nhận hướng dẫn đặt lại mật khẩu.</p>
-                  <x-auth-validation-errors class="mb-4" :errors="$errors" />
-                  <form>
+                  <form method="POST" action="{{ route('auth.recoverpw.submit') }}">
+                     {{ csrf_field() }}
                      <div class="row">
                         <div class="col-lg-12">
                            <div class="floating-label form-group">
                               <label for="email" class="form-label">Email</label>
-                              <input type="email" class="form-control" id="email" aria-describedby="email" placeholder=" ">
+                              <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" aria-describedby="email" placeholder=" " required>
+                              @error('email')
+                                 <span class="auth-field-error">{{ $message }}</span>
+                              @enderror
                            </div>
                         </div>
                      </div>
