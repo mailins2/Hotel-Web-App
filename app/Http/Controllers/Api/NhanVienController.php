@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Validator;
 class NhanVienController extends Controller
 {
     // 1. Lấy danh sách nhân viên kèm thông tin tài khoản
+    // get /api/nhan-vien
     public function index()
     {
         $nhanViens = NhanVien::with('taiKhoan')->get();
@@ -17,6 +18,7 @@ class NhanVienController extends Controller
     }
 
     // 2. Thêm mới nhân viên
+    // post /api/nhan-vien 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -36,6 +38,7 @@ class NhanVienController extends Controller
     }
 
     // 3. Xem chi tiết nhân viên và các hóa đơn họ đã lập
+    // get /api/nhan-vien/id
     public function show($id)
     {
         // Thêm 'hoaDons' vào with nếu bạn muốn xem lịch sử làm việc của NV này
@@ -49,6 +52,7 @@ class NhanVienController extends Controller
     }
 
     // 4. Cập nhật thông tin nhân viên
+    //put /api/nhan-vien/id
     public function update(Request $request, $id)
     {
         $nhanVien = NhanVien::find($id);
@@ -71,6 +75,7 @@ class NhanVienController extends Controller
     }
 
     // 5. Xóa nhân viên
+    // delete /api/nhan-vien/id
     public function destroy($id)
     {
         $nhanVien = NhanVien::find($id);

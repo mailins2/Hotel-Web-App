@@ -43,6 +43,7 @@ class KhoKhuyenMaiController extends Controller
     }
 
     // 3. Lấy danh sách khuyến mãi của riêng 1 khách hàng
+    //get /api/kho-khuyen-mai/khach-hang/id
     public function showByKhachHang($maKH)
     {
         $danhSach = KhoKhuyenMai::with('khuyenMai')
@@ -53,6 +54,7 @@ class KhoKhuyenMaiController extends Controller
     }
 
     // 4. Cập nhật trạng thái (Sử dụng mã khuyến mãi)
+    //put api/kho-khuyen-mai/update-status
     public function updateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [

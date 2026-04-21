@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ChiTietHoaDonController;
 use App\Http\Controllers\Api\ThanhToanController;
 use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
+use App\Http\Controllers\Api\ZaloPay\PaymentController;
 
 Route::get('/bang-gia', [BangGiaController::class, 'index']);
 Route::post('/bang-gia', [BangGiaController::class, 'store']);
@@ -42,8 +43,12 @@ Route::get('/phong/trong', [PhongController::class, 'phongTrong']);
 Route::apiResource('phong', PhongController::class);
 
 
-Route::post('dat-phong/{id}/phong', [DatPhongController::class, 'addPhong']);
-Route::delete('dat-phong/{id}/phong/{maPhong}', [DatPhongController::class, 'removePhong']);
+Route::post('dat-phong/{id}/change-room', [DatPhongController::class, 'changeRoom']);
+Route::post('dat-phong/{id}/add-room', [DatPhongController::class, 'addRoom']);
+Route::delete('dat-phong/{id}/remove-room/{maPhong}', [DatPhongController::class, 'removeRoom']);
+
+Route::post('dat-phong/{id}/check-in', [DatPhongController::class, 'checkIn']);
+Route::post('dat-phong/{id}/check-out', [DatPhongController::class, 'checkOut']);
 Route::apiResource('dat-phong', DatPhongController::class);
 
 Route::apiResource('dich-vu', \App\Http\Controllers\Api\DichVuController::class);
@@ -64,9 +69,12 @@ Route::apiResource('den-bu', DenBuHuHongController::class);
 
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
+Route::get('kho-khuyen-mai/khach-hang/{maKH}', [KhoKhuyenMaiController::class, 'showByKhachHang']);
+Route::put('kho-khuyen-mai/update-status', [KhoKhuyenMaiController::class, 'updateStatus']);
 Route::apiResource('kho-khuyen-mai', KhoKhuyenMaiController::class);
 
 Route::apiResource('hoa-don', HoaDonController::class);
+
 
 Route::apiResource('chi-tiet-hoa-don', ChiTietHoaDonController::class);
 
@@ -78,3 +86,9 @@ Route::get('thanh-toan/hoa-don/{maHD}', [ThanhToanController::class, 'getByHoaDo
 Route::apiResource('danh-gia', DanhGiaController::class);
 
 Route::apiResource('hinh-anh', HinhController::class);
+
+// Route để thực hiện tạo đơn hàng và lấy link thanh toán
+Route::post('/zalopay-payment', [PaymentController::class, 'createPayment']);
+
+// Route để ZaloPay gọi về (Callback) báo kết quả thanh toán
+Route::post('/zalopay-callback', [PaymentController::class, 'callback']);

@@ -9,7 +9,19 @@ class ChiTietHoaDon extends Model
     protected $table = 'ChiTietHoaDon';
     protected $primaryKey = 'MaCTHD';
     public $timestamps = false;
-    protected $guarded = [];
+    protected $fillable = [
+        'MaHD',
+        'MaLoaiPhong',
+        'MaSuDung',
+        'MaDenBu',
+        'MoTa',
+        'SoLuong',
+        'DonGia'
+    ];
+    protected $casts = [
+        'SoLuong' => 'integer',
+        'DonGia' => 'float'
+    ];
     public function hoaDon()
     {
         return $this->belongsTo(HoaDon::class, 'MaHD');

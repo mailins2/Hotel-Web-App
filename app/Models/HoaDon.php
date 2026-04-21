@@ -9,7 +9,15 @@ class HoaDon extends Model
     protected $table = 'HoaDon';
     protected $primaryKey = 'MaHD';
     public $timestamps = false;
-    protected $guarded = [];
+    protected $fillable = [
+        'MaDatPhong',
+        'NgayLapHD',
+        'MaKM',
+        'TongTien',
+        'MaNV',
+        'TrangThai',
+        'DaThanhToan'
+    ];
 
     public function datPhong()
     {
