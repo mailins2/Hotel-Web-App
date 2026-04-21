@@ -55,6 +55,20 @@ const addDays = (value, days) => {
     return nextDate;
 };
 
+const createStrictLocalDate = (year, month, day) => {
+    const date = new Date(year, month - 1, day);
+
+    if (
+        date.getFullYear() !== year ||
+        date.getMonth() !== month - 1 ||
+        date.getDate() !== day
+    ) {
+        return null;
+    }
+
+    return getDateAtMidnight(date);
+};
+
 const parseDateValue = (value) => {
     if (!value) {
         return null;
@@ -69,18 +83,14 @@ const parseDateValue = (value) => {
 
     if (match) {
         const [, year, month, day] = match;
-        return getDateAtMidnight(
-            new Date(Number(year), Number(month) - 1, Number(day)),
-        );
+        return createStrictLocalDate(Number(year), Number(month), Number(day));
     }
 
-    match = normalizedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    match = normalizedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
 
     if (match) {
         const [, day, month, year] = match;
-        return getDateAtMidnight(
-            new Date(Number(year), Number(month) - 1, Number(day)),
-        );
+        return createStrictLocalDate(Number(year), Number(month), Number(day));
     }
 
     return getDateAtMidnight(normalizedValue);
@@ -112,6 +122,81 @@ const formatDisplayDate = (value) => {
     const year = date.getFullYear();
 
     return `${day}/${month}/${year}`;
+};
+
+const registerVietnameseDatepickerLocale = () => {
+    if (!window.$ || !window.$.fn || !window.$.fn.datepicker) {
+        return false;
+    }
+
+    const $ = window.$;
+
+    $.fn.datepicker.dates.vi = {
+        days: [
+            "Chủ nhật",
+            "Thứ hai",
+            "Thứ ba",
+            "Thứ tư",
+            "Thứ năm",
+            "Thứ sáu",
+            "Thứ bảy",
+        ],
+        daysShort: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+        daysMin: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+        months: [
+            "Tháng 1",
+            "Tháng 2",
+            "Tháng 3",
+            "Tháng 4",
+            "Tháng 5",
+            "Tháng 6",
+            "Tháng 7",
+            "Tháng 8",
+            "Tháng 9",
+            "Tháng 10",
+            "Tháng 11",
+            "Tháng 12",
+        ],
+        monthsShort: [
+            "Th1",
+            "Th2",
+            "Th3",
+            "Th4",
+            "Th5",
+            "Th6",
+            "Th7",
+            "Th8",
+            "Th9",
+            "Th10",
+            "Th11",
+            "Th12",
+        ],
+        today: "Hôm nay",
+        clear: "Xóa",
+        format: "dd/mm/yyyy",
+        titleFormat: "MM yyyy",
+        weekStart: 1,
+    };
+
+    $.fn.datepicker.defaults.language = "vi";
+    $.fn.datepicker.defaults.format = "dd/mm/yyyy";
+    $.fn.datepicker.defaults.weekStart = 1;
+
+    return true;
+};
+
+const resetDatepicker = (picker) => {
+    try {
+        picker.datepicker("remove");
+    } catch (error) {
+        // Ignore: older bootstrap-datepicker builds may only support destroy.
+    }
+
+    try {
+        picker.datepicker("destroy");
+    } catch (error) {
+        // Ignore: destroy is unavailable in some bundled datepicker variants.
+    }
 };
 
 const formatGuestSummary = (adults, children) =>
@@ -369,6 +454,7 @@ const initGuestPickers = () => {
 const initRoomQuantitySteppers = () => {
     document.querySelectorAll("[data-room-qty-stepper]").forEach((stepper) => {
         const input = stepper.querySelector("[data-room-qty-input]");
+        const valueLabel = stepper.querySelector("[data-room-qty-value]");
         const decrementButton = stepper.querySelector('[data-room-qty-action="decrement"]');
         const incrementButton = stepper.querySelector('[data-room-qty-action="increment"]');
 
@@ -388,8 +474,12 @@ const initRoomQuantitySteppers = () => {
             const normalizedValue = Math.min(Math.max(currentValue, min), max);
 
             input.value = String(normalizedValue);
+            if (valueLabel instanceof HTMLElement) {
+                valueLabel.textContent = `${normalizedValue} phòng`;
+            }
             decrementButton.disabled = normalizedValue <= min;
             incrementButton.disabled = normalizedValue >= max;
+            input.dispatchEvent(new Event("change", { bubbles: true }));
         };
 
         decrementButton.addEventListener("click", () => {
@@ -401,6 +491,8 @@ const initRoomQuantitySteppers = () => {
             input.value = String(Number.parseInt(input.value || String(min), 10) + 1);
             update();
         });
+
+        input.addEventListener("room-qty-sync", update);
 
         update();
     });
@@ -483,9 +575,15 @@ const initRoomAmenitiesModal = () => {
     nextButton?.addEventListener("click", () => showModalSlide(modalIndex + 1));
 
     const openModal = (trigger) => {
-        title.textContent = trigger.dataset.roomTitle || "Phòng";
-        area.textContent = trigger.dataset.roomArea || "";
-        desc.textContent = trigger.dataset.roomDesc || "";
+        if (title) {
+            title.textContent = trigger.dataset.roomTitle || "Phòng";
+        }
+        if (area) {
+            area.textContent = trigger.dataset.roomArea || "";
+        }
+        if (desc) {
+            desc.textContent = trigger.dataset.roomDesc || "";
+        }
 
         const images = (trigger.dataset.roomImages || "")
             .split("|")
@@ -503,7 +601,35 @@ const initRoomAmenitiesModal = () => {
     };
 
     document.querySelectorAll("[data-room-modal-trigger]").forEach((trigger) => {
-        trigger.addEventListener("click", () => openModal(trigger));
+        trigger.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openModal(trigger);
+        });
+    });
+
+    const ignoredCardTargets = [
+        "a",
+        "button",
+        "input",
+        "select",
+        "textarea",
+        ".room-result-actions",
+        "[data-room-qty-stepper]",
+        "[data-room-slider-prev]",
+        "[data-room-slider-next]",
+        "[data-room-modal-trigger]",
+    ].join(",");
+
+    document.querySelectorAll("[data-room-card-trigger]").forEach((card) => {
+        card.addEventListener("click", (event) => {
+            const target = event.target instanceof Element ? event.target : null;
+
+            if (target?.closest(ignoredCardTargets)) {
+                return;
+            }
+
+            openModal(card);
+        });
     });
 
     modal.querySelectorAll("[data-room-modal-close]").forEach((btn) => {
@@ -553,6 +679,12 @@ const initRoomSelection = () => {
 
             wrapper.querySelector("[data-room-cancel]")?.addEventListener("click", () => {
                 selections.delete(item.name);
+                if (item.quantityInput instanceof HTMLInputElement) {
+                    item.quantityInput.value = "0";
+                    item.quantityInput.dispatchEvent(new Event("room-qty-sync"));
+                    return;
+                }
+
                 renderList();
             });
 
@@ -562,23 +694,36 @@ const initRoomSelection = () => {
         totalEl.textContent = `${total.toLocaleString("vi-VN")} VND`;
     };
 
-    document.querySelectorAll("[data-room-select]").forEach((button) => {
-        button.addEventListener("click", () => {
-            const card = button.closest(".room-result-card");
-            const qtySelect = card?.querySelector("[data-room-qty]");
-            const quantity = Number.parseInt(qtySelect?.value || "1", 10);
-            const price = Number.parseInt(button.dataset.roomPrice || "0", 10);
-            const roomName = button.dataset.roomName || "Phòng";
+    const syncRoomSelection = (input) => {
+        if (!(input instanceof HTMLInputElement)) {
+            return;
+        }
 
-            if (quantity <= 0) {
-                selections.delete(roomName);
-            } else {
-                selections.set(roomName, { name: roomName, price, quantity });
-            }
+        const quantity = Number.parseInt(input.value || "0", 10);
+        const price = Number.parseInt(input.dataset.roomPrice || "0", 10);
+        const roomName = input.dataset.roomName || "Phòng";
 
-            renderList();
+        if (quantity <= 0) {
+            selections.delete(roomName);
+        } else {
+            selections.set(roomName, {
+                name: roomName,
+                price,
+                quantity,
+                quantityInput: input,
+            });
+        }
+
+        renderList();
+    };
+
+    document.querySelectorAll("[data-room-qty]").forEach((input) => {
+        input.addEventListener("change", () => {
+            syncRoomSelection(input);
         });
     });
+
+    summary.addEventListener("booking-summary-change", renderList);
 };
 
 const initSearchSummaryControls = () => {
@@ -643,13 +788,19 @@ const initSearchSummaryControls = () => {
 
         const normalizedCheckin = formatIsoDate(checkinDate);
         const normalizedCheckout = formatIsoDate(checkoutDate);
+        const displayCheckin = formatDisplayDate(checkinDate);
+        const displayCheckout = formatDisplayDate(checkoutDate);
 
-        if (normalizedCheckin) {
+        if (normalizedCheckin && checkinInput.type === "date") {
             checkinInput.value = normalizedCheckin;
+        } else if (displayCheckin) {
+            checkinInput.value = displayCheckin;
         }
 
-        if (normalizedCheckout) {
+        if (normalizedCheckout && checkoutInput.type === "date") {
             checkoutInput.value = normalizedCheckout;
+        } else if (displayCheckout) {
+            checkoutInput.value = displayCheckout;
         }
 
         checkinInput.setCustomValidity("");
@@ -686,7 +837,7 @@ const initSearchSummaryControls = () => {
         const days = nights + 1;
 
         summary.dataset.nights = String(nights);
-        summary.dataset.checkin = checkinValue;
+        summary.dataset.checkin = formatIsoDate(checkinValue);
 
         if (guestWrapper) {
             const adults = guestWrapper.querySelector("[data-guest-count=\"adults\"]")?.textContent || "1";
@@ -700,6 +851,7 @@ const initSearchSummaryControls = () => {
 
         dateLine.textContent = `${formatDisplayDate(checkinValue)} - ${formatDisplayDate(checkoutValue)} (${days} ngày ${nights} đêm)`;
         updateGuestButtons();
+        summary.dispatchEvent(new Event("booking-summary-change"));
     };
 
     updateSummary();
@@ -746,54 +898,7 @@ const initVietnameseDatepicker = () => {
         return;
     }
 
-    const $ = window.$;
-
-    $.fn.datepicker.dates.vi = {
-        days: [
-            "Chủ nhật",
-            "Thứ hai",
-            "Thứ ba",
-            "Thứ tư",
-            "Thứ năm",
-            "Thứ sáu",
-            "Thứ bảy",
-        ],
-        daysShort: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
-        daysMin: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
-        months: [
-            "Tháng 1",
-            "Tháng 2",
-            "Tháng 3",
-            "Tháng 4",
-            "Tháng 5",
-            "Tháng 6",
-            "Tháng 7",
-            "Tháng 8",
-            "Tháng 9",
-            "Tháng 10",
-            "Tháng 11",
-            "Tháng 12",
-        ],
-        monthsShort: [
-            "Th1",
-            "Th2",
-            "Th3",
-            "Th4",
-            "Th5",
-            "Th6",
-            "Th7",
-            "Th8",
-            "Th9",
-            "Th10",
-            "Th11",
-            "Th12",
-        ],
-        today: "Hôm nay",
-        clear: "Xóa",
-        format: "dd/mm/yyyy",
-        titleFormat: "MM yyyy",
-        weekStart: 1,
-    };
+    registerVietnameseDatepickerLocale();
 
     const checkinInput = document.querySelector(".checkin_date");
     const checkoutInput = document.querySelector(".checkout_date");
@@ -813,12 +918,13 @@ const initVietnameseDatepicker = () => {
         autoclose: true,
         language: "vi",
         weekStart: 1,
+        forceParse: true,
         todayHighlight: true,
     };
     let isSyncingDates = false;
 
-    $checkin.datepicker("destroy");
-    $checkout.datepicker("destroy");
+    resetDatepicker($checkin);
+    resetDatepicker($checkout);
     $checkin.datepicker({
         ...commonOptions,
         startDate: today,
@@ -852,6 +958,8 @@ const initVietnameseDatepicker = () => {
         $checkin.datepicker("setDate", checkinDate);
         $checkout.datepicker("setDate", checkoutDate);
 
+        checkinInput.value = formatDisplayDate(checkinDate);
+        checkoutInput.value = formatDisplayDate(checkoutDate);
         checkinInput.setCustomValidity("");
         checkoutInput.setCustomValidity("");
         isSyncingDates = false;
@@ -868,6 +976,108 @@ const initVietnameseDatepicker = () => {
     });
 
     syncDates();
+};
+
+const initSearchSummaryDatepickers = () => {
+    if (!window.$ || !window.$.fn || !window.$.fn.datepicker) {
+        return;
+    }
+
+    registerVietnameseDatepickerLocale();
+
+    const checkinInput = document.querySelector("[data-search-checkin]");
+    const checkoutInput = document.querySelector("[data-search-checkout]");
+
+    if (
+        !(checkinInput instanceof HTMLInputElement) ||
+        !(checkoutInput instanceof HTMLInputElement) ||
+        checkinInput.type === "date" ||
+        checkoutInput.type === "date"
+    ) {
+        return;
+    }
+
+    const $ = window.$;
+    const today = getDateAtMidnight(new Date());
+    const $checkin = $(checkinInput);
+    const $checkout = $(checkoutInput);
+    const commonOptions = {
+        format: "dd/mm/yyyy",
+        autoclose: true,
+        language: "vi",
+        weekStart: 1,
+        forceParse: true,
+        todayHighlight: true,
+    };
+    let isSyncingDates = false;
+
+    const dispatchDateChange = (input) => {
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const syncSearchDatepickerValues = (changedInput = null, shouldDispatch = false) => {
+        if (isSyncingDates) {
+            return;
+        }
+
+        isSyncingDates = true;
+
+        let checkinDate = parseDateValue(checkinInput.value) || today;
+
+        if (today && checkinDate < today) {
+            checkinDate = today;
+        }
+
+        const minCheckoutDate = addDays(checkinDate, 1);
+        let checkoutDate = parseDateValue(checkoutInput.value) || minCheckoutDate;
+
+        if (minCheckoutDate && checkoutDate < minCheckoutDate) {
+            checkoutDate = minCheckoutDate;
+        }
+
+        $checkin.datepicker("setStartDate", today);
+        $checkout.datepicker("setStartDate", minCheckoutDate);
+        $checkin.datepicker("setDate", checkinDate);
+        $checkout.datepicker("setDate", checkoutDate);
+
+        checkinInput.value = formatDisplayDate(checkinDate);
+        checkoutInput.value = formatDisplayDate(checkoutDate);
+        checkinInput.setCustomValidity("");
+        checkoutInput.setCustomValidity("");
+
+        isSyncingDates = false;
+
+        if (changedInput && shouldDispatch) {
+            dispatchDateChange(changedInput);
+        }
+    };
+
+    resetDatepicker($checkin);
+    resetDatepicker($checkout);
+    $checkin.datepicker({
+        ...commonOptions,
+        startDate: today,
+    });
+    $checkout.datepicker({
+        ...commonOptions,
+        startDate: addDays(today, 1),
+    });
+
+    $checkin.on("changeDate", () => {
+        syncSearchDatepickerValues(checkinInput, true);
+    });
+    $checkout.on("changeDate", () => {
+        syncSearchDatepickerValues(checkoutInput, true);
+    });
+
+    [checkinInput, checkoutInput].forEach((input) => {
+        input.addEventListener("change", () => syncSearchDatepickerValues(input));
+        input.addEventListener("focus", () => {
+            window.$(input).datepicker("show");
+        });
+    });
+
+    syncSearchDatepickerValues();
 };
 
 const initNativeDatePickers = () => {
@@ -921,11 +1131,11 @@ const initPaymentOptions = () => {
             selectedWrapper.classList.add("is-selected");
         }
         if (value === "zalopay") {
-            submitButton.textContent = "Thanh toán và hiển thị QR";
+            submitButton.textContent = "Thanh toán với QR";
             cardFields?.setAttribute("hidden", "hidden");
         } else if (value === "card") {
             submitButton.textContent = "Thanh toán thẻ";
-            cardFields?.removeAttribute("hidden");
+            cardFields?.setAttribute("hidden", "hidden");
         } else {
             submitButton.textContent = "Chọn phương thức thanh toán";
             cardFields?.setAttribute("hidden", "hidden");
@@ -936,7 +1146,8 @@ const initPaymentOptions = () => {
         input.addEventListener("change", () => update(input.dataset.paymentOption));
     });
 
-    update("");
+    const checkedOption = document.querySelector("[data-payment-option]:checked");
+    update(checkedOption?.dataset.paymentOption || "");
 };
 
 document.addEventListener(
@@ -977,6 +1188,7 @@ try {
 
     await import("./main.js");
     initVietnameseDatepicker();
+    initSearchSummaryDatepickers();
 } catch (error) {
     console.error("Customer UI asset boot failed:", error);
     hideLoader();

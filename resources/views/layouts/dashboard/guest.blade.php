@@ -5,9 +5,9 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'Peach Valley') }}</title>
 
-        <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}" />
+        <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}" />
         
         <!-- Fonts -->
         <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"> -->
@@ -15,7 +15,7 @@
         <!-- Styles -->
         <link rel="stylesheet" href="{{ asset('css/libs.min.css') }}">
         <link rel="stylesheet" href="{{asset('css/hope-ui.css?v=1.0')}}">
-        <link rel="stylesheet" href="{{asset('css/brand.css?v=1.0.0')}}">
+        <link rel="stylesheet" href="{{asset('css/brand.css?v=1.0.1')}}">
         <!-- remixicon -->
         <!-- <link rel="stylesheet" href="{{ asset('vendor/remixicon/fonts/remixicon.css') }}"/> -->
 

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Peach Valley Hotel</title>
+    <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
@@ -32,7 +33,7 @@
     		<div class="row no-gutters justify-content-center mb-5 pb-3">
           <div class="col-md-7 heading-section text-center ftco-animate">
           	<span class="subheading">Phòng Peach Valley</span>
-            <h2 class="mb-4">Phòng chính của khách sạn</h2>
+            <h2 class="mb-4">Các loại phòng của khách sạn</h2>
           </div>
         </div>  
     		<div class="row room-list-vertical">

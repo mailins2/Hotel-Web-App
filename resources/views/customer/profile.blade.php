@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Thông tin cá nhân - Peach Valley</title>
+    <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:200,300,400,600,700&display=swap" rel="stylesheet">
@@ -13,15 +14,66 @@
     @php
       $user = mockUser() ?? [];
       $profile = session('customer_profile', []);
+      $account = collect(config('hotel-management.modules.accounts.records', []))->firstWhere('Email', $user['email'] ?? '');
+      $customer = $account
+        ? collect(config('hotel-management.modules.customers.records', []))->firstWhere('MaTK', $account['MaTK'] ?? null)
+        : null;
+      $customerPoints = (int) ($profile['points'] ?? $customer['Diem'] ?? 0);
       $today = now()->toDateString();
-      $profileLocked = ! empty($profile) && $errors->isEmpty();
+      $profileEditing = $errors->isNotEmpty();
+      $profileLocked = false;
+      $profileDisplayName = $profile['display_name'] ?? $customer['TenKH'] ?? $user['name'] ?? '';
+      $profilePhone = $profile['phone'] ?? $customer['SoDienThoai'] ?? '';
+      $profileCccd = $profile['cccd'] ?? $customer['CCCD'] ?? '';
+      $profileBirthday = $profile['birthday'] ?? $customer['NgaySinh'] ?? '';
+      $profileGender = (string) ($profile['gender'] ?? $customer['GioiTinh'] ?? '');
+      $profileGenderLabels = ['0' => 'Nữ', '1' => 'Nam', '2' => 'Khác'];
+      $profileProvince = $profile['province'] ?? '';
+      $profileDistrict = $profile['district'] ?? '';
+      $streetAddress = old(
+        'street_address',
+        $profile['street_address'] ?? trim(($profile['house_number'] ?? '') . ' ' . ($profile['street'] ?? '')) ?: ($customer['DiaChi'] ?? '')
+      );
+      $profileAddress = $profile['address'] ?? $customer['DiaChi'] ?? '';
     @endphp
 
     <section class="customer-account-section">
       <div class="container">
-        <div class="customer-account-heading">
-          <div class="eyebrow">Thông tin cá nhân</div>
-          <p>Cập nhật hồ sơ của bạn</p>
+        <div class="customer-account-shell">
+          @include('customer.partials.account-sidebar', ['active' => 'profile'])
+
+          <main class="customer-account-main">
+            <div class="customer-account-heading">
+              <div class="eyebrow">Thông tin cá nhân</div>
+              <p>Thông tin khách hàng đã đăng ký với Peach Valley.</p>
+            </div>
+
+        <div class="customer-profile-view" data-profile-view @if($profileEditing) hidden @endif>
+          <div class="customer-profile-view-top">
+            <div>
+              <div class="customer-profile-view-name">{{ $profileDisplayName ?: 'Khách hàng Peach Valley' }}</div>
+              <p>{{ $user['email'] ?? '--' }}</p>
+            </div>
+            <button type="button" class="customer-profile-submit" data-profile-edit-trigger>Chỉnh sửa</button>
+          </div>
+
+          <div class="customer-profile-points-panel">
+            <span class="customer-profile-points-icon ion-ios-star"></span>
+            <div class="customer-profile-points">
+              <strong>{{ number_format($customerPoints, 0, ',', '.') }}</strong>
+              <span>điểm</span>
+            </div>
+            <p>Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
+          </div>
+
+          <div class="customer-profile-view-grid">
+            <div class="customer-profile-view-item"><span>Họ và tên</span>{{ $profileDisplayName ?: '--' }}</div>
+            <div class="customer-profile-view-item"><span>Số điện thoại</span>{{ $profilePhone ?: '--' }}</div>
+            <div class="customer-profile-view-item"><span>CCCD</span>{{ $profileCccd ?: '--' }}</div>
+            <div class="customer-profile-view-item"><span>Ngày sinh</span>{{ $profileBirthday ? \Carbon\Carbon::parse($profileBirthday)->format('d/m/Y') : '--' }}</div>
+            <div class="customer-profile-view-item"><span>Giới tính</span>{{ $profileGenderLabels[$profileGender] ?? '--' }}</div>
+            <div class="customer-profile-view-item customer-profile-view-full"><span>Địa chỉ</span>{{ $profileAddress ?: $streetAddress ?: '--' }}</div>
+          </div>
         </div>
 
         <form
@@ -30,7 +82,8 @@
           action="{{ route('customer.profile.update') }}"
           data-customer-profile-form
           data-profile-locked="{{ $profileLocked ? 'true' : 'false' }}"
-          data-selected-district="{{ old('district', $profile['district'] ?? '') }}"
+          data-selected-district="{{ old('district', $profileDistrict) }}"
+          @if(! $profileEditing) hidden @endif
         >
           {{ csrf_field() }}
           <div class="customer-profile-row">
@@ -41,6 +94,17 @@
               </div>
               <p class="customer-profile-help">Email này dùng để đăng nhập và nhận xác nhận đặt phòng.</p>
               <input type="hidden" id="profile_email" name="email" value="{{ $user['email'] ?? '' }}">
+            </div>
+          </div>
+
+          <div class="customer-profile-row">
+            <div class="customer-profile-label">Điểm tích lũy</div>
+            <div class="customer-profile-control">
+              <div class="customer-profile-points">
+                <strong>{{ number_format($customerPoints, 0, ',', '.') }}</strong>
+                <span>điểm tích lũy</span>
+              </div>
+              <p class="customer-profile-help">Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
             </div>
           </div>
 
@@ -56,7 +120,7 @@
                 maxlength="60"
                 pattern="^[A-Za-zÀ-ỹĐđ\s]+$"
                 title="Tên chỉ gồm chữ cái và khoảng trắng."
-                value="{{ old('display_name', $profile['display_name'] ?? '') }}"
+                value="{{ old('display_name', $profileDisplayName) }}"
                 data-profile-editable
                 @disabled($profileLocked)
                 required>
@@ -76,7 +140,7 @@
                 pattern="^0[0-9]{9}$"
                 title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0."
                 data-text-filter="digits"
-                value="{{ old('phone', $profile['phone'] ?? '') }}"
+                value="{{ old('phone', $profilePhone) }}"
                 data-profile-editable
                 @disabled($profileLocked)
                 required>
@@ -97,7 +161,7 @@
                 pattern="^[0-9]{12}$"
                 title="CCCD gồm đúng 12 chữ số."
                 data-text-filter="digits"
-                value="{{ old('cccd', $profile['cccd'] ?? '') }}"
+                value="{{ old('cccd', $profileCccd) }}"
                 data-profile-editable
                 @disabled($profileLocked)
                 required>
@@ -112,7 +176,7 @@
                 name="birthday"
                 type="date"
                 max="{{ $today }}"
-                value="{{ old('birthday', $profile['birthday'] ?? '') }}"
+                value="{{ old('birthday', $profileBirthday) }}"
                 data-profile-editable
                 @disabled($profileLocked)
                 required>
@@ -124,9 +188,9 @@
             <div class="customer-profile-control">
               <select id="gender" name="gender" data-profile-editable @disabled($profileLocked) required>
                 <option value="">Chọn giới tính</option>
-                <option value="1" @selected(old('gender', $profile['gender'] ?? '') === '1')>Nam</option>
-                <option value="0" @selected(old('gender', $profile['gender'] ?? '') === '0')>Nữ</option>
-                <option value="2" @selected(old('gender', $profile['gender'] ?? '') === '2')>Khác</option>
+                <option value="1" @selected(old('gender', $profileGender) === '1')>Nam</option>
+                <option value="0" @selected(old('gender', $profileGender) === '0')>Nữ</option>
+                <option value="2" @selected(old('gender', $profileGender) === '2')>Khác</option>
               </select>
             </div>
           </div>
@@ -137,41 +201,29 @@
               <div class="customer-address-grid">
                 <select id="province" name="province" data-province-select data-profile-editable @disabled($profileLocked) required>
                   <option value="">Chọn tỉnh/thành phố</option>
-                  <option value="TP. Hồ Chí Minh" @selected(old('province', $profile['province'] ?? '') === 'TP. Hồ Chí Minh')>TP. Hồ Chí Minh</option>
-                  <option value="Hà Nội" @selected(old('province', $profile['province'] ?? '') === 'Hà Nội')>Hà Nội</option>
-                  <option value="Lâm Đồng" @selected(old('province', $profile['province'] ?? '') === 'Lâm Đồng')>Lâm Đồng</option>
-                  <option value="Đà Nẵng" @selected(old('province', $profile['province'] ?? '') === 'Đà Nẵng')>Đà Nẵng</option>
+                  <option value="TP. Hồ Chí Minh" @selected(old('province', $profileProvince) === 'TP. Hồ Chí Minh')>TP. Hồ Chí Minh</option>
+                  <option value="Hà Nội" @selected(old('province', $profileProvince) === 'Hà Nội')>Hà Nội</option>
+                  <option value="Lâm Đồng" @selected(old('province', $profileProvince) === 'Lâm Đồng')>Lâm Đồng</option>
+                  <option value="Đà Nẵng" @selected(old('province', $profileProvince) === 'Đà Nẵng')>Đà Nẵng</option>
                 </select>
                 <select id="district" name="district" data-district-select data-profile-editable required disabled>
                   <option value="">Chọn quận/huyện</option>
                 </select>
                 <input
-                  id="street"
-                  name="street"
+                  id="street_address"
+                  name="street_address"
                   type="text"
-                  placeholder="Tên đường"
-                  maxlength="80"
+                  placeholder="Tên đường và số nhà"
+                  maxlength="120"
                   pattern="^[0-9A-Za-zÀ-ỹĐđ\s./-]+$"
-                  title="Tên đường chỉ gồm chữ, số, khoảng trắng và ký tự . / -"
-                  value="{{ old('street', $profile['street'] ?? '') }}"
-                  data-profile-editable
-                  @disabled($profileLocked)
-                  required>
-                <input
-                  id="house_number"
-                  name="house_number"
-                  type="text"
-                  placeholder="Số nhà"
-                  maxlength="20"
-                  pattern="^[0-9A-Za-zÀ-ỹĐđ\s./-]+$"
-                  title="Số nhà chỉ gồm chữ, số, khoảng trắng và ký tự . / -"
-                  value="{{ old('house_number', $profile['house_number'] ?? '') }}"
+                  title="Tên đường và số nhà chỉ gồm chữ, số, khoảng trắng và ký tự . / -"
+                  value="{{ $streetAddress }}"
                   data-profile-editable
                   @disabled($profileLocked)
                   required>
                 <div class="customer-address-full">
-                  <input id="full_address" name="address" type="hidden" value="{{ old('address', $profile['address'] ?? '') }}" data-full-address>
-                  <input class="customer-address-preview" type="text" value="{{ old('address', $profile['address'] ?? '') }}" data-address-preview placeholder="Địa chỉ đầy đủ sẽ tự động hiển thị" readonly>
+                  <input id="full_address" name="address" type="hidden" value="{{ old('address', $profileAddress) }}" data-full-address>
+                  <input class="customer-address-preview" type="text" value="{{ old('address', $profileAddress) }}" data-address-preview placeholder="Địa chỉ đầy đủ sẽ tự động hiển thị" readonly>
                 </div>
               </div>
             </div>
@@ -184,6 +236,8 @@
           </div>
           <p class="customer-profile-save-note{{ session('profile_saved') ? ' is-visible' : '' }}" data-profile-save-note>{{ session('profile_saved') ?? 'Thông tin đã được kiểm tra hợp lệ.' }}</p>
         </form>
+          </main>
+        </div>
       </div>
     </section>
 
@@ -204,10 +258,11 @@
         const district = document.querySelector('[data-district-select]');
         const fullAddress = document.querySelector('[data-full-address]');
         const preview = document.querySelector('[data-address-preview]');
-        const street = document.getElementById('street');
-        const houseNumber = document.getElementById('house_number');
+        const streetAddress = document.getElementById('street_address');
         const saveNote = document.querySelector('[data-profile-save-note]');
         const submitButton = document.querySelector('[data-profile-submit]');
+        const profileView = document.querySelector('[data-profile-view]');
+        const editTrigger = document.querySelector('[data-profile-edit-trigger]');
         const editableFields = Array.from(document.querySelectorAll('[data-profile-editable]'));
         const selectedDistrict = form?.dataset.selectedDistrict || '';
         let profileLocked = form?.dataset.profileLocked === 'true';
@@ -219,7 +274,7 @@
         });
 
         const updateFullAddress = () => {
-          const parts = [houseNumber.value, street.value, district.value, province.value]
+          const parts = [streetAddress.value, district.value, province.value]
             .map((part) => part.trim())
             .filter(Boolean);
           const value = parts.join(', ');
@@ -246,6 +301,10 @@
         const setEditing = (isEditing) => {
           profileLocked = !isEditing;
           form.dataset.profileLocked = profileLocked ? 'true' : 'false';
+          form.hidden = !isEditing;
+          if (profileView) {
+            profileView.hidden = isEditing;
+          }
           form.classList.toggle('is-locked', profileLocked);
           editableFields.forEach((field) => {
             field.disabled = profileLocked;
@@ -254,8 +313,14 @@
           submitButton.textContent = profileLocked ? 'Chỉnh sửa' : 'Lưu cập nhật';
         };
 
+        editTrigger?.addEventListener('click', () => {
+          setEditing(true);
+          saveNote.classList.remove('is-visible');
+          form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
         province.addEventListener('change', updateDistricts);
-        [district, street, houseNumber].forEach((element) => {
+        [district, streetAddress].forEach((element) => {
           element.addEventListener('input', updateFullAddress);
           element.addEventListener('change', updateFullAddress);
         });
@@ -277,7 +342,7 @@
         });
 
         updateDistricts();
-        setEditing(!profileLocked);
+        setEditing(!form.hidden);
       });
     </script>
   </body>

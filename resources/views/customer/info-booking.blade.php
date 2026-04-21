@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Peach Valley Hotel</title>
+    <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:200,300,400,600,700&display=swap" rel="stylesheet">
@@ -13,7 +14,7 @@
     <section class="booking-section">
       <div class="container">
         <div class="booking-header">
-          <a href="{{ route('customer.rooms-search') }}" class="booking-back">
+          <a href="{{ route('customer.rooms-booking') }}" class="booking-back">
             <span class="icon ion-ios-arrow-back"></span>
             Quay lại
           </a>
@@ -83,6 +84,21 @@
                 </ul>
               </div>
             </div>
+
+            <div class="booking-card">
+              <h3>Phương thức thanh toán</h3>
+              <div class="booking-payment-group">
+                <label class="booking-payment-option is-selected">
+                  <input type="radio" name="payment" data-payment-option="zalopay" checked>
+                  <span class="booking-payment-title">ZaloPay</span>
+                  <img src="{{ Vite::asset('resources/customer/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
+                </label>
+                <label class="booking-payment-option">
+                  <input type="radio" name="payment" data-payment-option="card">
+                  <span class="booking-payment-title">Thẻ thanh toán</span>
+                </label>
+              </div>
+            </div>
           </div>
 
           <div class="col-lg-4">
@@ -107,33 +123,70 @@
                   <small>Trước 12:00</small>
                 </div>
               </div>
-              <div class="booking-summary-block">
+              <div class="booking-summary-block booking-summary-rooms-block">
                 <div class="booking-summary-title">
                   <span>Thông tin phòng</span>
                 </div>
-                <div class="booking-summary-room">
-                  <p><strong>Phòng 1:</strong> Deluxe Twin</p>
-                  <p>Số phòng: 1 phòng</p>
-                  <p>Số người: 1 người lớn</p>
-                  <p>Giá phòng: 1,732,500 VND</p>
+                <div class="booking-summary-rooms-scroll">
+                  <div class="booking-summary-room">
+                    <p><strong>Phòng 1:</strong> Deluxe Twin</p>
+                    <p>Số phòng: 1 phòng</p>
+                    <p>Số người: 1 người lớn</p>
+                    <p class="booking-summary-room-price">Giá phòng: 1,732,500 VND</p>
+                  </div>
+                  <div class="booking-summary-room">
+                    <p><strong>Phòng 2:</strong> Superior King</p>
+                    <p>Số phòng: 1 phòng</p>
+                    <p>Số người: 2 người lớn</p>
+                    <p class="booking-summary-room-price">Giá phòng: 1,450,000 VND</p>
+                  </div>
+                  <div class="booking-summary-room">
+                    <p><strong>Phòng 3:</strong> Suite Junior</p>
+                    <p>Số phòng: 1 phòng</p>
+                    <p>Số người: 2 người lớn, 1 trẻ em</p>
+                    <p class="booking-summary-room-price">Giá phòng: 2,100,000 VND</p>
+                  </div>
+                  <div class="booking-summary-room">
+                    <p><strong>Phòng 4:</strong> Standard Garden</p>
+                    <p>Số phòng: 1 phòng</p>
+                    <p>Số người: 1 người lớn</p>
+                    <p class="booking-summary-room-price">Giá phòng: 900,000 VND</p>
+                  </div>
+                  <div class="booking-summary-room">
+                    <p><strong>Phòng 5:</strong> Deluxe Family</p>
+                    <p>Số phòng: 1 phòng</p>
+                    <p>Số người: 3 người lớn</p>
+                    <p class="booking-summary-room-price">Giá phòng: 1,250,000 VND</p>
+                  </div>
                 </div>
               </div>
               <div class="booking-promo">
                 <label for="promoCode">Nhập mã khuyến mại/ mã voucher</label>
                 <div class="booking-promo-control">
-                  <input type="text" id="promoCode" name="promoCode" autocomplete="off">
+                  <input type="text" id="promoCode" name="promoCode" value="PEACH10" autocomplete="off">
                   <button type="button" id="applyPromoBtn">ÁP DỤNG</button>
+                </div>
+                <div class="booking-promo-status" data-promo-status>Đã áp dụng mã PEACH10: giảm 10%</div>
+              </div>
+              <div class="booking-discount-summary" data-booking-discount>
+                <div class="booking-price-row">
+                  <span>Giá gốc:</span>
+                  <strong data-booking-original>7,432,500 VND</strong>
+                </div>
+                <div class="booking-price-row booking-price-discount">
+                  <span>Giá giảm:</span>
+                  <strong data-booking-discount-amount>-743,250 VND</strong>
                 </div>
               </div>
               <div class="booking-summary-total">
                 <span>Tổng giá:</span>
-                <strong>1,732,500 VND</strong>
+                <strong data-booking-total>6,689,250 VND</strong>
               </div>
               <div class="booking-summary-deposit">
                 <span>Tiền đặt cọc:</span>
-                <strong>1,732,500 VND</strong>
+                <strong data-booking-deposit>6,689,250 VND</strong>
               </div>
-              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full">Thực hiện thanh toán</button>
+              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với QR</button>
             </div>
           </div>
         </div>
@@ -151,9 +204,16 @@
         const bookingForm = document.getElementById('bookingForm');
         const promoInput = document.getElementById('promoCode');
         const applyPromoBtn = document.getElementById('applyPromoBtn');
-        const bookingOriginalTotal = 1732500;
+        const promoStatus = document.querySelector('[data-promo-status]');
+        const discountSummary = document.querySelector('[data-booking-discount]');
+        const originalTotal = document.querySelector('[data-booking-original]');
+        const discountAmount = document.querySelector('[data-booking-discount-amount]');
+        const total = document.querySelector('[data-booking-total]');
+        const deposit = document.querySelector('[data-booking-deposit]');
+        const paymentOptions = document.querySelectorAll('[data-payment-option]');
+        const bookingOriginalTotal = 7432500;
         const bookingDiscountRate = 0.1;
-        let appliedPromoCode = '';
+        let appliedPromoCode = promoInput.value.trim();
 
         // Validation functions
         function validateName(value) {
@@ -162,6 +222,55 @@
 
         function validatePhone(value) {
           return /^[0-9\s\-\+()]+$/.test(value.trim()) && value.trim().length >= 10;
+        }
+
+        function formatCurrency(value) {
+          return `${Number(value || 0).toLocaleString('vi-VN')} VND`;
+        }
+
+        function updatePaymentButton(value) {
+          document.querySelectorAll('.booking-payment-option').forEach(option => {
+            option.classList.toggle('is-selected', option.querySelector('[data-payment-option]')?.dataset.paymentOption === value);
+          });
+
+          if (value === 'zalopay') {
+            paymentBtn.textContent = 'Thanh toán với QR';
+          } else if (value === 'card') {
+            paymentBtn.textContent = 'Thanh toán thẻ';
+          } else {
+            paymentBtn.textContent = 'Chọn phương thức thanh toán';
+          }
+        }
+
+        function updateDiscountUI(promoCode) {
+          const hasPromo = Boolean(promoCode);
+          const discountValue = hasPromo ? Math.round(bookingOriginalTotal * bookingDiscountRate) : 0;
+          const finalTotal = bookingOriginalTotal - discountValue;
+
+          if (discountSummary) {
+            discountSummary.hidden = !hasPromo;
+          }
+
+          if (promoStatus) {
+            promoStatus.hidden = !hasPromo;
+            promoStatus.textContent = hasPromo ? `Đã áp dụng mã ${promoCode}: giảm 10%` : '';
+          }
+
+          if (originalTotal) {
+            originalTotal.textContent = formatCurrency(bookingOriginalTotal);
+          }
+
+          if (discountAmount) {
+            discountAmount.textContent = `-${formatCurrency(discountValue)}`;
+          }
+
+          if (total) {
+            total.textContent = formatCurrency(finalTotal);
+          }
+
+          if (deposit) {
+            deposit.textContent = formatCurrency(finalTotal);
+          }
         }
 
         // Real-time validation for name (letters only)
@@ -198,12 +307,14 @@
           if (!promoCode) {
             appliedPromoCode = '';
             localStorage.removeItem('peachBookingPromo');
+            updateDiscountUI('');
             promoInput.focus();
             return;
           }
 
           appliedPromoCode = promoCode;
           const discountAmount = Math.round(bookingOriginalTotal * bookingDiscountRate);
+          updateDiscountUI(promoCode);
 
           localStorage.setItem('peachBookingPromo', JSON.stringify({
             code: promoCode,
@@ -211,6 +322,12 @@
             discountAmount: discountAmount,
             finalTotal: bookingOriginalTotal - discountAmount
           }));
+        });
+
+        paymentOptions.forEach(function(input) {
+          input.addEventListener('change', function() {
+            updatePaymentButton(input.dataset.paymentOption);
+          });
         });
 
         // Payment button validation
@@ -255,10 +372,13 @@
               localStorage.removeItem('peachBookingPromo');
             }
 
-            // Navigate to payment page
-            window.location.href = "{{ route('customer.payment') }}";
+            const selectedPayment = document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '';
+            updatePaymentButton(selectedPayment);
           }
         });
+
+        updateDiscountUI(appliedPromoCode);
+        updatePaymentButton(document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '');
       });
     </script>
   </body>

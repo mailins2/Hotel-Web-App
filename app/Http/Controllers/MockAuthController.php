@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
 
 class MockAuthController extends Controller
@@ -33,6 +34,40 @@ class MockAuthController extends Controller
         $demoUsers = collect(config('hotel-management.demo_auth.users', []));
         $email = mb_strtolower(trim((string) $credentials['email']));
         $role = $credentials['role'] ?? null;
+        $registeredCustomer = $request->session()->get('registered_customer_profile');
+
+        if (
+            is_array($registeredCustomer) &&
+            mb_strtolower(trim((string) ($registeredCustomer['email'] ?? ''))) === $email &&
+            ($role === null || $role === '' || $role === 'customer')
+        ) {
+            if (! Hash::check((string) $credentials['password'], (string) ($registeredCustomer['password_hash'] ?? ''))) {
+                return back()
+                    ->withErrors(['password' => 'Mật khẩu không đúng.'])
+                    ->withInput($request->except('password'));
+            }
+
+            $this->loginDemoUser($request, [
+                'email' => $registeredCustomer['email'],
+                'name' => $registeredCustomer['full_name'],
+                'role' => 'customer',
+                'role_label' => 'Khách hàng',
+            ]);
+
+            $request->session()->put('customer_profile', [
+                'display_name' => $registeredCustomer['full_name'],
+                'phone' => $registeredCustomer['phone'],
+                'cccd' => $registeredCustomer['cccd'],
+                'birthday' => $registeredCustomer['birthday'],
+                'gender' => $registeredCustomer['gender'],
+                'province' => $registeredCustomer['province'],
+                'district' => $registeredCustomer['district'],
+                'street_address' => $registeredCustomer['address_line'],
+                'address' => $registeredCustomer['address'],
+            ]);
+
+            return redirect()->route('dashboard');
+        }
 
         $matchedUser = $demoUsers->first(function (array $user) use ($email, $role) {
             $userEmail = mb_strtolower(trim((string) ($user['email'] ?? '')));

@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <title>Peach Valley</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     
@@ -14,7 +15,7 @@
 
     @include('customer.partials.nav', ['active' => 'rooms'])
     <!-- END nav -->
-		<div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/siderbar5.jpg') }}">
+		<div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/rooms.jpg') }}">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text d-flex align-itemd-center justify-content-center">
@@ -102,7 +103,7 @@
               </div>
 
               <div class="room-booking-actions">
-                <a href="{{ route('customer.rooms-search') }}" class="btn btn-primary room-booking-submit">
+                <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary room-booking-submit">
                   Đặt phòng
                 </a>
               </div>
