@@ -851,4 +851,3 @@ class HotelManagementController extends Controller
         return $records;
     }
 }
-
