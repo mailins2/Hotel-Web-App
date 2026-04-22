@@ -12,30 +12,35 @@
     @include('customer.partials.nav')
 
     @php
-      $user = mockUser() ?? [];
-      $account = collect(config('hotel-management.modules.accounts.records', []))->firstWhere('Email', $user['email'] ?? '');
-      $customer = $account
-        ? collect(config('hotel-management.modules.customers.records', []))->firstWhere('MaTK', $account['MaTK'] ?? null)
-        : null;
-      $customerPoints = (int) (session('customer_profile.points') ?? $customer['Diem'] ?? 0);
-      $today = now()->toDateString();
-      $promotions = collect(config('hotel-management.modules.promotions.records', []))
-        ->map(function ($promotion, $index) use ($customerPoints, $today) {
-          $requiredPoints = (int) ($promotion['Diem'] ?? 0);
-          $startsAt = $promotion['NgayBatDau'] ?? null;
-          $endsAt = $promotion['NgayKetThuc'] ?? null;
-          $isActive = (! $startsAt || $startsAt <= $today) && (! $endsAt || $endsAt >= $today);
-          $canUse = $isActive && $customerPoints >= $requiredPoints;
-
-          return array_merge($promotion, [
-            'Code' => 'PEACH' . str_pad((string) ($promotion['MaKM'] ?? $index + 1), 2, '0', STR_PAD_LEFT),
-            'IsActive' => $isActive,
-            'CanUse' => $canUse,
-            'StatusLabel' => $canUse ? 'Có thể dùng' : ($isActive ? 'Cần thêm điểm' : 'Chưa đến hạn'),
-          ]);
-        })
-        ->filter(fn ($promotion) => $promotion['CanUse'])
-        ->values();
+      $customerPoints = 120;
+      $promotions = [
+        [
+          'Code' => 'PEACH01',
+          'CanUse' => true,
+          'StatusLabel' => 'Co the dung',
+          'TenKM' => 'Giam 15% cho ky nghi cuoi tuan',
+          'MoTa' => 'Ap dung cho dat phong Deluxe va Suite trong khung thu Sau den Chu Nhat.',
+          'PhanTramGiamGia' => 15,
+          'Diem' => 80,
+          'NgayBatDau' => '2026-04-01',
+          'NgayBatDauDisplay' => '01/04/2026',
+          'NgayKetThuc' => '2026-05-31',
+          'NgayKetThucDisplay' => '31/05/2026',
+        ],
+        [
+          'Code' => 'PEACH02',
+          'CanUse' => true,
+          'StatusLabel' => 'Co the dung',
+          'TenKM' => 'Giam 20% dich vu spa',
+          'MoTa' => 'Danh cho khach hang thanh vien khi su dung spa va massage tai khuon vien khach san.',
+          'PhanTramGiamGia' => 20,
+          'Diem' => 100,
+          'NgayBatDau' => '2026-04-10',
+          'NgayBatDauDisplay' => '10/04/2026',
+          'NgayKetThuc' => '2026-06-15',
+          'NgayKetThucDisplay' => '15/06/2026',
+        ],
+      ];
     @endphp
 
     <section class="customer-account-section">
@@ -73,9 +78,9 @@
                     </span>
                   </div>
                   <div class="customer-promo-date">
-                    {{ $promotion['NgayBatDau'] ? \Carbon\Carbon::parse($promotion['NgayBatDau'])->format('d/m/Y') : '--/--/----' }}
+                    {{ $promotion['NgayBatDauDisplay'] ?? '--/--/----' }}
                     -
-                    {{ $promotion['NgayKetThuc'] ? \Carbon\Carbon::parse($promotion['NgayKetThuc'])->format('d/m/Y') : '--/--/----' }}
+                    {{ $promotion['NgayKetThucDisplay'] ?? '--/--/----' }}
                   </div>
                   <button type="button" class="customer-promo-action">Dùng mã này</button>
                 </article>

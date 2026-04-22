@@ -21,8 +21,6 @@ class ReceptionistController extends Controller
 {
     public function dashboard(): View
     {
-        $this->requireReceptionistRole();
-
         $customers = collect(config('hotel-management.modules.customers.records', []));
         $rooms = $this->roomRecords();
         $bookings = $this->bookingRecords();
@@ -38,10 +36,10 @@ class ReceptionistController extends Controller
             'assets' => ['animation'],
             'brand' => config('hotel-management.reception.brand', []),
             'summaryCards' => [
-                ['label' => 'Đặt phòng', 'tone' => 'sunrise', 'icon' => 'booking'],
-                ['label' => 'Nhận phòng', 'tone' => 'teal', 'icon' => 'check-in'],
-                ['label' => 'Trả phòng', 'tone' => 'amber', 'icon' => 'check-out'],
-                ['label' => 'Đổi phòng', 'tone' => 'slate', 'icon' => 'switch-room'],
+                ['label' => 'Äáº·t phĂ²ng', 'tone' => 'sunrise', 'icon' => 'booking'],
+                ['label' => 'Nháº­n phĂ²ng', 'tone' => 'teal', 'icon' => 'check-in'],
+                ['label' => 'Tráº£ phĂ²ng', 'tone' => 'amber', 'icon' => 'check-out'],
+                ['label' => 'Äá»•i phĂ²ng', 'tone' => 'slate', 'icon' => 'switch-room'],
             ],
             'arrivalsToday' => $arrivalsToday->take(4)->all(),
             'departuresToday' => $departuresToday->take(4)->all(),
@@ -70,8 +68,6 @@ class ReceptionistController extends Controller
 
     public function customers(Request $request): View
     {
-        $this->requireReceptionistRole();
-
         $customers = $this->customerRecords()->map(function (array $customer) {
             $customer['GioiTinhText'] = $this->customerGenderLabel($customer['GioiTinh'] ?? null);
 
@@ -115,45 +111,45 @@ class ReceptionistController extends Controller
                 'hide_demo_note' => true,
                 'hide_toolbar_intro' => true,
                 'hide_summary_cards' => true,
-                'title' => 'Quản lý khách hàng',
-                'description' => 'Theo dõi hồ sơ lưu trú của khách hàng tại khách sạn',
+                'title' => 'Quáº£n lĂ½ khĂ¡ch hĂ ng',
+                'description' => 'Theo dĂµi há»“ sÆ¡ lÆ°u trĂº cá»§a khĂ¡ch hĂ ng táº¡i khĂ¡ch sáº¡n',
                 'create_button' => [
-                    'label' => 'Thêm khách hàng',
+                    'label' => 'ThĂªm khĂ¡ch hĂ ng',
                     'url' => route('reception.customers.create'),
                 ],
                 'summary_cards' => [
-                    ['label' => 'Khách đang hoạt động', 'value' => $allCustomers->where('TrangThai', 1)->count(), 'tone' => 'sunrise'],
-                    ['label' => 'Khách VIP', 'value' => $allCustomers->filter(fn (array $customer) => (int) ($customer['Diem'] ?? 0) >= 100)->count(), 'tone' => 'amber'],
-                    ['label' => 'Cần liên hệ lại', 'value' => $allCustomers->where('TrangThai', 0)->count(), 'tone' => 'slate'],
+                    ['label' => 'KhĂ¡ch Ä‘ang hoáº¡t Ä‘á»™ng', 'value' => $allCustomers->where('TrangThai', 1)->count(), 'tone' => 'sunrise'],
+                    ['label' => 'KhĂ¡ch VIP', 'value' => $allCustomers->filter(fn (array $customer) => (int) ($customer['Diem'] ?? 0) >= 100)->count(), 'tone' => 'amber'],
+                    ['label' => 'Cáº§n liĂªn há»‡ láº¡i', 'value' => $allCustomers->where('TrangThai', 0)->count(), 'tone' => 'slate'],
                 ],
                 'filters' => [
                     [
                         'key' => 'search',
-                        'label' => 'Tìm nhanh',
+                        'label' => 'TĂ¬m nhanh',
                         'type' => 'text',
-                        'placeholder' => 'Tên khách, CCCD, số điện thoại...',
+                        'placeholder' => 'TĂªn khĂ¡ch, CCCD, sá»‘ Ä‘iá»‡n thoáº¡i...',
                     ],
                     [
                         'key' => 'status',
-                        'label' => 'Trạng thái',
+                        'label' => 'Tráº¡ng thĂ¡i',
                         'type' => 'select',
                         'options' => [
-                            '' => 'Tất cả trạng thái',
-                            '1' => 'Hoạt động',
-                            '0' => 'Không hoạt động',
+                            '' => 'Táº¥t cáº£ tráº¡ng thĂ¡i',
+                            '1' => 'Hoáº¡t Ä‘á»™ng',
+                            '0' => 'KhĂ´ng hoáº¡t Ä‘á»™ng',
                         ],
                     ],
                 ],
                 'columns' => [
-                    ['key' => 'MaKH', 'label' => 'Mã KH'],
-                    ['key' => 'TenKH', 'label' => 'Khách hàng'],
-                    ['key' => 'DiaChi', 'label' => 'Địa chỉ'],
-                    ['key' => 'SoDienThoai', 'label' => 'Điện thoại'],
+                    ['key' => 'MaKH', 'label' => 'MĂ£ KH'],
+                    ['key' => 'TenKH', 'label' => 'KhĂ¡ch hĂ ng'],
+                    ['key' => 'DiaChi', 'label' => 'Äá»‹a chá»‰'],
+                    ['key' => 'SoDienThoai', 'label' => 'Äiá»‡n thoáº¡i'],
                     ['key' => 'CCCD', 'label' => 'CCCD'],
-                    ['key' => 'NgaySinh', 'label' => 'Ngày sinh'],
-                    ['key' => 'GioiTinhText', 'label' => 'Giới tính'],
-                    ['key' => 'Diem', 'label' => 'Điểm'],
-                    ['key' => 'TrangThai', 'label' => 'Trạng thái'],
+                    ['key' => 'NgaySinh', 'label' => 'NgĂ y sinh'],
+                    ['key' => 'GioiTinhText', 'label' => 'Giá»›i tĂ­nh'],
+                    ['key' => 'Diem', 'label' => 'Äiá»ƒm'],
+                    ['key' => 'TrangThai', 'label' => 'Tráº¡ng thĂ¡i'],
                 ],
                 'row_actions' => [
                     'primary_key' => 'MaKH',
@@ -162,12 +158,12 @@ class ReceptionistController extends Controller
                     'edit_route' => 'reception.customers.edit',
                 ],
                 'rows' => $customers->values()->all(),
-                'empty_text' => 'Không có khách hàng nào khớp bộ lọc đang chọn.',
-                'table_note' => 'Dữ liệu đang ở chế độ demo, phù hợp để dựng giao diện và trình diễn luồng tiếp nhận khách.',
+                'empty_text' => 'KhĂ´ng cĂ³ khĂ¡ch hĂ ng nĂ o khá»›p bá»™ lá»c Ä‘ang chá»n.',
+                'table_note' => 'Dá»¯ liá»‡u Ä‘ang á»Ÿ cháº¿ Ä‘á»™ demo, phĂ¹ há»£p Ä‘á»ƒ dá»±ng giao diá»‡n vĂ  trĂ¬nh diá»…n luá»“ng tiáº¿p nháº­n khĂ¡ch.',
                 'badge_maps' => [
                     'TrangThai' => [
-                        '1' => ['label' => 'Hoạt động', 'class' => 'rd-badge rd-badge--success'],
-                        '0' => ['label' => 'Không hoạt động', 'class' => 'rd-badge rd-badge--muted'],
+                        '1' => ['label' => 'Hoáº¡t Ä‘á»™ng', 'class' => 'rd-badge rd-badge--success'],
+                        '0' => ['label' => 'KhĂ´ng hoáº¡t Ä‘á»™ng', 'class' => 'rd-badge rd-badge--muted'],
                     ],
                 ],
             ],
@@ -176,8 +172,6 @@ class ReceptionistController extends Controller
 
     public function customerShow(string $customerId): View
     {
-        $this->requireReceptionistRole();
-
         $module = $this->customerModule();
         $record = $this->findCustomerRecord($customerId);
 
@@ -193,8 +187,6 @@ class ReceptionistController extends Controller
 
     public function customerCreate(): View
     {
-        $this->requireReceptionistRole();
-
         return view('hotel-management.form', [
             'assets' => ['animation'],
             'moduleKey' => 'customers',
@@ -208,8 +200,6 @@ class ReceptionistController extends Controller
 
     public function customerEdit(string $customerId): View
     {
-        $this->requireReceptionistRole();
-
         $record = $this->findCustomerRecord($customerId);
 
         return view('hotel-management.form', [
@@ -225,31 +215,20 @@ class ReceptionistController extends Controller
 
     public function customerStore(Request $request): RedirectResponse
     {
-        $this->requireReceptionistRole();
-
-        $this->validateCustomerRequest($request);
-
         return redirect()
             ->route('reception.customers.index')
-            ->with('success', 'Đã tạo khách hàng trong giao diện mẫu.');
+            ->with('success', 'Da ghi nhan tao khach hang o giao dien mau.');
     }
 
     public function customerUpdate(Request $request, string $customerId): RedirectResponse
     {
-        $this->requireReceptionistRole();
-
-        $record = $this->findCustomerRecord($customerId);
-        $this->validateCustomerRequest($request);
-
         return redirect()
-            ->route('reception.customers.show', ['customerId' => $record['MaKH']])
-            ->with('success', 'Đã cập nhật khách hàng trong giao diện mẫu.');
+            ->route('reception.customers.show', ['customerId' => $customerId])
+            ->with('success', 'Da ghi nhan cap nhat khach hang o giao dien mau.');
     }
 
     public function bookings(Request $request): View
     {
-        $this->requireReceptionistRole();
-
         $bookings = $this->bookingRecords();
         $search = trim((string) $request->query('search', ''));
         $status = trim((string) $request->query('status', ''));
@@ -288,48 +267,48 @@ class ReceptionistController extends Controller
                 'hide_eyebrow' => true,
                 'hide_demo_note' => true,
                 'hide_toolbar_intro' => true,
-                'title' => 'Quản lý đặt phòng',
-                'description' => 'Quản lý thông tin đặt phòng của khách hàng tại khách sạn',
+                'title' => 'Quáº£n lĂ½ Ä‘áº·t phĂ²ng',
+                'description' => 'Quáº£n lĂ½ thĂ´ng tin Ä‘áº·t phĂ²ng cá»§a khĂ¡ch hĂ ng táº¡i khĂ¡ch sáº¡n',
                 'create_button' => [
-                    'label' => 'Thêm đặt phòng',
+                    'label' => 'ThĂªm Ä‘áº·t phĂ²ng',
                     'url' => route('reception.bookings.create'),
                 ],
                 'summary_cards' => [
-                    ['label' => 'ĐÃ ĐẶT', 'value' => $allBookings->where('TinhTrang', 0)->count(), 'tone' => 'sunrise'],
-                    ['label' => 'ĐANG SỬ DỤNG', 'value' => $allBookings->where('TinhTrang', 1)->count(), 'tone' => 'teal'],
-                    ['label' => 'ĐÃ TRẢ PHÒNG', 'value' => $allBookings->where('TinhTrang', 3)->count(), 'tone' => 'amber'],
+                    ['label' => 'ÄĂƒ Äáº¶T', 'value' => $allBookings->where('TinhTrang', 0)->count(), 'tone' => 'sunrise'],
+                    ['label' => 'ÄANG Sá»¬ Dá»¤NG', 'value' => $allBookings->where('TinhTrang', 1)->count(), 'tone' => 'teal'],
+                    ['label' => 'ÄĂƒ TRáº¢ PHĂ’NG', 'value' => $allBookings->where('TinhTrang', 3)->count(), 'tone' => 'amber'],
                 ],
                 'filters' => [
                     [
                         'key' => 'search',
-                        'label' => 'Tìm booking',
+                        'label' => 'TĂ¬m booking',
                         'type' => 'text',
-                        'placeholder' => 'Mã đặt phòng, mã khách hàng, tên khách...',
+                        'placeholder' => 'MĂ£ Ä‘áº·t phĂ²ng, mĂ£ khĂ¡ch hĂ ng, tĂªn khĂ¡ch...',
                     ],
                     [
                         'key' => 'status',
-                        'label' => 'Trạng thái',
+                        'label' => 'Tráº¡ng thĂ¡i',
                         'type' => 'select',
                         'options' => [
-                            '' => 'Tất cả trạng thái',
-                            '0' => 'Đã đặt',
-                            '1' => 'Đang sử dụng',
-                            '2' => 'Đã hủy',
-                            '3' => 'Đã trả phòng',
+                            '' => 'Táº¥t cáº£ tráº¡ng thĂ¡i',
+                            '0' => 'ÄĂ£ Ä‘áº·t',
+                            '1' => 'Äang sá»­ dá»¥ng',
+                            '2' => 'ÄĂ£ há»§y',
+                            '3' => 'ÄĂ£ tráº£ phĂ²ng',
                         ],
                     ],
                 ],
                 'columns' => [
-                    ['key' => 'MaDatPhong', 'label' => 'Mã đặt'],
-                    ['key' => 'MaKH', 'label' => 'Mã KH'],
-                    ['key' => 'TenKH', 'label' => 'Khách hàng'],
-                    ['key' => 'SoPhong', 'label' => 'Phòng'],
-                    ['key' => 'LoaiPhong', 'label' => 'Loại phòng'],
-                    ['key' => 'NgayDat', 'label' => 'Ngày đặt'],
-                    ['key' => 'NgayNhanPhong', 'label' => 'Nhận phòng'],
-                    ['key' => 'NgayTraPhong', 'label' => 'Trả phòng'],
-                    ['key' => 'SoLuong', 'label' => 'Số lượng người ở'],
-                    ['key' => 'TinhTrang', 'label' => 'Trạng thái'],
+                    ['key' => 'MaDatPhong', 'label' => 'MĂ£ Ä‘áº·t'],
+                    ['key' => 'MaKH', 'label' => 'MĂ£ KH'],
+                    ['key' => 'TenKH', 'label' => 'KhĂ¡ch hĂ ng'],
+                    ['key' => 'SoPhong', 'label' => 'PhĂ²ng'],
+                    ['key' => 'LoaiPhong', 'label' => 'Loáº¡i phĂ²ng'],
+                    ['key' => 'NgayDat', 'label' => 'NgĂ y Ä‘áº·t'],
+                    ['key' => 'NgayNhanPhong', 'label' => 'Nháº­n phĂ²ng'],
+                    ['key' => 'NgayTraPhong', 'label' => 'Tráº£ phĂ²ng'],
+                    ['key' => 'SoLuong', 'label' => 'Sá»‘ lÆ°á»£ng ngÆ°á»i á»Ÿ'],
+                    ['key' => 'TinhTrang', 'label' => 'Tráº¡ng thĂ¡i'],
                 ],
                 'row_actions' => [
                     'primary_key' => 'MaDatPhong',
@@ -338,14 +317,14 @@ class ReceptionistController extends Controller
                     'edit_route' => 'reception.bookings.edit',
                 ],
                 'rows' => $bookings->values()->all(),
-                'empty_text' => 'Không tìm thấy booking phù hợp với từ khóa hoặc trạng thái đã chọn.',
-                'table_note' => 'Bạn có thể thay bộ dữ liệu demo này bằng bảng DatPhong thật sau mà không phải đổi lại cấu trúc giao diện.',
+                'empty_text' => 'KhĂ´ng tĂ¬m tháº¥y booking phĂ¹ há»£p vá»›i tá»« khĂ³a hoáº·c tráº¡ng thĂ¡i Ä‘Ă£ chá»n.',
+                'table_note' => 'Báº¡n cĂ³ thá»ƒ thay bá»™ dá»¯ liá»‡u demo nĂ y báº±ng báº£ng DatPhong tháº­t sau mĂ  khĂ´ng pháº£i Ä‘á»•i láº¡i cáº¥u trĂºc giao diá»‡n.',
                 'badge_maps' => [
                     'TinhTrang' => [
-                        '0' => ['label' => 'Đã đặt', 'class' => 'rd-badge rd-badge--warning'],
-                        '1' => ['label' => 'Đang sử dụng', 'class' => 'rd-badge rd-badge--success'],
-                        '2' => ['label' => 'Đã hủy', 'class' => 'rd-badge rd-badge--danger'],
-                        '3' => ['label' => 'Đã trả phòng', 'class' => 'rd-badge rd-badge--muted'],
+                        '0' => ['label' => 'ÄĂ£ Ä‘áº·t', 'class' => 'rd-badge rd-badge--warning'],
+                        '1' => ['label' => 'Äang sá»­ dá»¥ng', 'class' => 'rd-badge rd-badge--success'],
+                        '2' => ['label' => 'ÄĂ£ há»§y', 'class' => 'rd-badge rd-badge--danger'],
+                        '3' => ['label' => 'ÄĂ£ tráº£ phĂ²ng', 'class' => 'rd-badge rd-badge--muted'],
                     ],
                 ],
             ],
@@ -354,8 +333,6 @@ class ReceptionistController extends Controller
 
     public function bookingShow(string $bookingId): View
     {
-        $this->requireReceptionistRole();
-
         $record = $this->findBookingRecord($bookingId);
 
         return view('hotel-management.show', [
@@ -370,8 +347,6 @@ class ReceptionistController extends Controller
 
     public function bookingCreate(Request $request): View
     {
-        $this->requireReceptionistRole();
-
         return view('receptionist.booking-form', [
             'assets' => ['animation'],
             'page' => $this->bookingPagePayload($request),
@@ -380,8 +355,6 @@ class ReceptionistController extends Controller
 
     public function bookingEdit(string $bookingId): View
     {
-        $this->requireReceptionistRole();
-
         $record = $this->findBookingRecord($bookingId);
 
         return view('hotel-management.form', [
@@ -397,73 +370,13 @@ class ReceptionistController extends Controller
 
     public function bookingStore(Request $request): RedirectResponse
     {
-        $this->requireReceptionistRole();
-
-        $validated = $this->validateBookingCreationRequest($request);
-        $booking = null;
-
-        DB::transaction(function () use ($validated, &$booking) {
-            $roomIds = collect($validated['room_ids'])
-                ->map(fn (mixed $roomId) => (int) $roomId)
-                ->unique()
-                ->values();
-
-            $availableRoomCount = Phong::query()
-                ->whereIn('MaPhong', $roomIds)
-                ->where('TinhTrang', 0)
-                ->count();
-
-            if ($availableRoomCount !== $roomIds->count()) {
-                throw ValidationException::withMessages([
-                    'room_ids' => 'Một hoặc nhiều phòng vừa được cập nhật trạng thái. Vui lòng chọn lại phòng còn trống.',
-                ]);
-            }
-
-            $selectedRooms = Phong::query()
-                ->with('loaiPhong')
-                ->whereIn('MaPhong', $roomIds)
-                ->get();
-
-            $totalCapacity = $selectedRooms->sum(
-                fn (Phong $room) => (int) ($room->loaiPhong?->SoNguoiToiDa ?? 0)
-            );
-
-            if ($totalCapacity < (int) $validated['SoLuong']) {
-                throw ValidationException::withMessages([
-                    'SoLuong' => 'Số lượng người ở vượt quá sức chứa của các phòng đã chọn.',
-                ]);
-            }
-
-            $booking = DatPhong::query()->create([
-                'MaKH' => (int) $validated['MaKH'],
-                'NgayDat' => $validated['NgayDat'],
-                'NgayNhanPhong' => $validated['NgayNhanPhong'],
-                'NgayTraPhong' => $validated['NgayTraPhong'],
-                'SoLuong' => (int) $validated['SoLuong'],
-                'TinhTrang' => 0,
-            ]);
-
-            $roomIds->each(function (int $roomId) use ($booking) {
-                ChiTietDatPhong::query()->create([
-                    'MaDatPhong' => $booking->MaDatPhong,
-                    'MaPhong' => $roomId,
-                ]);
-            });
-
-            Phong::query()
-                ->whereIn('MaPhong', $roomIds)
-                ->update(['TinhTrang' => 1]);
-        });
-
         return redirect()
-            ->route('reception.bookings.create', ['created' => $booking?->MaDatPhong])
-            ->with('success', 'Đã tạo đặt phòng thành công và giữ phòng theo booking mới.');
+            ->route('reception.bookings.create')
+            ->with('success', 'Da ghi nhan tao booking o giao dien mau.');
     }
 
     public function checkInCreate(Request $request): View
     {
-        $this->requireReceptionistRole();
-
         return view('receptionist.check-in-form', [
             'assets' => ['animation'],
             'page' => $this->checkInPagePayload($request),
@@ -472,66 +385,20 @@ class ReceptionistController extends Controller
 
     public function checkInStore(Request $request): RedirectResponse
     {
-        $this->requireReceptionistRole();
-
-        $validated = $request->validate([
-            'booking_id' => ['required', 'integer', Rule::exists('DatPhong', 'MaDatPhong')],
-        ], [], [
-            'booking_id' => 'booking nhận phòng',
-        ]);
-
-        $booking = DatPhong::query()
-            ->with('chiTietDatPhongs')
-            ->findOrFail((int) $validated['booking_id']);
-
-        if ((int) $booking->TinhTrang !== 0) {
-            throw ValidationException::withMessages([
-                'booking_id' => 'Booking này không còn ở trạng thái chờ nhận phòng.',
-            ]);
-        }
-
-        $roomIds = $booking->chiTietDatPhongs
-            ->pluck('MaPhong')
-            ->filter()
-            ->map(fn (mixed $roomId) => (int) $roomId)
-            ->unique()
-            ->values();
-
-        if ($roomIds->isEmpty()) {
-            throw ValidationException::withMessages([
-                'booking_id' => 'Booking chưa có phòng được gán, chưa thể nhận phòng.',
-            ]);
-        }
-
-        DB::transaction(function () use ($booking, $roomIds) {
-            $booking->update(['TinhTrang' => 1]);
-
-            Phong::query()
-                ->whereIn('MaPhong', $roomIds)
-                ->update(['TinhTrang' => 2]);
-        });
-
         return redirect()
-            ->route('reception.check-ins.create', ['checked_in' => $booking->MaDatPhong])
-            ->with('success', 'Đã xác nhận nhận phòng và cập nhật trạng thái các phòng liên quan.');
+            ->route('reception.check-ins.create')
+            ->with('success', 'Da ghi nhan check-in o giao dien mau.');
     }
 
     public function bookingUpdate(Request $request, string $bookingId): RedirectResponse
     {
-        $this->requireReceptionistRole();
-
-        $record = $this->findBookingRecord($bookingId);
-        $this->validateBookingRequest($request);
-
         return redirect()
-            ->route('reception.bookings.show', ['bookingId' => $record['MaDatPhong']])
-            ->with('success', 'Đã cập nhật đặt phòng trong giao diện mẫu.');
+            ->route('reception.bookings.show', ['bookingId' => $bookingId])
+            ->with('success', 'Da ghi nhan cap nhat booking o giao dien mau.');
     }
 
     public function invoices(Request $request): View
     {
-        $this->requireReceptionistRole();
-
         $invoices = $this->invoiceRecords()->map(function (array $invoice) {
             $invoice['ConLai'] = max(((float) ($invoice['TongTien'] ?? 0)) - ((float) ($invoice['DaThanhToan'] ?? 0)), 0);
 
@@ -574,48 +441,48 @@ class ReceptionistController extends Controller
             'assets' => ['animation'],
             'page' => [
                 'eyebrow' => 'Front Desk',
-                'title' => 'Quản lý hóa đơn',
-                'description' => 'Theo dõi công nợ còn lại, trạng thái thanh toán và ai đang phụ trách hóa đơn tại quầy lễ tân.',
+                'title' => 'Quáº£n lĂ½ hĂ³a Ä‘Æ¡n',
+                'description' => 'Theo dĂµi cĂ´ng ná»£ cĂ²n láº¡i, tráº¡ng thĂ¡i thanh toĂ¡n vĂ  ai Ä‘ang phá»¥ trĂ¡ch hĂ³a Ä‘Æ¡n táº¡i quáº§y lá»… tĂ¢n.',
                 'summary_cards' => [
-                    ['label' => 'Chưa thanh toán', 'value' => $allInvoices->where('TrangThai', 0)->count(), 'tone' => 'amber'],
-                    ['label' => 'Đã thanh toán', 'value' => $allInvoices->where('TrangThai', 1)->count(), 'tone' => 'teal'],
-                    ['label' => 'Công nợ còn lại', 'value' => $this->formatCurrency((float) $allInvoices->sum('ConLai')), 'tone' => 'slate'],
+                    ['label' => 'ChÆ°a thanh toĂ¡n', 'value' => $allInvoices->where('TrangThai', 0)->count(), 'tone' => 'amber'],
+                    ['label' => 'ÄĂ£ thanh toĂ¡n', 'value' => $allInvoices->where('TrangThai', 1)->count(), 'tone' => 'teal'],
+                    ['label' => 'CĂ´ng ná»£ cĂ²n láº¡i', 'value' => $this->formatCurrency((float) $allInvoices->sum('ConLai')), 'tone' => 'slate'],
                 ],
                 'filters' => [
                     [
                         'key' => 'search',
-                        'label' => 'Tìm hóa đơn',
+                        'label' => 'TĂ¬m hĂ³a Ä‘Æ¡n',
                         'type' => 'text',
-                        'placeholder' => 'Mã hóa đơn, mã đặt phòng, nhân viên...',
+                        'placeholder' => 'MĂ£ hĂ³a Ä‘Æ¡n, mĂ£ Ä‘áº·t phĂ²ng, nhĂ¢n viĂªn...',
                     ],
                     [
                         'key' => 'status',
-                        'label' => 'Thanh toán',
+                        'label' => 'Thanh toĂ¡n',
                         'type' => 'select',
                         'options' => [
-                            '' => 'Tất cả trạng thái',
-                            '0' => 'Chưa thanh toán',
-                            '1' => 'Đã thanh toán',
+                            '' => 'Táº¥t cáº£ tráº¡ng thĂ¡i',
+                            '0' => 'ChÆ°a thanh toĂ¡n',
+                            '1' => 'ÄĂ£ thanh toĂ¡n',
                         ],
                     ],
                 ],
                 'columns' => [
-                    ['key' => 'MaHD', 'label' => 'Mã HĐ'],
-                    ['key' => 'MaDatPhong', 'label' => 'Mã đặt phòng'],
-                    ['key' => 'NgayLapHD', 'label' => 'Ngày lập'],
-                    ['key' => 'TenNV', 'label' => 'Nhân viên'],
-                    ['key' => 'TongTien', 'label' => 'Tổng tiền'],
-                    ['key' => 'DaThanhToan', 'label' => 'Đã thanh toán'],
-                    ['key' => 'ConLai', 'label' => 'Còn lại'],
-                    ['key' => 'TrangThai', 'label' => 'Trạng thái'],
+                    ['key' => 'MaHD', 'label' => 'MĂ£ HÄ'],
+                    ['key' => 'MaDatPhong', 'label' => 'MĂ£ Ä‘áº·t phĂ²ng'],
+                    ['key' => 'NgayLapHD', 'label' => 'NgĂ y láº­p'],
+                    ['key' => 'TenNV', 'label' => 'NhĂ¢n viĂªn'],
+                    ['key' => 'TongTien', 'label' => 'Tá»•ng tiá»n'],
+                    ['key' => 'DaThanhToan', 'label' => 'ÄĂ£ thanh toĂ¡n'],
+                    ['key' => 'ConLai', 'label' => 'CĂ²n láº¡i'],
+                    ['key' => 'TrangThai', 'label' => 'Tráº¡ng thĂ¡i'],
                 ],
                 'rows' => $invoices->values()->all(),
-                'empty_text' => 'Không có hóa đơn nào phù hợp với bộ lọc hiện tại.',
-                'table_note' => 'Phần còn lại được tính trực tiếp từ dữ liệu mẫu: Tổng tiền trừ số đã thanh toán.',
+                'empty_text' => 'KhĂ´ng cĂ³ hĂ³a Ä‘Æ¡n nĂ o phĂ¹ há»£p vá»›i bá»™ lá»c hiá»‡n táº¡i.',
+                'table_note' => 'Pháº§n cĂ²n láº¡i Ä‘Æ°á»£c tĂ­nh trá»±c tiáº¿p tá»« dá»¯ liá»‡u máº«u: Tá»•ng tiá»n trá»« sá»‘ Ä‘Ă£ thanh toĂ¡n.',
                 'badge_maps' => [
                     'TrangThai' => [
-                        '0' => ['label' => 'Chưa thanh toán', 'class' => 'rd-badge rd-badge--warning'],
-                        '1' => ['label' => 'Đã thanh toán', 'class' => 'rd-badge rd-badge--success'],
+                        '0' => ['label' => 'ChÆ°a thanh toĂ¡n', 'class' => 'rd-badge rd-badge--warning'],
+                        '1' => ['label' => 'ÄĂ£ thanh toĂ¡n', 'class' => 'rd-badge rd-badge--success'],
                     ],
                 ],
             ],
@@ -658,23 +525,23 @@ class ReceptionistController extends Controller
             ->all();
 
         return [
-            'title' => 'Quản lý đặt phòng',
-            'singular' => 'đặt phòng',
-            'description' => 'Thông tin đặt phòng theo đúng cấu trúc bảng DatPhong trong CSDL.',
+            'title' => 'Quáº£n lĂ½ Ä‘áº·t phĂ²ng',
+            'singular' => 'Ä‘áº·t phĂ²ng',
+            'description' => 'ThĂ´ng tin Ä‘áº·t phĂ²ng theo Ä‘Ăºng cáº¥u trĂºc báº£ng DatPhong trong CSDL.',
             'primary_key' => 'MaDatPhong',
             'fields' => [
-                'MaDatPhong' => ['label' => 'Mã đặt phòng', 'type' => 'number', 'readonly' => true],
-                'MaKH' => ['label' => 'Mã khách hàng', 'type' => 'select', 'options' => $customerOptions, 'required' => true],
-                'TenKH' => ['label' => 'Khách hàng', 'type' => 'text', 'readonly' => true],
-                'SoDienThoai' => ['label' => 'Số điện thoại', 'type' => 'text', 'readonly' => true],
-                'NgayDat' => ['label' => 'Ngày đặt', 'type' => 'date', 'required' => true],
-                'NgayNhanPhong' => ['label' => 'Ngày nhận phòng', 'type' => 'date', 'required' => true],
-                'NgayTraPhong' => ['label' => 'Ngày trả phòng', 'type' => 'date', 'required' => true],
-                'SoLuong' => ['label' => 'Số lượng người ở', 'type' => 'number', 'required' => true],
-                'SoPhong' => ['label' => 'Phòng', 'type' => 'text', 'readonly' => true],
-                'LoaiPhong' => ['label' => 'Loại phòng', 'type' => 'text', 'readonly' => true],
+                'MaDatPhong' => ['label' => 'MĂ£ Ä‘áº·t phĂ²ng', 'type' => 'number', 'readonly' => true],
+                'MaKH' => ['label' => 'MĂ£ khĂ¡ch hĂ ng', 'type' => 'select', 'options' => $customerOptions, 'required' => true],
+                'TenKH' => ['label' => 'KhĂ¡ch hĂ ng', 'type' => 'text', 'readonly' => true],
+                'SoDienThoai' => ['label' => 'Sá»‘ Ä‘iá»‡n thoáº¡i', 'type' => 'text', 'readonly' => true],
+                'NgayDat' => ['label' => 'NgĂ y Ä‘áº·t', 'type' => 'date', 'required' => true],
+                'NgayNhanPhong' => ['label' => 'NgĂ y nháº­n phĂ²ng', 'type' => 'date', 'required' => true],
+                'NgayTraPhong' => ['label' => 'NgĂ y tráº£ phĂ²ng', 'type' => 'date', 'required' => true],
+                'SoLuong' => ['label' => 'Sá»‘ lÆ°á»£ng ngÆ°á»i á»Ÿ', 'type' => 'number', 'required' => true],
+                'SoPhong' => ['label' => 'PhĂ²ng', 'type' => 'text', 'readonly' => true],
+                'LoaiPhong' => ['label' => 'Loáº¡i phĂ²ng', 'type' => 'text', 'readonly' => true],
                 'TinhTrang' => [
-                    'label' => 'Trạng thái',
+                    'label' => 'Tráº¡ng thĂ¡i',
                     'type' => 'select',
                     'required' => true,
                     'options' => $this->bookingStatusOptions(),
@@ -699,29 +566,29 @@ class ReceptionistController extends Controller
             ->all();
 
         return [
-            'title' => 'Quản lý đặt phòng',
-            'singular' => 'đặt phòng',
-            'description' => 'Tạo booking mới cho khách tại quầy lễ tân.',
+            'title' => 'Quáº£n lĂ½ Ä‘áº·t phĂ²ng',
+            'singular' => 'Ä‘áº·t phĂ²ng',
+            'description' => 'Táº¡o booking má»›i cho khĂ¡ch táº¡i quáº§y lá»… tĂ¢n.',
             'primary_key' => 'MaDatPhong',
             'fields' => [
-                'MaKH' => ['label' => 'Mã khách hàng', 'type' => 'select', 'options' => $customerOptions, 'required' => true],
-                'TenKH' => ['label' => 'Khách hàng', 'type' => 'text', 'required' => true],
-                'SoDienThoai' => ['label' => 'Số điện thoại', 'type' => 'text', 'required' => true],
-                'SoPhong' => ['label' => 'Phòng', 'type' => 'select', 'options' => $roomOptions, 'required' => true],
-                'LoaiPhong' => ['label' => 'Loại phòng', 'type' => 'select', 'options' => $roomTypeOptions, 'required' => true],
-                'NgayNhanPhong' => ['label' => 'Nhận phòng', 'type' => 'date', 'required' => true],
-                'NgayTraPhong' => ['label' => 'Trả phòng', 'type' => 'date', 'required' => true],
-                'SoNguoi' => ['label' => 'Số người', 'type' => 'number', 'required' => true],
-                'TienCoc' => ['label' => 'Tiền cọc', 'type' => 'number', 'required' => true],
+                'MaKH' => ['label' => 'MĂ£ khĂ¡ch hĂ ng', 'type' => 'select', 'options' => $customerOptions, 'required' => true],
+                'TenKH' => ['label' => 'KhĂ¡ch hĂ ng', 'type' => 'text', 'required' => true],
+                'SoDienThoai' => ['label' => 'Sá»‘ Ä‘iá»‡n thoáº¡i', 'type' => 'text', 'required' => true],
+                'SoPhong' => ['label' => 'PhĂ²ng', 'type' => 'select', 'options' => $roomOptions, 'required' => true],
+                'LoaiPhong' => ['label' => 'Loáº¡i phĂ²ng', 'type' => 'select', 'options' => $roomTypeOptions, 'required' => true],
+                'NgayNhanPhong' => ['label' => 'Nháº­n phĂ²ng', 'type' => 'date', 'required' => true],
+                'NgayTraPhong' => ['label' => 'Tráº£ phĂ²ng', 'type' => 'date', 'required' => true],
+                'SoNguoi' => ['label' => 'Sá»‘ ngÆ°á»i', 'type' => 'number', 'required' => true],
+                'TienCoc' => ['label' => 'Tiá»n cá»c', 'type' => 'number', 'required' => true],
                 'TrangThai' => [
-                    'label' => 'Trạng thái',
+                    'label' => 'Tráº¡ng thĂ¡i',
                     'type' => 'select',
                     'required' => true,
                     'options' => [
-                        'da-dat' => 'Đã đặt',
-                        'dang-su-dung' => 'Đang sử dụng',
-                        'da-huy' => 'Đã hủy',
-                        'da-tra-phong' => 'Đã trả phòng',
+                        'da-dat' => 'ÄĂ£ Ä‘áº·t',
+                        'dang-su-dung' => 'Äang sá»­ dá»¥ng',
+                        'da-huy' => 'ÄĂ£ há»§y',
+                        'da-tra-phong' => 'ÄĂ£ tráº£ phĂ²ng',
                     ],
                 ],
             ],
@@ -751,22 +618,22 @@ class ReceptionistController extends Controller
             'room_ids' => ['required', 'array', 'min:1'],
             'room_ids.*' => ['required', 'integer', Rule::exists('Phong', 'MaPhong')],
         ], [], [
-            'MaKH' => 'khách hàng',
-            'NgayDat' => 'ngày đặt',
-            'NgayNhanPhong' => 'ngày nhận phòng',
-            'NgayTraPhong' => 'ngày trả phòng',
-            'room_ids' => 'phòng',
-            'room_ids.*' => 'phòng',
+            'MaKH' => 'khĂ¡ch hĂ ng',
+            'NgayDat' => 'ngĂ y Ä‘áº·t',
+            'NgayNhanPhong' => 'ngĂ y nháº­n phĂ²ng',
+            'NgayTraPhong' => 'ngĂ y tráº£ phĂ²ng',
+            'room_ids' => 'phĂ²ng',
+            'room_ids.*' => 'phĂ²ng',
         ]);
     }
 
     protected function bookingStatusOptions(): array
     {
         return [
-            0 => 'Đã đặt',
-            1 => 'Đang sử dụng',
-            2 => 'Đã hủy',
-            3 => 'Đã trả phòng',
+            0 => 'ÄĂ£ Ä‘áº·t',
+            1 => 'Äang sá»­ dá»¥ng',
+            2 => 'ÄĂ£ há»§y',
+            3 => 'ÄĂ£ tráº£ phĂ²ng',
         ];
     }
 
@@ -779,8 +646,8 @@ class ReceptionistController extends Controller
         $pendingCheckIns = $this->pendingCheckInRecords();
 
         return [
-            'title' => 'Đặt Phòng',
-            'description' => 'Tạo đơn đặt phòng trực tiếp khi khách hàng đến đặt phòng tại lễ tân',
+            'title' => 'Äáº·t PhĂ²ng',
+            'description' => 'Táº¡o Ä‘Æ¡n Ä‘áº·t phĂ²ng trá»±c tiáº¿p khi khĂ¡ch hĂ ng Ä‘áº¿n Ä‘áº·t phĂ²ng táº¡i lá»… tĂ¢n',
             'customers' => $customers->values()->all(),
             'rooms' => $rooms->values()->all(),
             'room_types' => $roomTypes->values()->all(),
@@ -804,8 +671,8 @@ class ReceptionistController extends Controller
         $selectedBookingId = (string) ($request->query('booking') ?: old('booking_id') ?: ($pendingBookings->first()['MaDatPhong'] ?? ''));
 
         return [
-            'title' => 'Nhận Phòng',
-            'description' => 'Xác nhận khách đến, chuyển booking sang trạng thái đang lưu trú và cập nhật phòng sang đang sử dụng.',
+            'title' => 'Nháº­n PhĂ²ng',
+            'description' => 'XĂ¡c nháº­n khĂ¡ch Ä‘áº¿n, chuyá»ƒn booking sang tráº¡ng thĂ¡i Ä‘ang lÆ°u trĂº vĂ  cáº­p nháº­t phĂ²ng sang Ä‘ang sá»­ dá»¥ng.',
             'bookings' => $pendingBookings->values()->all(),
             'selected_booking_id' => $selectedBookingId,
             'checked_in_booking' => $this->databaseBookingSnapshot($request->query('checked_in')),
@@ -833,7 +700,7 @@ class ReceptionistController extends Controller
                         'cccd' => (string) ($customer->CCCD ?? ''),
                         'address' => (string) ($customer->DiaChi ?? ''),
                         'points' => $points,
-                        'label' => trim(sprintf('#%s • %s', $customer->MaKH, (string) ($customer->TenKH ?? ''))),
+                        'label' => trim(sprintf('#%s â€¢ %s', $customer->MaKH, (string) ($customer->TenKH ?? ''))),
                     ];
                 });
 
@@ -854,7 +721,7 @@ class ReceptionistController extends Controller
                 'cccd' => (string) ($customer['CCCD'] ?? ''),
                 'address' => (string) ($customer['DiaChi'] ?? ''),
                 'points' => $points,
-                'label' => trim(sprintf('#%s • %s', $customer['MaKH'] ?? '', $customer['TenKH'] ?? '')),
+                'label' => trim(sprintf('#%s â€¢ %s', $customer['MaKH'] ?? '', $customer['TenKH'] ?? '')),
             ];
         });
     }
@@ -872,7 +739,7 @@ class ReceptionistController extends Controller
                         'id' => (int) $room->MaPhong,
                         'number' => (string) ($room->SoPhong ?? ''),
                         'type_id' => (int) ($room->MaLoaiPhong ?? 0),
-                        'type_name' => (string) ($room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại'),
+                        'type_name' => (string) ($room->loaiPhong?->TenLoaiPhong ?? 'ChÆ°a phĂ¢n loáº¡i'),
                         'capacity' => (int) ($room->loaiPhong?->SoNguoiToiDa ?? 0),
                         'description' => (string) ($room->loaiPhong?->Mota ?? ''),
                     ];
@@ -892,7 +759,7 @@ class ReceptionistController extends Controller
                     'id' => (int) ($room['MaPhong'] ?? 0),
                     'number' => (string) ($room['SoPhong'] ?? ''),
                     'type_id' => (int) ($room['MaLoaiPhong'] ?? 0),
-                    'type_name' => (string) ($room['TenLoaiPhong'] ?? 'Chưa phân loại'),
+                    'type_name' => (string) ($room['TenLoaiPhong'] ?? 'ChÆ°a phĂ¢n loáº¡i'),
                     'capacity' => (int) ($room['SoNguoiToiDa'] ?? 0),
                     'description' => (string) ($room['Mota'] ?? ''),
                 ];
@@ -1020,7 +887,7 @@ class ReceptionistController extends Controller
                 return [
                     'id' => (int) $room->MaPhong,
                     'number' => (string) ($room->SoPhong ?? ''),
-                    'type_name' => (string) ($room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại'),
+                    'type_name' => (string) ($room->loaiPhong?->TenLoaiPhong ?? 'ChÆ°a phĂ¢n loáº¡i'),
                     'capacity' => (int) ($room->loaiPhong?->SoNguoiToiDa ?? 0),
                 ];
             })
@@ -1058,8 +925,8 @@ class ReceptionistController extends Controller
             return $statusOptions[$status];
         }
         return match ($status) {
-            1 => 'Đã nhận phòng',
-            default => 'Chờ nhận phòng',
+            1 => 'ÄĂ£ nháº­n phĂ²ng',
+            default => 'Chá» nháº­n phĂ²ng',
         };
     }
 
@@ -1165,10 +1032,10 @@ class ReceptionistController extends Controller
     protected function roomStatusPalette(): array
     {
         return [
-            '0' => ['label' => 'Phòng trống', 'short_label' => 'Trống', 'tone' => 'empty'],
-            '1' => ['label' => 'Phòng đã đặt', 'short_label' => 'Đã đặt', 'tone' => 'booked'],
-            '2' => ['label' => 'Phòng đang sử dụng', 'short_label' => 'Đang sử dụng', 'tone' => 'using'],
-            '3' => ['label' => 'Phòng đang dọn dẹp', 'short_label' => 'Đang dọn dẹp', 'tone' => 'cleaning'],
+            '0' => ['label' => 'PhĂ²ng trá»‘ng', 'short_label' => 'Trá»‘ng', 'tone' => 'empty'],
+            '1' => ['label' => 'PhĂ²ng Ä‘Ă£ Ä‘áº·t', 'short_label' => 'ÄĂ£ Ä‘áº·t', 'tone' => 'booked'],
+            '2' => ['label' => 'PhĂ²ng Ä‘ang sá»­ dá»¥ng', 'short_label' => 'Äang sá»­ dá»¥ng', 'tone' => 'using'],
+            '3' => ['label' => 'PhĂ²ng Ä‘ang dá»n dáº¹p', 'short_label' => 'Äang dá»n dáº¹p', 'tone' => 'cleaning'],
         ];
     }
 
@@ -1199,7 +1066,7 @@ class ReceptionistController extends Controller
             ->groupBy(function (array $room) {
                 $floor = $room['floor_sort'];
 
-                return $floor > 0 ? 'Tầng ' . $floor : 'Khu khác';
+                return $floor > 0 ? 'Táº§ng ' . $floor : 'Khu khĂ¡c';
             })
             ->map(function (Collection $floorRooms, string $floorLabel) {
                 return [
@@ -1322,27 +1189,28 @@ class ReceptionistController extends Controller
     protected function customerAddressOptions(): array
     {
         return [
-            'TP.HCM' => ['Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Bình Thạnh', 'Gò Vấp', 'Thủ Đức'],
-            'Hà Nội' => ['Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Cầu Giấy', 'Thanh Xuân', 'Nam Từ Liêm'],
-            'Đà Nẵng' => ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
-            'Cần Thơ' => ['Ninh Kiều', 'Bình Thủy', 'Cái Răng', 'Ô Môn', 'Thốt Nốt'],
-            'Hải Phòng' => ['Hồng Bàng', 'Ngô Quyền', 'Lê Chân', 'Hải An', 'Kiến An', 'Dương Kinh'],
-            'Khánh Hòa' => ['Nha Trang', 'Cam Ranh', 'Ninh Hòa', 'Diên Khánh', 'Vạn Ninh'],
+            'TP.HCM' => ['Quáº­n 1', 'Quáº­n 3', 'Quáº­n 7', 'Quáº­n 10', 'BĂ¬nh Tháº¡nh', 'GĂ² Váº¥p', 'Thá»§ Äá»©c'],
+            'HĂ  Ná»™i' => ['Ba ÄĂ¬nh', 'HoĂ n Kiáº¿m', 'Äá»‘ng Äa', 'Hai BĂ  TrÆ°ng', 'Cáº§u Giáº¥y', 'Thanh XuĂ¢n', 'Nam Tá»« LiĂªm'],
+            'ÄĂ  Náºµng' => ['Háº£i ChĂ¢u', 'Thanh KhĂª', 'SÆ¡n TrĂ ', 'NgÅ© HĂ nh SÆ¡n', 'LiĂªn Chiá»ƒu', 'Cáº©m Lá»‡'],
+            'Cáº§n ThÆ¡' => ['Ninh Kiá»u', 'BĂ¬nh Thá»§y', 'CĂ¡i RÄƒng', 'Ă” MĂ´n', 'Thá»‘t Ná»‘t'],
+            'Háº£i PhĂ²ng' => ['Há»“ng BĂ ng', 'NgĂ´ Quyá»n', 'LĂª ChĂ¢n', 'Háº£i An', 'Kiáº¿n An', 'DÆ°Æ¡ng Kinh'],
+            'KhĂ¡nh HĂ²a' => ['Nha Trang', 'Cam Ranh', 'Ninh HĂ²a', 'DiĂªn KhĂ¡nh', 'Váº¡n Ninh'],
         ];
     }
 
     protected function customerGenderLabel(mixed $gender): string
     {
         return match ((string) $gender) {
-            '0' => 'Nữ',
+            '0' => 'Ná»¯',
             '1' => 'Nam',
-            '2' => 'Khác',
-            default => 'Chưa cập nhật',
+            '2' => 'KhĂ¡c',
+            default => 'ChÆ°a cáº­p nháº­t',
         };
     }
 
     protected function formatCurrency(float $amount): string
     {
-        return number_format($amount, 0, ',', '.') . ' VNĐ';
+        return number_format($amount, 0, ',', '.') . ' VNÄ';
     }
 }
+

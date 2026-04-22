@@ -12,62 +12,28 @@
     @include('customer.partials.nav')
 
     @php
-      $user = mockUser() ?? [];
-      $account = collect(config('hotel-management.modules.accounts.records', []))->firstWhere('Email', $user['email'] ?? '');
-      $customer = $account
-        ? collect(config('hotel-management.modules.customers.records', []))->firstWhere('MaTK', $account['MaTK'] ?? null)
-        : null;
-      $customerId = $customer['MaKH'] ?? null;
-      $customerName = $customer['TenKH'] ?? $user['name'] ?? 'Khách hàng';
-      $customerPhone = $customer['SoDienThoai'] ?? session('customer_profile.phone') ?? '--';
-      $customerCccd = $customer['CCCD'] ?? session('customer_profile.cccd') ?? '--';
-      $customerEmail = $user['email'] ?? '--';
-      $statusLabels = [0 => 'Đã đặt', 1 => 'Đã nhận phòng', 2 => 'Đã trả phòng', 3 => 'Đã hủy'];
-
-      $bookings = collect(config('hotel-management.reception.bookings.records', []))
-        ->filter(fn ($booking) => $customerId !== null && (string) ($booking['MaKH'] ?? '') === (string) $customerId)
-        ->map(function ($booking) use ($customerName, $customerPhone, $customerCccd, $customerEmail, $statusLabels) {
-          $roomPrice = (int) (($booking['LoaiPhong'] ?? '') === 'Suite' ? 2530000 : 1840000);
-          $nights = max(1, \Carbon\Carbon::parse($booking['NgayNhanPhong'])->diffInDays(\Carbon\Carbon::parse($booking['NgayTraPhong'])));
-          $total = $roomPrice * $nights;
-
-          return array_merge($booking, [
-            'TenKH' => $booking['TenKH'] ?? $customerName,
-            'SoDienThoai' => $booking['SoDienThoai'] ?? $customerPhone,
-            'Email' => $customerEmail,
-            'CCCD' => $customerCccd,
-            'StatusLabel' => $statusLabels[(int) ($booking['TinhTrang'] ?? 0)] ?? 'Đã đặt',
-            'SoDem' => $nights,
-            'TongSoKhach' => (int) ($booking['SoLuong'] ?? 1),
-            'Rooms' => [
-              [
-                'TenPhong' => $booking['LoaiPhong'] ?? 'Deluxe',
-                'SoPhong' => $booking['SoPhong'] ?? '--',
-                'SoLuongPhong' => 1,
-                'SoKhach' => (int) ($booking['SoLuong'] ?? 1),
-                'GiaMoiDem' => $roomPrice,
-                'ThanhTien' => $total,
-              ],
-            ],
-            'TongTien' => $total,
-            'TienDatCoc' => $total,
-          ]);
-        });
-
-      $demoBookings = collect([
+      $customerName = 'Nguyen Minh An';
+      $customerPhone = '0901234567';
+      $customerCccd = '079204000111';
+      $customerEmail = 'minhan@gmail.com';
+      $bookings = [
         [
           'MaDatPhong' => 'PV9010',
-          'MaKH' => $customerId ?? 1,
+          'MaKH' => 1,
           'TenKH' => $customerName,
           'SoDienThoai' => $customerPhone,
           'Email' => $customerEmail,
           'CCCD' => $customerCccd,
           'NgayDat' => '2026-04-12',
+          'NgayDatDisplay' => '12/04/2026',
           'NgayNhanPhong' => '2026-04-18',
+          'NgayNhanPhongDisplay' => '18/04/2026',
           'NgayTraPhong' => '2026-04-21',
+          'NgayTraPhongDisplay' => '21/04/2026',
           'SoDem' => 3,
           'TongSoKhach' => 8,
-          'StatusLabel' => 'Đã đặt',
+          'StatusLabel' => 'Da dat',
+          'SummaryTitle' => 'Deluxe Twin, Suite Junior',
           'Rooms' => [
             ['TenPhong' => 'Deluxe Twin', 'SoPhong' => 'A101, A102', 'SoLuongPhong' => 2, 'SoKhach' => 4, 'GiaMoiDem' => 1732500, 'ThanhTien' => 10395000],
             ['TenPhong' => 'Suite Junior', 'SoPhong' => 'B201', 'SoLuongPhong' => 1, 'SoKhach' => 2, 'GiaMoiDem' => 2100000, 'ThanhTien' => 6300000],
@@ -78,17 +44,21 @@
         ],
         [
           'MaDatPhong' => 'PV9011',
-          'MaKH' => $customerId ?? 1,
+          'MaKH' => 1,
           'TenKH' => $customerName,
           'SoDienThoai' => $customerPhone,
           'Email' => $customerEmail,
           'CCCD' => $customerCccd,
           'NgayDat' => '2026-04-14',
+          'NgayDatDisplay' => '14/04/2026',
           'NgayNhanPhong' => '2026-05-02',
+          'NgayNhanPhongDisplay' => '02/05/2026',
           'NgayTraPhong' => '2026-05-04',
+          'NgayTraPhongDisplay' => '04/05/2026',
           'SoDem' => 2,
           'TongSoKhach' => 4,
-          'StatusLabel' => 'Đã đặt',
+          'StatusLabel' => 'Da dat',
+          'SummaryTitle' => 'Deluxe Family, Standard Garden',
           'Rooms' => [
             ['TenPhong' => 'Deluxe Family', 'SoPhong' => 'D401', 'SoLuongPhong' => 1, 'SoKhach' => 3, 'GiaMoiDem' => 1840000, 'ThanhTien' => 3680000],
             ['TenPhong' => 'Standard Garden', 'SoPhong' => 'D402', 'SoLuongPhong' => 1, 'SoKhach' => 1, 'GiaMoiDem' => 900000, 'ThanhTien' => 1800000],
@@ -96,9 +66,7 @@
           'TongTien' => 5480000,
           'TienDatCoc' => 2740000,
         ],
-      ]);
-
-      $bookings = $bookings->concat($demoBookings)->values();
+      ];
     @endphp
 
     <section class="customer-account-section">
@@ -111,12 +79,9 @@
               <div class="eyebrow">Đặt phòng của bạn</div>
             </div>
 
-            @if ($bookings->isNotEmpty())
+            @if (!empty($bookings))
               <div class="customer-booking-list">
                 @foreach ($bookings as $booking)
-                  @php
-                    $rooms = collect($booking['Rooms'] ?? []);
-                  @endphp
                   <div
                     class="customer-booking-item customer-booking-card"
                     role="button"
@@ -129,14 +94,14 @@
                         <div>
                           <div class="customer-booking-code">Đặt phòng #{{ $booking['MaDatPhong'] ?? '--' }}</div>
                           <h3 class="customer-booking-room">
-                            {{ $rooms->pluck('TenPhong')->filter()->take(2)->implode(', ') ?: ($booking['LoaiPhong'] ?? 'Phòng') }}
+                            {{ $booking['SummaryTitle'] ?? ($booking['LoaiPhong'] ?? 'Phòng') }}
                           </h3>
                         </div>
                         <span class="customer-booking-status">{{ $booking['StatusLabel'] ?? 'Đã đặt' }}</span>
                       </div>
 
                       <div class="customer-booking-room-list">
-                        @foreach ($rooms as $room)
+                        @foreach (($booking['Rooms'] ?? []) as $room)
                           <div class="customer-booking-room-line">
                             <strong>{{ $room['TenPhong'] ?? 'Phòng' }}</strong>
                             <span>{{ $room['SoLuongPhong'] ?? 1 }} phòng</span>
@@ -145,9 +110,9 @@
                       </div>
 
                       <div class="customer-booking-date-line">
-                        {{ \Carbon\Carbon::parse($booking['NgayNhanPhong'])->format('d/m/Y') }}
+                        {{ $booking['NgayNhanPhongDisplay'] ?? '--/--/----' }}
                         -
-                        {{ \Carbon\Carbon::parse($booking['NgayTraPhong'])->format('d/m/Y') }}
+                        {{ $booking['NgayTraPhongDisplay'] ?? '--/--/----' }}
                         • {{ $booking['SoDem'] ?? 1 }} đêm • {{ $booking['TongSoKhach'] ?? 1 }} khách
                       </div>
                     </div>

@@ -18,9 +18,42 @@ if (! function_exists('activeRoute')) {
 if (! function_exists('mockUser')) {
     function mockUser(): ?array
     {
-        $user = session('mock_auth');
+        $routeName = request()->route()?->getName();
 
-        return is_array($user) ? $user : null;
+        if (is_string($routeName) && Str::startsWith($routeName, 'customer.')) {
+            return [
+                'email' => 'minhan@gmail.com',
+                'name' => 'Nguyen Minh An',
+                'role' => 'customer',
+                'role_label' => 'Customer Preview',
+            ];
+        }
+
+        if (is_string($routeName) && Str::startsWith($routeName, 'reception.')) {
+            return [
+                'email' => 'reception.preview@peachvalley.test',
+                'name' => 'Le tan demo',
+                'role' => 'receptionist',
+                'role_label' => 'Reception Preview',
+            ];
+        }
+
+        if (
+            is_string($routeName)
+            && (
+                Str::startsWith($routeName, 'hotel.')
+                || in_array($routeName, ['admin.dashboard', 'pages.term-of-use'], true)
+            )
+        ) {
+            return [
+                'email' => 'manager.preview@peachvalley.test',
+                'name' => 'Quan ly demo',
+                'role' => 'manager',
+                'role_label' => 'Admin Preview',
+            ];
+        }
+
+        return null;
     }
 }
 
@@ -55,14 +88,14 @@ if (! function_exists('isReceptionist')) {
 if (! function_exists('currentUserName')) {
     function currentUserName(): string
     {
-        return (string) (mockUser()['name'] ?? 'Khách');
+        return (string) (mockUser()['name'] ?? 'Khach');
     }
 }
 
 if (! function_exists('currentUserRoleLabel')) {
     function currentUserRoleLabel(): string
     {
-        return (string) (mockUser()['role_label'] ?? 'Khách');
+        return (string) (mockUser()['role_label'] ?? 'Khach');
     }
 }
 
@@ -77,6 +110,6 @@ if (! function_exists('portalDashboardRoute')) {
             return route('admin.dashboard');
         }
 
-        return route('login');
+        return route('customer.home');
     }
 }
