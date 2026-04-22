@@ -13,8 +13,6 @@ class HotelManagementController extends Controller
 {
     public function dashboard(): View
     {
-        $this->requireManagerRole();
-
         return view('hotel-management.report', [
             'assets' => ['animation', 'chart'],
             'report' => config('hotel-management.reports', []),
@@ -23,15 +21,11 @@ class HotelManagementController extends Controller
 
     public function report(): View
     {
-        $this->requireManagerRole();
-
         return $this->dashboard();
     }
 
     public function index(string $moduleKey): View
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         $records = $this->applyModuleFilters(request(), $module);
 
@@ -45,8 +39,6 @@ class HotelManagementController extends Controller
 
     public function show(string $moduleKey, string $recordId): View
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         $record = $this->findRecord($module, $recordId);
 
@@ -60,8 +52,6 @@ class HotelManagementController extends Controller
 
     public function create(string $moduleKey): View
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         abort_unless($this->moduleAllows($module, 'create'), 404);
 
@@ -76,8 +66,6 @@ class HotelManagementController extends Controller
 
     public function edit(string $moduleKey, string $recordId): View
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         abort_unless($this->moduleAllows($module, 'edit'), 404);
 
@@ -92,48 +80,36 @@ class HotelManagementController extends Controller
 
     public function store(Request $request, string $moduleKey): RedirectResponse
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         abort_unless($this->moduleAllows($module, 'create'), 404);
-        $this->validateRequest($request, $moduleKey, $module);
 
         return redirect()
             ->route('hotel.modules.index', ['moduleKey' => $moduleKey])
-            ->with('success', 'Đã tạo ' . $module['singular'] . ' trong giao diện mẫu.');
+            ->with('success', 'Da ghi nhan tao ' . $module['singular'] . ' o giao dien mau.');
     }
 
     public function update(Request $request, string $moduleKey, string $recordId): RedirectResponse
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         abort_unless($this->moduleAllows($module, 'edit'), 404);
-        $record = $this->findRecord($module, $recordId);
-        $this->validateRequest($request, $moduleKey, $module, $record);
 
         return redirect()
             ->route('hotel.modules.show', ['moduleKey' => $moduleKey, 'recordId' => $recordId])
-            ->with('success', 'Đã cập nhật ' . $module['singular'] . ' trong giao diện mẫu.');
+            ->with('success', 'Da ghi nhan cap nhat ' . $module['singular'] . ' o giao dien mau.');
     }
 
     public function destroy(string $moduleKey, string $recordId): RedirectResponse
     {
-        $this->requireManagerRole();
-
         $module = $this->getModule($moduleKey);
         abort_unless($this->moduleAllows($module, 'delete'), 404);
-        $this->findRecord($module, $recordId);
 
         return redirect()
             ->route('hotel.modules.index', ['moduleKey' => $moduleKey])
-            ->with('success', 'Đã xóa ' . $module['singular'] . ' trong giao diện mẫu.');
+            ->with('success', 'Da ghi nhan xoa ' . $module['singular'] . ' o giao dien mau.');
     }
 
     public function termOfUse(): View
     {
-        $this->requireManagerRole();
-
         return view('hotel-management.term-of-use', [
             'assets' => ['animation'],
         ]);
@@ -197,7 +173,7 @@ class HotelManagementController extends Controller
                 ];
             } elseif ($accountType === '1') {
                 $fields = [
-                    'MatKhau' => ['label' => 'Mật khẩu', 'type' => 'password', 'required' => false],
+                    'MatKhau' => ['label' => 'Máº­t kháº©u', 'type' => 'password', 'required' => false],
                     'TrangThai' => $module['fields']['TrangThai'],
                 ];
             }
@@ -273,7 +249,7 @@ class HotelManagementController extends Controller
 
             if ($fieldKey === 'Email') {
                 $result['HoTen'] = [
-                    'label' => 'Họ tên',
+                    'label' => 'Há» tĂªn',
                     'type' => 'text',
                     'readonly' => true,
                 ];
@@ -283,7 +259,7 @@ class HotelManagementController extends Controller
 
         if (!$inserted) {
             $result['HoTen'] = [
-                'label' => 'Họ tên',
+                'label' => 'Há» tĂªn',
                 'type' => 'text',
                 'readonly' => true,
             ];
@@ -379,7 +355,7 @@ class HotelManagementController extends Controller
 
             if ($fieldKey === 'GiaDV') {
                 $result['ServiceImage'] = [
-                    'label' => 'Ảnh dịch vụ',
+                    'label' => 'áº¢nh dá»‹ch vá»¥',
                     'type' => 'text',
                     'required' => false,
                 ];
@@ -389,7 +365,7 @@ class HotelManagementController extends Controller
 
         if (!$inserted) {
             $result['ServiceImage'] = [
-                'label' => 'Ảnh dịch vụ',
+                'label' => 'áº¢nh dá»‹ch vá»¥',
                 'type' => 'text',
                 'required' => false,
             ];
@@ -611,32 +587,32 @@ class HotelManagementController extends Controller
         return [
             [
                 'key' => 'food',
-                'label' => 'Dịch vụ ăn uống',
+                'label' => 'Dá»‹ch vá»¥ Äƒn uá»‘ng',
                 'items' => [
-                    'banh-mi' => ['label' => 'Bánh mì', 'aliases' => ['Banh mi']],
-                    'com-chien' => ['label' => 'Cơm chiên', 'aliases' => ['Com chien']],
-                    'bun-bo' => ['label' => 'Bún bò', 'aliases' => ['Bun bo']],
-                    'bun-thai' => ['label' => 'Bún thái', 'aliases' => ['Bun thai']],
-                    'ca-phe-sua' => ['label' => 'Cà phê sữa', 'aliases' => ['Ca phe sua']],
+                    'banh-mi' => ['label' => 'BĂ¡nh mĂ¬', 'aliases' => ['Banh mi']],
+                    'com-chien' => ['label' => 'CÆ¡m chiĂªn', 'aliases' => ['Com chien']],
+                    'bun-bo' => ['label' => 'BĂºn bĂ²', 'aliases' => ['Bun bo']],
+                    'bun-thai' => ['label' => 'BĂºn thĂ¡i', 'aliases' => ['Bun thai']],
+                    'ca-phe-sua' => ['label' => 'CĂ  phĂª sá»¯a', 'aliases' => ['Ca phe sua']],
                 ],
             ],
             [
                 'key' => 'room',
-                'label' => 'Dịch vụ phòng',
+                'label' => 'Dá»‹ch vá»¥ phĂ²ng',
                 'items' => [
-                    'giat-ui' => ['label' => 'Giặt ủi', 'aliases' => ['Giat ui', 'Giat ui nhanh']],
-                    've-sinh' => ['label' => 'Vệ sinh', 'aliases' => ['Ve sinh', 'Don phong theo yeu cau']],
-                    'doi-phong' => ['label' => 'Đổi phòng', 'aliases' => ['Doi phong', 'Ho tro doi phong']],
-                    'huy-phong' => ['label' => 'Hủy phòng', 'aliases' => ['Huy phong', 'Phi huy phong linh hoat']],
-                    'them-giuong-phu' => ['label' => 'Thêm giường phụ', 'aliases' => ['Them giuong phu']],
+                    'giat-ui' => ['label' => 'Giáº·t á»§i', 'aliases' => ['Giat ui', 'Giat ui nhanh']],
+                    've-sinh' => ['label' => 'Vá»‡ sinh', 'aliases' => ['Ve sinh', 'Don phong theo yeu cau']],
+                    'doi-phong' => ['label' => 'Äá»•i phĂ²ng', 'aliases' => ['Doi phong', 'Ho tro doi phong']],
+                    'huy-phong' => ['label' => 'Há»§y phĂ²ng', 'aliases' => ['Huy phong', 'Phi huy phong linh hoat']],
+                    'them-giuong-phu' => ['label' => 'ThĂªm giÆ°á»ng phá»¥', 'aliases' => ['Them giuong phu']],
                 ],
             ],
             [
                 'key' => 'entertainment',
-                'label' => 'Dịch vụ giải trí',
+                'label' => 'Dá»‹ch vá»¥ giáº£i trĂ­',
                 'items' => [
                     'spa' => ['label' => 'Spa', 'aliases' => ['Goi spa thu gian']],
-                    'cuoi-ngua' => ['label' => 'Cưỡi ngựa', 'aliases' => ['Cuoi ngua', 'Trai nghiem cuoi ngua']],
+                    'cuoi-ngua' => ['label' => 'CÆ°á»¡i ngá»±a', 'aliases' => ['Cuoi ngua', 'Trai nghiem cuoi ngua']],
                     'golf' => ['label' => 'Golf', 'aliases' => ['Goi choi golf cuoi tuan']],
                 ],
             ],
@@ -657,7 +633,7 @@ class HotelManagementController extends Controller
 
             if ($fieldKey === 'MaNV') {
                 $result['TenNV'] = [
-                    'label' => 'Họ tên nhân viên',
+                    'label' => 'Há» tĂªn nhĂ¢n viĂªn',
                     'type' => 'text',
                     'readonly' => true,
                 ];
@@ -667,7 +643,7 @@ class HotelManagementController extends Controller
 
         if (!$inserted) {
             $result['TenNV'] = [
-                'label' => 'Họ tên nhân viên',
+                'label' => 'Há» tĂªn nhĂ¢n viĂªn',
                 'type' => 'text',
                 'readonly' => true,
             ];
@@ -811,12 +787,12 @@ class HotelManagementController extends Controller
     protected function customerAddressOptions(): array
     {
         return [
-            'TP.HCM' => ['Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Bình Thạnh', 'Gò Vấp', 'Thủ Đức'],
-            'Hà Nội' => ['Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Hai Bà Trưng', 'Cầu Giấy', 'Thanh Xuân', 'Nam Từ Liêm'],
-            'Đà Nẵng' => ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
-            'Cần Thơ' => ['Ninh Kiều', 'Bình Thủy', 'Cái Răng', 'Ô Môn', 'Thốt Nốt'],
-            'Hải Phòng' => ['Hồng Bàng', 'Ngô Quyền', 'Lê Chân', 'Hải An', 'Kiến An', 'Dương Kinh'],
-            'Khánh Hòa' => ['Nha Trang', 'Cam Ranh', 'Ninh Hòa', 'Diên Khánh', 'Vạn Ninh'],
+            'TP.HCM' => ['Quáº­n 1', 'Quáº­n 3', 'Quáº­n 7', 'Quáº­n 10', 'BĂ¬nh Tháº¡nh', 'GĂ² Váº¥p', 'Thá»§ Äá»©c'],
+            'HĂ  Ná»™i' => ['Ba ÄĂ¬nh', 'HoĂ n Kiáº¿m', 'Äá»‘ng Äa', 'Hai BĂ  TrÆ°ng', 'Cáº§u Giáº¥y', 'Thanh XuĂ¢n', 'Nam Tá»« LiĂªm'],
+            'ÄĂ  Náºµng' => ['Háº£i ChĂ¢u', 'Thanh KhĂª', 'SÆ¡n TrĂ ', 'NgÅ© HĂ nh SÆ¡n', 'LiĂªn Chiá»ƒu', 'Cáº©m Lá»‡'],
+            'Cáº§n ThÆ¡' => ['Ninh Kiá»u', 'BĂ¬nh Thá»§y', 'CĂ¡i RÄƒng', 'Ă” MĂ´n', 'Thá»‘t Ná»‘t'],
+            'Háº£i PhĂ²ng' => ['Há»“ng BĂ ng', 'NgĂ´ Quyá»n', 'LĂª ChĂ¢n', 'Háº£i An', 'Kiáº¿n An', 'DÆ°Æ¡ng Kinh'],
+            'KhĂ¡nh HĂ²a' => ['Nha Trang', 'Cam Ranh', 'Ninh HĂ²a', 'DiĂªn KhĂ¡nh', 'Váº¡n Ninh'],
         ];
     }
 
@@ -875,3 +851,4 @@ class HotelManagementController extends Controller
         return $records;
     }
 }
+

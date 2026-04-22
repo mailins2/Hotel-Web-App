@@ -1,25 +1,54 @@
 @php
-  $promotionImages = [
-    'resources/customer/images/screen1.png',
-    'resources/customer/images/screen2.png',
-    'resources/customer/images/screen3.png',
-    'resources/customer/images/screen.png',
+  $promotions = [
+    [
+      'Code' => 'PEACH01',
+      'TenKM' => 'Giam 15% cho ky nghi cuoi tuan',
+      'MoTa' => 'Uu dai cho khach dat phong Deluxe va Suite trong thoi gian cuoi tuan.',
+      'PhanTramGiamGia' => 15,
+      'Diem' => 80,
+      'NgayBatDau' => '2026-04-01',
+      'NgayBatDauDisplay' => '01/04/2026',
+      'NgayKetThuc' => '2026-05-31',
+      'NgayKetThucDisplay' => '31/05/2026',
+      'Images' => [
+        'resources/customer/images/screen1.png',
+        'resources/customer/images/screen2.png',
+        'resources/customer/images/screen3.png',
+      ],
+    ],
+    [
+      'Code' => 'PEACH02',
+      'TenKM' => 'Combo Spa va Breakfast',
+      'MoTa' => 'Tang trai nghiem thu gian va bua sang tai nha hang cho khach luu tru.',
+      'PhanTramGiamGia' => 20,
+      'Diem' => 100,
+      'NgayBatDau' => '2026-04-10',
+      'NgayBatDauDisplay' => '10/04/2026',
+      'NgayKetThuc' => '2026-06-15',
+      'NgayKetThucDisplay' => '15/06/2026',
+      'Images' => [
+        'resources/customer/images/screen2.png',
+        'resources/customer/images/screen3.png',
+        'resources/customer/images/screen.png',
+      ],
+    ],
+    [
+      'Code' => 'PEACH03',
+      'TenKM' => 'Dat som tiet kiem hon',
+      'MoTa' => 'Ap dung cho dat phong som truoc 14 ngay voi cac hang phong tieu chuan.',
+      'PhanTramGiamGia' => 10,
+      'Diem' => 60,
+      'NgayBatDau' => '2026-04-15',
+      'NgayBatDauDisplay' => '15/04/2026',
+      'NgayKetThuc' => '2026-07-01',
+      'NgayKetThucDisplay' => '01/07/2026',
+      'Images' => [
+        'resources/customer/images/screen3.png',
+        'resources/customer/images/screen.png',
+        'resources/customer/images/screen1.png',
+      ],
+    ],
   ];
-
-  $promotions = collect(config('hotel-management.modules.promotions.records', []))
-    ->map(function ($promotion, $index) use ($promotionImages) {
-      $imageOffset = $index % count($promotionImages);
-      $images = array_merge(
-        array_slice($promotionImages, $imageOffset),
-        array_slice($promotionImages, 0, $imageOffset)
-      );
-
-      return array_merge($promotion, [
-        'Code' => 'PEACH' . str_pad((string) ($promotion['MaKM'] ?? $index + 1), 2, '0', STR_PAD_LEFT),
-        'Images' => $images,
-      ]);
-    })
-    ->values();
 @endphp
 
 <!DOCTYPE html>
@@ -90,9 +119,9 @@
                 </div>
 
                 <div class="promotion-card-date">
-                  {{ $promotion['NgayBatDau'] ? \Carbon\Carbon::parse($promotion['NgayBatDau'])->format('d/m/Y') : '--/--/----' }}
+                  {{ $promotion['NgayBatDauDisplay'] ?? '--/--/----' }}
                   -
-                  {{ $promotion['NgayKetThuc'] ? \Carbon\Carbon::parse($promotion['NgayKetThuc'])->format('d/m/Y') : '--/--/----' }}
+                  {{ $promotion['NgayKetThucDisplay'] ?? '--/--/----' }}
                 </div>
               </div>
             </article>

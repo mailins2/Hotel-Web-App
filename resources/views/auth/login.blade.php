@@ -84,7 +84,7 @@
                            <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                         </a>
                         <h2 class="mb-2 text-center">Đăng nhập</h2>
-                        <x-auth-session-status class="mb-4" :status="session('status')" />
+                        <!-- <x-auth-session-status class="mb-4" :status="session('status')" /> -->
                         <form method="POST" action="{{ route('login') }}" data-toggle="validator">
                            {{ csrf_field() }}
                            <div class="row">

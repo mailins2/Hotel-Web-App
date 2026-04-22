@@ -1,49 +1,31 @@
 @php
-  $reviewBookings = collect(config('hotel-management.reception.bookings.records', []))->keyBy('MaDatPhong');
-  $demoReviews = collect([
-    ['MaDG' => 9004, 'MaDatPhong' => 9004, 'Sao' => 5, 'TieuDe' => 'Kỳ nghỉ tuyệt vời vượt mong đợi', 'MoTa' => 'Khách sạn có không gian vô cùng tinh tế và sang trọng. Đội ngũ nhân viên phục vụ rất chuyên nghiệp và chu đáo, từ lúc bước vào sảnh cho đến lúc check-out. Phòng family rộng rãi, sạch sẽ, phù hợp cho cả gia đình nghỉ dưỡng.', 'NgayDanhGia' => '2026-04-08'],
-    ['MaDG' => 9005, 'MaDatPhong' => 9005, 'Sao' => 5, 'TieuDe' => 'Dịch vụ xứng đáng quay lại', 'MoTa' => 'Phòng suite có view đẹp, giường êm và không gian yên tĩnh. Bữa sáng đa dạng, nhân viên hỗ trợ nhanh khi tôi cần thêm dịch vụ phòng.', 'NgayDanhGia' => '2026-04-07'],
-    ['MaDG' => 9006, 'MaDatPhong' => 9001, 'Sao' => 4, 'TieuDe' => 'Không gian sạch đẹp', 'MoTa' => 'Phòng deluxe sạch sẽ, tiện nghi đầy đủ và vị trí thuận tiện. Tôi thích cách khách sạn chuẩn bị phòng rất gọn gàng trước giờ nhận phòng.', 'NgayDanhGia' => '2026-04-06'],
-    ['MaDG' => 9007, 'MaDatPhong' => 9002, 'Sao' => 5, 'TieuDe' => 'Trải nghiệm nghỉ dưỡng rất tốt', 'MoTa' => 'Phòng suite rộng, ánh sáng đẹp và khu vực tiếp khách riêng rất thoải mái. Nhân viên lễ tân tư vấn nhiệt tình về dịch vụ spa và nhà hàng.', 'NgayDanhGia' => '2026-04-05'],
-    ['MaDG' => 9008, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Phù hợp cho chuyến đi ngắn ngày', 'MoTa' => 'Phòng deluxe có nội thất đẹp, phòng tắm sạch và dịch vụ dọn phòng đúng giờ. Khu vực chung yên tĩnh, dễ nghỉ ngơi.', 'NgayDanhGia' => '2026-04-04'],
-    ['MaDG' => 9009, 'MaDatPhong' => 9004, 'Sao' => 3, 'TieuDe' => 'Ổn nhưng cần nhanh hơn', 'MoTa' => 'Không gian phòng family rộng và tiện cho nhóm, tuy nhiên thời gian check-in hơi lâu vào giờ cao điểm. Nhân viên vẫn hỗ trợ lịch sự.', 'NgayDanhGia' => '2026-04-03'],
-    ['MaDG' => 9010, 'MaDatPhong' => 9005, 'Sao' => 4, 'TieuDe' => 'Suite đẹp và yên tĩnh', 'MoTa' => 'Tôi hài lòng với phòng suite, đặc biệt là giường ngủ và ánh sáng trong phòng. Dịch vụ ăn uống phục vụ lên phòng khá nhanh.', 'NgayDanhGia' => '2026-04-02'],
-    ['MaDG' => 9011, 'MaDatPhong' => 9001, 'Sao' => 5, 'TieuDe' => 'Nhân viên rất chu đáo', 'MoTa' => 'Tôi được hỗ trợ đổi giờ nhận phòng linh hoạt. Phòng deluxe sạch, thơm nhẹ và các vật dụng đều được chuẩn bị đầy đủ.', 'NgayDanhGia' => '2026-04-01'],
-    ['MaDG' => 9012, 'MaDatPhong' => 9002, 'Sao' => 2, 'TieuDe' => 'Cần cải thiện cách âm', 'MoTa' => 'Phòng suite đẹp nhưng buổi tối còn nghe tiếng từ hành lang. Nhân viên xử lý phản hồi nhanh, hy vọng khách sạn cải thiện thêm.', 'NgayDanhGia' => '2026-03-30'],
-    ['MaDG' => 9013, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Đáng tiền trong tầm giá', 'MoTa' => 'Phòng deluxe gọn gàng, sạch sẽ và đáp ứng tốt nhu cầu nghỉ ngơi. Tôi thích khu vực sảnh và thái độ phục vụ thân thiện.', 'NgayDanhGia' => '2026-03-28'],
-  ]);
-  $roomReviewTitleMap = [
-    5 => 'Kỳ nghỉ tuyệt vời vượt mong đợi',
-    4 => 'Trải nghiệm rất hài lòng',
-    3 => 'Trải nghiệm ổn nhưng cần cải thiện',
-    2 => 'Cần cải thiện thêm',
-    1 => 'Chưa hài lòng',
+  $featuredReviews = [
+    ['MaDG' => 9004, 'MaDatPhong' => 9004, 'Sao' => 5, 'TieuDe' => 'Ky nghi tuyet voi vuot mong doi', 'MoTa' => 'Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.', 'NgayDanhGia' => '2026-04-08', 'NgayDanhGiaDisplay' => '08/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
+    ['MaDG' => 9005, 'MaDatPhong' => 9005, 'Sao' => 5, 'TieuDe' => 'Dich vu xung dang quay lai', 'MoTa' => 'Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.', 'NgayDanhGia' => '2026-04-07', 'NgayDanhGiaDisplay' => '07/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
+    ['MaDG' => 9006, 'MaDatPhong' => 9001, 'Sao' => 4, 'TieuDe' => 'Khong gian sach dep', 'MoTa' => 'Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.', 'NgayDanhGia' => '2026-04-06', 'NgayDanhGiaDisplay' => '06/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
   ];
-  $hotelReviews = collect(config('hotel-management.modules.reviews.records', []))
-    ->concat($demoReviews)
-    ->map(function ($review) use ($reviewBookings, $roomReviewTitleMap) {
-      $booking = $reviewBookings->get($review['MaDatPhong'] ?? null, []);
-      $customerName = $booking['TenKH'] ?? 'Khách hàng Peach Valley';
-
-      return array_merge($review, [
-        'TenKH' => $customerName,
-        'LoaiPhong' => $booking['LoaiPhong'] ?? 'Phòng Peach Valley',
-        'TieuDe' => $review['TieuDe'] ?? ($roomReviewTitleMap[(int) ($review['Sao'] ?? 5)] ?? 'Đánh giá từ khách hàng'),
-      ]);
-    })
-    ->sortByDesc('NgayDanhGia')
-    ->values();
-  $reviewCount = $hotelReviews->count();
-  $reviewAverage = $reviewCount ? round($hotelReviews->avg(fn ($review) => (int) ($review['Sao'] ?? 0)), 1) : 0;
-  $reviewDistribution = collect(range(5, 1))->mapWithKeys(function ($star) use ($hotelReviews, $reviewCount) {
-    $count = $hotelReviews->where('Sao', $star)->count();
-
-    return [$star => [
-      'count' => $count,
-      'percent' => $reviewCount ? round(($count / $reviewCount) * 100) : 0,
-    ]];
-  });
-  $reviewRoomTypes = $hotelReviews->pluck('LoaiPhong')->filter()->unique()->values();
+  $hotelReviews = [
+    ['MaDG' => 9004, 'MaDatPhong' => 9004, 'Sao' => 5, 'TieuDe' => 'Ky nghi tuyet voi vuot mong doi', 'MoTa' => 'Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.', 'NgayDanhGia' => '2026-04-08', 'NgayDanhGiaDisplay' => '08/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
+    ['MaDG' => 9005, 'MaDatPhong' => 9005, 'Sao' => 5, 'TieuDe' => 'Dich vu xung dang quay lai', 'MoTa' => 'Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.', 'NgayDanhGia' => '2026-04-07', 'NgayDanhGiaDisplay' => '07/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
+    ['MaDG' => 9006, 'MaDatPhong' => 9001, 'Sao' => 4, 'TieuDe' => 'Khong gian sach dep', 'MoTa' => 'Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.', 'NgayDanhGia' => '2026-04-06', 'NgayDanhGiaDisplay' => '06/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
+    ['MaDG' => 9007, 'MaDatPhong' => 9002, 'Sao' => 5, 'TieuDe' => 'Trai nghiem nghi duong rat tot', 'MoTa' => 'Phong suite rong, anh sang dep va khu tiep khach rieng tao cam giac rat thoai mai.', 'NgayDanhGia' => '2026-04-05', 'NgayDanhGiaDisplay' => '05/04/2026', 'TenKH' => 'Vo Gia Han', 'LoaiPhong' => 'Suite Room'],
+    ['MaDG' => 9008, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Phu hop cho chuyen di ngan ngay', 'MoTa' => 'Noi that dep, phong tam sach va khu vuc chung yen tinh, de nghi ngoi.', 'NgayDanhGia' => '2026-04-04', 'NgayDanhGiaDisplay' => '04/04/2026', 'TenKH' => 'Nguyen Quoc Huy', 'LoaiPhong' => 'Deluxe Garden'],
+    ['MaDG' => 9009, 'MaDatPhong' => 9004, 'Sao' => 3, 'TieuDe' => 'On nhung can nhanh hon', 'MoTa' => 'Khong gian phong rong va tien cho nhom, tuy nhien check-in vao gio cao diem con hoi lau.', 'NgayDanhGia' => '2026-04-03', 'NgayDanhGiaDisplay' => '03/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
+    ['MaDG' => 9010, 'MaDatPhong' => 9005, 'Sao' => 4, 'TieuDe' => 'Suite dep va yen tinh', 'MoTa' => 'Toi hai long voi phong suite, dac biet la giuong ngu va anh sang trong phong.', 'NgayDanhGia' => '2026-04-02', 'NgayDanhGiaDisplay' => '02/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
+    ['MaDG' => 9011, 'MaDatPhong' => 9001, 'Sao' => 5, 'TieuDe' => 'Nhan vien rat chu dao', 'MoTa' => 'Khach san ho tro linh hoat, phong sach va vat dung chuan bi day du.', 'NgayDanhGia' => '2026-04-01', 'NgayDanhGiaDisplay' => '01/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
+    ['MaDG' => 9012, 'MaDatPhong' => 9002, 'Sao' => 2, 'TieuDe' => 'Can cai thien cach am', 'MoTa' => 'Phong dep nhung buoi toi con nghe tieng tu hanh lang. Nhan vien xu ly phan hoi nhanh.', 'NgayDanhGia' => '2026-03-30', 'NgayDanhGiaDisplay' => '30/03/2026', 'TenKH' => 'Vo Gia Han', 'LoaiPhong' => 'Suite Room'],
+    ['MaDG' => 9013, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Dang tien trong tam gia', 'MoTa' => 'Phong gon gang, sach se va dap ung tot nhu cau nghi ngoi.', 'NgayDanhGia' => '2026-03-28', 'NgayDanhGiaDisplay' => '28/03/2026', 'TenKH' => 'Nguyen Quoc Huy', 'LoaiPhong' => 'Deluxe Garden'],
+  ];
+  $reviewCount = 10;
+  $reviewAverage = 4.1;
+  $reviewDistribution = [
+    5 => ['count' => 4, 'percent' => 40],
+    4 => ['count' => 4, 'percent' => 40],
+    3 => ['count' => 1, 'percent' => 10],
+    2 => ['count' => 1, 'percent' => 10],
+    1 => ['count' => 0, 'percent' => 0],
+  ];
+  $reviewRoomTypes = ['Family Room', 'Premium Suite', 'Deluxe Room', 'Suite Room', 'Deluxe Garden'];
 @endphp
 
 <!DOCTYPE html>
@@ -222,7 +204,7 @@
 		          		<span class="subheading">Đánh giá</span>
 			        </div>
 	            <div class="carousel-testimony owl-carousel ftco-animate">
-	              @forelse ($hotelReviews->take(3) as $review)
+	              @forelse ($featuredReviews as $review)
 	                <div class="item">
 	                  <a href="#customer-reviews" class="customer-review-slide-link">
 	                    <div class="testimony-wrap pb-4">
@@ -239,7 +221,7 @@
 			                  <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
 			                  <div class="pos ml-3">
 			                  	<p class="name">{{ $review['TenKH'] }}</p>
-			                    <span class="position">{{ \Carbon\Carbon::parse($review['NgayDanhGia'])->format('d/m/Y') }}</span>
+			                    <span class="position">{{ $review['NgayDanhGiaDisplay'] }}</span>
 			                  </div>
 			                </div>
 	                    </div>
@@ -397,7 +379,7 @@
                     <div class="customer-review-list-head">
                       <div>
                         <h3>{{ $review['TenKH'] }}</h3>
-                        <time datetime="{{ $review['NgayDanhGia'] }}">{{ \Carbon\Carbon::parse($review['NgayDanhGia'])->format('d/m/Y') }}</time>
+                        <time datetime="{{ $review['NgayDanhGia'] }}">{{ $review['NgayDanhGiaDisplay'] }}</time>
                       </div>
                       <div class="customer-review-stars" aria-label="{{ (int) ($review['Sao'] ?? 0) }} sao">
                         @for ($star = 1; $star <= 5; $star++)

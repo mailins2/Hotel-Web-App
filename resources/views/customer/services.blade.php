@@ -1,93 +1,53 @@
 @php
-  $serviceTypeLabels = [
-    0 => 'Dịch vụ ăn uống',
-    1 => 'Dịch vụ phòng',
-    2 => 'Dịch vụ giải trí',
-  ];
-
   $serviceTypeOptions = [
-    0 => 'Dịch vụ ăn uống',
-    2 => 'Dịch vụ giải trí',
-    1 => 'Dịch vụ phòng',
+    0 => 'Dich vu an uong',
+    2 => 'Dich vu giai tri',
+    1 => 'Dich vu phong',
   ];
 
-  $serviceImageMap = [
-    1 => 'resources/customer/images/menu-1.jpg',
-    2 => 'resources/customer/images/menu-2.jpg',
-    3 => 'resources/customer/images/menu-3.jpg',
-    4 => 'resources/customer/images/menu-4.jpg',
-    5 => 'resources/customer/images/menu-5.jpg',
-    6 => 'resources/customer/images/room-1.jpg',
-    7 => 'resources/customer/images/room-2.jpg',
-    8 => 'resources/customer/images/room-3.jpg',
-    9 => 'resources/customer/images/room-4.jpg',
-    10 => 'resources/customer/images/room-5.jpg',
-    11 => 'resources/customer/images/dv_spa.jpg',
-    12 => 'resources/customer/images/dv_fb.webp',
-    13 => 'resources/customer/images/dv_golf.jpg',
-    14 => 'resources/customer/images/menu-6.jpg',
-    15 => 'resources/customer/images/menu-7.jpg',
-    16 => 'resources/customer/images/menu-8.jpg',
-    17 => 'resources/customer/images/menu-9.jpg',
-    18 => 'resources/customer/images/resto.jpg',
-  ];
-
-  $services = collect(config('hotel-management.modules.services.records', []))
-    ->values()
-    ->map(function (array $service) use ($serviceTypeLabels, $serviceImageMap) {
-      $type = (int) ($service['LoaiDV'] ?? 0);
-      $serviceId = (int) ($service['MaDV'] ?? 0);
-
-      return array_merge($service, [
-        'LoaiDV' => $type,
-        'LoaiDVLabel' => $serviceTypeLabels[$type] ?? 'Dịch vụ',
-        'ImagePath' => $serviceImageMap[$serviceId] ?? 'resources/customer/images/resto.jpg',
-      ]);
-    });
-
-  $servicesByType = $services->groupBy('LoaiDV');
   $serviceSections = [
     [
-      'type' => 0,
       'subheading' => 'Dịch vụ ăn uống',
       'title' => 'Thực đơn của khách sạn',
-      'empty' => 'Chưa có món ăn nào.',
+      'empty' => 'Chưa có dịch vụ ăn uống nào.',
+      'services' => [
+        ['MaDV' => 1, 'TenDV' => 'Buffet sang', 'LoaiDV' => 0, 'GiaDV' => 250000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'resources/customer/images/menu-1.jpg'],
+        ['MaDV' => 2, 'TenDV' => 'Tra chieu tai san vuon', 'LoaiDV' => 0, 'GiaDV' => 180000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'resources/customer/images/menu-2.jpg'],
+      ],
     ],
     [
-      'type' => 2,
       'subheading' => 'Dịch vụ giải trí',
       'title' => 'Loại hình giải trí của khách sạn',
       'empty' => 'Chưa có nội dung giải trí nào.',
+      'services' => [
+        ['MaDV' => 3, 'TenDV' => 'Spa thu gian 60 phut', 'LoaiDV' => 2, 'GiaDV' => 650000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'resources/customer/images/dv_spa.jpg'],
+        ['MaDV' => 4, 'TenDV' => 'San golf mini', 'LoaiDV' => 2, 'GiaDV' => 400000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'resources/customer/images/dv_golf.jpg'],
+      ],
     ],
     [
-      'type' => 1,
       'subheading' => 'Dịch vụ phòng',
       'title' => 'Dịch vụ phòng của khách sạn',
       'empty' => 'Chưa có dịch vụ phòng nào.',
+      'services' => [
+        ['MaDV' => 5, 'TenDV' => 'Don phong buoi toi', 'LoaiDV' => 1, 'GiaDV' => 150000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'resources/customer/images/room-1.jpg'],
+        ['MaDV' => 6, 'TenDV' => 'Trang tri phong ky niem', 'LoaiDV' => 1, 'GiaDV' => 500000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'resources/customer/images/room-2.jpg'],
+      ],
     ],
   ];
 
-  $serviceOptions = $services
-    ->map(fn (array $service) => [
-      'id' => (string) $service['MaDV'],
-      'name' => (string) $service['TenDV'],
-      'type' => (string) $service['LoaiDV'],
-      'price' => (float) $service['GiaDV'],
-    ])
-    ->values();
+  $serviceOptions = [
+    ['id' => '1', 'name' => 'Buffet sang', 'type' => '0', 'price' => 250000],
+    ['id' => '2', 'name' => 'Tra chieu tai san vuon', 'type' => '0', 'price' => 180000],
+    ['id' => '3', 'name' => 'Spa thu gian 60 phut', 'type' => '2', 'price' => 650000],
+    ['id' => '4', 'name' => 'San golf mini', 'type' => '2', 'price' => 400000],
+    ['id' => '5', 'name' => 'Don phong buoi toi', 'type' => '1', 'price' => 150000],
+    ['id' => '6', 'name' => 'Trang tri phong ky niem', 'type' => '1', 'price' => 500000],
+  ];
 
-  $user = function_exists('mockUser') ? mockUser() : null;
-  $account = $user
-    ? collect(config('hotel-management.modules.accounts.records', []))->firstWhere('Email', $user['email'] ?? '')
-    : null;
-  $customer = $account
-    ? collect(config('hotel-management.modules.customers.records', []))->firstWhere('MaTK', $account['MaTK'] ?? null)
-    : null;
-  $customerBookings = $customer
-    ? collect(config('hotel-management.reception.bookings.records', []))
-        ->where('MaKH', $customer['MaKH'] ?? null)
-        ->values()
-    : collect();
+  $customerBookings = [
+    ['MaDatPhong' => 'PV9010', 'SoPhong' => 'A101, A102'],
+    ['MaDatPhong' => 'PV9011', 'SoPhong' => 'D401'],
+  ];
 @endphp
 
 <!DOCTYPE html>
@@ -146,14 +106,7 @@
       </div>
     </section>
 
-    @if ($errors->any())
-      <div class="service-booking-alert service-booking-alert-error" role="alert">{{ $errors->first() }}</div>
-    @endif
-
     @foreach ($serviceSections as $section)
-      @php
-        $sectionServices = ($servicesByType[$section['type']] ?? collect())->values();
-      @endphp
       <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
         <div class="container">
           <div class="row justify-content-center mb-5 pb-3">
@@ -163,9 +116,9 @@
             </div>
           </div>
 
-          @if ($sectionServices->isNotEmpty())
+          @if (!empty($section['services']))
             <div class="row service-page-grid" data-service-page-grid>
-              @foreach ($sectionServices as $service)
+              @foreach ($section['services'] as $service)
                 <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
                   <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
                     <div class="img" data-bg-image="{{ Vite::asset($service['ImagePath']) }}"></div>
@@ -203,7 +156,7 @@
     <div
       class="service-booking-modal"
       data-service-booking-modal
-      data-service-options='{{ $serviceOptions->toJson() }}'
+      data-service-options='@json($serviceOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
       hidden
     >
       <div class="service-booking-backdrop" data-service-booking-close></div>
@@ -272,25 +225,12 @@
             </div>
           </div>
 
-          <button class="service-booking-submit" type="submit" @disabled($customerBookings->isEmpty())>
+          <button class="service-booking-submit" type="submit" @disabled(empty($customerBookings))>
             Hoàn tất đăng ký <span aria-hidden="true">→</span>
           </button>
         </form>
       </div>
     </div>
-
-    @if (session('service_booking_saved'))
-      <div class="service-booking-success-modal" data-service-booking-success-modal hidden>
-        <div class="service-booking-success-backdrop" data-service-booking-success-close></div>
-        <div class="service-booking-success-dialog" role="dialog" aria-modal="true" aria-labelledby="service_booking_success_title">
-          <button class="service-booking-success-close" type="button" aria-label="Đóng thông báo" data-service-booking-success-close>&times;</button>
-          <div class="service-booking-success-icon" aria-hidden="true">✓</div>
-          <h2 id="service_booking_success_title">Đăng kí dịch vụ thành công</h2>
-          <p>{{ session('service_booking_saved') }}</p>
-          <button class="service-booking-success-action" type="button" data-service-booking-success-close>Đóng</button>
-        </div>
-      </div>
-    @endif
 
     @include('customer.partials.footer')
 
@@ -464,52 +404,14 @@
         syncServiceTime();
         };
 
-        const initServiceBookingSuccessModal = () => {
-          const successModal = document.querySelector('[data-service-booking-success-modal]');
-
-          if (! successModal) {
-            return;
-          }
-
-          const closeButtons = successModal.querySelectorAll('[data-service-booking-success-close]');
-
-          const openSuccessModal = () => {
-            successModal.hidden = false;
-            document.body.classList.add('service-booking-open');
-            window.requestAnimationFrame(() => successModal.classList.add('is-open'));
-          };
-
-          const closeSuccessModal = () => {
-            successModal.classList.remove('is-open');
-            document.body.classList.remove('service-booking-open');
-            window.setTimeout(() => {
-              successModal.hidden = true;
-            }, 160);
-          };
-
-          closeButtons.forEach((button) => {
-            button.addEventListener('click', closeSuccessModal);
-          });
-
-          document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && successModal.classList.contains('is-open')) {
-              closeSuccessModal();
-            }
-          });
-
-          openSuccessModal();
-        };
-
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', () => {
             initServicePagination();
             initServiceBooking();
-            initServiceBookingSuccessModal();
           }, { once: true });
         } else {
           initServicePagination();
           initServiceBooking();
-          initServiceBookingSuccessModal();
         }
       })();
     </script>

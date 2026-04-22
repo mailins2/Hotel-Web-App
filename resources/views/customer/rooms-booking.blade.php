@@ -14,7 +14,9 @@
     @php
       $searchSummary = [
         'checkin' => '2026-04-14',
+        'checkin_display' => '14/04/2026',
         'checkout' => '2026-04-17',
+        'checkout_display' => '17/04/2026',
         'nguoiLon' => 2,
         'treEm' => 1,
         'soDem' => 3,
@@ -36,6 +38,7 @@
             'resources/customer/images/deluxe_family1.jpg',
             'resources/customer/images/810491790.jpg',
           ],
+          'image_payload' => Vite::asset('resources/customer/images/deluxe_family.jpg') . '|' . Vite::asset('resources/customer/images/deluxe_family1.jpg') . '|' . Vite::asset('resources/customer/images/810491790.jpg'),
         ],
         [
           'tenLoaiPhong' => 'Executive Suite',
@@ -51,6 +54,7 @@
             'resources/customer/images/810491789.jpg',
             'resources/customer/images/810491790.jpg',
           ],
+          'image_payload' => Vite::asset('resources/customer/images/suite.jpg') . '|' . Vite::asset('resources/customer/images/810491789.jpg') . '|' . Vite::asset('resources/customer/images/810491790.jpg'),
         ],
         [
           'tenLoaiPhong' => 'Superior Room',
@@ -66,6 +70,7 @@
             'resources/customer/images/room-2.jpg',
             'resources/customer/images/room-3.jpg',
           ],
+          'image_payload' => Vite::asset('resources/customer/images/superior.jpg') . '|' . Vite::asset('resources/customer/images/room-2.jpg') . '|' . Vite::asset('resources/customer/images/room-3.jpg'),
         ],
       ];
     @endphp
@@ -79,7 +84,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkin
-              value="{{ \Carbon\Carbon::parse($searchSummary['checkin'])->format('d/m/Y') }}"
+              value="{{ $searchSummary['checkin_display'] }}"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -91,7 +96,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkout
-              value="{{ \Carbon\Carbon::parse($searchSummary['checkout'])->format('d/m/Y') }}"
+              value="{{ $searchSummary['checkout_display'] }}"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -145,7 +150,7 @@
                 data-room-title="{{ $room['tenLoaiPhong'] }}"
                 data-room-area="{{ $room['dienTich'] }} m²"
                 data-room-desc="{{ $room['moTaDayDu'] }}"
-                data-room-images="{{ collect($room['images'])->map(fn ($image) => Vite::asset($image))->implode('|') }}"
+                data-room-images="{{ $room['image_payload'] }}"
               >
                 <div class="room-result-slider" data-room-slider>
                   <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
@@ -180,7 +185,7 @@
                     data-room-title="{{ $room['tenLoaiPhong'] }}"
                     data-room-area="{{ $room['dienTich'] }} m²"
                     data-room-desc="{{ $room['moTaDayDu'] }}"
-                    data-room-images="{{ collect($room['images'])->map(fn ($image) => Vite::asset($image))->implode('|') }}"
+                    data-room-images="{{ $room['image_payload'] }}"
                   >
                     Xem tất cả tiện nghi
                   </button>
