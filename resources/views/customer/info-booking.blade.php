@@ -91,7 +91,7 @@
                 <label class="booking-payment-option is-selected">
                   <input type="radio" name="payment" data-payment-option="zalopay" checked>
                   <span class="booking-payment-title">ZaloPay</span>
-                  <img src="{{ Vite::asset('resources/customer/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
+                  <img src="{{ asset('customers/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
                 </label>
                 <label class="booking-payment-option">
                   <input type="radio" name="payment" data-payment-option="card">
