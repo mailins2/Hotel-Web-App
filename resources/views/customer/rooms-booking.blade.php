@@ -32,13 +32,13 @@
           'dienTich' => 38,
           'giuong' => '1 giường đôi, 1 giường đơn',
           'giaPhong' => 1840000,
-          'anh' => 'resources/customer/images/deluxe_family.jpg',
+          'anh' => 'customers/images/deluxe_family.jpg',
           'images' => [
-            'resources/customer/images/deluxe_family.jpg',
-            'resources/customer/images/deluxe_family1.jpg',
-            'resources/customer/images/810491790.jpg',
+            'customers/images/deluxe_family.jpg',
+            'customers/images/deluxe_family1.jpg',
+            'customers/images/810491790.jpg',
           ],
-          'image_payload' => Vite::asset('resources/customer/images/deluxe_family.jpg') . '|' . Vite::asset('resources/customer/images/deluxe_family1.jpg') . '|' . Vite::asset('resources/customer/images/810491790.jpg'),
+          'image_payload' => asset('customers/images/deluxe_family.jpg') . '|' . asset('customers/images/deluxe_family1.jpg') . '|' . asset('customers/images/810491790.jpg'),
         ],
         [
           'tenLoaiPhong' => 'Executive Suite',
@@ -48,13 +48,13 @@
           'dienTich' => 68,
           'giuong' => '1 giường king size',
           'giaPhong' => 2530000,
-          'anh' => 'resources/customer/images/suite.jpg',
+          'anh' => 'customers/images/suite.jpg',
           'images' => [
-            'resources/customer/images/suite.jpg',
-            'resources/customer/images/810491789.jpg',
-            'resources/customer/images/810491790.jpg',
+            'customers/images/suite.jpg',
+            'customers/images/810491789.jpg',
+            'customers/images/810491790.jpg',
           ],
-          'image_payload' => Vite::asset('resources/customer/images/suite.jpg') . '|' . Vite::asset('resources/customer/images/810491789.jpg') . '|' . Vite::asset('resources/customer/images/810491790.jpg'),
+          'image_payload' => asset('customers/images/suite.jpg') . '|' . asset('customers/images/810491789.jpg') . '|' . asset('customers/images/810491790.jpg'),
         ],
         [
           'tenLoaiPhong' => 'Superior Room',
@@ -64,13 +64,13 @@
           'dienTich' => 32,
           'giuong' => '1 giường queen',
           'giaPhong' => 1490000,
-          'anh' => 'resources/customer/images/superior.jpg',
+          'anh' => 'customers/images/superior.jpg',
           'images' => [
-            'resources/customer/images/superior.jpg',
-            'resources/customer/images/room-2.jpg',
-            'resources/customer/images/room-3.jpg',
+            'customers/images/superior.jpg',
+            'customers/images/room-2.jpg',
+            'customers/images/room-3.jpg',
           ],
-          'image_payload' => Vite::asset('resources/customer/images/superior.jpg') . '|' . Vite::asset('resources/customer/images/room-2.jpg') . '|' . Vite::asset('resources/customer/images/room-3.jpg'),
+          'image_payload' => asset('customers/images/superior.jpg') . '|' . asset('customers/images/room-2.jpg') . '|' . asset('customers/images/room-3.jpg'),
         ],
       ];
     @endphp
@@ -158,7 +158,7 @@
                   </button>
                   <div class="room-result-slides">
                     @foreach ($room['images'] as $index => $image)
-                      <div class="room-result-slide{{ $index === 0 ? ' is-active' : '' }}" data-bg-image="{{ Vite::asset($image) }}"></div>
+                      <div class="room-result-slide{{ $index === 0 ? ' is-active' : '' }}" data-bg-image="{{ asset($image) }}"></div>
                     @endforeach
                   </div>
                   <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">

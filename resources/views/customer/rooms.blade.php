@@ -15,7 +15,7 @@
 
     @include('customer.partials.nav', ['active' => 'rooms'])
     <!-- END nav -->
-		<div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/rooms.jpg') }}">
+		<div class="hero-wrap" data-bg-image="{{ asset('customers/images/rooms.jpg') }}">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text d-flex align-itemd-center justify-content-center">
@@ -39,7 +39,7 @@
     		<div class="row room-list-vertical">
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/room-6.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/room-6.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -52,7 +52,7 @@
     			</div>
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/room-1.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/room-1.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -66,7 +66,7 @@
 
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ Vite::asset('resources/customer/images/room-2.jpg') }}"></a>
+    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/room-2.jpg') }}"></a>
     					<div class="half right-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -79,7 +79,7 @@
     			</div>
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ Vite::asset('resources/customer/images/room-3.jpg') }}"></a>
+    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/room-3.jpg') }}"></a>
     					<div class="half right-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -93,7 +93,7 @@
 
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/room-4.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/room-4.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -106,7 +106,7 @@
     			</div>
     			<div class="col-12">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/room-5.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/room-5.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>

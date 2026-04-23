@@ -11,9 +11,9 @@
       'NgayKetThuc' => '2026-05-31',
       'NgayKetThucDisplay' => '31/05/2026',
       'Images' => [
-        'resources/customer/images/screen1.png',
-        'resources/customer/images/screen2.png',
-        'resources/customer/images/screen3.png',
+        'customers/images/screen1.png',
+        'customers/images/screen2.png',
+        'customers/images/screen3.png',
       ],
     ],
     [
@@ -27,9 +27,9 @@
       'NgayKetThuc' => '2026-06-15',
       'NgayKetThucDisplay' => '15/06/2026',
       'Images' => [
-        'resources/customer/images/screen2.png',
-        'resources/customer/images/screen3.png',
-        'resources/customer/images/screen.png',
+        'customers/images/screen2.png',
+        'customers/images/screen3.png',
+        'customers/images/screen.png',
       ],
     ],
     [
@@ -43,9 +43,9 @@
       'NgayKetThuc' => '2026-07-01',
       'NgayKetThucDisplay' => '01/07/2026',
       'Images' => [
-        'resources/customer/images/screen3.png',
-        'resources/customer/images/screen.png',
-        'resources/customer/images/screen1.png',
+        'customers/images/screen3.png',
+        'customers/images/screen.png',
+        'customers/images/screen1.png',
       ],
     ],
   ];
@@ -67,7 +67,7 @@
 
     @include('customer.partials.nav', ['active' => 'promotion'])
 
-    <div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/screen.png') }}">
+    <div class="hero-wrap" data-bg-image="{{ asset('customers/images/screen.png') }}">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text d-flex align-itemd-center justify-content-center">
@@ -95,7 +95,7 @@
               <div class="promotion-card-media">
                 <div class="promotion-card-slider single-slider owl-carousel">
                   @foreach ($promotion['Images'] as $image)
-                    <div class="promotion-card-slide" data-bg-image="{{ Vite::asset($image) }}"></div>
+                    <div class="promotion-card-slide" data-bg-image="{{ asset($image) }}"></div>
                   @endforeach
                 </div>
                 <span class="promotion-card-discount">

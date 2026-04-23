@@ -51,7 +51,7 @@
     <!-- END nav -->
 		<div class="hero">
 	    <section class="home-slider owl-carousel">
-	      <div class="slider-item" data-bg-image="{{ Vite::asset('resources/customer/images/siderbar1.jpg') }}">
+	      <div class="slider-item" data-bg-image="{{ asset('customers/images/siderbar1.jpg') }}">
 	      	<div class="overlay"></div>
 	        <div class="container">
 	          <div class="row no-gutters slider-text align-items-center justify-content-end">
@@ -65,7 +65,7 @@
 	        </div>
 	      </div>
 
-	      <div class="slider-item" data-bg-image="{{ Vite::asset('resources/customer/images/siderbar2.jpg') }}">
+	      <div class="slider-item" data-bg-image="{{ asset('customers/images/siderbar2.jpg') }}">
 	      	<div class="overlay"></div>
 	        <div class="container">
 	          <div class="row no-gutters slider-text align-items-center justify-content-end">
@@ -165,10 +165,10 @@
           </div>
         </div>  
         <div class="home-promotion-slider single-slider owl-carousel ftco-animate">
-          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ Vite::asset('resources/customer/images/screen1.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
-          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ Vite::asset('resources/customer/images/screen2.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
-          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ Vite::asset('resources/customer/images/screen3.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
-          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ Vite::asset('resources/customer/images/screen.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
+          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ asset('customers/images/screen1.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
+          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ asset('customers/images/screen2.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
+          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ asset('customers/images/screen3.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
+          <a class="home-promotion-slide" href="{{ route('customer.promotion') }}" data-bg-image="{{ asset('customers/images/screen.png') }}" aria-label="Xem khuyến mãi Peach Valley"></a>
         </div>
       </div>
     </section>
@@ -177,8 +177,8 @@
 			<div class="container">
 				<div class="row no-gutters">
 					<div class="col-md-7 order-md-last d-flex">
-						<div class="img img-1 mr-md-2 ftco-animate" data-bg-image="{{ Vite::asset('resources/customer/images/home2.jpg') }}"></div>
-						<div class="img img-2 ml-md-2 ftco-animate" data-bg-image="{{ Vite::asset('resources/customer/images/home3.jpg') }}"></div>
+						<div class="img img-1 mr-md-2 ftco-animate" data-bg-image="{{ asset('customers/images/home2.jpg') }}"></div>
+						<div class="img img-2 ml-md-2 ftco-animate" data-bg-image="{{ asset('customers/images/home3.jpg') }}"></div>
 					</div>
 					<div class="col-md-5 wrap-about pb-md-3 ftco-animate pr-md-5 pb-md-5 pt-md-4">
 	          <div class="heading-section mb-4 my-5 my-md-0">
@@ -196,7 +196,7 @@
       <div class="container">
         <div class="row no-gutters ftco-animate justify-content-center">
         	<div class="col-md-5 d-flex">
-        		<div class="testimony-img aside-stretch-2" data-bg-image="{{ Vite::asset('resources/customer/images/view1.jpg') }}"></div>
+        		<div class="testimony-img aside-stretch-2" data-bg-image="{{ asset('customers/images/view1.jpg') }}"></div>
         	</div>
 	          <div class="col-md-7 py-5 pl-md-5">
 	          	<div class="py-md-5">
@@ -254,7 +254,7 @@
     		<div class="row no-gutters">
     			<div class="col-lg-6">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/deluxe_family.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/deluxe_family.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
 								<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Deluxe Gia Đình</a></h3> 
@@ -267,7 +267,7 @@
     			</div>
     			<div class="col-lg-6">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ Vite::asset('resources/customer/images/suite_junior.jpg') }}"></a>
+    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/suite_junior.jpg') }}"></a>
     					<div class="half left-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite Junior</a></h3>
@@ -281,7 +281,7 @@
 
     			<div class="col-lg-6">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ Vite::asset('resources/customer/images/suite.jpg') }}"></a>
+    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/suite.jpg') }}"></a>
     					<div class="half right-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
@@ -294,7 +294,7 @@
     			</div>
     			<div class="col-lg-6">
     				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ Vite::asset('resources/customer/images/superior.jpg') }}"></a>
+    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/superior.jpg') }}"></a>
     					<div class="half right-arrow d-flex align-items-center">
     						<div class="text p-4 text-center">
     							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Superior</a></h3>

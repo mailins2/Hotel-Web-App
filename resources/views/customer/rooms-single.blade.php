@@ -15,7 +15,7 @@
 
     @include('customer.partials.nav', ['active' => 'rooms'])
     <!-- END nav -->
-		<div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/rooms.jpg') }}">
+		<div class="hero-wrap" data-bg-image="{{ asset('customers/images/rooms.jpg') }}">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text d-flex align-itemd-center justify-content-center">
@@ -36,13 +36,13 @@
           		<div class="col-md-12 ftco-animate">
           			<div class="single-slider owl-carousel">
           				<div class="item">
-          					<div class="room-img" data-bg-image="{{ Vite::asset('resources/customer/images/deluxe_family1.jpg') }}"></div>
+          					<div class="room-img" data-bg-image="{{ asset('customers/images/deluxe_family1.jpg') }}"></div>
           				</div>
           				<div class="item">
-          					<div class="room-img" data-bg-image="{{ Vite::asset('resources/customer/images/810491790.jpg') }}"></div>
+          					<div class="room-img" data-bg-image="{{ asset('customers/images/810491790.jpg') }}"></div>
           				</div>
           				<div class="item">
-          					<div class="room-img" data-bg-image="{{ Vite::asset('resources/customer/images/810491789.jpg') }}"></div>
+          					<div class="room-img" data-bg-image="{{ asset('customers/images/810491789.jpg') }}"></div>
           				</div>
           			</div>
           		</div>

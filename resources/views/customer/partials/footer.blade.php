@@ -1,4 +1,4 @@
-<footer class="ftco-footer ftco-section img" data-bg-image="{{ Vite::asset('resources/customer/images/bg_4.jpg') }}">
+<footer class="ftco-footer ftco-section">
   <div class="overlay"></div>
   <div class="container">
     <div class="row mb-5">

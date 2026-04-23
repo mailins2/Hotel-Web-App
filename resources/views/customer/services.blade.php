@@ -11,8 +11,8 @@
       'title' => 'Thực đơn của khách sạn',
       'empty' => 'Chưa có dịch vụ ăn uống nào.',
       'services' => [
-        ['MaDV' => 1, 'TenDV' => 'Buffet sang', 'LoaiDV' => 0, 'GiaDV' => 250000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'resources/customer/images/menu-1.jpg'],
-        ['MaDV' => 2, 'TenDV' => 'Tra chieu tai san vuon', 'LoaiDV' => 0, 'GiaDV' => 180000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'resources/customer/images/menu-2.jpg'],
+        ['MaDV' => 1, 'TenDV' => 'Buffet sang', 'LoaiDV' => 0, 'GiaDV' => 250000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'customers/images/menu-1.jpg'],
+        ['MaDV' => 2, 'TenDV' => 'Tra chieu tai san vuon', 'LoaiDV' => 0, 'GiaDV' => 180000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'customers/images/menu-2.jpg'],
       ],
     ],
     [
@@ -20,8 +20,8 @@
       'title' => 'Loại hình giải trí của khách sạn',
       'empty' => 'Chưa có nội dung giải trí nào.',
       'services' => [
-        ['MaDV' => 3, 'TenDV' => 'Spa thu gian 60 phut', 'LoaiDV' => 2, 'GiaDV' => 650000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'resources/customer/images/dv_spa.jpg'],
-        ['MaDV' => 4, 'TenDV' => 'San golf mini', 'LoaiDV' => 2, 'GiaDV' => 400000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'resources/customer/images/dv_golf.jpg'],
+        ['MaDV' => 3, 'TenDV' => 'Spa thu gian 60 phut', 'LoaiDV' => 2, 'GiaDV' => 650000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'customers/images/dv_spa.jpg'],
+        ['MaDV' => 4, 'TenDV' => 'San golf mini', 'LoaiDV' => 2, 'GiaDV' => 400000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'customers/images/dv_golf.jpg'],
       ],
     ],
     [
@@ -29,8 +29,8 @@
       'title' => 'Dịch vụ phòng của khách sạn',
       'empty' => 'Chưa có dịch vụ phòng nào.',
       'services' => [
-        ['MaDV' => 5, 'TenDV' => 'Don phong buoi toi', 'LoaiDV' => 1, 'GiaDV' => 150000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'resources/customer/images/room-1.jpg'],
-        ['MaDV' => 6, 'TenDV' => 'Trang tri phong ky niem', 'LoaiDV' => 1, 'GiaDV' => 500000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'resources/customer/images/room-2.jpg'],
+        ['MaDV' => 5, 'TenDV' => 'Don phong buoi toi', 'LoaiDV' => 1, 'GiaDV' => 150000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'customers/images/room-1.jpg'],
+        ['MaDV' => 6, 'TenDV' => 'Trang tri phong ky niem', 'LoaiDV' => 1, 'GiaDV' => 500000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'customers/images/room-2.jpg'],
       ],
     ],
   ];
@@ -66,7 +66,7 @@
 
     @include('customer.partials.nav', ['active' => 'services'])
     <!-- END nav -->
-    <div class="hero-wrap" data-bg-image="{{ Vite::asset('resources/customer/images/dv_fb.webp') }}">
+    <div class="hero-wrap" data-bg-image="{{ asset('customers/images/dv_fb.webp') }}">
       <div class="overlay"></div>
       <div class="container">
         <div class="row no-gutters slider-text d-flex align-itemd-center justify-content-center">
@@ -85,13 +85,13 @@
           <div class="col-md-6">
             <div class="single-slider-resto mb-4 mb-md-0 owl-carousel">
               <div class="item">
-                <div class="resto-img rounded" data-bg-image="{{ Vite::asset('resources/customer/images/dv_fb.webp') }}"></div>
+                <div class="resto-img rounded" data-bg-image="{{ asset('customers/images/dv_fb.webp') }}"></div>
               </div>
               <div class="item">
-                <div class="resto-img rounded" data-bg-image="{{ Vite::asset('resources/customer/images/dv_spa.jpg') }}"></div>
+                <div class="resto-img rounded" data-bg-image="{{ asset('customers/images/dv_spa.jpg') }}"></div>
               </div>
               <div class="item">
-                <div class="resto-img rounded" data-bg-image="{{ Vite::asset('resources/customer/images/dv_golf.jpg') }}"></div>
+                <div class="resto-img rounded" data-bg-image="{{ asset('customers/images/dv_golf.jpg') }}"></div>
               </div>
             </div>
           </div>
@@ -121,7 +121,7 @@
               @foreach ($section['services'] as $service)
                 <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
                   <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
-                    <div class="img" data-bg-image="{{ Vite::asset($service['ImagePath']) }}"></div>
+                    <div class="img" data-bg-image="{{ asset($service['ImagePath']) }}"></div>
                     <div class="desc p-4">
                       <div class="d-md-flex text align-items-start">
                         <h3><span>{{ $service['TenDV'] }}</span></h3>
