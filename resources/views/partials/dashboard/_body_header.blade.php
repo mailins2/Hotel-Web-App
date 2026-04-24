@@ -1,5 +1,7 @@
-@php($isAuthenticated = isMockAuthenticated())
-@php($dashboardRoute = portalDashboardRoute())
+@php
+  $dashboardRoute = route('admin.dashboard');
+  $portalLabel = 'Admin';
+@endphp
 
 <nav class="nav navbar navbar-expand-lg navbar-light iq-navbar navs-color">
   <div class="container-fluid navbar-inner">
@@ -21,7 +23,7 @@
           <path d="M18.0186 18.4851L21.5426 22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
       </span>
-      <input type="search" class="form-control" placeholder="{{ isReceptionist() ? 'Tìm booking, khách hàng, hóa đơn...' : 'Tìm kiếm...' }}">
+      <input type="search" class="form-control" placeholder="{{ request()->routeIs('reception.*') ? 'Tim booking, khach hang, hoa don...' : 'Tim kiem...' }}">
     </div>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -32,7 +34,7 @@
       </span>
     </button>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
-      <ul class="navbar-nav ms-auto  navbar-list mb-2 mb-lg-0">
+      <ul class="navbar-nav ms-auto navbar-list mb-2 mb-lg-0">
         <li class="nav-item dropdown">
           <a class="nav-link py-0 d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <span class="bg-soft-primary rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 40px;">
@@ -42,18 +44,12 @@
               </svg>
             </span>
             <div class="caption d-none d-md-block">
-              <h6 class="mb-0 caption-title">{{ $isAuthenticated ? currentUserName() : 'Khách' }}</h6>
-              <small class="text-muted">{{ $isAuthenticated ? currentUserRoleLabel() : 'Chưa đăng nhập' }}</small>
+              <h6 class="mb-0 caption-title">{{ $portalLabel }}</h6>
             </div>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
             <li>
-              <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="dropdown-item">
-                  Đăng xuất
-                </button>
-              </form>
+              <a href="{{ route('login') }}" class="dropdown-item">Đăng xuất</a>
             </li>
           </ul>
         </li>

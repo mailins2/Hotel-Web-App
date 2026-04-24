@@ -1,3 +1,5 @@
+@php($isLoggedIn = $isLoggedIn ?? false)
+
 <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
   <div class="container">
     <a class="navbar-brand brand-logo" href="{{ route('customer.home') }}">
@@ -16,48 +18,43 @@
         <li class="nav-item{{ ($active ?? '') === 'blog' ? ' active' : '' }}"><a href="{{ route('customer.blog-single') }}" class="nav-link">Về chúng tôi</a></li>
       </ul>
 
-      @php($navUser = ['name' => 'Nguyen Minh An'])
       <div class="nav-cta-group">
-        <div class="dropdown customer-user-menu">
-          <button
-            type="button"
-            class="nav-cta-secondary customer-user-toggle dropdown-toggle"
-            id="customerUserMenu"
-            data-toggle="dropdown"
-            aria-haspopup="true"
-            aria-expanded="false"
-          >
-            {{ $navUser ? 'Xin chào, ' . ($navUser['name'] ?? 'Khach hang') : 'Tai khoan mau' }}
-          </button>
-          <div class="dropdown-menu dropdown-menu-right customer-user-dropdown" aria-labelledby="customerUserMenu">
-            <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.profile') }}">
-              <span class="customer-user-dropdown-icon ion-ios-person"></span>
-              <span>Thông tin cá nhân</span>
-            </a>
-            <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.my-bookings') }}">
-              <span class="customer-user-dropdown-icon ion-ios-briefcase"></span>
-              <span>Đặt phòng của bạn</span>
-            </a>
-            <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.promotion-wallet') }}">
-              <span class="customer-user-dropdown-icon ion-ios-pricetag"></span>
-              <span>Kho khuyến mãi</span>
-            </a>
-            @if ($navUser)
-              <form method="POST" action="{{ route('logout') }}" class="customer-user-logout-form">
-                {{ csrf_field() }}
-                <button type="submit" class="dropdown-item customer-user-dropdown-item customer-user-logout">
-                  <span class="customer-user-dropdown-icon ion-ios-log-out"></span>
-                  <span>Đăng xuất</span>
-                </button>
-              </form>
-            @else
+        @if ($isLoggedIn)
+          <div class="dropdown customer-user-menu">
+            <button
+              type="button"
+              class="nav-cta-secondary customer-user-toggle dropdown-toggle"
+              id="customerUserMenu"
+              data-toggle="dropdown"
+              aria-haspopup="true"
+              aria-expanded="false"
+            >
+              Tai khoan
+            </button>
+            <div class="dropdown-menu dropdown-menu-right customer-user-dropdown" aria-labelledby="customerUserMenu">
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.profile') }}">
+                <span class="customer-user-dropdown-icon ion-ios-person"></span>
+                <span>Thông tin cá nhân</span>
+              </a>
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.my-bookings') }}">
+                <span class="customer-user-dropdown-icon ion-ios-briefcase"></span>
+                <span>Đặt phòng của bạn</span>
+              </a>
+              <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.promotion-wallet') }}">
+                <span class="customer-user-dropdown-icon ion-ios-pricetag"></span>
+                <span>Kho khuyến mãi</span>
+              </a>
               <a href="{{ route('login') }}" class="dropdown-item customer-user-dropdown-item">
                 <span class="customer-user-dropdown-icon ion-ios-log-in"></span>
-                <span>Đăng nhập / Đăng ký</span>
+                <span>Đăng xuất</span>
               </a>
-            @endif
+            </div>
           </div>
-        </div>
+        @else
+          <a href="{{ route('login') }}" class="nav-cta-secondary customer-user-toggle">
+            Đăng nhập / Đăng ký
+          </a>
+        @endif
       </div>
     </div>
   </div>

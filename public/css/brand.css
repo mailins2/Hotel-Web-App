@@ -193,10 +193,10 @@ a:hover,
 }
 
 .hotel-brand-logo {
-    width: 34px;
-    height: 34px;
+    width: 60px;
+    height: 60px;
     border-radius: 6px;
-    background: #fff;
+    /* background: #fff; */
     padding: 3px;
 }
 

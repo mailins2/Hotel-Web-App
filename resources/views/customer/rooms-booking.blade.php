@@ -11,70 +11,6 @@
   <body class="search-page">
     @include('customer.partials.nav')
 
-    @php
-      $searchSummary = [
-        'checkin' => '2026-04-14',
-        'checkin_display' => '14/04/2026',
-        'checkout' => '2026-04-17',
-        'checkout_display' => '17/04/2026',
-        'nguoiLon' => 2,
-        'treEm' => 1,
-        'soDem' => 3,
-        'soPhong' => 1,
-      ];
-
-      $roomResults = [
-        [
-          'tenLoaiPhong' => 'Deluxe Family Triple',
-          'moTa' => 'Phòng dành cho gia đình, bố trí 1 giường đôi và 1 giường đơn, không gian thoáng và đầy đủ tiện nghi.',
-          'moTaDayDu' => 'Phòng dành cho gia đình với thiết kế ấm cúng, tầm nhìn đẹp và không gian rộng rãi. Bố trí nội thất hiện đại, phù hợp cho nhóm bạn hoặc gia đình nhỏ muốn nghỉ dưỡng thoải mái.',
-          'soNguoiToiDa' => 4,
-          'dienTich' => 38,
-          'giuong' => '1 giường đôi, 1 giường đơn',
-          'giaPhong' => 1840000,
-          'anh' => 'customers/images/deluxe_family.jpg',
-          'images' => [
-            'customers/images/deluxe_family.jpg',
-            'customers/images/deluxe_family1.jpg',
-            'customers/images/810491790.jpg',
-          ],
-          'image_payload' => asset('customers/images/deluxe_family.jpg') . '|' . asset('customers/images/deluxe_family1.jpg') . '|' . asset('customers/images/810491790.jpg'),
-        ],
-        [
-          'tenLoaiPhong' => 'Executive Suite',
-          'moTa' => 'Không gian rộng với khu tiếp khách riêng, phù hợp cho kỳ nghỉ cao cấp hoặc chuyến công tác dài ngày.',
-          'moTaDayDu' => 'Phòng hạng cao cấp với khu tiếp khách riêng, tầm nhìn đẹp và nội thất tinh tế. Không gian rộng rãi giúp bạn thư giãn trọn vẹn trong suốt kỳ nghỉ.',
-          'soNguoiToiDa' => 2,
-          'dienTich' => 68,
-          'giuong' => '1 giường king size',
-          'giaPhong' => 2530000,
-          'anh' => 'customers/images/suite.jpg',
-          'images' => [
-            'customers/images/suite.jpg',
-            'customers/images/810491789.jpg',
-            'customers/images/810491790.jpg',
-          ],
-          'image_payload' => asset('customers/images/suite.jpg') . '|' . asset('customers/images/810491789.jpg') . '|' . asset('customers/images/810491790.jpg'),
-        ],
-        [
-          'tenLoaiPhong' => 'Superior Room',
-          'moTa' => 'Lựa chọn cân bằng giữa chi phí và tiện nghi, thiết kế hiện đại, phù hợp cho cặp đôi hoặc khách cá nhân.',
-          'moTaDayDu' => 'Phòng thiết kế hiện đại, tiện nghi đầy đủ và ánh sáng tự nhiên. Lựa chọn phù hợp cho khách cá nhân hoặc cặp đôi muốn tiết kiệm chi phí.',
-          'soNguoiToiDa' => 2,
-          'dienTich' => 32,
-          'giuong' => '1 giường queen',
-          'giaPhong' => 1490000,
-          'anh' => 'customers/images/superior.jpg',
-          'images' => [
-            'customers/images/superior.jpg',
-            'customers/images/room-2.jpg',
-            'customers/images/room-3.jpg',
-          ],
-          'image_payload' => asset('customers/images/superior.jpg') . '|' . asset('customers/images/room-2.jpg') . '|' . asset('customers/images/room-3.jpg'),
-        ],
-      ];
-    @endphp
-
     <section class="search-summary">
       <div class="container">
         <div class="search-summary-bar">
@@ -84,7 +20,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkin
-              value="{{ $searchSummary['checkin_display'] }}"
+              value="14/04/2026"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -96,7 +32,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkout
-              value="{{ $searchSummary['checkout_display'] }}"
+              value="17/04/2026"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -107,7 +43,7 @@
             <div class="search-summary-guest" data-search-guest>
               <button type="button" class="search-summary-guest-trigger" data-search-guest-trigger>
                 <span data-search-guest-text>
-                  {{ $searchSummary['nguoiLon'] }} người lớn - {{ $searchSummary['treEm'] }} trẻ em
+                  2 người lớn - 1 trẻ em
                 </span>
                 <span class="icon ion-ios-arrow-down"></span>
               </button>
@@ -116,7 +52,7 @@
                   <span>Người lớn</span>
                   <div class="search-guest-stepper">
                     <button type="button" data-guest-action="dec" data-guest-type="adults">-</button>
-                    <span data-guest-count="adults">{{ $searchSummary['nguoiLon'] }}</span>
+                    <span data-guest-count="adults">2</span>
                     <button type="button" data-guest-action="inc" data-guest-type="adults">+</button>
                   </div>
                 </div>
@@ -124,7 +60,7 @@
                   <span>Trẻ em</span>
                   <div class="search-guest-stepper">
                     <button type="button" data-guest-action="dec" data-guest-type="children">-</button>
-                    <span data-guest-count="children">{{ $searchSummary['treEm'] }}</span>
+                    <span data-guest-count="children">1</span>
                     <button type="button" data-guest-action="inc" data-guest-type="children">+</button>
                   </div>
                 </div>
@@ -143,90 +79,236 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-8">
-            @foreach ($roomResults as $room)
-              <div
-                class="room-result-card"
-                data-room-card-trigger
-                data-room-title="{{ $room['tenLoaiPhong'] }}"
-                data-room-area="{{ $room['dienTich'] }} m²"
-                data-room-desc="{{ $room['moTaDayDu'] }}"
-                data-room-images="{{ $room['image_payload'] }}"
-              >
-                <div class="room-result-slider" data-room-slider>
-                  <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
-                    <span class="icon ion-ios-arrow-back"></span>
-                  </button>
-                  <div class="room-result-slides">
-                    @foreach ($room['images'] as $index => $image)
-                      <div class="room-result-slide{{ $index === 0 ? ' is-active' : '' }}" data-bg-image="{{ asset($image) }}"></div>
-                    @endforeach
-                  </div>
-                  <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
-                    <span class="icon ion-ios-arrow-forward"></span>
-                  </button>
+            <div
+              class="room-result-card"
+              data-room-card-trigger
+              data-room-title="Deluxe Family Triple"
+              data-room-area="38 m²"
+              data-room-desc="Phòng dành cho gia đình với thiết kế ấm cúng, tầm nhìn đẹp và không gian rộng rãi. Bố trí nội thất hiện đại, phù hợp cho nhóm bạn hoặc gia đình nhỏ muốn nghỉ dưỡng thoải mái."
+              data-room-images="{{ asset('customers/images/deluxe_family.jpg') }}|{{ asset('customers/images/deluxe_family1.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
+            >
+              <div class="room-result-slider" data-room-slider>
+                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
+                  <span class="icon ion-ios-arrow-back"></span>
+                </button>
+                <div class="room-result-slides">
+                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/deluxe_family.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/deluxe_family1.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491790.jpg') }}"></div>
                 </div>
-                <div class="room-result-content">
-                  <div class="room-result-header">
-                    <h3>{{ $room['tenLoaiPhong'] }}</h3>
-                    <span class="room-result-capacity">
-                      <span class="icon ion-ios-people"></span>
-                      {{ $room['soNguoiToiDa'] }} khách
+                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
+                  <span class="icon ion-ios-arrow-forward"></span>
+                </button>
+              </div>
+              <div class="room-result-content">
+                <div class="room-result-header">
+                  <h3>Deluxe Family Triple</h3>
+                  <span class="room-result-capacity">
+                    <span class="icon ion-ios-people"></span>
+                    4 khách
+                  </span>
+                </div>
+                <p class="room-result-desc">Phòng dành cho gia đình, bố trí 1 giường đôi và 1 giường đơn, không gian thoáng và đầy đủ tiện nghi.</p>
+                <div class="room-result-meta">
+                  <span><strong>Giường:</strong> 1 giường đôi, 1 giường đơn</span>
+                  <span><strong>Diện tích:</strong> 38 m²</span>
+                </div>
+                <button
+                  type="button"
+                  class="room-result-amenities-link"
+                  data-room-modal-trigger
+                  data-room-title="Deluxe Family Triple"
+                  data-room-area="38 m²"
+                  data-room-desc="Phòng dành cho gia đình với thiết kế ấm cúng, tầm nhìn đẹp và không gian rộng rãi. Bố trí nội thất hiện đại, phù hợp cho nhóm bạn hoặc gia đình nhỏ muốn nghỉ dưỡng thoải mái."
+                  data-room-images="{{ asset('customers/images/deluxe_family.jpg') }}|{{ asset('customers/images/deluxe_family1.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
+                >
+                  Xem tất cả tiện nghi
+                </button>
+                <div class="room-result-footer">
+                  <div class="room-result-price">
+                    <span class="label">Giá chỉ từ</span>
+                    <span class="room-result-price-line">
+                      <span class="value">1.840.000 VND</span>
+                      <span class="per">/ đêm</span>
                     </span>
                   </div>
-                  <p class="room-result-desc">{{ $room['moTa'] }}</p>
-                  <div class="room-result-meta">
-                    <span><strong>Giường:</strong> {{ $room['giuong'] }}</span>
-                    <span><strong>Diện tích:</strong> {{ $room['dienTich'] }} m²</span>
-                  </div>
-                  <button
-                    type="button"
-                    class="room-result-amenities-link"
-                    data-room-modal-trigger
-                    data-room-title="{{ $room['tenLoaiPhong'] }}"
-                    data-room-area="{{ $room['dienTich'] }} m²"
-                    data-room-desc="{{ $room['moTaDayDu'] }}"
-                    data-room-images="{{ $room['image_payload'] }}"
-                  >
-                    Xem tất cả tiện nghi
-                  </button>
-                  <div class="room-result-footer">
-                    <div class="room-result-price">
-                      <span class="label">Giá chỉ từ</span>
-                      <span class="room-result-price-line">
-                        <span class="value">{{ number_format($room['giaPhong'], 0, ',', '.') }} VND</span>
-                        <span class="per">/ đêm</span>
-                      </span>
-                    </div>
-                    <div class="room-result-actions">
-                      <div class="room-result-qty-stepper" data-room-qty-stepper>
-                        <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
-                        <input
-                          type="hidden"
-                          value="0"
-                          min="0"
-                          max="5"
-                          data-room-qty
-                          data-room-qty-input
-                          data-room-name="{{ $room['tenLoaiPhong'] }}"
-                          data-room-price="{{ $room['giaPhong'] }}"
-                        >
-                        <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
-                        <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
-                      </div>
+                  <div class="room-result-actions">
+                    <div class="room-result-qty-stepper" data-room-qty-stepper>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
+                      <input
+                        type="hidden"
+                        value="0"
+                        min="0"
+                        max="5"
+                        data-room-qty
+                        data-room-qty-input
+                        data-room-name="Deluxe Family Triple"
+                        data-room-price="1840000"
+                      >
+                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
                     </div>
                   </div>
                 </div>
               </div>
-            @endforeach
+            </div>
+
+            <div
+              class="room-result-card"
+              data-room-card-trigger
+              data-room-title="Executive Suite"
+              data-room-area="68 m²"
+              data-room-desc="Phòng hạng cao cấp với khu tiếp khách riêng, tầm nhìn đẹp và nội thất tinh tế. Không gian rộng rãi giúp bạn thư giãn trọn vẹn trong suốt kỳ nghỉ."
+              data-room-images="{{ asset('customers/images/suite.jpg') }}|{{ asset('customers/images/810491789.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
+            >
+              <div class="room-result-slider" data-room-slider>
+                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
+                  <span class="icon ion-ios-arrow-back"></span>
+                </button>
+                <div class="room-result-slides">
+                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/suite.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491789.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491790.jpg') }}"></div>
+                </div>
+                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
+                  <span class="icon ion-ios-arrow-forward"></span>
+                </button>
+              </div>
+              <div class="room-result-content">
+                <div class="room-result-header">
+                  <h3>Executive Suite</h3>
+                  <span class="room-result-capacity">
+                    <span class="icon ion-ios-people"></span>
+                    2 khách
+                  </span>
+                </div>
+                <p class="room-result-desc">Không gian rộng với khu tiếp khách riêng, phù hợp cho kỳ nghỉ cao cấp hoặc chuyến công tác dài ngày.</p>
+                <div class="room-result-meta">
+                  <span><strong>Giường:</strong> 1 giường king size</span>
+                  <span><strong>Diện tích:</strong> 68 m²</span>
+                </div>
+                <button
+                  type="button"
+                  class="room-result-amenities-link"
+                  data-room-modal-trigger
+                  data-room-title="Executive Suite"
+                  data-room-area="68 m²"
+                  data-room-desc="Phòng hạng cao cấp với khu tiếp khách riêng, tầm nhìn đẹp và nội thất tinh tế. Không gian rộng rãi giúp bạn thư giãn trọn vẹn trong suốt kỳ nghỉ."
+                  data-room-images="{{ asset('customers/images/suite.jpg') }}|{{ asset('customers/images/810491789.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
+                >
+                  Xem tất cả tiện nghi
+                </button>
+                <div class="room-result-footer">
+                  <div class="room-result-price">
+                    <span class="label">Giá chỉ từ</span>
+                    <span class="room-result-price-line">
+                      <span class="value">2.530.000 VND</span>
+                      <span class="per">/ đêm</span>
+                    </span>
+                  </div>
+                  <div class="room-result-actions">
+                    <div class="room-result-qty-stepper" data-room-qty-stepper>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
+                      <input
+                        type="hidden"
+                        value="0"
+                        min="0"
+                        max="5"
+                        data-room-qty
+                        data-room-qty-input
+                        data-room-name="Executive Suite"
+                        data-room-price="2530000"
+                      >
+                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="room-result-card"
+              data-room-card-trigger
+              data-room-title="Superior Room"
+              data-room-area="32 m²"
+              data-room-desc="Phòng thiết kế hiện đại, tiện nghi đầy đủ và ánh sáng tự nhiên. Lựa chọn phù hợp cho khách cá nhân hoặc cặp đôi muốn tiết kiệm chi phí."
+              data-room-images="{{ asset('customers/images/superior.jpg') }}|{{ asset('customers/images/room-2.jpg') }}|{{ asset('customers/images/room-3.jpg') }}"
+            >
+              <div class="room-result-slider" data-room-slider>
+                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
+                  <span class="icon ion-ios-arrow-back"></span>
+                </button>
+                <div class="room-result-slides">
+                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/superior.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/room-2.jpg') }}"></div>
+                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/room-3.jpg') }}"></div>
+                </div>
+                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
+                  <span class="icon ion-ios-arrow-forward"></span>
+                </button>
+              </div>
+              <div class="room-result-content">
+                <div class="room-result-header">
+                  <h3>Superior Room</h3>
+                  <span class="room-result-capacity">
+                    <span class="icon ion-ios-people"></span>
+                    2 khách
+                  </span>
+                </div>
+                <p class="room-result-desc">Lựa chọn cân bằng giữa chi phí và tiện nghi, thiết kế hiện đại, phù hợp cho cặp đôi hoặc khách cá nhân.</p>
+                <div class="room-result-meta">
+                  <span><strong>Giường:</strong> 1 giường queen</span>
+                  <span><strong>Diện tích:</strong> 32 m²</span>
+                </div>
+                <button
+                  type="button"
+                  class="room-result-amenities-link"
+                  data-room-modal-trigger
+                  data-room-title="Superior Room"
+                  data-room-area="32 m²"
+                  data-room-desc="Phòng thiết kế hiện đại, tiện nghi đầy đủ và ánh sáng tự nhiên. Lựa chọn phù hợp cho khách cá nhân hoặc cặp đôi muốn tiết kiệm chi phí."
+                  data-room-images="{{ asset('customers/images/superior.jpg') }}|{{ asset('customers/images/room-2.jpg') }}|{{ asset('customers/images/room-3.jpg') }}"
+                >
+                  Xem tất cả tiện nghi
+                </button>
+                <div class="room-result-footer">
+                  <div class="room-result-price">
+                    <span class="label">Giá chỉ từ</span>
+                    <span class="room-result-price-line">
+                      <span class="value">1.490.000 VND</span>
+                      <span class="per">/ đêm</span>
+                    </span>
+                  </div>
+                  <div class="room-result-actions">
+                    <div class="room-result-qty-stepper" data-room-qty-stepper>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
+                      <input
+                        type="hidden"
+                        value="0"
+                        min="0"
+                        max="5"
+                        data-room-qty
+                        data-room-qty-input
+                        data-room-name="Superior Room"
+                        data-room-price="1490000"
+                      >
+                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
+                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="col-lg-4">
             <div
               class="search-summary-card"
               data-booking-summary
-              data-nights="{{ $searchSummary['soDem'] - 1 }}"
-              data-adults="{{ $searchSummary['nguoiLon'] }}"
-              data-children="{{ $searchSummary['treEm'] }}"
-              data-checkin="{{ $searchSummary['checkin'] }}"
+              data-nights="2"
+              data-adults="2"
+              data-children="1"
+              data-checkin="2026-04-14"
             >
               <div class="search-summary-header">
                 <h4>Thông tin phòng</h4>
@@ -308,7 +390,6 @@
         const childrenCount = document.querySelector('[data-guest-count="children"]');
         const roomCards = document.querySelectorAll('.room-result-card');
 
-        // Room data
         const roomsData = [
           {
             name: 'Deluxe Family Triple',
@@ -381,13 +462,11 @@
             children: children
           });
 
-          // Validate dates
           if (checkIn >= checkOut) {
             alert('Ngày nhận phòng phải trước ngày trả phòng');
             return;
           }
 
-          // Filter rooms based on capacity - keep layout intact
           let visibleCount = 0;
           roomsData.forEach(room => {
             if (totalGuests > 0 && totalGuests <= room.capacity) {
@@ -407,10 +486,8 @@
           }
         }
 
-        // Search button click
         searchBtn.addEventListener('click', filterRooms);
 
-        // Allow Enter key in date inputs
         checkInInput.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') filterRooms();
         });

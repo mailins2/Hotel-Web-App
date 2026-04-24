@@ -56,7 +56,7 @@
 
       <div class="row m-0 align-items-center bg-white auth-reset-panel">
          <div class="col-md-6 d-md-block d-none bg-primary p-0 mt-n1 vh-100 overflow-hidden auth-reset-side">
-            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-reset-image animated-scaleX" alt="Khách sạn Peach Valley">
+            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-reset-image animated-scaleX" alt="Khach san Peach Valley">
          </div>
 
          <div class="col-md-6 p-0">
@@ -69,8 +69,7 @@
                   <h2 class="mb-2">Mật khẩu mới</h2>
                   <p class="auth-reset-help mb-4">Nhập mật khẩu mới cho tài khoản của bạn.</p>
 
-                  <form method="POST" action="{{ route('auth.new-password.store') }}" data-new-password-form>
-                     {{ csrf_field() }}
+                  <form data-new-password-form>
                      <div class="row">
                         <div class="col-lg-12">
                            <div class="form-group">
@@ -80,7 +79,7 @@
                                  class="form-control @error('password') is-invalid @enderror"
                                  id="password"
                                  name="password"
-                                 placeholder="Nhập mật khẩu mới"
+                                 placeholder="Nhap mat khau moi"
                                  minlength="8"
                                  autocomplete="new-password"
                                  data-new-password
@@ -99,12 +98,12 @@
                                  class="form-control @error('password_confirmation') is-invalid @enderror"
                                  id="password_confirmation"
                                  name="password_confirmation"
-                                 placeholder="Nhập lại mật khẩu mới"
+                                 placeholder="Nhap lai mat khau moi"
                                  autocomplete="new-password"
                                  data-new-password-confirm
                                  required>
                               <span class="auth-field-error" data-password-match-error @if(! $errors->has('password_confirmation')) hidden @endif>
-                                 {{ $errors->first('password_confirmation') ?: 'Xác nhận mật khẩu không khớp.' }}
+                                 {{ $errors->first('password_confirmation') ?: 'Xac nhan mat khau khong khop.' }}
                               </span>
                            </div>
                         </div>
@@ -144,11 +143,11 @@
                const isMismatch = confirmation.value.length > 0 && password.value !== confirmation.value;
 
                confirmation.classList.toggle('is-invalid', isMismatch);
-               confirmation.setCustomValidity(isMismatch ? 'Xác nhận mật khẩu không khớp.' : '');
+               confirmation.setCustomValidity(isMismatch ? 'Xac nhan mat khau khong khop.' : '');
 
                if (matchError) {
                   matchError.hidden = !isMismatch;
-                  matchError.textContent = 'Xác nhận mật khẩu không khớp.';
+                  matchError.textContent = 'Xac nhan mat khau khong khop.';
                }
 
                return !isMismatch;
@@ -158,9 +157,10 @@
             confirmation.addEventListener('input', validatePasswordMatch);
 
             form.addEventListener('submit', function (event) {
+               event.preventDefault();
+
                if (!validatePasswordMatch() || !form.checkValidity()) {
-                  event.preventDefault();
-                  event.stopPropagation();
+                  form.reportValidity();
                }
             });
          });

@@ -1,109 +1,24 @@
-<x-app-layout :assets="$assets ?? []">
+@php
+    $moduleKey = request()->route('moduleKey');
+    $isReadOnlyModule = in_array($moduleKey, ['invoices', 'payments', 'reviews'], true);
+@endphp
+
+<x-app-layout :assets="['animation']">
     <style>
         .hm-badge {
             display: inline-flex;
             align-items: center;
-            font-weight: 600;
-            padding: 0.25rem 0.5rem;
+            padding: 0.38rem 0.78rem;
+            border-radius: 999px;
             font-size: 0.76rem;
-            min-width: 112px;
-            border-radius: 8px;
-            line-height: 1.2;
+            font-weight: 700;
         }
 
-        .hm-badge--wide {
-            min-width: 118px;
-        }
-
-        .hm-dot {
-            width: 7px;
-            height: 7px;
-            display: inline-block;
-            border-radius: 9999px;
-            margin-right: 0.5rem;
-            flex-shrink: 0;
-        }
-
-        .hm-badge--active {
-            background-color: #8f3f12;
-            color: #ffffff;
-        }
-
-        .hm-dot--active {
-            background-color: #f8d7c3;
-        }
-
-        .hm-badge--inactive {
-            background-color: #e5e7eb;
-            color: #6b7280;
-        }
-
-        .hm-dot--inactive {
-            background-color: #8b7b74;
-        }
-
-        .hm-badge--room-empty {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-
-        .hm-dot--room-empty {
-            background-color: #166534;
-        }
-
-        .hm-badge--room-booked {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-
-        .hm-dot--room-booked {
-            background-color: #d97706;
-        }
-
-        .hm-badge--room-using {
-            background-color: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .hm-dot--room-using {
-            background-color: #2563eb;
-        }
-
-        .hm-badge--room-cleaning {
-            background-color: #f3e8ff;
-            color: #7e22ce;
-        }
-
-        .hm-dot--room-cleaning {
-            background-color: #9333ea;
-        }
-
-        .hm-badge--service-food {
-            background-color: #ffedd5;
-            color: #9a3412;
-        }
-
-        .hm-dot--service-food {
-            background-color: #ea580c;
-        }
-
-        .hm-badge--service-room {
-            background-color: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .hm-dot--service-room {
-            background-color: #2563eb;
-        }
-
-        .hm-badge--service-entertainment {
-            background-color: #ecfccb;
-            color: #3f6212;
-        }
-
-        .hm-dot--service-entertainment {
-            background-color: #65a30d;
-        }
+        .hm-badge--success { background: #dcfce7; color: #166534; }
+        .hm-badge--warning { background: #fef3c7; color: #9a3412; }
+        .hm-badge--muted { background: #eceff3; color: #475569; }
+        .hm-badge--danger { background: #fee2e2; color: #b91c1c; }
+        .hm-badge--info { background: #dbeafe; color: #1d4ed8; }
 
         .hm-create-button {
             display: inline-flex;
@@ -116,6 +31,55 @@
             height: 18px;
             flex-shrink: 0;
         }
+
+        .hm-select-wrap {
+            position: relative;
+        }
+
+        .hm-select-wrap::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 14px;
+            width: 10px;
+            height: 6px;
+            pointer-events: none;
+            transform: translateY(-50%);
+            background-repeat: no-repeat;
+            background-size: 10px 6px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        }
+
+        .hm-select-wrap .form-select,
+        .hm-select-wrap .form-control {
+            padding-right: 2.5rem;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: none !important;
+        }
+
+        .hm-filter-panel {
+            padding: 1rem 1.1rem;
+            border-radius: 16px;
+            box-shadow: 0 12px 32px -24px rgba(111, 29, 1, 0.24);
+            background: #fffaf6;
+            /* border: 1px solid rgba(166, 98, 43, 0.12); */
+        }
+
+        .hm-action-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .hm-service-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 1rem;
+            height: 100%;
+            background: #fff;
+        }
     </style>
 
     <div class="row">
@@ -123,10 +87,54 @@
             <div class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 pb-4">
                     <div class="header-title">
-                        <h4 class="card-title mb-1">{{ $module['title'] }}</h4>
-                        <p class="mb-0 text-muted">{{ $module['description'] }}</p>
+                        @switch($moduleKey)
+                            @case('accounts')
+                                <h4 class="card-title mb-1">Quản lý tài khoản</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý tài khoản</p>
+                                @break
+                            @case('customers')
+                                <h4 class="card-title mb-1">Quản lý khách hàng</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý khách hàng tại khách sạn</p>
+                                @break
+                            @case('employees')
+                                <h4 class="card-title mb-1">Quản lý nhân viên</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý nhân viên tại khách sạn</p>
+                                @break
+                            @case('room-types')
+                                <h4 class="card-title mb-1">Quản lý loại phòng</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý các loại phòng tại khách sạn</p>
+                                @break
+                            @case('rooms')
+                                <h4 class="card-title mb-1">Quản lý phòng</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý phòng tại khách sạn</p>
+                                @break
+                            @case('services')
+                                <h4 class="card-title mb-1">Quản lý dịch vụ</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý dịch vụ tại khách sạn</p>
+                                @break
+                            @case('promotions')
+                                <h4 class="card-title mb-1">Quản lý khuyến mãi</h4>
+                                <p class="mb-0 text-muted">Danh sách chương trình khuyến mãi tại khách sạn</p>
+                                @break
+                            @case('invoices')
+                                <h4 class="card-title mb-1">Quản lý hóa đơn</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý hóa đơn</p>
+                                @break
+                            @case('payments')
+                                <h4 class="card-title mb-1">Quản lý thanh toán</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý thanh toán</p>
+                                @break
+                            @case('reviews')
+                                <h4 class="card-title mb-1">Quản lý đánh giá</h4>
+                                <p class="mb-0 text-muted">Danh sách quản lý đánh giá</p>
+                                @break
+                            @default
+                                <h4 class="card-title mb-1">Quản lý dữ liệu</h4>
+                                <p class="mb-0 text-muted">Trang danh sách đang hiển thị tĩnh theo module.</p>
+                        @endswitch
                     </div>
-                    @if($module['allow_create'] ?? true)
+
+                    @unless($isReadOnlyModule)
                         <a href="{{ route('hotel.modules.create', ['moduleKey' => $moduleKey]) }}" class="btn btn-primary btn-sm hm-create-button" style="padding: 10px;">
                             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M11 13.5C13.4853 13.5 15.5 11.4853 15.5 9C15.5 6.51472 13.4853 4.5 11 4.5C8.51472 4.5 6.5 6.51472 6.5 9C6.5 11.4853 8.51472 13.5 11 13.5Z" fill="currentColor" opacity="0.92"/>
@@ -134,280 +142,377 @@
                                 <path d="M18.5 14.5V22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                                 <path d="M14.5 18.5H22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                             </svg>
-                            Thêm {{ $module['singular'] }}
+                            Thêm mới
                         </a>
-                    @endif
+                    @endunless
                 </div>
-                <div class="card-body">
-                    @if(session('success'))
-                        <div class="alert alert-success">{{ session('success') }}</div>
-                    @endif
 
-                    @if(!empty($module['filters']))
-                        <div class="mb-4">
-                            <form method="GET" action="{{ route('hotel.modules.index', ['moduleKey' => $moduleKey]) }}">
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="hm-filter-panel">
+                            <form>
                                 <div class="row g-2 align-items-end">
-                                    @foreach($module['filters'] as $filterKey => $filter)
-                                        @php
-                                            $filterValue = request()->query($filterKey, '');
-                                        @endphp
+                                    @if($moduleKey === 'customers')
                                         <div class="col-md-3">
-                                            <label class="form-label" for="{{ $filterKey }}">{{ $filter['label'] }}</label>
-                                            @if(($filter['type'] ?? 'text') === 'select')
-                                                <select class="form-control" id="{{ $filterKey }}" name="{{ $filterKey }}">
-                                                    @foreach($filter['options'] ?? [] as $optionValue => $optionLabel)
-                                                        <option value="{{ $optionValue }}" {{ (string) $filterValue === (string) $optionValue ? 'selected' : '' }}>
-                                                            {{ $optionLabel }}
-                                                        </option>
-                                                    @endforeach
-                                                </select>
-                                            @else
-                                                <input
-                                                    type="{{ $filter['type'] ?? 'text' }}"
-                                                    class="form-control"
-                                                    id="{{ $filterKey }}"
-                                                    name="{{ $filterKey }}"
-                                                    value="{{ $filterValue }}"
-                                                >
-                                            @endif
+                                            <label class="form-label">Tìm nhanh</label>
+                                            <input type="text" class="form-control" placeholder="Tên khách, CCCD, số điện thoại...">
                                         </div>
-                                    @endforeach
+                                        <div class="col-md-3">
+                                            <label class="form-label">Trạng thái</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả trạng thái</option>
+                                                    <option>Hoạt động</option>
+                                                    <option>Không hoạt động</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @elseif($moduleKey === 'rooms')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Số phòng</label>
+                                            <input type="text" class="form-control" placeholder="Ví dụ: A101">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tình trạng</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả tình trạng</option>
+                                                    <option>Trống</option>
+                                                    <option>Đã đặt</option>
+                                                    <option>Đang sử dụng</option>
+                                                    <option>Đang dọn dẹp</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @elseif($moduleKey === 'services')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Tên dịch vụ</label>
+                                            <input type="text" class="form-control" placeholder="Tìm theo tên dịch vụ">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Nhóm dịch vụ</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả nhóm dịch vụ</option>
+                                                    <option>Dịch vụ ăn uống</option>
+                                                    <option>Dịch vụ phòng</option>
+                                                    <option>Dịch vụ giải trí</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @elseif($moduleKey === 'promotions')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Ngày bắt đầu từ</label>
+                                            <input type="date" class="form-control">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Ngày kết thúc đến</label>
+                                            <input type="date" class="form-control">
+                                        </div>
+                                    @elseif($moduleKey === 'invoices')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Mã hóa đơn</label>
+                                            <input type="text" class="form-control" placeholder="Tìm mã hóa đơn">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Trạng thái</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả trạng thái</option>
+                                                    <option>Chưa thanh toán</option>
+                                                    <option>Đã thanh toán</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @elseif($moduleKey === 'payments')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Loại thanh toán</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả loại thanh toán</option>
+                                                    <option>Đặt cọc</option>
+                                                    <option>Thanh toán checkout</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Trạng thái hóa đơn</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả trạng thái</option>
+                                                    <option>Chưa thanh toán</option>
+                                                    <option>Đã thanh toán</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @elseif($moduleKey === 'reviews')
+                                        <div class="col-md-3">
+                                            <label class="form-label">Từ ngày</label>
+                                            <input type="date" class="form-control">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Đến ngày</label>
+                                            <input type="date" class="form-control">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Số sao</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả số sao</option>
+                                                    <option>5 sao</option>
+                                                    <option>4 sao</option>
+                                                    <option>3 sao</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <div class="col-md-3">
+                                            <label class="form-label">Từ khóa</label>
+                                            <input type="text" class="form-control" placeholder="Tìm kiếm theo nội dung hiển thị">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Bộ lọc</label>
+                                            <div class="hm-select-wrap">
+                                                <select class="form-select">
+                                                    <option>Tất cả</option>
+                                                    <option>Mục đang hoạt động</option>
+                                                    <option>Mục cần theo dõi</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    @endif
+
                                     <div class="col-md-auto">
                                         <div class="d-flex justify-content-start gap-2 w-100">
-                                            <button type="submit" class="btn btn-primary" style="padding: 10px 18px; white-space: nowrap;">Áp dụng</button>
-                                            <a href="{{ route('hotel.modules.index', ['moduleKey' => $moduleKey]) }}" class="btn btn-light btn-sm" style="padding: 10px 18px; white-space: nowrap;">Đặt lại</a>
+                                            <button type="button" class="btn btn-primary" style="padding: 10px 18px; white-space: nowrap;">Áp dụng</button>
+                                            <button type="button" class="btn btn-light btn-sm" style="padding: 10px 18px; white-space: nowrap;">Đặt lại</button>
                                         </div>
                                     </div>
                                 </div>
                             </form>
                         </div>
-                    @endif
+                    </div>
 
                     @if($moduleKey === 'services')
-                        @php
-                            $serviceCategories = $module['service_categories'] ?? [];
-                            $activeServiceCategory = request()->query('service_category', 'all');
-                            $serviceRecordsByItemKey = [];
-                            foreach ($records as $serviceRecord) {
-                                $serviceItemKey = $serviceRecord['ServiceItemKey'] ?? null;
-                                if (is_string($serviceItemKey) && $serviceItemKey !== '') {
-                                    $serviceRecordsByItemKey[$serviceItemKey] = $serviceRecord;
-                                }
-                            }
-                            $isAllServiceCategories = $activeServiceCategory === 'all';
-                        @endphp
-
                         <div class="mb-4">
                             <div class="d-flex flex-wrap align-items-center gap-2">
-                                <a
-                                    href="{{ route('hotel.modules.index', array_merge(['moduleKey' => $moduleKey], request()->except('service_category'))) }}"
-                                    class="btn btn-sm {{ $isAllServiceCategories ? 'btn-primary' : 'btn-light' }}"
-                                    style="padding: 8px 14px;"
-                                >
-                                    Tất cả dịch vụ
-                                </a>
-                                @foreach($serviceCategories as $serviceCategory)
-                                    @php
-                                        $serviceCategoryKey = $serviceCategory['key'] ?? '';
-                                        $isActiveServiceCategory = $activeServiceCategory === $serviceCategoryKey;
-                                    @endphp
-                                    <a
-                                        href="{{ route('hotel.modules.index', array_merge(['moduleKey' => $moduleKey, 'service_category' => $serviceCategoryKey], request()->except('service_category'))) }}"
-                                        class="btn btn-sm {{ $isActiveServiceCategory ? 'btn-primary' : 'btn-light' }}"
-                                        style="padding: 8px 14px;"
-                                    >
-                                        {{ $serviceCategory['label'] ?? $serviceCategoryKey }}
-                                    </a>
-                                @endforeach
+                                <a href="#" class="btn btn-sm btn-primary" style="padding: 8px 14px;">Tất cả dịch vụ</a>
+                                <a href="#" class="btn btn-sm btn-light" style="padding: 8px 14px;">Dịch vụ ăn uống</a>
+                                <a href="#" class="btn btn-sm btn-light" style="padding: 8px 14px;">Dịch vụ phòng</a>
+                                <a href="#" class="btn btn-sm btn-light" style="padding: 8px 14px;">Dịch vụ giải trí</a>
                             </div>
                         </div>
 
                         <div class="row g-3 mb-4">
-                            @foreach($serviceCategories as $serviceCategory)
-                                @php
-                                    $serviceCategoryKey = $serviceCategory['key'] ?? '';
-                                @endphp
-                                @if(!$isAllServiceCategories && $serviceCategoryKey !== $activeServiceCategory)
-                                    @continue
-                                @endif
-                                <div class="col-12">
-                                    <h6 class="fw-semibold mb-1">{{ $serviceCategory['label'] ?? 'Nhóm dịch vụ' }}</h6>
+                            <div class="col-12">
+                                <h6 class="fw-semibold mb-1">Dịch vụ ăn uống</h6>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Bánh mì</div>
+                                    <div class="small text-muted mt-1">35.000 VNĐ</div>
                                 </div>
-                                @foreach(($serviceCategory['items'] ?? []) as $serviceItemKey => $serviceItem)
-                                    @php
-                                        $serviceRecord = $serviceRecordsByItemKey[$serviceItemKey] ?? null;
-                                        $serviceName = $serviceItem['label'] ?? $serviceItemKey;
-                                        $servicePrice = is_array($serviceRecord) ? ($serviceRecord['GiaDV'] ?? null) : null;
-                                        $serviceImageRaw = is_array($serviceRecord) ? ($serviceRecord['ServiceImage'] ?? null) : null;
-                                        $serviceImageUrl = null;
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Cơm chiên</div>
+                                    <div class="small text-muted mt-1">60.000 VNĐ</div>
+                                </div>
+                            </div>
 
-                                        if (is_string($serviceImageRaw) && trim($serviceImageRaw) !== '') {
-                                            $serviceImageRaw = trim($serviceImageRaw);
-                                            $serviceImageUrl = \Illuminate\Support\Str::startsWith($serviceImageRaw, ['http://', 'https://'])
-                                                ? $serviceImageRaw
-                                                : asset(ltrim($serviceImageRaw, '/'));
-                                        }
-                                    @endphp
-                                    <div class="col-md-6 col-xl-4">
-                                        <div class="border rounded-3 p-3 h-100" style="border-color: #e5e7eb !important;">
-                                            <div class="fw-semibold">{{ $serviceName }}</div>
-                                            <div class="small text-muted mt-1">
-                                                @if($servicePrice !== null && $servicePrice !== '')
-                                                    {{ number_format((float) $servicePrice, 0, ',', '.') }} VNĐ
-                                                @else
-                                                    Chưa cập nhật giá dịch vụ
-                                                @endif
-                                            </div>
-                                            @if($serviceItemKey === 'giat-ui')
-                                                <div class="mt-3">
-                                                    @if($serviceImageUrl)
-                                                        <img
-                                                            src="{{ $serviceImageUrl }}"
-                                                            alt="Hình ảnh dịch vụ giặt ủi"
-                                                            class="img-fluid rounded"
-                                                            style="width: 100%; height: 160px; object-fit: cover;"
-                                                        >
-                                                    @else
-                                                        <div class="d-flex align-items-center justify-content-center rounded border bg-light text-muted" style="height: 160px; border-style: dashed !important;">
-                                                            Chưa có hình ảnh từ bảng Hinh
-                                                        </div>
-                                                    @endif
-                                                </div>
-                                            @endif
+                            <div class="col-12">
+                                <h6 class="fw-semibold mb-1">Dịch vụ phòng</h6>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Giặt ủi</div>
+                                    <div class="small text-muted mt-1">120.000 VNĐ</div>
+                                    <div class="mt-3">
+                                        <div class="d-flex align-items-center justify-content-center rounded border bg-light text-muted" style="height: 160px; border-style: dashed !important;">
+                                            Khu vực ảnh dịch vụ
                                         </div>
                                     </div>
-                                @endforeach
-                            @endforeach
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Vệ sinh</div>
+                                    <div class="small text-muted mt-1">90.000 VNĐ</div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <h6 class="fw-semibold mb-1">Dịch vụ giải trí</h6>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Spa</div>
+                                    <div class="small text-muted mt-1">850.000 VNĐ</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-xl-4">
+                                <div class="hm-service-card">
+                                    <div class="fw-semibold">Golf</div>
+                                    <div class="small text-muted mt-1">1.250.000 VNĐ</div>
+                                </div>
+                            </div>
                         </div>
                     @endif
 
                     <div class="table-responsive">
-                        <table class="table table-striped align-middle">
-                            <thead>
-                                <tr>
-                                    @foreach($module['list_columns'] as $column)
-                                        <th>{{ $module['fields'][$column]['label'] ?? $column }}</th>
-                                    @endforeach
-                                    <th style="min-width: 180px;">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($records as $record)
-                                    <tr>
-                                        @foreach($module['list_columns'] as $column)
-                                            @php
-                                                $field = $module['fields'][$column] ?? null;
-                                                $rawValue = $record[$column] ?? '';
-                                                $value = $rawValue;
-                                                if (($field['type'] ?? null) === 'select') {
-                                                    $value = $field['options'][$value] ?? $value;
-                                                }
-                                                if (in_array($column, ['GiaDV', 'SoTien', 'TongTien', 'DaThanhToan', 'DonGia', 'GiaPhong', 'TienDenBu'], true)) {
-                                                    $value = number_format((float) $value, 0, ',', '.') . ' VNĐ';
-                                                }
-                                            @endphp
-                                            <td>
-                                                @if($column === 'TrangThai')
-                                                    @php
-                                                        $isActive = (string) $rawValue === '1';
-                                                        $statusVariant = $isActive
-                                                            ? ['badge' => 'hm-badge hm-badge--active', 'dot' => 'hm-dot hm-dot--active']
-                                                            : ['badge' => 'hm-badge hm-badge--inactive', 'dot' => 'hm-dot hm-dot--inactive'];
-                                                    @endphp
-                                                    <span class="{{ $statusVariant['badge'] }}">
-                                                        <span class="{{ $statusVariant['dot'] }}"></span>
-                                                        {{ \Illuminate\Support\Str::upper($value) }}
-                                                    </span>
-                                                @elseif($column === 'TinhTrang')
-                                                    @php
-                                                        $roomStatuses = [
-                                                            '0' => ['badge' => 'hm-badge hm-badge--wide hm-badge--room-empty', 'dot' => 'hm-dot hm-dot--room-empty'],
-                                                            '1' => ['badge' => 'hm-badge hm-badge--wide hm-badge--room-booked', 'dot' => 'hm-dot hm-dot--room-booked'],
-                                                            '2' => ['badge' => 'hm-badge hm-badge--wide hm-badge--room-using', 'dot' => 'hm-dot hm-dot--room-using'],
-                                                            '3' => ['badge' => 'hm-badge hm-badge--wide hm-badge--room-cleaning', 'dot' => 'hm-dot hm-dot--room-cleaning'],
-                                                        ];
-                                                        $roomStatusVariant = $roomStatuses[(string) $rawValue] ?? ['badge' => 'hm-badge hm-badge--wide hm-badge--inactive', 'dot' => 'hm-dot hm-dot--inactive'];
-                                                    @endphp
-                                                    <span class="{{ $roomStatusVariant['badge'] }}">
-                                                        <span class="{{ $roomStatusVariant['dot'] }}"></span>
-                                                        {{ \Illuminate\Support\Str::upper($value) }}
-                                                    </span>
-                                                @elseif($column === 'LoaiDV')
-                                                    @php
-                                                        $serviceTypes = [
-                                                            '0' => ['badge' => 'hm-badge hm-badge--wide hm-badge--service-food', 'dot' => 'hm-dot hm-dot--service-food'],
-                                                            '1' => ['badge' => 'hm-badge hm-badge--wide hm-badge--service-room', 'dot' => 'hm-dot hm-dot--service-room'],
-                                                            '2' => ['badge' => 'hm-badge hm-badge--wide hm-badge--service-entertainment', 'dot' => 'hm-dot hm-dot--service-entertainment'],
-                                                        ];
-                                                        $serviceTypeVariant = $serviceTypes[(string) $rawValue] ?? ['badge' => 'hm-badge hm-badge--wide hm-badge--inactive', 'dot' => 'hm-dot hm-dot--inactive'];
-                                                    @endphp
-                                                    <span class="{{ $serviceTypeVariant['badge'] }}">
-                                                        <span class="{{ $serviceTypeVariant['dot'] }}"></span>
-                                                        {{ \Illuminate\Support\Str::upper($value) }}
-                                                    </span>
-                                                @else
-                                                    {{ $value }}
-                                                @endif
-                                            </td>
-                                        @endforeach
-                                        <td>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <a
-                                                    href="{{ route('hotel.modules.show', ['moduleKey' => $moduleKey, 'recordId' => $record[$module['primary_key']]]) }}"
-                                                    class="btn btn-sm btn-icon text-white"
-                                                    style="background-color: #22c55e; border-color: #22c55e;"
-                                                    title="Xem chi tiết"
-                                                >
-                                                    <span class="btn-inner">
-                                                        <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                            <path d="M2 12C3.73 8.11 7.52 5.5 12 5.5C16.48 5.5 20.27 8.11 22 12C20.27 15.89 16.48 18.5 12 18.5C7.52 18.5 3.73 15.89 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                            <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                        </svg>
-                                                    </span>
-                                                </a>
-                                                @if($module['allow_edit'] ?? true)
-                                                    <a
-                                                        href="{{ route('hotel.modules.edit', ['moduleKey' => $moduleKey, 'recordId' => $record[$module['primary_key']]]) }}"
-                                                        class="btn btn-sm btn-warning btn-icon"
-                                                        title="Chỉnh sửa"
-                                                    >
-                                                        <span class="btn-inner">
-                                                            <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                <path d="M13.7476 20H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                                <path d="M16.8392 3.41187C17.6212 2.62988 18.8891 2.62988 19.6711 3.41187L20.5881 4.32887C21.3701 5.11087 21.3701 6.37875 20.5881 7.16075L8.14912 19.5998C7.65512 20.0938 7.04312 20.4538 6.37112 20.6478L3 21L3.352 17.6289C3.546 16.9569 3.906 16.3448 4.4 15.8508L16.8392 3.41187Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                            </svg>
-                                                        </span>
-                                                    </a>
-                                                @endif
-                                                @if($module['allow_delete'] ?? true)
-                                                    <form action="{{ route('hotel.modules.destroy', ['moduleKey' => $moduleKey, 'recordId' => $record[$module['primary_key']]]) }}" method="POST" class="js-confirm-delete" data-confirm-message="{{ 'Bạn có chắc muốn xóa ' . $module['singular'] . ' này?' }}">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger btn-icon" title="Xóa">
-                                                            <span class="btn-inner">
-                                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                    <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                                    <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                                                    <path d="M9 7V4.8C9 4.35817 9.35817 4 9.8 4H14.2C14.6418 4 15 4.35817 15 4.8V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                                    <path d="M10 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                                                    <path d="M14 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                                                </svg>
-                                                            </span>
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="{{ count($module['list_columns']) + 1 }}" class="text-center text-muted py-4">
-                                            Chưa có dữ liệu để hiển thị.
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                        @switch($moduleKey)
+                            @case('accounts')
+                                <table class="table table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã TK</th>
+                                            <th>Email</th>
+                                            <th>Họ tên</th>
+                                            <th>Loại tài khoản</th>
+                                            <th>Trạng thái</th>
+                                            <th style="min-width: 180px;">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>101</td>
+                                            <td>minhan@gmail.com</td>
+                                            <td>Nguyễn Minh An</td>
+                                            <td>Khách hàng</td>
+                                            <td><span class="hm-badge hm-badge--success">Hoạt động</span></td>
+                                            <td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'accounts', 'recordId' => 101]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'accounts', 'recordId' => 101]), 'showDelete' => true])</td>
+                                        </tr>
+                                        <tr>
+                                            <td>201</td>
+                                            <td>letan01@peachvalley.vn</td>
+                                            <td>Phạm Thùy Linh</td>
+                                            <td>Lễ tân</td>
+                                            <td><span class="hm-badge hm-badge--success">Hoạt động</span></td>
+                                            <td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'accounts', 'recordId' => 201]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'accounts', 'recordId' => 201]), 'showDelete' => true])</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('customers')
+                                <table class="table table-striped align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã KH</th>
+                                            <th>Tên khách hàng</th>
+                                            <th>Ngày sinh</th>
+                                            <th>Giới tính</th>
+                                            <th>Điểm</th>
+                                            <th>Trạng thái</th>
+                                            <th style="min-width: 180px;">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>1</td>
+                                            <td>Nguyễn Minh An</td>
+                                            <td>12/04/1998</td>
+                                            <td>Nam</td>
+                                            <td>120</td>
+                                            <td><span class="hm-badge hm-badge--success">Hoạt động</span></td>
+                                            <td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'customers', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'customers', 'recordId' => 1]), 'showDelete' => true])</td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>Trần Bảo Ngọc</td>
+                                            <td>24/08/2000</td>
+                                            <td>Nữ</td>
+                                            <td>80</td>
+                                            <td><span class="hm-badge hm-badge--muted">Không hoạt động</span></td>
+                                            <td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'customers', 'recordId' => 2]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'customers', 'recordId' => 2]), 'showDelete' => true])</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('employees')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã NV</th><th>Tên nhân viên</th><th>Mã TK</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>Phạm Thùy Linh</td><td>201</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'employees', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'employees', 'recordId' => 1]), 'showDelete' => true])</td></tr>
+                                        <tr><td>2</td><td>Hoàng Gia Bảo</td><td>202</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'employees', 'recordId' => 2]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'employees', 'recordId' => 2]), 'showDelete' => true])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('room-types')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã loại</th><th>Tên loại phòng</th><th>Mô tả</th><th>Số người tối đa</th><th>Ảnh phòng</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>Deluxe</td><td>Phòng tiêu chuẩn cao cấp</td><td>2</td><td>dấdada</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'room-types', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'room-types', 'recordId' => 1]), 'showDelete' => true])</td></tr>
+                                        <tr><td>2</td><td>Suite</td><td>Không gian rộng rãi</td><td>4</td><td>dấdada</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'room-types', 'recordId' => 2]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'room-types', 'recordId' => 2]), 'showDelete' => true])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('rooms')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã phòng</th><th>Số phòng</th><th>Tên loại phòng</th><th>Sức chứa</th><th>Tình trạng</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>A101</td><td>Deluxe</td><td>2</td><td><span class="hm-badge hm-badge--success">Trống</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'rooms', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'rooms', 'recordId' => 1]), 'showDelete' => true])</td></tr>
+                                        <tr><td>2</td><td>A102</td><td>Suite</td><td>4</td><td><span class="hm-badge hm-badge--info">Đang sử dụng</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'rooms', 'recordId' => 2]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'rooms', 'recordId' => 2]), 'showDelete' => true])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('services')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã DV</th><th>Tên dịch vụ</th><th>Giá dịch vụ</th><th>Loại dịch vụ</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>Bánh mì</td><td>35.000 VNĐ</td><td>Dịch vụ ăn uống</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'services', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'services', 'recordId' => 1]), 'showDelete' => true])</td></tr>
+                                        <tr><td>6</td><td>Giặt ủi</td><td>120.000 VNĐ</td><td>Dịch vụ phòng</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'services', 'recordId' => 6]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'services', 'recordId' => 6]), 'showDelete' => true])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('promotions')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã KM</th><th>Tên KM</th><th>Điểm</th><th>Ngày bắt đầu</th><th>Ngày kết thúc</th><th>% giảm</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>Summer Escape</td><td>50</td><td>01/05/2026</td><td>30/06/2026</td><td>15%</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'promotions', 'recordId' => 1]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'promotions', 'recordId' => 1]), 'showDelete' => true])</td></tr>
+                                        <tr><td>2</td><td>Stay Longer</td><td>80</td><td>15/04/2026</td><td>31/07/2026</td><td>20%</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'promotions', 'recordId' => 2]), 'editUrl' => route('hotel.modules.edit', ['moduleKey' => 'promotions', 'recordId' => 2]), 'showDelete' => true])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('invoices')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã HĐ</th><th>Ngày lập</th><th>Tên NV</th><th>Tổng tiền</th><th>Đã thanh toán</th><th>Trạng thái</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>5001</td><td>08/04/2026</td><td>Phạm Thùy Linh</td><td>4.500.000 VNĐ</td><td>1.500.000 VNĐ</td><td><span class="hm-badge hm-badge--warning">Chưa thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'invoices', 'recordId' => 5001]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                        <tr><td>5002</td><td>07/04/2026</td><td>Hoàng Gia Bảo</td><td>3.250.000 VNĐ</td><td>3.250.000 VNĐ</td><td><span class="hm-badge hm-badge--success">Đã thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'invoices', 'recordId' => 5002]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('payments')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã TT</th><th>Mã đặt phòng</th><th>Người thanh toán</th><th>Số tiền</th><th>Loại thanh toán</th><th>Ngày thanh toán</th><th>Trạng thái hóa đơn</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>4</td><td>Nguyễn Minh An</td><td>1.500.000 VNĐ</td><td>Đặt cọc</td><td>08/04/2026 10:30</td><td><span class="hm-badge hm-badge--warning">Chưa thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'payments', 'recordId' => 1]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                        <tr><td>2</td><td>5</td><td>Trần Bảo Ngọc</td><td>3.250.000 VNĐ</td><td>Thanh toán checkout</td><td>07/04/2026 14:15</td><td><span class="hm-badge hm-badge--success">Đã thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'payments', 'recordId' => 2]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @case('reviews')
+                                <table class="table table-striped align-middle">
+                                    <thead><tr><th>Mã ĐG</th><th>Mã đặt phòng</th><th>Số sao</th><th>Mô tả</th><th>Ngày đánh giá</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>1</td><td>9001</td><td>5 sao</td><td>Phòng sạch sẽ, nhân viên nhiệt tình.</td><td>06/04/2026</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'reviews', 'recordId' => 1]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                        <tr><td>2</td><td>9002</td><td>4 sao</td><td>Dịch vụ tốt, bữa sáng đa dạng.</td><td>07/04/2026</td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.modules.show', ['moduleKey' => 'reviews', 'recordId' => 2]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+                                    </tbody>
+                                </table>
+                                @break
+
+                            @default
+                                <div class="text-muted py-4">Không có cấu hình giao diện cho module này.</div>
+                        @endswitch
                     </div>
                 </div>
             </div>
@@ -419,11 +524,8 @@
             document.addEventListener('DOMContentLoaded', function () {
                 document.querySelectorAll('.js-confirm-delete').forEach(function (formElement) {
                     formElement.addEventListener('submit', function (event) {
-                        const confirmMessage = formElement.dataset.confirmMessage || 'Bạn có chắc muốn xóa mục này?';
-
-                        if (!window.confirm(confirmMessage)) {
-                            event.preventDefault();
-                        }
+                        event.preventDefault();
+                        window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');
                     });
                 });
             });
