@@ -12,17 +12,17 @@ if [ -f composer.json ]; then
     fi
 fi
 
-if [ -f package.json ]; then
-    if [ ! -d node_modules ] \
-        || [ package.json -nt node_modules ] \
-        || { [ -f package-lock.json ] && [ package-lock.json -nt node_modules ]; }; then
-        echo "Installing Node dependencies..."
-        if [ -f package-lock.json ]; then
-            npm ci
-        else
-            npm install
-        fi
-    fi
-fi
+# if [ -f package.json ]; then
+#     if [ ! -d node_modules ] \
+#         || [ package.json -nt node_modules ] \
+#         || { [ -f package-lock.json ] && [ package-lock.json -nt node_modules ]; }; then
+#         echo "Installing Node dependencies..."
+#         if [ -f package-lock.json ]; then
+#             npm ci
+#         else
+#             npm install
+#         fi
+#     fi
+# fi
 
 exec "$@"
