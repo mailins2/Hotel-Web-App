@@ -11,44 +11,6 @@
   <body class="booking-page customer-account-page">
     @include('customer.partials.nav')
 
-    @php
-      $user = [
-        'name' => 'Nguyen Minh An',
-        'email' => 'minhan@gmail.com',
-      ];
-      $profile = [
-        'display_name' => 'Nguyen Minh An',
-        'phone' => '0901234567',
-        'cccd' => '079204000111',
-        'birthday' => '1998-04-12',
-        'birthday_display' => '12/04/1998',
-        'birthday_max' => '2026-04-22',
-        'gender' => '1',
-        'province' => 'TP. Ho Chi Minh',
-        'district' => 'Quan 3',
-        'street_address' => '25 Nguyen Dinh Chieu',
-        'address' => '25 Nguyen Dinh Chieu, Quan 3, TP. Ho Chi Minh',
-        'points' => 120,
-        'save_note' => 'Thong tin ho so dang o che do giao dien mau.',
-      ];
-      $customerPoints = 120;
-      $profileEditing = false;
-      $profileLocked = false;
-      $profileDisplayName = $profile['display_name'];
-      $profilePhone = $profile['phone'];
-      $profileCccd = $profile['cccd'];
-      $profileBirthday = $profile['birthday'];
-      $profileBirthdayDisplay = $profile['birthday_display'];
-      $profileBirthdayMax = $profile['birthday_max'];
-      $profileGender = $profile['gender'];
-      $profileGenderLabels = ['0' => 'Nu', '1' => 'Nam', '2' => 'Khac'];
-      $profileProvince = $profile['province'];
-      $profileDistrict = $profile['district'];
-      $streetAddress = $profile['street_address'];
-      $profileAddress = $profile['address'];
-      $profileSaveNote = $profile['save_note'];
-    @endphp
-
     <section class="customer-account-section">
       <div class="container">
         <div class="customer-account-shell">
@@ -60,193 +22,185 @@
               <p>Thông tin khách hàng đã đăng ký với Peach Valley.</p>
             </div>
 
-        <div class="customer-profile-view" data-profile-view @if($profileEditing) hidden @endif>
-          <div class="customer-profile-view-top">
-            <div>
-              <div class="customer-profile-view-name">{{ $profileDisplayName ?: 'Khách hàng Peach Valley' }}</div>
-              <p>{{ $user['email'] ?? '--' }}</p>
-            </div>
-            <button type="button" class="customer-profile-submit" data-profile-edit-trigger>Chỉnh sửa</button>
-          </div>
-
-          <div class="customer-profile-points-panel">
-            <span class="customer-profile-points-icon ion-ios-star"></span>
-            <div class="customer-profile-points">
-              <strong>{{ number_format($customerPoints, 0, ',', '.') }}</strong>
-              <span>điểm</span>
-            </div>
-            <p>Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
-          </div>
-
-          <div class="customer-profile-view-grid">
-            <div class="customer-profile-view-item"><span>Họ và tên</span>{{ $profileDisplayName ?: '--' }}</div>
-            <div class="customer-profile-view-item"><span>Số điện thoại</span>{{ $profilePhone ?: '--' }}</div>
-            <div class="customer-profile-view-item"><span>CCCD</span>{{ $profileCccd ?: '--' }}</div>
-            <div class="customer-profile-view-item"><span>Ngày sinh</span>{{ $profileBirthdayDisplay ?: '--' }}</div>
-            <div class="customer-profile-view-item"><span>Giới tính</span>{{ $profileGenderLabels[$profileGender] ?? '--' }}</div>
-            <div class="customer-profile-view-item customer-profile-view-full"><span>Địa chỉ</span>{{ $profileAddress ?: $streetAddress ?: '--' }}</div>
-          </div>
-        </div>
-
-        <form
-          class="customer-profile-form{{ $profileLocked ? ' is-locked' : '' }}"
-          method="POST"
-          action="{{ route('customer.profile.update') }}"
-          data-customer-profile-form
-          data-profile-locked="{{ $profileLocked ? 'true' : 'false' }}"
-          data-selected-district="{{ $profileDistrict }}"
-          @if(! $profileEditing) hidden @endif
-        >
-          {{ csrf_field() }}
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="profile_email">Địa chỉ email</label>
-            <div class="customer-profile-control">
-              <div class="customer-email-line">
-                <span>{{ $user['email'] ?? '--' }}</span>
+            <div class="customer-profile-view" data-profile-view>
+              <div class="customer-profile-view-top">
+                <div>
+                  <div class="customer-profile-view-name">Nguyễn Minh An</div>
+                  <p>minhan@gmail.com</p>
+                </div>
+                <button type="button" class="customer-profile-submit" data-profile-edit-trigger>Chỉnh sửa</button>
               </div>
-              <p class="customer-profile-help">Email này dùng để đăng nhập và nhận xác nhận đặt phòng.</p>
-              <input type="hidden" id="profile_email" name="email" value="{{ $user['email'] }}">
-            </div>
-          </div>
 
-          <div class="customer-profile-row">
-            <div class="customer-profile-label">Điểm tích lũy</div>
-            <div class="customer-profile-control">
-              <div class="customer-profile-points">
-                <strong>{{ number_format($customerPoints, 0, ',', '.') }}</strong>
-                <span>điểm tích lũy</span>
+              <div class="customer-profile-points-panel">
+                <span class="customer-profile-points-icon ion-ios-star"></span>
+                <div class="customer-profile-points">
+                  <strong>120</strong>
+                  <span>điểm</span>
+                </div>
+                <p>Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
               </div>
-              <p class="customer-profile-help">Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
-            </div>
-          </div>
 
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="display_name">Họ và tên</label>
-            <div class="customer-profile-control">
-              <input
-                id="display_name"
-                name="display_name"
-                type="text"
-                placeholder="Nhập tên hiển thị"
-                minlength="2"
-                maxlength="60"
-                pattern="^[A-Za-zÀ-ỹĐđ\s]+$"
-                title="Tên chỉ gồm chữ cái và khoảng trắng."
-                value="{{ $profileDisplayName }}"
-                data-profile-editable
-                @disabled($profileLocked)
-                required>
+              <div class="customer-profile-view-grid">
+                <div class="customer-profile-view-item"><span>Họ và tên</span>Nguyễn Minh An</div>
+                <div class="customer-profile-view-item"><span>Số điện thoại</span>0901234567</div>
+                <div class="customer-profile-view-item"><span>CCCD</span>079204000111</div>
+                <div class="customer-profile-view-item"><span>Ngày sinh</span>12/04/1998</div>
+                <div class="customer-profile-view-item"><span>Giới tính</span>Nam</div>
+                <div class="customer-profile-view-item customer-profile-view-full"><span>Địa chỉ</span>25 Nguyễn Đình Chiểu, Quận 3, TP. Hồ Chí Minh</div>
+              </div>
             </div>
-          </div>
 
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="phone">Số điện thoại</label>
-            <div class="customer-profile-control">
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                inputmode="numeric"
-                placeholder="Nhập số điện thoại"
-                maxlength="10"
-                pattern="^0[0-9]{9}$"
-                title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0."
-                data-text-filter="digits"
-                value="{{ $profilePhone }}"
-                data-profile-editable
-                @disabled($profileLocked)
-                required>
-              <p class="customer-profile-help">Khách sạn sẽ liên hệ qua số này nếu cần xác nhận đặt phòng.</p>
-            </div>
-          </div>
-
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="cccd">CCCD</label>
-            <div class="customer-profile-control">
-              <input
-                id="cccd"
-                name="cccd"
-                type="text"
-                inputmode="numeric"
-                placeholder="Nhập số CCCD"
-                maxlength="12"
-                pattern="^[0-9]{12}$"
-                title="CCCD gồm đúng 12 chữ số."
-                data-text-filter="digits"
-                value="{{ $profileCccd }}"
-                data-profile-editable
-                @disabled($profileLocked)
-                required>
-            </div>
-          </div>
-
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="birthday">Ngày sinh</label>
-            <div class="customer-profile-control">
-              <input
-                id="birthday"
-                name="birthday"
-                type="date"
-                max="{{ $profileBirthdayMax }}"
-                value="{{ $profileBirthday }}"
-                data-profile-editable
-                @disabled($profileLocked)
-                required>
-            </div>
-          </div>
-
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="gender">Giới tính</label>
-            <div class="customer-profile-control">
-              <select id="gender" name="gender" data-profile-editable @disabled($profileLocked) required>
-                <option value="">Chọn giới tính</option>
-                  <option value="1" @selected($profileGender === '1')>Nam</option>
-                  <option value="0" @selected($profileGender === '0')>Nữ</option>
-                  <option value="2" @selected($profileGender === '2')>Khác</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="customer-profile-row">
-            <label class="customer-profile-label" for="province">Địa chỉ</label>
-            <div class="customer-profile-control">
-              <div class="customer-address-grid">
-                <select id="province" name="province" data-province-select data-profile-editable @disabled($profileLocked) required>
-                  <option value="">Chọn tỉnh/thành phố</option>
-                  <option value="TP. Hồ Chí Minh" @selected($profileProvince === 'TP. Hồ Chí Minh' || $profileProvince === 'TP. Ho Chi Minh')>TP. Hồ Chí Minh</option>
-                  <option value="Hà Nội" @selected($profileProvince === 'Hà Nội')>Hà Nội</option>
-                  <option value="Lâm Đồng" @selected($profileProvince === 'Lâm Đồng')>Lâm Đồng</option>
-                  <option value="Đà Nẵng" @selected($profileProvince === 'Đà Nẵng')>Đà Nẵng</option>
-                </select>
-                <select id="district" name="district" data-district-select data-profile-editable required disabled>
-                  <option value="">Chọn quận/huyện</option>
-                </select>
-                <input
-                  id="street_address"
-                  name="street_address"
-                  type="text"
-                  placeholder="Tên đường và số nhà"
-                  maxlength="120"
-                  pattern="^[0-9A-Za-zÀ-ỹĐđ\s./-]+$"
-                  title="Tên đường và số nhà chỉ gồm chữ, số, khoảng trắng và ký tự . / -"
-                  value="{{ $streetAddress }}"
-                  data-profile-editable
-                  @disabled($profileLocked)
-                  required>
-                <div class="customer-address-full">
-                  <input id="full_address" name="address" type="hidden" value="{{ $profileAddress }}" data-full-address>
-                  <input class="customer-address-preview" type="text" value="{{ $profileAddress }}" data-address-preview placeholder="Địa chỉ đầy đủ sẽ tự động hiển thị" readonly>
+            <form
+              class="customer-profile-form"
+              data-customer-profile-form
+              data-profile-locked="false"
+              data-selected-district="Quận 3"
+              hidden
+            >
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="profile_email">Địa chỉ email</label>
+                <div class="customer-profile-control">
+                  <div class="customer-email-line">
+                    <span>minhan@gmail.com</span>
+                  </div>
+                  <p class="customer-profile-help">Email này dùng để đăng nhập và nhận xác nhận đặt phòng.</p>
+                  <input type="hidden" id="profile_email" name="email" value="minhan@gmail.com">
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div class="customer-profile-actions">
-            <button type="submit" class="customer-profile-submit" data-profile-submit>
-              {{ $profileLocked ? 'Chỉnh sửa' : 'Lưu cập nhật' }}
-            </button>
-          </div>
-        </form>
+              <div class="customer-profile-row">
+                <div class="customer-profile-label">Điểm tích lũy</div>
+                <div class="customer-profile-control">
+                  <div class="customer-profile-points">
+                    <strong>120</strong>
+                    <span>điểm tích lũy</span>
+                  </div>
+                  <p class="customer-profile-help">Điểm có thể dùng để đổi hoặc áp dụng các ưu đãi trong kho khuyến mãi.</p>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="display_name">Họ và tên</label>
+                <div class="customer-profile-control">
+                  <input
+                    id="display_name"
+                    name="display_name"
+                    type="text"
+                    placeholder="Nhập tên hiển thị"
+                    minlength="2"
+                    maxlength="60"
+                    pattern="^[A-Za-zÀ-ỹĐđ\\s]+$"
+                    title="Tên chỉ gồm chữ cái và khoảng trắng."
+                    value="Nguyễn Minh An"
+                    data-profile-editable
+                    required>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="phone">Số điện thoại</label>
+                <div class="customer-profile-control">
+                  <input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    inputmode="numeric"
+                    placeholder="Nhập số điện thoại"
+                    maxlength="10"
+                    pattern="^0[0-9]{9}$"
+                    title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0."
+                    data-text-filter="digits"
+                    value="0901234567"
+                    data-profile-editable
+                    required>
+                  <p class="customer-profile-help">Khách sạn sẽ liên hệ qua số này nếu cần xác nhận đặt phòng.</p>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="cccd">CCCD</label>
+                <div class="customer-profile-control">
+                  <input
+                    id="cccd"
+                    name="cccd"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="Nhập số CCCD"
+                    maxlength="12"
+                    pattern="^[0-9]{12}$"
+                    title="CCCD gồm đúng 12 chữ số."
+                    data-text-filter="digits"
+                    value="079204000111"
+                    data-profile-editable
+                    required>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="birthday">Ngày sinh</label>
+                <div class="customer-profile-control">
+                  <input
+                    id="birthday"
+                    name="birthday"
+                    type="date"
+                    max="2026-04-22"
+                    value="1998-04-12"
+                    data-profile-editable
+                    required>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="gender">Giới tính</label>
+                <div class="customer-profile-control">
+                  <select id="gender" name="gender" data-profile-editable required>
+                    <option value="">Chọn giới tính</option>
+                    <option value="1" selected>Nam</option>
+                    <option value="0">Nữ</option>
+                    <option value="2">Khác</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="customer-profile-row">
+                <label class="customer-profile-label" for="province">Địa chỉ</label>
+                <div class="customer-profile-control">
+                  <div class="customer-address-grid">
+                    <select id="province" name="province" data-province-select data-profile-editable required>
+                      <option value="">Chọn tỉnh/thành phố</option>
+                      <option value="TP. Hồ Chí Minh" selected>TP. Hồ Chí Minh</option>
+                      <option value="Hà Nội">Hà Nội</option>
+                      <option value="Lâm Đồng">Lâm Đồng</option>
+                      <option value="Đà Nẵng">Đà Nẵng</option>
+                    </select>
+                    <select id="district" name="district" data-district-select data-profile-editable required disabled>
+                      <option value="">Chọn quận/huyện</option>
+                    </select>
+                    <input
+                      id="street_address"
+                      name="street_address"
+                      type="text"
+                      placeholder="Tên đường và số nhà"
+                      maxlength="120"
+                      pattern="^[0-9A-Za-zÀ-ỹĐđ\\s./-]+$"
+                      title="Tên đường và số nhà chỉ gồm chữ, số, khoảng trắng và ký tự . / -"
+                      value="25 Nguyễn Đình Chiểu"
+                      data-profile-editable
+                      required>
+                    <div class="customer-address-full">
+                      <input id="full_address" name="address" type="hidden" value="25 Nguyễn Đình Chiểu, Quận 3, TP. Hồ Chí Minh" data-full-address>
+                      <input class="customer-address-preview" type="text" value="25 Nguyễn Đình Chiểu, Quận 3, TP. Hồ Chí Minh" data-address-preview placeholder="Địa chỉ đầy đủ sẽ tự động hiển thị" readonly>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="customer-profile-actions">
+                <button type="submit" class="customer-profile-submit" data-profile-submit>
+                  Lưu cập nhật
+                </button>
+              </div>
+            </form>
           </main>
         </div>
       </div>
@@ -335,15 +289,15 @@
         });
 
         form.addEventListener('submit', (event) => {
+          event.preventDefault();
+
           if (profileLocked) {
-            event.preventDefault();
             setEditing(true);
             return;
           }
 
           updateFullAddress();
           if (!form.checkValidity()) {
-            event.preventDefault();
             form.reportValidity();
           }
         });

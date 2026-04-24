@@ -1,56 +1,3 @@
-@php
-  $promotions = [
-    [
-      'Code' => 'PEACH01',
-      'TenKM' => 'Giam 15% cho ky nghi cuoi tuan',
-      'MoTa' => 'Uu dai cho khach dat phong Deluxe va Suite trong thoi gian cuoi tuan.',
-      'PhanTramGiamGia' => 15,
-      'Diem' => 80,
-      'NgayBatDau' => '2026-04-01',
-      'NgayBatDauDisplay' => '01/04/2026',
-      'NgayKetThuc' => '2026-05-31',
-      'NgayKetThucDisplay' => '31/05/2026',
-      'Images' => [
-        'customers/images/screen1.png',
-        'customers/images/screen2.png',
-        'customers/images/screen3.png',
-      ],
-    ],
-    [
-      'Code' => 'PEACH02',
-      'TenKM' => 'Combo Spa va Breakfast',
-      'MoTa' => 'Tang trai nghiem thu gian va bua sang tai nha hang cho khach luu tru.',
-      'PhanTramGiamGia' => 20,
-      'Diem' => 100,
-      'NgayBatDau' => '2026-04-10',
-      'NgayBatDauDisplay' => '10/04/2026',
-      'NgayKetThuc' => '2026-06-15',
-      'NgayKetThucDisplay' => '15/06/2026',
-      'Images' => [
-        'customers/images/screen2.png',
-        'customers/images/screen3.png',
-        'customers/images/screen.png',
-      ],
-    ],
-    [
-      'Code' => 'PEACH03',
-      'TenKM' => 'Dat som tiet kiem hon',
-      'MoTa' => 'Ap dung cho dat phong som truoc 14 ngay voi cac hang phong tieu chuan.',
-      'PhanTramGiamGia' => 10,
-      'Diem' => 60,
-      'NgayBatDau' => '2026-04-15',
-      'NgayBatDauDisplay' => '15/04/2026',
-      'NgayKetThuc' => '2026-07-01',
-      'NgayKetThucDisplay' => '01/07/2026',
-      'Images' => [
-        'customers/images/screen3.png',
-        'customers/images/screen.png',
-        'customers/images/screen1.png',
-      ],
-    ],
-  ];
-@endphp
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -90,44 +37,104 @@
         </div>
 
         <div class="promotion-card-grid">
-          @forelse ($promotions as $promotion)
-            <article class="promotion-card ftco-animate">
-              <div class="promotion-card-media">
-                <div class="promotion-card-slider single-slider owl-carousel">
-                  @foreach ($promotion['Images'] as $image)
-                    <div class="promotion-card-slide" data-bg-image="{{ asset($image) }}"></div>
-                  @endforeach
-                </div>
-                <span class="promotion-card-discount">
-                  -{{ number_format((float) ($promotion['PhanTramGiamGia'] ?? 0), 0, ',', '.') }}%
+          <article class="promotion-card ftco-animate">
+            <div class="promotion-card-media">
+              <div class="promotion-card-slider single-slider owl-carousel">
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen1.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen2.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
+              </div>
+              <span class="promotion-card-discount">-15%</span>
+            </div>
+
+            <div class="promotion-card-body">
+              <div class="promotion-card-code">PEACH01</div>
+              <h3>Giảm 15% cho kỳ nghỉ cuối tuần</h3>
+              <p class="promotion-card-description">
+                Ưu đãi cho khách đặt phòng Deluxe và Suite trong thời gian cuối tuần.
+              </p>
+
+              <div class="promotion-card-actions">
+                <span class="promotion-card-points">
+                  <i aria-hidden="true"></i>
+                  80 điểm
                 </span>
+                <button type="button" class="promotion-card-save">Lưu mã</button>
               </div>
 
-              <div class="promotion-card-body">
-                <div class="promotion-card-code">{{ $promotion['Code'] }}</div>
-                <h3>{{ $promotion['TenKM'] ?? 'Khuyến mãi Peach Valley' }}</h3>
-                <p class="promotion-card-description">
-                  {{ $promotion['MoTa'] ?? 'Ưu đãi dành cho khách hàng Peach Valley.' }}
-                </p>
-
-                <div class="promotion-card-actions">
-                  <span class="promotion-card-points">
-                    <i aria-hidden="true"></i>
-                    {{ number_format((int) ($promotion['Diem'] ?? 0), 0, ',', '.') }} điểm
-                  </span>
-                  <button type="button" class="promotion-card-save">Lưu mã</button>
-                </div>
-
-                <div class="promotion-card-date">
-                  {{ $promotion['NgayBatDauDisplay'] ?? '--/--/----' }}
-                  -
-                  {{ $promotion['NgayKetThucDisplay'] ?? '--/--/----' }}
-                </div>
+              <div class="promotion-card-date">
+                01/04/2026
+                -
+                31/05/2026
               </div>
-            </article>
-          @empty
-            <div class="customer-empty">Hiện chưa có chương trình khuyến mãi nào.</div>
-          @endforelse
+            </div>
+          </article>
+
+          <article class="promotion-card ftco-animate">
+            <div class="promotion-card-media">
+              <div class="promotion-card-slider single-slider owl-carousel">
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen2.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen.png') }}"></div>
+              </div>
+              <span class="promotion-card-discount">-20%</span>
+            </div>
+
+            <div class="promotion-card-body">
+              <div class="promotion-card-code">PEACH02</div>
+              <h3>Combo Spa và Breakfast</h3>
+              <p class="promotion-card-description">
+                Tăng trải nghiệm thư giãn và bữa sáng tại nhà hàng cho khách lưu trú.
+              </p>
+
+              <div class="promotion-card-actions">
+                <span class="promotion-card-points">
+                  <i aria-hidden="true"></i>
+                  100 điểm
+                </span>
+                <button type="button" class="promotion-card-save">Lưu mã</button>
+              </div>
+
+              <div class="promotion-card-date">
+                10/04/2026
+                -
+                15/06/2026
+              </div>
+            </div>
+          </article>
+
+          <article class="promotion-card ftco-animate">
+            <div class="promotion-card-media">
+              <div class="promotion-card-slider single-slider owl-carousel">
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen.png') }}"></div>
+                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen1.png') }}"></div>
+              </div>
+              <span class="promotion-card-discount">-10%</span>
+            </div>
+
+            <div class="promotion-card-body">
+              <div class="promotion-card-code">PEACH03</div>
+              <h3>Đặt sớm tiết kiệm hơn</h3>
+              <p class="promotion-card-description">
+                Áp dụng cho đặt phòng sớm trước 14 ngày với các hạng phòng tiêu chuẩn.
+              </p>
+
+              <div class="promotion-card-actions">
+                <span class="promotion-card-points">
+                  <i aria-hidden="true"></i>
+                  60 điểm
+                </span>
+                <button type="button" class="promotion-card-save">Lưu mã</button>
+              </div>
+
+              <div class="promotion-card-date">
+                15/04/2026
+                -
+                01/07/2026
+              </div>
+            </div>
+          </article>
         </div>
       </div>
     </section>

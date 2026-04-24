@@ -1,48 +1,23 @@
-<x-app-layout :assets="$assets ?? []">
-    @php
-        $isAccountModule = $moduleKey === 'accounts';
-        $isCustomerModule = $moduleKey === 'customers';
-        $accountType = (string) ($record['LoaiTaiKhoan'] ?? old('LoaiTaiKhoan', ''));
-        $isCustomerAccount = $isAccountModule && $isEdit && $accountType === '0';
-        $isEmployeeAccount = $isAccountModule && $isEdit && $accountType === '1';
-        $customerAddressOptions = $module['address_options'] ?? [];
-        $formAction = $formAction ?? (
-            $isEdit
-            ? route('hotel.modules.update', ['moduleKey' => $moduleKey, 'recordId' => $record[$module['primary_key']]])
-            : route('hotel.modules.store', ['moduleKey' => $moduleKey])
-        );
-        $backUrl = $backUrl ?? route('hotel.modules.index', ['moduleKey' => $moduleKey]);
-    @endphp
+@php
+    $routeName = request()->route()?->getName() ?? '';
+    $moduleKey = request()->route('moduleKey');
+    $isEdit = $routeName === 'hotel.modules.edit' || $routeName === 'reception.customers.edit' || $routeName === 'reception.bookings.edit';
 
+    if (str_starts_with($routeName, 'reception.customers')) {
+        $moduleKey = 'customers';
+    }
+
+    if ($routeName === 'reception.bookings.edit') {
+        $moduleKey = 'reception-bookings';
+    }
+@endphp
+
+<x-app-layout :assets="['animation']">
     <style>
         .hm-readonly-input {
             background-color: #f3f4f6;
             color: #6b7280;
             border-color: #cbd5e1;
-            cursor: not-allowed;
-        }
-
-        .hm-service-image-input {
-            height: 220px;
-            border: 1px dashed #cbd5e1;
-            border-radius: 16px;
-            text-align: center;
-            padding: 140px 20px 20px;
-            font-size: 1rem;
-        }
-
-        .hm-service-image-hint {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-        }
-
-        .hm-service-image-label {
-            color: #64748b;
-        }
-
-        .hm-helper-text {
-            color: #9ca3af !important;
         }
     </style>
 
@@ -51,272 +26,119 @@
             <div class="card">
                 <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2 pb-4">
                     <div class="header-title">
-                        <h4 class="card-title mb-1">{{ $isEdit ? 'Chỉnh sửa' : 'Thêm mới' }} {{ $module['singular'] }}</h4>
-                        <p class="mb-0 text-muted">{{ $module['description'] }}</p>
+                        <h4 class="card-title mb-1">{{ $isEdit ? 'Chỉnh sửa' : 'Thêm mới' }}</h4>
                     </div>
-                    <a href="{{ $backUrl }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại danh sách</a>
+                    @if(str_starts_with($routeName, 'reception.customers'))
+                        <a href="{{ route('reception.customers.index') }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại</a>
+                    @elseif($routeName === 'reception.bookings.edit')
+                        <a href="{{ route('reception.bookings.index') }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại</a>
+                    @else
+                        <a href="{{ route('hotel.modules.index', ['moduleKey' => $moduleKey]) }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại</a>
+                    @endif
                 </div>
                 <div class="card-body">
-                    <form action="{{ $formAction }}" method="POST">
-                        @csrf
-                        @if($isEdit)
-                            @method('PATCH')
-                        @endif
-
+                    <form data-ui-only-form>
                         <div class="row">
-                            @foreach($module['fields'] as $fieldKey => $field)
-                                @php
-                                    $value = old($fieldKey, $record[$fieldKey] ?? '');
-                                    $inputType = $field['type'] ?? 'text';
-                                    $shouldHideField = false;
-                                    $isCreateEditableCodeField = !$isEdit
-                                        && ($field['readonly'] ?? false)
-                                        && \Illuminate\Support\Str::startsWith($fieldKey, 'Ma');
-                                    $isLockedAccountIdentityField = ($isCustomerAccount || $isEmployeeAccount) && in_array($fieldKey, ['MaTK', 'Email'], true);
-                                    $isReadonlyLinkedFullName = $isAccountModule && $fieldKey === 'HoTen' && ($isCustomerAccount || $isEmployeeAccount);
-                                    $shouldHideLinkedFullName = $isAccountModule && $fieldKey === 'HoTen' && (!$isEdit || $value === '');
-                                    $shouldSkipField = $shouldHideField || $shouldHideLinkedFullName;
-                                    $isReadonlyField = (($field['readonly'] ?? false) && !$isCreateEditableCodeField) || $isLockedAccountIdentityField || $isReadonlyLinkedFullName;
-                                    $inputPlaceholder = $fieldKey === 'MatKhau' && $isEmployeeAccount
-                                        ? 'Nhập mật khẩu mới nếu muốn thay đổi'
-                                        : $field['label'];
-                                    $isFieldRequired = ($field['required'] ?? false) && !($fieldKey === 'MatKhau' && $isEmployeeAccount);
-                                    $helperText = null;
-
-                                    if ($isCustomerAccount) {
-                                        $shouldHideField = in_array($fieldKey, ['MatKhau', 'LoaiTaiKhoan'], true);
-                                    } elseif ($isEmployeeAccount) {
-                                        $shouldHideField = in_array($fieldKey, ['LoaiTaiKhoan'], true);
-                                    }
-
-                                    $shouldSkipField = $shouldHideField || $shouldHideLinkedFullName;
-
-                                    if ($isLockedAccountIdentityField || $isReadonlyLinkedFullName) {
-                                        $helperText = 'Admin không được sửa trường này.';
-                                    } elseif ($fieldKey === 'MatKhau' && $isEmployeeAccount) {
-                                        $helperText = 'Để trống nếu không muốn đổi mật khẩu hiện tại.';
-                                    }
-                                @endphp
-                                @if($shouldSkipField)
-                                    @continue
-                                @endif
-                                <div class="form-group col-md-6">
-                                    <label class="form-label" for="{{ $fieldKey }}">
-                                        {{ $field['label'] }}
-                                        @if($field['required'] ?? false)
-                                            <span class="text-danger">*</span>
-                                        @endif
-                                    </label>
-
-                                    @if($moduleKey === 'services' && $fieldKey === 'ServiceImage')
-                                        <div style="position: relative;">
-                                            <input
-                                                type="text"
-                                                @class([
-                                                    'form-control',
-                                                    'hm-service-image-input',
-                                                    'hm-readonly-input' => $isReadonlyField,
-                                                ])
-                                                id="{{ $fieldKey }}"
-                                                name="{{ $fieldKey }}"
-                                                value="{{ $value }}"
-                                                placeholder=""
-                                                {{ $isFieldRequired ? 'required' : '' }}
-                                                {{ $isReadonlyField ? 'readonly' : '' }}
-                                            >
-                                            @if($value === '')
-                                                <div
-                                                    class="d-flex flex-column align-items-center justify-content-center text-muted hm-service-image-hint"
-                                                >
-                                                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom: 10px;">
-                                                        <path d="M12 16V8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                        <path d="M8.5 11.5L12 8L15.5 11.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                        <path d="M20 16.5C20 18.433 18.433 20 16.5 20H7.5C5.567 20 4 18.433 4 16.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                                        <path d="M16.5 4H7.5C5.567 4 4 5.567 4 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.35"></path>
-                                                        <path d="M20 7.5C20 5.567 18.433 4 16.5 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" opacity="0.35"></path>
-                                                    </svg>
-                                                    <div class="fw-semibold hm-service-image-label">Tải ảnh hoặc nhập đường dẫn</div>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    @elseif($isCustomerModule && $fieldKey === 'DiaChi')
-                                        @php
-                                            $streetValue = old('DiaChiDuong', $record['DiaChiDuong'] ?? '');
-                                            $provinceValue = old('DiaChiTinh', $record['DiaChiTinh'] ?? '');
-                                            $districtValue = old('DiaChiHuyen', $record['DiaChiHuyen'] ?? '');
-                                            $fullAddressValue = old('DiaChi', $value);
-                                            $selectedDistrictOptions = $customerAddressOptions[$provinceValue] ?? [];
-                                        @endphp
-                                        <div
-                                            class="customer-address-group"
-                                            data-address-options='@json($customerAddressOptions)'
-                                        >
-                                            <input
-                                                type="hidden"
-                                                id="{{ $fieldKey }}"
-                                                name="{{ $fieldKey }}"
-                                                value="{{ $fullAddressValue }}"
-                                                {{ ($field['required'] ?? false) ? 'required' : '' }}
-                                            >
-                                            <div class="row g-3">
-                                                <div class="col-12">
-                                                    <label class="form-label mb-2" for="DiaChiDuong">Số nhà, tên đường</label>
-                                                    <input
-                                                        type="text"
-                                                        class="form-control customer-address-street"
-                                                        id="DiaChiDuong"
-                                                        name="DiaChiDuong"
-                                                        value="{{ $streetValue }}"
-                                                        placeholder="Ví dụ: 12 Nguyễn Huệ"
-                                                    >
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label mb-2" for="DiaChiTinh">Tỉnh / Thành phố</label>
-                                                    <select class="form-control customer-address-province" id="DiaChiTinh" name="DiaChiTinh">
-                                                        <option value="">Chọn tỉnh / thành phố</option>
-                                                        @foreach($customerAddressOptions as $provinceName => $districts)
-                                                            <option value="{{ $provinceName }}" {{ $provinceValue === $provinceName ? 'selected' : '' }}>
-                                                                {{ $provinceName }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label class="form-label mb-2" for="DiaChiHuyen">Quận / Huyện</label>
-                                                    <select class="form-control customer-address-district" id="DiaChiHuyen" name="DiaChiHuyen">
-                                                        <option value="">Chọn quận / huyện</option>
-                                                        @foreach($selectedDistrictOptions as $districtName)
-                                                            <option value="{{ $districtName }}" {{ $districtValue === $districtName ? 'selected' : '' }}>
-                                                                {{ $districtName }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    @elseif($inputType === 'textarea')
-                                        <textarea
-                                            class="form-control"
-                                            id="{{ $fieldKey }}"
-                                            name="{{ $fieldKey }}"
-                                            rows="3"
-                                            {{ ($field['required'] ?? false) ? 'required' : '' }}
-                                            {{ ($field['readonly'] ?? false) ? 'readonly' : '' }}
-                                        >{{ $value }}</textarea>
-                                    @elseif($inputType === 'select')
-                                        <select class="form-control" id="{{ $fieldKey }}" name="{{ $fieldKey }}" {{ ($field['required'] ?? false) ? 'required' : '' }}>
-                                            @foreach($field['options'] as $optionValue => $optionLabel)
-                                                <option value="{{ $optionValue }}" {{ (string) $value === (string) $optionValue ? 'selected' : '' }}>
-                                                    {{ $optionLabel }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                    @else
-                                        <input
-                                            type="{{ $inputType }}"
-                                            @class([
-                                                'form-control',
-                                                'hm-readonly-input' => $isReadonlyField,
-                                            ])
-                                            id="{{ $fieldKey }}"
-                                            name="{{ $fieldKey }}"
-                                            value="{{ $inputType === 'password' ? '' : $value }}"
-                                            placeholder="{{ $inputPlaceholder }}"
-                                            {{ isset($field['step']) ? 'step=' . $field['step'] : '' }}
-                                            {{ $isFieldRequired ? 'required' : '' }}
-                                            {{ $isReadonlyField ? 'readonly' : '' }}
-                                        >
-                                        @if($helperText)
-                                            <small class="text-muted d-block mt-2 hm-helper-text">{{ $helperText }}</small>
-                                        @endif
-                                        @if($moduleKey === 'services' && $fieldKey === 'ServiceImage' && $value !== '')
-                                            @php
-                                                $imagePreviewUrl = \Illuminate\Support\Str::startsWith($value, ['http://', 'https://'])
-                                                    ? $value
-                                                    : asset(ltrim($value, '/'));
-                                            @endphp
-                                            <div class="mt-3">
-                                                <img
-                                                    src="{{ $imagePreviewUrl }}"
-                                                    alt="Xem trước ảnh dịch vụ"
-                                                    class="img-fluid rounded border"
-                                                    style="max-height: 200px; object-fit: cover;"
-                                                >
-                                            </div>
-                                        @endif
-                                    @endif
-                                </div>
-                            @endforeach
+                            @switch($moduleKey)
+                                @case('accounts')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã tài khoản</label><input type="text" class="form-control hm-readonly-input" value="101" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Email</label><input type="email" class="form-control" value="minhan@gmail.com"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mật khẩu</label><input type="password" class="form-control" value=""></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Loại tài khoản</label><select class="form-select"><option>Khách hàng</option><option>Lễ tân</option><option>Quản lý</option></select></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Trạng thái</label><select class="form-select"><option>Hoạt động</option><option>Không hoạt động</option></select></div>
+                                    @break
+                                @case('customers')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã khách hàng</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên khách hàng</label><input type="text" class="form-control" value="Nguyễn Minh An"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Ngày sinh</label><input type="date" class="form-control" value="1998-04-12"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Giới tính</label><select class="form-select"><option>Nam</option><option>Nữ</option><option>Khác</option></select></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số điện thoại</label><input type="text" class="form-control" value="0901234567"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">CCCD</label><input type="text" class="form-control" value="079204000111"></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Địa chỉ</label><textarea class="form-control" rows="3">12 Nguyễn Huệ, Quận 1, TP.HCM</textarea></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Điểm tích lũy</label><input type="number" class="form-control" value="120"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Trạng thái</label><select class="form-select"><option>Hoạt động</option><option>Không hoạt động</option></select></div>
+                                    @break
+                                @case('employees')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã nhân viên</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên nhân viên</label><input type="text" class="form-control" value="Phạm Thùy Linh"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã tài khoản</label><input type="number" class="form-control" value="201"></div>
+                                    @break
+                                @case('room-types')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã loại phòng</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên loại phòng</label><input type="text" class="form-control" value="Deluxe"></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Mô tả</label><textarea class="form-control" rows="3">Phòng tiêu chuẩn cao cấp, phù hợp cho khách đi công tác.</textarea></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số người tối đa</label><input type="number" class="form-control" value="2"></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Ảnh phòng</label><input type="text" class="form-control" placeholder="Nhập đường dẫn ảnh minh họa"></div>
+                                    @break
+                                @case('rooms')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã phòng</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số phòng</label><input type="text" class="form-control" value="A101"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã loại phòng</label><input type="number" class="form-control" value="1"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên loại phòng</label><input type="text" class="form-control" value="Deluxe"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tình trạng</label><select class="form-select"><option>Trống</option><option>Đã đặt</option><option>Đang sử dụng</option><option>Đang dọn dẹp</option></select></div>
+                                    @break
+                                @case('services')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã dịch vụ</label><input type="text" class="form-control hm-readonly-input" value="6" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên dịch vụ</label><input type="text" class="form-control" value="Giặt ủi"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Giá dịch vụ</label><input type="number" class="form-control" value="120000"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Loại dịch vụ</label><select class="form-select"><option>Ăn uống</option><option>Dịch vụ phòng</option><option>Giải trí</option></select></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Ảnh dịch vụ</label><input type="text" class="form-control" placeholder="Nhập đường dẫn ảnh minh họa"></div>
+                                    @break
+                                @case('promotions')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã khuyến mãi</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên chương trình</label><input type="text" class="form-control" value="Summer Escape"></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Mô tả</label><textarea class="form-control" rows="3">Giảm giá cho khách đặt phòng trong mùa hè.</textarea></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Điểm yêu cầu</label><input type="number" class="form-control" value="50"></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Ngày bắt đầu</label><input type="date" class="form-control" value="2026-05-01"></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Ngày kết thúc</label><input type="date" class="form-control" value="2026-06-30"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Phần trăm giảm giá</label><input type="number" class="form-control" value="15"></div>
+                                    @break
+                                @case('invoices')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã hóa đơn</label><input type="text" class="form-control hm-readonly-input" value="5001" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã đặt phòng</label><input type="text" class="form-control hm-readonly-input" value="9001" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Ngày lập</label><input type="date" class="form-control hm-readonly-input" value="2026-04-08" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tổng tiền</label><input type="text" class="form-control hm-readonly-input" value="4.500.000 VNĐ" readonly></div>
+                                    @break
+                                @case('payments')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã thanh toán</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã hóa đơn</label><input type="number" class="form-control" value="5001"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số tiền</label><input type="number" class="form-control" value="1500000"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Loại thanh toán</label><select class="form-select"><option>Đặt cọc</option><option>Thanh toán checkout</option></select></div>
+                                    @break
+                                @case('reviews')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã đánh giá</label><input type="text" class="form-control hm-readonly-input" value="1" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã đặt phòng</label><input type="number" class="form-control" value="9001"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số sao</label><select class="form-select"><option>5 sao</option><option>4 sao</option><option>3 sao</option></select></div>
+                                    <div class="form-group col-md-12"><label class="form-label">Nội dung đánh giá</label><textarea class="form-control" rows="3">Phòng sạch sẽ, nhân viên hỗ trợ nhiệt tình.</textarea></div>
+                                    @break
+                                @case('reception-bookings')
+                                    <div class="form-group col-md-6"><label class="form-label">Mã đặt phòng</label><input type="text" class="form-control hm-readonly-input" value="9001" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Mã khách hàng</label><input type="number" class="form-control" value="1"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tên khách hàng</label><input type="text" class="form-control hm-readonly-input" value="Nguyễn Minh An" readonly></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số điện thoại</label><input type="text" class="form-control hm-readonly-input" value="0901234567" readonly></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Ngày đặt</label><input type="date" class="form-control" value="2026-04-05"></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Ngày nhận phòng</label><input type="date" class="form-control" value="2026-04-08"></div>
+                                    <div class="form-group col-md-4"><label class="form-label">Ngày trả phòng</label><input type="date" class="form-control" value="2026-04-10"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Số lượng người ở</label><input type="number" class="form-control" value="2"></div>
+                                    <div class="form-group col-md-6"><label class="form-label">Tình trạng</label><select class="form-select"><option>Đã đặt</option><option>Đang sử dụng</option><option>Đã hủy</option><option>Đã trả phòng</option></select></div>
+                                    @break
+                            @endswitch
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="padding: 10px;">
-                            {{ $isEdit ? 'Lưu thay đổi' : 'Tạo mới' }}
-                        </button>
+                        <button type="submit" class="btn btn-primary mt-3" style="padding: 10px;">{{ $isEdit ? 'Lưu thay đổi' : 'Tạo mới' }}</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    @if($isCustomerModule)
-        @push('scripts')
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const addressGroupElement = document.querySelector('.customer-address-group');
-
-                    if (!addressGroupElement) {
-                        return;
-                    }
-
-                    const options = JSON.parse(addressGroupElement.dataset.addressOptions || '{}');
-                    const streetInputElement = addressGroupElement.querySelector('.customer-address-street');
-                    const provinceSelectElement = addressGroupElement.querySelector('.customer-address-province');
-                    const districtSelectElement = addressGroupElement.querySelector('.customer-address-district');
-                    const fullAddressInputElement = addressGroupElement.querySelector('input[type="hidden"][name="DiaChi"]');
-
-                    if (!streetInputElement || !provinceSelectElement || !districtSelectElement || !fullAddressInputElement) {
-                        return;
-                    }
-
-                    const updateDistrictOptions = function (selectedProvince, selectedDistrict) {
-                        const districts = Array.isArray(options[selectedProvince]) ? options[selectedProvince] : [];
-
-                        districtSelectElement.innerHTML = '<option value="">Chọn quận / huyện</option>';
-
-                        districts.forEach(function (districtName) {
-                            const optionElement = document.createElement('option');
-                            optionElement.value = districtName;
-                            optionElement.textContent = districtName;
-
-                            if (districtName === selectedDistrict) {
-                                optionElement.selected = true;
-                            }
-
-                            districtSelectElement.appendChild(optionElement);
-                        });
-                    };
-
-                    const syncFullAddress = function () {
-                        const street = streetInputElement.value.trim();
-                        const district = districtSelectElement.value.trim();
-                        const province = provinceSelectElement.value.trim();
-
-                        fullAddressInputElement.value = [street, district, province].filter(Boolean).join(', ');
-                    };
-
-                    updateDistrictOptions(provinceSelectElement.value, districtSelectElement.value);
-                    syncFullAddress();
-
-                    streetInputElement.addEventListener('input', syncFullAddress);
-
-                    provinceSelectElement.addEventListener('change', function () {
-                        updateDistrictOptions(provinceSelectElement.value, '');
-                        syncFullAddress();
-                    });
-
-                    districtSelectElement.addEventListener('change', syncFullAddress);
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelector('[data-ui-only-form]')?.addEventListener('submit', function (event) {
+                    event.preventDefault();
                 });
-            </script>
-        @endpush
-    @endif
+            });
+        </script>
+    @endpush
 </x-app-layout>

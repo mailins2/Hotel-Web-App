@@ -7,7 +7,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.dashboard')) }}" href="{{ route('reception.dashboard') }}">
+        <a class="nav-link {{ request()->routeIs('reception.dashboard') ? 'active' : '' }}" href="{{ route('reception.dashboard') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 10C4 7.79086 5.79086 6 8 6H16C18.2091 6 20 7.79086 20 10V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V10Z" fill="currentColor"></path>
@@ -20,7 +20,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.customers.index')) }}" href="{{ route('reception.customers.index') }}">
+        <a class="nav-link {{ request()->is('reception/customers*') ? 'active' : '' }}" href="{{ route('reception.customers.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M11.9488 14.54C8.49884 14.54 5.58789 15.1038 5.58789 17.2795C5.58789 19.4562 8.51765 20.0001 11.9488 20.0001C15.3988 20.0001 18.3098 19.4364 18.3098 17.2606C18.3098 15.084 15.38 14.54 11.9488 14.54Z" fill="currentColor"></path>
@@ -32,7 +32,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.bookings.index')) }}" href="{{ route('reception.bookings.index') }}">
+        <a class="nav-link {{ request()->is('reception/bookings*') ? 'active' : '' }}" href="{{ route('reception.bookings.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M6 4H18C19.1046 4 20 4.89543 20 6V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V6C4 4.89543 4.89543 4 6 4Z" fill="currentColor"></path>
@@ -47,7 +47,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.check-ins.create')) }}" href="{{ route('reception.check-ins.create') }}">
+        <a class="nav-link {{ request()->is('reception/check-ins*') ? 'active' : '' }}" href="{{ route('reception.check-ins.create') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 4H19V20H14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -60,7 +60,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.bookings.index')) }}" href="{{ route('reception.bookings.index') }}">
+        <a class="nav-link {{ request()->is('reception/bookings*') ? 'active' : '' }}" href="{{ route('reception.bookings.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 4H19V20H14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -73,7 +73,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ activeRoute(route('reception.invoices.index')) }}" href="{{ route('reception.invoices.index') }}">
+        <a class="nav-link {{ request()->is('reception/invoices*') ? 'active' : '' }}" href="{{ route('reception.invoices.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M7 3H14.5858C14.851 3 15.1054 3.10536 15.2929 3.29289L19.7071 7.70711C19.8946 7.89464 20 8.149 20 8.41421V18C20 19.1046 19.1046 20 18 20H7C5.89543 20 5 19.1046 5 18V5C5 3.89543 5.89543 3 7 3Z" fill="currentColor"></path>

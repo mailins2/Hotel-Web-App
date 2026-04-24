@@ -1,6 +1,12 @@
+@php
+    $isReceptionPortal = request()->routeIs('reception.*');
+    $isAdminPortal = request()->routeIs('hotel.*') || request()->routeIs('admin.dashboard') || request()->routeIs('pages.term-of-use');
+    $dashboardRoute = $isReceptionPortal ? route('reception.dashboard') : ($isAdminPortal ? route('admin.dashboard') : route('customer.home'));
+@endphp
+
 <aside class="sidebar sidebar-default sidebar-color navs-rounded-all">
     <div class="sidebar-header d-flex align-items-center justify-content-start">
-        <a href="{{ portalDashboardRoute() }}" class="navbar-brand">
+        <a href="{{ $dashboardRoute }}" class="navbar-brand">
             <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="hotel-brand-logo">
             <h4 class="logo-title d-none">{{ config('app.name', 'Peach Valley') }}</h4>
         </a>
@@ -15,7 +21,7 @@
     </div>
     <div class="sidebar-body pt-0 data-scrollbar">
         <div class="sidebar-list" id="sidebar">
-        @if(isReceptionist())
+        @if ($isReceptionPortal)
             @include('partials.dashboard.vertical-nav-receptionist')
         @else
             @include('partials.dashboard.vertical-nav')

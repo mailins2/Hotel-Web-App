@@ -1,3 +1,5 @@
+@php($isReceptionPortal = request()->routeIs('reception.*'))
+
 <div class="iq-navbar-header" style="height: 215px;">
     <div class="container-fluid iq-container">
         <div class="row">
@@ -5,12 +7,12 @@
                 <div class="flex-wrap d-flex justify-content-between align-items-center">
                     <div>
                         <h1 class="fw-bold text-white mb-2">
-                            {{ isReceptionist() ? 'Hệ thống quản lý Peach Valley' : 'Peach Valley Admin' }}
+                            {{ $isReceptionPortal ? 'Nhân viên Peach Valley' : 'Quản lý Peach Valley' }}
                         </h1>
                         <p class="text-white mb-0">
-                            {{ isReceptionist()
-                                ? 'Hệ thống quản lý khách sạn Peach Valley dành cho Lễ tân'
-                                : 'Hệ thống quản lý khách sạn Peach Valley dành cho Admin' }}
+                            {{ $isReceptionPortal
+                                ? 'Không gian giao diện dành cho nhân viên Peach Valley.'
+                                : 'Không gian giao diện dành cho bộ phận quản lý Peach Valley.' }}
                         </p>
                     </div>
                 </div>

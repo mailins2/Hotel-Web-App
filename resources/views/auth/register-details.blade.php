@@ -1,11 +1,11 @@
 <x-guest-layout>
    @php
       $addressOptions = [
-         'TP.HCM' => ['Quận 1', 'Quận 3', 'Quận 7', 'Quận 10', 'Bình Thạnh', 'Gò Vấp', 'Thủ Đức'],
-         'Hà Nội' => ['Ba Đình', 'Hoàn Kiếm', 'Đống Đa', 'Cầu Giấy', 'Thanh Xuân', 'Tây Hồ'],
-         'Đà Nẵng' => ['Hải Châu', 'Thanh Khê', 'Sơn Trà', 'Ngũ Hành Sơn', 'Liên Chiểu', 'Cẩm Lệ'],
-         'Lâm Đồng' => ['Đà Lạt', 'Bảo Lộc', 'Đức Trọng', 'Lạc Dương', 'Di Linh'],
-         'Cần Thơ' => ['Ninh Kiều', 'Bình Thủy', 'Cái Răng', 'Ô Môn', 'Thốt Nốt'],
+         'TP.HCM' => ['Quan 1', 'Quan 3', 'Quan 7', 'Quan 10', 'Binh Thanh', 'Go Vap', 'Thu Duc'],
+         'Ha Noi' => ['Ba Dinh', 'Hoan Kiem', 'Dong Da', 'Cau Giay', 'Thanh Xuan', 'Tay Ho'],
+         'Da Nang' => ['Hai Chau', 'Thanh Khe', 'Son Tra', 'Ngu Hanh Son', 'Lien Chieu', 'Cam Le'],
+         'Lam Dong' => ['Da Lat', 'Bao Loc', 'Duc Trong', 'Lac Duong', 'Di Linh'],
+         'Can Tho' => ['Ninh Kieu', 'Binh Thuy', 'Cai Rang', 'O Mon', 'Thot Not'],
       ];
       $today = now()->toDateString();
       $selectedProvince = old('province', '');
@@ -102,19 +102,11 @@
             box-shadow: 0 0 0 0.18rem rgba(140, 74, 52, 0.12);
          }
 
-         .register-detail-help,
          .register-detail-error {
             display: block;
             margin-top: 6px;
             font-size: 12px;
             line-height: 1.45;
-         }
-
-         .register-detail-help {
-            color: #64748b;
-         }
-
-         .register-detail-error {
             color: #dc2626;
             font-weight: 700;
          }
@@ -129,7 +121,6 @@
             color: #fff;
             font-weight: 400;
             cursor: pointer;
-            /* box-shadow: 0 0 0 0.2rem rgba(111, 29, 1, 0.22); */
          }
 
          .register-detail-submit:hover,
@@ -163,19 +154,14 @@
                         <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                      </a>
 
-                     <h2 class="register-detail-title mb-4 text-center">Hoàn tất thông tin đăng ký</h2>
-
-                     <x-auth-validation-errors class="mb-4" :errors="$errors" />
+                     <h2 class="register-detail-title mb-4 text-center">Hoàn tất thông tin đăng kí</h2>
 
                      <form
-                        method="POST"
-                        action="{{ route('register.details.store') }}"
+                        data-ui-only-form
                         data-register-detail-form
                         data-address-options='@json($addressOptions)'
                         data-selected-district="{{ $selectedDistrict }}"
                      >
-                        {{ csrf_field() }}
-
                         <div class="register-detail-grid">
                            <div class="register-detail-field">
                               <label for="full_name">Họ và tên <span class="text-danger">*</span></label>
@@ -184,11 +170,11 @@
                                  name="full_name"
                                  type="text"
                                  value="{{ old('full_name') }}"
-                                 placeholder="Nguyễn Văn An"
+                                 placeholder="Nguyen Van An"
                                  minlength="2"
                                  maxlength="60"
-                                 pattern="^[A-Za-zÀ-ỹĐđ\s]+$"
-                                 title="Họ và tên chỉ gồm chữ cái và khoảng trắng."
+                                 pattern="^[A-Za-z\s]+$"
+                                 title="Ho va ten chi gom chu cai va khoang trang."
                                  data-text-filter="letters"
                                  required>
                               @error('full_name')
@@ -220,7 +206,7 @@
                                  placeholder="0901234567"
                                  maxlength="10"
                                  pattern="^0[0-9]{9}$"
-                                 title="Số điện thoại gồm 10 chữ số và bắt đầu bằng 0."
+                                 title="So dien thoai gom 10 chu so va bat dau bang 0."
                                  data-text-filter="digits"
                                  required>
                               @error('phone')
@@ -239,7 +225,7 @@
                                  placeholder="012345678901"
                                  maxlength="12"
                                  pattern="^[0-9]{12}$"
-                                 title="CCCD gồm đúng 12 chữ số."
+                                 title="CCCD gom dung 12 chu so."
                                  data-text-filter="digits"
                                  required>
                               @error('cccd')
@@ -291,11 +277,11 @@
                                  name="address_line"
                                  type="text"
                                  value="{{ old('address_line') }}"
-                                 placeholder="26K đường Yersin"
+                                 placeholder="26K duong Yersin"
                                  minlength="4"
                                  maxlength="120"
-                                 pattern="^[0-9A-Za-zÀ-ỹĐđ\s./,-]+$"
-                                 title="Số nhà và tên đường chỉ gồm chữ, số, khoảng trắng và ký tự . / , -"
+                                 pattern="^[0-9A-Za-z\s./,-]+$"
+                                 title="So nha va ten duong chi gom chu, so, khoang trang va ky tu . / , -"
                                  data-text-filter="address"
                                  required>
                               <input id="address" name="address" type="hidden" value="{{ old('address') }}" data-full-address>
@@ -306,7 +292,7 @@
                         </div>
 
                         <div class="d-flex justify-content-center mt-4">
-                           <button type="submit" class="register-detail-submit">Hoàn tất đăng ký</button>
+                           <button type="submit" class="register-detail-submit">Hoàn tất đăng kí</button>
                         </div>
                      </form>
                   </div>
@@ -315,7 +301,7 @@
          </div>
 
          <div class="col-md-5 d-md-block d-none p-0 mt-n1 vh-100 overflow-hidden auth-side-visual">
-            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khách sạn Peach Valley">
+            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khach san Peach Valley">
          </div>
       </div>
 
@@ -336,8 +322,8 @@
 
             const filters = {
                digits: /[^0-9]/g,
-               letters: /[^A-Za-zÀ-ỹĐđ\s]/g,
-               address: /[^0-9A-Za-zÀ-ỹĐđ\s./,-]/g,
+               letters: /[^A-Za-z\s]/g,
+               address: /[^0-9A-Za-z\s./,-]/g,
             };
 
             form.querySelectorAll('[data-text-filter]').forEach((input) => {
@@ -356,14 +342,13 @@
                   district.value.trim(),
                   province.value.trim(),
                ].filter(Boolean);
-               const value = parts.join(', ');
 
-               fullAddress.value = value;
+               fullAddress.value = parts.join(', ');
             };
 
             const renderDistricts = () => {
                const items = addressOptions[province.value] || [];
-               district.innerHTML = '<option value="">Chọn quận/huyện</option>';
+               district.innerHTML = '<option value="">Chon quan/huyen</option>';
 
                items.forEach((item) => {
                   const option = document.createElement('option');
@@ -396,10 +381,10 @@
             });
 
             form.addEventListener('submit', (event) => {
+               event.preventDefault();
                syncFullAddress();
 
                if (!form.checkValidity()) {
-                  event.preventDefault();
                   form.reportValidity();
                }
             });

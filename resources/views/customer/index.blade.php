@@ -1,33 +1,3 @@
-@php
-  $featuredReviews = [
-    ['MaDG' => 9004, 'MaDatPhong' => 9004, 'Sao' => 5, 'TieuDe' => 'Ky nghi tuyet voi vuot mong doi', 'MoTa' => 'Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.', 'NgayDanhGia' => '2026-04-08', 'NgayDanhGiaDisplay' => '08/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
-    ['MaDG' => 9005, 'MaDatPhong' => 9005, 'Sao' => 5, 'TieuDe' => 'Dich vu xung dang quay lai', 'MoTa' => 'Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.', 'NgayDanhGia' => '2026-04-07', 'NgayDanhGiaDisplay' => '07/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
-    ['MaDG' => 9006, 'MaDatPhong' => 9001, 'Sao' => 4, 'TieuDe' => 'Khong gian sach dep', 'MoTa' => 'Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.', 'NgayDanhGia' => '2026-04-06', 'NgayDanhGiaDisplay' => '06/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
-  ];
-  $hotelReviews = [
-    ['MaDG' => 9004, 'MaDatPhong' => 9004, 'Sao' => 5, 'TieuDe' => 'Ky nghi tuyet voi vuot mong doi', 'MoTa' => 'Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.', 'NgayDanhGia' => '2026-04-08', 'NgayDanhGiaDisplay' => '08/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
-    ['MaDG' => 9005, 'MaDatPhong' => 9005, 'Sao' => 5, 'TieuDe' => 'Dich vu xung dang quay lai', 'MoTa' => 'Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.', 'NgayDanhGia' => '2026-04-07', 'NgayDanhGiaDisplay' => '07/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
-    ['MaDG' => 9006, 'MaDatPhong' => 9001, 'Sao' => 4, 'TieuDe' => 'Khong gian sach dep', 'MoTa' => 'Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.', 'NgayDanhGia' => '2026-04-06', 'NgayDanhGiaDisplay' => '06/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
-    ['MaDG' => 9007, 'MaDatPhong' => 9002, 'Sao' => 5, 'TieuDe' => 'Trai nghiem nghi duong rat tot', 'MoTa' => 'Phong suite rong, anh sang dep va khu tiep khach rieng tao cam giac rat thoai mai.', 'NgayDanhGia' => '2026-04-05', 'NgayDanhGiaDisplay' => '05/04/2026', 'TenKH' => 'Vo Gia Han', 'LoaiPhong' => 'Suite Room'],
-    ['MaDG' => 9008, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Phu hop cho chuyen di ngan ngay', 'MoTa' => 'Noi that dep, phong tam sach va khu vuc chung yen tinh, de nghi ngoi.', 'NgayDanhGia' => '2026-04-04', 'NgayDanhGiaDisplay' => '04/04/2026', 'TenKH' => 'Nguyen Quoc Huy', 'LoaiPhong' => 'Deluxe Garden'],
-    ['MaDG' => 9009, 'MaDatPhong' => 9004, 'Sao' => 3, 'TieuDe' => 'On nhung can nhanh hon', 'MoTa' => 'Khong gian phong rong va tien cho nhom, tuy nhien check-in vao gio cao diem con hoi lau.', 'NgayDanhGia' => '2026-04-03', 'NgayDanhGiaDisplay' => '03/04/2026', 'TenKH' => 'Le Bao Chau', 'LoaiPhong' => 'Family Room'],
-    ['MaDG' => 9010, 'MaDatPhong' => 9005, 'Sao' => 4, 'TieuDe' => 'Suite dep va yen tinh', 'MoTa' => 'Toi hai long voi phong suite, dac biet la giuong ngu va anh sang trong phong.', 'NgayDanhGia' => '2026-04-02', 'NgayDanhGiaDisplay' => '02/04/2026', 'TenKH' => 'Pham Minh Khoa', 'LoaiPhong' => 'Premium Suite'],
-    ['MaDG' => 9011, 'MaDatPhong' => 9001, 'Sao' => 5, 'TieuDe' => 'Nhan vien rat chu dao', 'MoTa' => 'Khach san ho tro linh hoat, phong sach va vat dung chuan bi day du.', 'NgayDanhGia' => '2026-04-01', 'NgayDanhGiaDisplay' => '01/04/2026', 'TenKH' => 'Tran Nhat Linh', 'LoaiPhong' => 'Deluxe Room'],
-    ['MaDG' => 9012, 'MaDatPhong' => 9002, 'Sao' => 2, 'TieuDe' => 'Can cai thien cach am', 'MoTa' => 'Phong dep nhung buoi toi con nghe tieng tu hanh lang. Nhan vien xu ly phan hoi nhanh.', 'NgayDanhGia' => '2026-03-30', 'NgayDanhGiaDisplay' => '30/03/2026', 'TenKH' => 'Vo Gia Han', 'LoaiPhong' => 'Suite Room'],
-    ['MaDG' => 9013, 'MaDatPhong' => 9003, 'Sao' => 4, 'TieuDe' => 'Dang tien trong tam gia', 'MoTa' => 'Phong gon gang, sach se va dap ung tot nhu cau nghi ngoi.', 'NgayDanhGia' => '2026-03-28', 'NgayDanhGiaDisplay' => '28/03/2026', 'TenKH' => 'Nguyen Quoc Huy', 'LoaiPhong' => 'Deluxe Garden'],
-  ];
-  $reviewCount = 10;
-  $reviewAverage = 4.1;
-  $reviewDistribution = [
-    5 => ['count' => 4, 'percent' => 40],
-    4 => ['count' => 4, 'percent' => 40],
-    3 => ['count' => 1, 'percent' => 10],
-    2 => ['count' => 1, 'percent' => 10],
-    1 => ['count' => 0, 'percent' => 0],
-  ];
-  $reviewRoomTypes = ['Family Room', 'Premium Suite', 'Deluxe Room', 'Suite Room', 'Deluxe Garden'];
-@endphp
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -204,40 +174,79 @@
 		          		<span class="subheading">Đánh giá</span>
 			        </div>
 	            <div class="carousel-testimony owl-carousel ftco-animate">
-	              @forelse ($featuredReviews as $review)
-	                <div class="item">
-	                  <a href="#customer-reviews" class="customer-review-slide-link">
-	                    <div class="testimony-wrap pb-4">
-	                      <div class="customer-review-stars mb-3" aria-label="{{ (int) ($review['Sao'] ?? 0) }} sao">
-	                        @for ($star = 1; $star <= 5; $star++)
-	                          <span class="{{ $star <= (int) ($review['Sao'] ?? 0) ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
-	                        @endfor
-	                      </div>
-	                      <div class="text">
-	                        <p class="mb-3 customer-review-clamp">{{ $review['MoTa'] ?? 'Trải nghiệm lưu trú dễ chịu tại Peach Valley.' }}</p>
-	                        <span class="customer-review-room">Loại phòng: {{ $review['LoaiPhong'] }}</span>
-	                      </div>
-	                      <div class="d-flex align-items-center mt-4">
-			                  <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
-			                  <div class="pos ml-3">
-			                  	<p class="name">{{ $review['TenKH'] }}</p>
-			                    <span class="position">{{ $review['NgayDanhGiaDisplay'] }}</span>
-			                  </div>
-			                </div>
-	                    </div>
-	                  </a>
-	                </div>
-	              @empty
-	                <div class="item">
-	                  <div class="testimony-wrap pb-4">
-	                    <div class="text">
-	                      <p class="mb-4">Chưa có đánh giá nào từ khách hàng.</p>
-	                    </div>
-	                  </div>
-	                </div>
-	              @endforelse
-	            </div>
-	          </div>
+              <div class="item">
+                <a href="#customer-reviews" class="customer-review-slide-link">
+                  <div class="testimony-wrap pb-4">
+                    <div class="customer-review-stars mb-3" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
+                    <div class="text">
+                      <p class="mb-3 customer-review-clamp">Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.</p>
+                      <span class="customer-review-room">Loai phong: Family Room</span>
+                    </div>
+                    <div class="d-flex align-items-center mt-4">
+                      <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
+                      <div class="pos ml-3">
+                        <p class="name">Le Bao Chau</p>
+                        <span class="position">08/04/2026</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="item">
+                <a href="#customer-reviews" class="customer-review-slide-link">
+                  <div class="testimony-wrap pb-4">
+                    <div class="customer-review-stars mb-3" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
+                    <div class="text">
+                      <p class="mb-3 customer-review-clamp">Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.</p>
+                      <span class="customer-review-room">Loai phong: Premium Suite</span>
+                    </div>
+                    <div class="d-flex align-items-center mt-4">
+                      <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
+                      <div class="pos ml-3">
+                        <p class="name">Pham Minh Khoa</p>
+                        <span class="position">07/04/2026</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+              <div class="item">
+                <a href="#customer-reviews" class="customer-review-slide-link">
+                  <div class="testimony-wrap pb-4">
+                    <div class="customer-review-stars mb-3" aria-label="4 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                    <div class="text">
+                      <p class="mb-3 customer-review-clamp">Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.</p>
+                      <span class="customer-review-room">Loai phong: Deluxe Room</span>
+                    </div>
+                    <div class="d-flex align-items-center mt-4">
+                      <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
+                      <div class="pos ml-3">
+                        <p class="name">Tran Nhat Linh</p>
+                        <span class="position">06/04/2026</span>
+                      </div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -323,24 +332,44 @@
           <aside class="customer-review-overview ftco-animate">
             <span>Tổng quan đánh giá</span>
             <div class="customer-review-score">
-              <strong>{{ number_format($reviewAverage, 1) }}</strong>
+              <strong>4.1</strong>
               <em>/ 5</em>
             </div>
-            <div class="customer-review-stars" aria-label="{{ $reviewAverage }} sao trung bình">
-              @for ($star = 1; $star <= 5; $star++)
-                <span class="{{ $star <= round($reviewAverage) ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
-              @endfor
+            <div class="customer-review-stars" aria-label="4.1 sao trung binh">
+              <span class="ion-ios-star"></span>
+              <span class="ion-ios-star"></span>
+              <span class="ion-ios-star"></span>
+              <span class="ion-ios-star"></span>
+              <span class="ion-ios-star-outline"></span>
             </div>
-            <p>Dựa trên {{ number_format($reviewCount, 0, ',', '.') }} đánh giá từ khách hàng thực tế</p>
+            <p>Dua tren 10 danh gia tu khach hang thuc te</p>
 
             <div class="customer-review-bars">
-              @foreach ($reviewDistribution as $star => $data)
-                <div class="customer-review-bar-row">
-                  <span>{{ $star }}</span>
-                  <div style="--review-percent: {{ $data['percent'] }};"><i></i></div>
-                  <strong>{{ $data['percent'] }}%</strong>
-                </div>
-              @endforeach
+              <div class="customer-review-bar-row">
+                <span>5</span>
+                <div style="--review-percent: 40;"><i></i></div>
+                <strong>40%</strong>
+              </div>
+              <div class="customer-review-bar-row">
+                <span>4</span>
+                <div style="--review-percent: 40;"><i></i></div>
+                <strong>40%</strong>
+              </div>
+              <div class="customer-review-bar-row">
+                <span>3</span>
+                <div style="--review-percent: 10;"><i></i></div>
+                <strong>10%</strong>
+              </div>
+              <div class="customer-review-bar-row">
+                <span>2</span>
+                <div style="--review-percent: 10;"><i></i></div>
+                <strong>10%</strong>
+              </div>
+              <div class="customer-review-bar-row">
+                <span>1</span>
+                <div style="--review-percent: 0;"><i></i></div>
+                <strong>0%</strong>
+              </div>
             </div>
           </aside>
 
@@ -350,50 +379,227 @@
                 <span>Số sao</span>
                 <select data-review-rating-filter>
                   <option value="">Tất cả số sao</option>
-                  @for ($star = 5; $star >= 1; $star--)
-                    <option value="{{ $star }}">{{ $star }} sao</option>
-                  @endfor
+                  <option value="5">5 sao</option>
+                  <option value="4">4 sao</option>
+                  <option value="3">3 sao</option>
+                  <option value="2">2 sao</option>
+                  <option value="1">1 sao</option>
                 </select>
               </label>
               <label>
                 <span>Loại phòng</span>
                 <select data-review-room-filter>
                   <option value="">Tất cả loại phòng</option>
-                  @foreach ($reviewRoomTypes as $roomType)
-                    <option value="{{ $roomType }}">{{ $roomType }}</option>
-                  @endforeach
+                  <option value="Family Room">Family Room</option>
+                  <option value="Premium Suite">Premium Suite</option>
+                  <option value="Deluxe Room">Deluxe Room</option>
+                  <option value="Suite Room">Suite Room</option>
+                  <option value="Deluxe Garden">Deluxe Garden</option>
                 </select>
               </label>
             </div>
 
             <div class="customer-review-list" data-review-list>
-              @forelse ($hotelReviews as $review)
-                <article
-                  class="customer-review-list-item ftco-animate"
-                  data-review-item
-                  data-review-rating="{{ (int) ($review['Sao'] ?? 0) }}"
-                  data-review-room="{{ $review['LoaiPhong'] }}"
-                >
-                  <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
-                  <div class="customer-review-list-body">
-                    <div class="customer-review-list-head">
-                      <div>
-                        <h3>{{ $review['TenKH'] }}</h3>
-                        <time datetime="{{ $review['NgayDanhGia'] }}">{{ $review['NgayDanhGiaDisplay'] }}</time>
-                      </div>
-                      <div class="customer-review-stars" aria-label="{{ (int) ($review['Sao'] ?? 0) }} sao">
-                        @for ($star = 1; $star <= 5; $star++)
-                          <span class="{{ $star <= (int) ($review['Sao'] ?? 0) ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
-                        @endfor
-                      </div>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="5" data-review-room="Family Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Le Bao Chau</h3>
+                      <time datetime="2026-04-08">08/04/2026</time>
                     </div>
-                    <p class="customer-review-description" title="{{ $review['MoTa'] ?? 'Trải nghiệm lưu trú dễ chịu tại Peach Valley.' }}">{{ $review['MoTa'] ?? 'Trải nghiệm lưu trú dễ chịu tại Peach Valley.' }}</p>
-                    <span class="customer-review-room">Loại phòng: {{ $review['LoaiPhong'] }}</span>
+                    <div class="customer-review-stars" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
                   </div>
-                </article>
-              @empty
-                <div class="customer-empty">Chưa có đánh giá nào từ khách hàng.</div>
-              @endforelse
+                  <p class="customer-review-description" title="Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.">Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.</p>
+                  <span class="customer-review-room">Loai phong: Family Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="5" data-review-room="Premium Suite">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Pham Minh Khoa</h3>
+                      <time datetime="2026-04-07">07/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.">Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.</p>
+                  <span class="customer-review-room">Loai phong: Premium Suite</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="4" data-review-room="Deluxe Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Tran Nhat Linh</h3>
+                      <time datetime="2026-04-06">06/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="4 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.">Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.</p>
+                  <span class="customer-review-room">Loai phong: Deluxe Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="5" data-review-room="Suite Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Vo Gia Han</h3>
+                      <time datetime="2026-04-05">05/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Phong suite rong, anh sang dep va khu tiep khach rieng tao cam giac rat thoai mai.">Phong suite rong, anh sang dep va khu tiep khach rieng tao cam giac rat thoai mai.</p>
+                  <span class="customer-review-room">Loai phong: Suite Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="4" data-review-room="Deluxe Garden">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Nguyen Quoc Huy</h3>
+                      <time datetime="2026-04-04">04/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="4 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Noi that dep, phong tam sach va khu vuc chung yen tinh, de nghi ngoi.">Noi that dep, phong tam sach va khu vuc chung yen tinh, de nghi ngoi.</p>
+                  <span class="customer-review-room">Loai phong: Deluxe Garden</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="3" data-review-room="Family Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Le Bao Chau</h3>
+                      <time datetime="2026-04-03">03/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="3 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Khong gian phong rong va tien cho nhom, tuy nhien check-in vao gio cao diem con hoi lau.">Khong gian phong rong va tien cho nhom, tuy nhien check-in vao gio cao diem con hoi lau.</p>
+                  <span class="customer-review-room">Loai phong: Family Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="4" data-review-room="Premium Suite">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Pham Minh Khoa</h3>
+                      <time datetime="2026-04-02">02/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="4 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Toi hai long voi phong suite, dac biet la giuong ngu va anh sang trong phong.">Toi hai long voi phong suite, dac biet la giuong ngu va anh sang trong phong.</p>
+                  <span class="customer-review-room">Loai phong: Premium Suite</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="5" data-review-room="Deluxe Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Tran Nhat Linh</h3>
+                      <time datetime="2026-04-01">01/04/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="5 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Khach san ho tro linh hoat, phong sach va vat dung chuan bi day du.">Khach san ho tro linh hoat, phong sach va vat dung chuan bi day du.</p>
+                  <span class="customer-review-room">Loai phong: Deluxe Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="2" data-review-room="Suite Room">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Vo Gia Han</h3>
+                      <time datetime="2026-03-30">30/03/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="2 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                      <span class="ion-ios-star-outline"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Phong dep nhung buoi toi con nghe tieng tu hanh lang. Nhan vien xu ly phan hoi nhanh.">Phong dep nhung buoi toi con nghe tieng tu hanh lang. Nhan vien xu ly phan hoi nhanh.</p>
+                  <span class="customer-review-room">Loai phong: Suite Room</span>
+                </div>
+              </article>
+              <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="4" data-review-room="Deluxe Garden">
+                <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                <div class="customer-review-list-body">
+                  <div class="customer-review-list-head">
+                    <div>
+                      <h3>Nguyen Quoc Huy</h3>
+                      <time datetime="2026-03-28">28/03/2026</time>
+                    </div>
+                    <div class="customer-review-stars" aria-label="4 sao">
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star"></span>
+                      <span class="ion-ios-star-outline"></span>
+                    </div>
+                  </div>
+                  <p class="customer-review-description" title="Phong gon gang, sach se va dap ung tot nhu cau nghi ngoi.">Phong gon gang, sach se va dap ung tot nhu cau nghi ngoi.</p>
+                  <span class="customer-review-room">Loai phong: Deluxe Garden</span>
+                </div>
+              </article>
             </div>
 
             <div class="customer-empty" data-review-empty hidden>Không có đánh giá phù hợp với bộ lọc.</div>
@@ -509,3 +715,4 @@
 
   </body>
 </html>
+

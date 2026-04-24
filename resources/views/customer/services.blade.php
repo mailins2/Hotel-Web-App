@@ -1,55 +1,3 @@
-@php
-  $serviceTypeOptions = [
-    0 => 'Dich vu an uong',
-    2 => 'Dich vu giai tri',
-    1 => 'Dich vu phong',
-  ];
-
-  $serviceSections = [
-    [
-      'subheading' => 'Dịch vụ ăn uống',
-      'title' => 'Thực đơn của khách sạn',
-      'empty' => 'Chưa có dịch vụ ăn uống nào.',
-      'services' => [
-        ['MaDV' => 1, 'TenDV' => 'Buffet sang', 'LoaiDV' => 0, 'GiaDV' => 250000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'customers/images/menu-1.jpg'],
-        ['MaDV' => 2, 'TenDV' => 'Tra chieu tai san vuon', 'LoaiDV' => 0, 'GiaDV' => 180000, 'LoaiDVLabel' => 'Dich vu an uong', 'ImagePath' => 'customers/images/menu-2.jpg'],
-      ],
-    ],
-    [
-      'subheading' => 'Dịch vụ giải trí',
-      'title' => 'Loại hình giải trí của khách sạn',
-      'empty' => 'Chưa có nội dung giải trí nào.',
-      'services' => [
-        ['MaDV' => 3, 'TenDV' => 'Spa thu gian 60 phut', 'LoaiDV' => 2, 'GiaDV' => 650000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'customers/images/dv_spa.jpg'],
-        ['MaDV' => 4, 'TenDV' => 'San golf mini', 'LoaiDV' => 2, 'GiaDV' => 400000, 'LoaiDVLabel' => 'Dich vu giai tri', 'ImagePath' => 'customers/images/dv_golf.jpg'],
-      ],
-    ],
-    [
-      'subheading' => 'Dịch vụ phòng',
-      'title' => 'Dịch vụ phòng của khách sạn',
-      'empty' => 'Chưa có dịch vụ phòng nào.',
-      'services' => [
-        ['MaDV' => 5, 'TenDV' => 'Don phong buoi toi', 'LoaiDV' => 1, 'GiaDV' => 150000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'customers/images/room-1.jpg'],
-        ['MaDV' => 6, 'TenDV' => 'Trang tri phong ky niem', 'LoaiDV' => 1, 'GiaDV' => 500000, 'LoaiDVLabel' => 'Dich vu phong', 'ImagePath' => 'customers/images/room-2.jpg'],
-      ],
-    ],
-  ];
-
-  $serviceOptions = [
-    ['id' => '1', 'name' => 'Buffet sang', 'type' => '0', 'price' => 250000],
-    ['id' => '2', 'name' => 'Tra chieu tai san vuon', 'type' => '0', 'price' => 180000],
-    ['id' => '3', 'name' => 'Spa thu gian 60 phut', 'type' => '2', 'price' => 650000],
-    ['id' => '4', 'name' => 'San golf mini', 'type' => '2', 'price' => 400000],
-    ['id' => '5', 'name' => 'Don phong buoi toi', 'type' => '1', 'price' => 150000],
-    ['id' => '6', 'name' => 'Trang tri phong ky niem', 'type' => '1', 'price' => 500000],
-  ];
-
-  $customerBookings = [
-    ['MaDatPhong' => 'PV9010', 'SoPhong' => 'A101, A102'],
-    ['MaDatPhong' => 'PV9011', 'SoPhong' => 'D401'],
-  ];
-@endphp
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -106,90 +54,225 @@
       </div>
     </section>
 
-    @foreach ($serviceSections as $section)
-      <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
-        <div class="container">
-          <div class="row justify-content-center mb-5 pb-3">
-            <div class="col-md-7 heading-section text-center ftco-animate">
-              <span class="subheading">{{ $section['subheading'] }}</span>
-              <h2>{{ $section['title'] }}</h2>
+    <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
+      <div class="container">
+        <div class="row justify-content-center mb-5 pb-3">
+          <div class="col-md-7 heading-section text-center ftco-animate">
+            <span class="subheading">Dịch vụ ăn uống</span>
+            <h2>Thực đơn của khách sạn</h2>
+          </div>
+        </div>
+
+        <div class="row service-page-grid" data-service-page-grid>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/menu-1.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Buffet sáng</span></h3>
+                  <span class="price">250.000 VND</span>
+                </div>
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ ăn uống</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="1"
+                    data-service-type="0"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-
-          @if (!empty($section['services']))
-            <div class="row service-page-grid" data-service-page-grid>
-              @foreach ($section['services'] as $service)
-                <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
-                  <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
-                    <div class="img" data-bg-image="{{ asset($service['ImagePath']) }}"></div>
-                    <div class="desc p-4">
-                      <div class="d-md-flex text align-items-start">
-                        <h3><span>{{ $service['TenDV'] }}</span></h3>
-                        <span class="price">{{ number_format($service['GiaDV'], 0, ',', '.') }} VNĐ</span>
-                      </div>
-                      <div class="d-block">
-                        <p class="service-type-label">{{ $service['LoaiDVLabel'] }}</p>
-                        <button
-                          class="service-booking-trigger"
-                          type="button"
-                          data-service-booking-trigger
-                          data-service-id="{{ $service['MaDV'] }}"
-                          data-service-type="{{ $service['LoaiDV'] }}"
-                        >
-                          Đặt dịch vụ
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/menu-2.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Trà chiều tại sân vườn</span></h3>
+                  <span class="price">180.000 VND</span>
                 </div>
-              @endforeach
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ ăn uống</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="2"
+                    data-service-type="0"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
             </div>
-
-            <div class="service-pagination" data-service-pagination hidden></div>
-          @else
-            <div class="customer-empty">{{ $section['empty'] }}</div>
-          @endif
+          </div>
         </div>
-      </section>
-    @endforeach
+
+        <div class="service-pagination" data-service-pagination hidden></div>
+      </div>
+    </section>
+
+    <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
+      <div class="container">
+        <div class="row justify-content-center mb-5 pb-3">
+          <div class="col-md-7 heading-section text-center ftco-animate">
+            <span class="subheading">Dịch vụ giải trí</span>
+            <h2>Loại hình giải trí của khách sạn</h2>
+          </div>
+        </div>
+
+        <div class="row service-page-grid" data-service-page-grid>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/dv_spa.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Spa thư giãn 60 phút</span></h3>
+                  <span class="price">650.000 VND</span>
+                </div>
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ giải trí</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="3"
+                    data-service-type="2"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/dv_golf.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Sân golf mini</span></h3>
+                  <span class="price">400.000 VND</span>
+                </div>
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ giải trí</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="4"
+                    data-service-type="2"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-pagination" data-service-pagination hidden></div>
+      </div>
+    </section>
+
+    <section class="ftco-section ftco-menu bg-light service-section" data-service-section>
+      <div class="container">
+        <div class="row justify-content-center mb-5 pb-3">
+          <div class="col-md-7 heading-section text-center ftco-animate">
+            <span class="subheading">Dịch vụ phòng</span>
+            <h2>Dịch vụ phòng của khách sạn</h2>
+          </div>
+        </div>
+
+        <div class="row service-page-grid" data-service-page-grid>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/room-1.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Dọn phòng buổi tối</span></h3>
+                  <span class="price">150.000 VND</span>
+                </div>
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ phòng</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="5"
+                    data-service-type="1"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6 col-xl-6 d-flex service-page-item" data-service-page-item>
+            <div class="pricing-entry service-pricing-entry rounded d-flex ftco-animate">
+              <div class="img" data-bg-image="{{ asset('customers/images/room-2.jpg') }}"></div>
+              <div class="desc p-4">
+                <div class="d-md-flex text align-items-start">
+                  <h3><span>Trang trí phòng kỷ niệm</span></h3>
+                  <span class="price">500.000 VND</span>
+                </div>
+                <div class="d-block">
+                  <p class="service-type-label">Dịch vụ phòng</p>
+                  <button
+                    class="service-booking-trigger"
+                    type="button"
+                    data-service-booking-trigger
+                    data-service-id="6"
+                    data-service-type="1"
+                  >
+                    Đặt dịch vụ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="service-pagination" data-service-pagination hidden></div>
+      </div>
+    </section>
 
     <div
       class="service-booking-modal"
       data-service-booking-modal
-      data-service-options='@json($serviceOptions, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
+      data-service-options='[{"id":"1","name":"Buffet sáng","type":"0","price":250000},{"id":"2","name":"Trà chiều tại sân vườn","type":"0","price":180000},{"id":"3","name":"Spa thư giãn 60 phút","type":"2","price":650000},{"id":"4","name":"Sân golf mini","type":"2","price":400000},{"id":"5","name":"Dọn phòng buổi tối","type":"1","price":150000},{"id":"6","name":"Trang trí phòng kỷ niệm","type":"1","price":500000}]'
       hidden
     >
       <div class="service-booking-backdrop" data-service-booking-close></div>
       <div class="service-booking-dialog" role="dialog" aria-modal="true" aria-labelledby="service_booking_title">
         <aside class="service-booking-side">
           <span class="service-booking-side-icon"><i class="ion-ios-restaurant"></i></span>
-          <h2>Yêu cầu Dịch vụ</h2>
+          <h2>Yêu cầu dịch vụ</h2>
           <p>Hãy để chúng tôi chuẩn bị đúng dịch vụ quý khách cần trong thời gian lưu trú.</p>
         </aside>
 
-        <form class="service-booking-form" method="POST" action="{{ route('customer.service-booking.store') }}" data-service-booking-form>
-          {{ csrf_field() }}
+        <form class="service-booking-form" data-service-booking-form>
           <button class="service-booking-close" type="button" aria-label="Đóng form đặt dịch vụ" data-service-booking-close>&times;</button>
 
           <div class="service-booking-heading">
-            <h2 id="service_booking_title">Đăng ký Dịch vụ</h2>
+            <h2 id="service_booking_title">Đăng ký dịch vụ</h2>
             <p>Vui lòng cung cấp thông tin chi tiết.</p>
           </div>
 
           <label for="service_booking_room">Số phòng</label>
           <select id="service_booking_room" name="MaDatPhong" required>
-            @forelse ($customerBookings as $booking)
-              <option value="{{ $booking['MaDatPhong'] }}">{{ $booking['SoPhong'] }}</option>
-            @empty
-              <option value="">Đăng nhập và đặt phòng trước khi dùng dịch vụ</option>
-            @endforelse
+            <option value="PV9010">A101, A102</option>
+            <option value="PV9011">D401</option>
           </select>
 
           <label for="service_booking_type">Loại dịch vụ</label>
           <select id="service_booking_type" name="LoaiDV" data-service-type-select required>
-            @foreach ($serviceTypeOptions as $type => $label)
-              <option value="{{ $type }}">{{ $label }}</option>
-            @endforeach
+            <option value="0">Dịch vụ ăn uống</option>
+            <option value="2">Dịch vụ giải trí</option>
+            <option value="1">Dịch vụ phòng</option>
           </select>
 
           <label for="service_booking_service">Tên dịch vụ</label>
@@ -212,20 +295,98 @@
             <label for="service_booking_hour">Giờ sử dụng</label>
             <div class="service-booking-time-row">
               <select id="service_booking_hour" data-service-hour required>
-                @for ($hour = 0; $hour < 24; $hour++)
-                  <option value="{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}</option>
-                @endfor
+                <option value="00">00</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
               </select>
               <span class="service-booking-time-divider" aria-hidden="true">:</span>
               <select id="service_booking_minute" data-service-minute required>
-                @for ($minute = 0; $minute < 60; $minute++)
-                  <option value="{{ str_pad((string) $minute, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $minute, 2, '0', STR_PAD_LEFT) }}</option>
-                @endfor
+                <option value="00">00</option>
+                <option value="01">01</option>
+                <option value="02">02</option>
+                <option value="03">03</option>
+                <option value="04">04</option>
+                <option value="05">05</option>
+                <option value="06">06</option>
+                <option value="07">07</option>
+                <option value="08">08</option>
+                <option value="09">09</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+                <option value="32">32</option>
+                <option value="33">33</option>
+                <option value="34">34</option>
+                <option value="35">35</option>
+                <option value="36">36</option>
+                <option value="37">37</option>
+                <option value="38">38</option>
+                <option value="39">39</option>
+                <option value="40">40</option>
+                <option value="41">41</option>
+                <option value="42">42</option>
+                <option value="43">43</option>
+                <option value="44">44</option>
+                <option value="45">45</option>
+                <option value="46">46</option>
+                <option value="47">47</option>
+                <option value="48">48</option>
+                <option value="49">49</option>
+                <option value="50">50</option>
+                <option value="51">51</option>
+                <option value="52">52</option>
+                <option value="53">53</option>
+                <option value="54">54</option>
+                <option value="55">55</option>
+                <option value="56">56</option>
+                <option value="57">57</option>
+                <option value="58">58</option>
+                <option value="59">59</option>
               </select>
             </div>
           </div>
 
-          <button class="service-booking-submit" type="submit" @disabled(empty($customerBookings))>
+          <button class="service-booking-submit" type="submit">
             Hoàn tất đăng ký <span aria-hidden="true">→</span>
           </button>
         </form>
@@ -386,11 +547,16 @@
         typeSelect.addEventListener('change', () => renderServiceOptions());
 
         form?.addEventListener('submit', (event) => {
+          event.preventDefault();
           syncServiceTime();
 
           if (! timeInput?.value) {
-            event.preventDefault();
             dateInput?.focus();
+            return;
+          }
+
+          if (! form.checkValidity()) {
+            form.reportValidity();
           }
         });
 

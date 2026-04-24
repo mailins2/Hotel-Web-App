@@ -11,38 +11,6 @@
   <body class="booking-page customer-account-page">
     @include('customer.partials.nav')
 
-    @php
-      $customerPoints = 120;
-      $promotions = [
-        [
-          'Code' => 'PEACH01',
-          'CanUse' => true,
-          'StatusLabel' => 'Co the dung',
-          'TenKM' => 'Giam 15% cho ky nghi cuoi tuan',
-          'MoTa' => 'Ap dung cho dat phong Deluxe va Suite trong khung thu Sau den Chu Nhat.',
-          'PhanTramGiamGia' => 15,
-          'Diem' => 80,
-          'NgayBatDau' => '2026-04-01',
-          'NgayBatDauDisplay' => '01/04/2026',
-          'NgayKetThuc' => '2026-05-31',
-          'NgayKetThucDisplay' => '31/05/2026',
-        ],
-        [
-          'Code' => 'PEACH02',
-          'CanUse' => true,
-          'StatusLabel' => 'Co the dung',
-          'TenKM' => 'Giam 20% dich vu spa',
-          'MoTa' => 'Danh cho khach hang thanh vien khi su dung spa va massage tai khuon vien khach san.',
-          'PhanTramGiamGia' => 20,
-          'Diem' => 100,
-          'NgayBatDau' => '2026-04-10',
-          'NgayBatDauDisplay' => '10/04/2026',
-          'NgayKetThuc' => '2026-06-15',
-          'NgayKetThucDisplay' => '15/06/2026',
-        ],
-      ];
-    @endphp
-
     <section class="customer-account-section">
       <div class="container">
         <div class="customer-account-shell">
@@ -57,36 +25,49 @@
             <!-- <div class="customer-points-panel">
               <div>
                 <span>Điểm hiện có</span>
-                <strong>{{ number_format($customerPoints, 0, ',', '.') }}</strong>
+                <strong>120</strong>
               </div>
               <p>Điểm sẽ được cộng sau mỗi đơn đặt phòng hoàn tất.</p>
             </div> -->
 
             <div class="customer-promo-grid">
-              @forelse ($promotions as $promotion)
-                <article class="customer-promo-card{{ $promotion['CanUse'] ? ' is-usable' : '' }}">
-                  <div class="customer-promo-top">
-                    <span class="customer-promo-code">{{ $promotion['Code'] }}</span>
-                    <span class="customer-promo-status">{{ $promotion['StatusLabel'] }}</span>
-                  </div>
-                  <h3>{{ $promotion['TenKM'] ?? 'Khuyến mãi' }}</h3>
-                  <p class="customer-promo-description">{{ $promotion['MoTa'] ?? 'Ưu đãi dành cho khách hàng Peach Valley.' }}</p>
-                  <div class="customer-promo-value-row">
-                    <span class="customer-promo-discount">{{ number_format((float) ($promotion['PhanTramGiamGia'] ?? 0), 0, ',', '.') }}%</span>
-                    <span class="customer-promo-points">
-                      {{ number_format((int) ($promotion['Diem'] ?? 0), 0, ',', '.') }} điểm
-                    </span>
-                  </div>
-                  <div class="customer-promo-date">
-                    {{ $promotion['NgayBatDauDisplay'] ?? '--/--/----' }}
-                    -
-                    {{ $promotion['NgayKetThucDisplay'] ?? '--/--/----' }}
-                  </div>
-                  <button type="button" class="customer-promo-action">Dùng mã này</button>
-                </article>
-              @empty
-                <div class="customer-empty">Hiện chưa có mã khuyến mãi nào trong kho.</div>
-              @endforelse
+              <article class="customer-promo-card is-usable">
+                <div class="customer-promo-top">
+                  <span class="customer-promo-code">PEACH01</span>
+                  <span class="customer-promo-status">Có thể dùng</span>
+                </div>
+                <h3>Giảm 15% cho kỳ nghỉ cuối tuần</h3>
+                <p class="customer-promo-description">Áp dụng cho đặt phòng Deluxe và Suite trong khung thứ Sáu đến Chủ Nhật.</p>
+                <div class="customer-promo-value-row">
+                  <span class="customer-promo-discount">15%</span>
+                  <span class="customer-promo-points">80 điểm</span>
+                </div>
+                <div class="customer-promo-date">
+                  01/04/2026
+                  -
+                  31/05/2026
+                </div>
+                <button type="button" class="customer-promo-action">Dùng mã này</button>
+              </article>
+
+              <article class="customer-promo-card is-usable">
+                <div class="customer-promo-top">
+                  <span class="customer-promo-code">PEACH02</span>
+                  <span class="customer-promo-status">Có thể dùng</span>
+                </div>
+                <h3>Giảm 20% dịch vụ spa</h3>
+                <p class="customer-promo-description">Dành cho khách hàng thành viên khi sử dụng spa và massage tại khuôn viên khách sạn.</p>
+                <div class="customer-promo-value-row">
+                  <span class="customer-promo-discount">20%</span>
+                  <span class="customer-promo-points">100 điểm</span>
+                </div>
+                <div class="customer-promo-date">
+                  10/04/2026
+                  -
+                  15/06/2026
+                </div>
+                <button type="button" class="customer-promo-action">Dùng mã này</button>
+              </article>
             </div>
           </main>
         </div>

@@ -7,7 +7,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('admin.dashboard'))}}" aria-current="page" href="{{route('admin.dashboard')}}">
+        <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" aria-current="page" href="{{route('admin.dashboard')}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M6 11C6 9.89543 6.89543 9 8 9H9C10.1046 9 11 9.89543 11 11V18C11 19.1046 10.1046 20 9 20H8C6.89543 20 6 19.1046 6 18V11Z" fill="currentColor"></path>
@@ -29,7 +29,7 @@
 
 
       <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'accounts']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'accounts'])}}">
+        <a class="nav-link {{ request()->is('hotel/accounts*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'accounts'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M12 2C9.238 2 7 4.238 7 7V8H6C4.895 8 4 8.895 4 10V18C4 19.105 4.895 20 6 20H18C19.105 20 20 19.105 20 18V10C20 8.895 19.105 8 18 8H17V7C17 4.238 14.762 2 12 2Z" fill="currentColor"></path>
@@ -42,7 +42,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'customers']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'customers'])}}">
+        <a class="nav-link {{ request()->is('hotel/customers*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'customers'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M11.9488 14.54C8.49884 14.54 5.58789 15.1038 5.58789 17.2795C5.58789 19.4562 8.51765 20.0001 11.9488 20.0001C15.3988 20.0001 18.3098 19.4364 18.3098 17.2606C18.3098 15.084 15.38 14.54 11.9488 14.54Z" fill="currentColor"></path>
@@ -58,7 +58,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'employees']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'employees'])}}">
+        <a class="nav-link {{ request()->is('hotel/employees*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'employees'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M16 13C18.7614 13 21 15.0147 21 17.5V18C21 19.1046 20.1046 20 19 20H5C3.89543 20 3 19.1046 3 18V17.5C3 15.0147 5.23858 13 8 13H16Z" fill="currentColor"></path>
@@ -71,7 +71,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'room-types']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'room-types'])}}">
+        <a class="nav-link {{ request()->is('hotel/room-types*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'room-types'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M5 5C5 4.44772 5.44772 4 6 4H11C11.5523 4 12 4.44772 12 5V10C12 10.5523 11.5523 11 11 11H6C5.44772 11 5 10.5523 5 10V5Z" fill="currentColor"></path>
@@ -85,7 +85,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'rooms']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'rooms'])}}">
+        <a class="nav-link {{ request()->is('hotel/rooms*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'rooms'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 10C4 7.79086 5.79086 6 8 6H16C18.2091 6 20 7.79086 20 10V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V10Z" fill="currentColor"></path>
@@ -98,7 +98,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'services']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'services'])}}">
+        <a class="nav-link {{ request()->is('hotel/services*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'services'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M5 7C5 5.89543 5.89543 5 7 5H17C18.1046 5 19 5.89543 19 7V16C19 17.1046 18.1046 18 17 18H7C5.89543 18 5 17.1046 5 16V7Z" fill="currentColor"></path>
@@ -113,7 +113,7 @@
     </li>
     
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'promotions']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'promotions'])}}">
+        <a class="nav-link {{ request()->is('hotel/promotions*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'promotions'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 8C4 6.89543 4.89543 6 6 6H12.5C13.0304 6 13.5391 6.21071 13.9142 6.58579L15.4142 8.08579C15.7893 8.46086 16.298 8.67157 16.8284 8.67157H18C19.1046 8.67157 20 9.56699 20 10.6716V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V8Z" fill="currentColor"></path>
@@ -127,7 +127,7 @@
     </li>
 
       <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'invoices']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'invoices'])}}">
+        <a class="nav-link {{ request()->is('hotel/invoices*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'invoices'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M7 3H14.5858C14.851 3 15.1054 3.10536 15.2929 3.29289L19.7071 7.70711C19.8946 7.89464 20 8.149 20 8.41421V18C20 19.1046 19.1046 20 18 20H7C5.89543 20 5 19.1046 5 18V5C5 3.89543 5.89543 3 7 3Z" fill="currentColor"></path>
@@ -141,7 +141,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'payments']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'payments'])}}">
+        <a class="nav-link {{ request()->is('hotel/payments*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'payments'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M4 7C4 5.89543 4.89543 5 6 5H18C19.1046 5 20 5.89543 20 7V17C20 18.1046 19.1046 19 18 19H6C4.89543 19 4 18.1046 4 17V7Z" fill="currentColor"></path>
@@ -155,7 +155,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{activeRoute(route('hotel.modules.index', ['moduleKey' => 'reviews']))}}" href="{{route('hotel.modules.index', ['moduleKey' => 'reviews'])}}">
+        <a class="nav-link {{ request()->is('hotel/reviews*') ? 'active' : '' }}" href="{{route('hotel.modules.index', ['moduleKey' => 'reviews'])}}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path opacity="0.4" d="M12 4L14.4721 9.00872L20 9.8123L16 13.7106L16.9443 19.2154L12 16.6154L7.05573 19.2154L8 13.7106L4 9.8123L9.52786 9.00872L12 4Z" fill="currentColor"></path>

@@ -11,64 +11,6 @@
   <body class="booking-page customer-account-page">
     @include('customer.partials.nav')
 
-    @php
-      $customerName = 'Nguyen Minh An';
-      $customerPhone = '0901234567';
-      $customerCccd = '079204000111';
-      $customerEmail = 'minhan@gmail.com';
-      $bookings = [
-        [
-          'MaDatPhong' => 'PV9010',
-          'MaKH' => 1,
-          'TenKH' => $customerName,
-          'SoDienThoai' => $customerPhone,
-          'Email' => $customerEmail,
-          'CCCD' => $customerCccd,
-          'NgayDat' => '2026-04-12',
-          'NgayDatDisplay' => '12/04/2026',
-          'NgayNhanPhong' => '2026-04-18',
-          'NgayNhanPhongDisplay' => '18/04/2026',
-          'NgayTraPhong' => '2026-04-21',
-          'NgayTraPhongDisplay' => '21/04/2026',
-          'SoDem' => 3,
-          'TongSoKhach' => 8,
-          'StatusLabel' => 'Da dat',
-          'SummaryTitle' => 'Deluxe Twin, Suite Junior',
-          'Rooms' => [
-            ['TenPhong' => 'Deluxe Twin', 'SoPhong' => 'A101, A102', 'SoLuongPhong' => 2, 'SoKhach' => 4, 'GiaMoiDem' => 1732500, 'ThanhTien' => 10395000],
-            ['TenPhong' => 'Suite Junior', 'SoPhong' => 'B201', 'SoLuongPhong' => 1, 'SoKhach' => 2, 'GiaMoiDem' => 2100000, 'ThanhTien' => 6300000],
-            ['TenPhong' => 'Superior King', 'SoPhong' => 'C302', 'SoLuongPhong' => 1, 'SoKhach' => 2, 'GiaMoiDem' => 1450000, 'ThanhTien' => 4350000],
-          ],
-          'TongTien' => 21045000,
-          'TienDatCoc' => 10522500,
-        ],
-        [
-          'MaDatPhong' => 'PV9011',
-          'MaKH' => 1,
-          'TenKH' => $customerName,
-          'SoDienThoai' => $customerPhone,
-          'Email' => $customerEmail,
-          'CCCD' => $customerCccd,
-          'NgayDat' => '2026-04-14',
-          'NgayDatDisplay' => '14/04/2026',
-          'NgayNhanPhong' => '2026-05-02',
-          'NgayNhanPhongDisplay' => '02/05/2026',
-          'NgayTraPhong' => '2026-05-04',
-          'NgayTraPhongDisplay' => '04/05/2026',
-          'SoDem' => 2,
-          'TongSoKhach' => 4,
-          'StatusLabel' => 'Da dat',
-          'SummaryTitle' => 'Deluxe Family, Standard Garden',
-          'Rooms' => [
-            ['TenPhong' => 'Deluxe Family', 'SoPhong' => 'D401', 'SoLuongPhong' => 1, 'SoKhach' => 3, 'GiaMoiDem' => 1840000, 'ThanhTien' => 3680000],
-            ['TenPhong' => 'Standard Garden', 'SoPhong' => 'D402', 'SoLuongPhong' => 1, 'SoKhach' => 1, 'GiaMoiDem' => 900000, 'ThanhTien' => 1800000],
-          ],
-          'TongTien' => 5480000,
-          'TienDatCoc' => 2740000,
-        ],
-      ];
-    @endphp
-
     <section class="customer-account-section">
       <div class="container">
         <div class="customer-account-shell">
@@ -79,75 +21,135 @@
               <div class="eyebrow">Đặt phòng của bạn</div>
             </div>
 
-            @if (!empty($bookings))
-              <div class="customer-booking-list">
-                @foreach ($bookings as $booking)
-                  <div
-                    class="customer-booking-item customer-booking-card"
-                    role="button"
-                    tabindex="0"
-                    data-booking-card
-                    data-booking-payload='@json($booking, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)'
-                  >
-                    <div class="customer-booking-card-left">
-                      <div class="customer-booking-top">
-                        <div>
-                          <div class="customer-booking-code">Đặt phòng #{{ $booking['MaDatPhong'] ?? '--' }}</div>
-                          <h3 class="customer-booking-room">
-                            {{ $booking['SummaryTitle'] ?? ($booking['LoaiPhong'] ?? 'Phòng') }}
-                          </h3>
-                        </div>
-                        <span class="customer-booking-status">{{ $booking['StatusLabel'] ?? 'Đã đặt' }}</span>
-                      </div>
-
-                      <div class="customer-booking-room-list">
-                        @foreach (($booking['Rooms'] ?? []) as $room)
-                          <div class="customer-booking-room-line">
-                            <strong>{{ $room['TenPhong'] ?? 'Phòng' }}</strong>
-                            <span>{{ $room['SoLuongPhong'] ?? 1 }} phòng</span>
-                          </div>
-                        @endforeach
-                      </div>
-
-                      <div class="customer-booking-date-line">
-                        {{ $booking['NgayNhanPhongDisplay'] ?? '--/--/----' }}
-                        -
-                        {{ $booking['NgayTraPhongDisplay'] ?? '--/--/----' }}
-                        • {{ $booking['SoDem'] ?? 1 }} đêm • {{ $booking['TongSoKhach'] ?? 1 }} khách
-                      </div>
+            <div class="customer-booking-list">
+              <div
+                class="customer-booking-item customer-booking-card"
+                role="button"
+                tabindex="0"
+                data-booking-card
+                data-booking-payload='{"MaDatPhong":"PV9010","MaKH":1,"TenKH":"Nguyễn Minh An","SoDienThoai":"0901234567","Email":"minhan@gmail.com","CCCD":"079204000111","NgayDat":"2026-04-12","NgayDatDisplay":"12/04/2026","NgayNhanPhong":"2026-04-18","NgayNhanPhongDisplay":"18/04/2026","NgayTraPhong":"2026-04-21","NgayTraPhongDisplay":"21/04/2026","SoDem":3,"TongSoKhach":8,"StatusLabel":"Đã đặt","SummaryTitle":"Deluxe Twin, Suite Junior","Rooms":[{"TenPhong":"Deluxe Twin","SoPhong":"A101, A102","SoLuongPhong":2,"SoKhach":4,"GiaMoiDem":1732500,"ThanhTien":10395000},{"TenPhong":"Suite Junior","SoPhong":"B201","SoLuongPhong":1,"SoKhach":2,"GiaMoiDem":2100000,"ThanhTien":6300000},{"TenPhong":"Superior King","SoPhong":"C302","SoLuongPhong":1,"SoKhach":2,"GiaMoiDem":1450000,"ThanhTien":4350000}],"TongTien":21045000,"TienDatCoc":10522500}'
+              >
+                <div class="customer-booking-card-left">
+                  <div class="customer-booking-top">
+                    <div>
+                      <div class="customer-booking-code">Đặt phòng #PV9010</div>
+                      <h3 class="customer-booking-room">Deluxe Twin, Suite Junior</h3>
                     </div>
+                    <span class="customer-booking-status">Đã đặt</span>
+                  </div>
 
-                    <div class="customer-booking-card-right">
-                      <div class="customer-booking-person-title">Thông tin cá nhân</div>
-                      <div class="customer-booking-person-grid">
-                        <div class="customer-booking-field"><span>Khách hàng</span>{{ $booking['TenKH'] ?? '--' }}</div>
-                        <div class="customer-booking-field"><span>Số điện thoại</span>{{ $booking['SoDienThoai'] ?? '--' }}</div>
-                        <div class="customer-booking-field"><span>Email</span>{{ $booking['Email'] ?? '--' }}</div>
-                        <div class="customer-booking-field"><span>CCCD</span>{{ $booking['CCCD'] ?? '--' }}</div>
-                      </div>
-
-                      <div class="customer-booking-money">
-                        <span>Tổng tiền</span>
-                        <strong>{{ number_format((int) ($booking['TongTien'] ?? 0), 0, ',', '.') }} VND</strong>
-                      </div>
-
-                      <div class="customer-booking-actions">
-                        <button
-                          type="button"
-                          class="customer-booking-cancel"
-                          data-cancel-booking
-                          data-booking-id="{{ $booking['MaDatPhong'] ?? '' }}"
-                        >
-                          Hủy phòng
-                        </button>
-                      </div>
+                  <div class="customer-booking-room-list">
+                    <div class="customer-booking-room-line">
+                      <strong>Deluxe Twin</strong>
+                      <span>2 phòng</span>
+                    </div>
+                    <div class="customer-booking-room-line">
+                      <strong>Suite Junior</strong>
+                      <span>1 phòng</span>
+                    </div>
+                    <div class="customer-booking-room-line">
+                      <strong>Superior King</strong>
+                      <span>1 phòng</span>
                     </div>
                   </div>
-                @endforeach
+
+                  <div class="customer-booking-date-line">
+                    18/04/2026
+                    -
+                    21/04/2026
+                    • 3 đêm • 8 khách
+                  </div>
+                </div>
+
+                <div class="customer-booking-card-right">
+                  <div class="customer-booking-person-title">Thông tin cá nhân</div>
+                  <div class="customer-booking-person-grid">
+                    <div class="customer-booking-field"><span>Khách hàng</span>Nguyễn Minh An</div>
+                    <div class="customer-booking-field"><span>Số điện thoại</span>0901234567</div>
+                    <div class="customer-booking-field"><span>Email</span>minhan@gmail.com</div>
+                    <div class="customer-booking-field"><span>CCCD</span>079204000111</div>
+                  </div>
+
+                  <div class="customer-booking-money">
+                    <span>Tổng tiền</span>
+                    <strong>21.045.000 VND</strong>
+                  </div>
+
+                  <div class="customer-booking-actions">
+                    <button
+                      type="button"
+                      class="customer-booking-cancel"
+                      data-cancel-booking
+                      data-booking-id="PV9010"
+                    >
+                      Hủy phòng
+                    </button>
+                  </div>
+                </div>
               </div>
-            @else
-              <div class="customer-empty">Bạn chưa có đặt phòng nào.</div>
-            @endif
+
+              <div
+                class="customer-booking-item customer-booking-card"
+                role="button"
+                tabindex="0"
+                data-booking-card
+                data-booking-payload='{"MaDatPhong":"PV9011","MaKH":1,"TenKH":"Nguyễn Minh An","SoDienThoai":"0901234567","Email":"minhan@gmail.com","CCCD":"079204000111","NgayDat":"2026-04-14","NgayDatDisplay":"14/04/2026","NgayNhanPhong":"2026-05-02","NgayNhanPhongDisplay":"02/05/2026","NgayTraPhong":"2026-05-04","NgayTraPhongDisplay":"04/05/2026","SoDem":2,"TongSoKhach":4,"StatusLabel":"Đã đặt","SummaryTitle":"Deluxe Family, Standard Garden","Rooms":[{"TenPhong":"Deluxe Family","SoPhong":"D401","SoLuongPhong":1,"SoKhach":3,"GiaMoiDem":1840000,"ThanhTien":3680000},{"TenPhong":"Standard Garden","SoPhong":"D402","SoLuongPhong":1,"SoKhach":1,"GiaMoiDem":900000,"ThanhTien":1800000}],"TongTien":5480000,"TienDatCoc":2740000}'
+              >
+                <div class="customer-booking-card-left">
+                  <div class="customer-booking-top">
+                    <div>
+                      <div class="customer-booking-code">Đặt phòng #PV9011</div>
+                      <h3 class="customer-booking-room">Deluxe Family, Standard Garden</h3>
+                    </div>
+                    <span class="customer-booking-status">Đã đặt</span>
+                  </div>
+
+                  <div class="customer-booking-room-list">
+                    <div class="customer-booking-room-line">
+                      <strong>Deluxe Family</strong>
+                      <span>1 phòng</span>
+                    </div>
+                    <div class="customer-booking-room-line">
+                      <strong>Standard Garden</strong>
+                      <span>1 phòng</span>
+                    </div>
+                  </div>
+
+                  <div class="customer-booking-date-line">
+                    02/05/2026
+                    -
+                    04/05/2026
+                    • 2 đêm • 4 khách
+                  </div>
+                </div>
+
+                <div class="customer-booking-card-right">
+                  <div class="customer-booking-person-title">Thông tin cá nhân</div>
+                  <div class="customer-booking-person-grid">
+                    <div class="customer-booking-field"><span>Khách hàng</span>Nguyễn Minh An</div>
+                    <div class="customer-booking-field"><span>Số điện thoại</span>0901234567</div>
+                    <div class="customer-booking-field"><span>Email</span>minhan@gmail.com</div>
+                    <div class="customer-booking-field"><span>CCCD</span>079204000111</div>
+                  </div>
+
+                  <div class="customer-booking-money">
+                    <span>Tổng tiền</span>
+                    <strong>5.480.000 VND</strong>
+                  </div>
+
+                  <div class="customer-booking-actions">
+                    <button
+                      type="button"
+                      class="customer-booking-cancel"
+                      data-cancel-booking
+                      data-booking-id="PV9011"
+                    >
+                      Hủy phòng
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </main>
         </div>
       </div>

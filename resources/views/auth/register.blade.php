@@ -5,10 +5,6 @@
             min-height: 100vh;
          }
 
-         .auth-copy {
-            color: #64748b;
-         }
-
          .auth-side-visual {
             position: relative;
             background: #0f172a;
@@ -46,20 +42,6 @@
             background: #e2e8f0;
          }
 
-         .auth-image-caption {
-            position: absolute;
-            left: 3rem;
-            right: 3rem;
-            bottom: 3rem;
-            z-index: 1;
-            color: #fff;
-         }
-
-         .auth-image-caption p {
-            max-width: 32rem;
-            color: rgba(255, 255, 255, 0.82);
-         }
-
          .auth-field-error {
             display: block;
             margin-top: 0.5rem;
@@ -84,14 +66,12 @@
                            <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                         </a>
                         <h2 class="mb-2 text-center">Đăng ký</h2>
-                        <x-auth-session-status class="mb-4" :status="session('status')" />
-                        <form method="POST" action="{{ route('register') }}" data-toggle="validator">
-                           {{ csrf_field() }}
+                        <form data-ui-only-form data-toggle="validator">
                            <div class="row">
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                    <input class="form-control @error('email') is-invalid @enderror" type="email" placeholder="Nhập email của bạn" id="email" name="email" value="{{ old('email') }}" required>
+                                    <input class="form-control @error('email') is-invalid @enderror" type="email" placeholder="Nhap email cua ban" id="email" name="email" value="{{ old('email') }}" required>
                                     @error('email')
                                        <span class="auth-field-error">{{ $message }}</span>
                                     @enderror
@@ -100,7 +80,7 @@
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password" class="form-label">Mật khẩu <span class="text-danger">*</span></label>
-                                    <input class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Tạo mật khẩu" id="password" name="password" required autocomplete="new-password">
+                                    <input class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Tao mat khau" id="password" name="password" required autocomplete="new-password">
                                     @error('password')
                                        <span class="auth-field-error">{{ $message }}</span>
                                     @enderror
@@ -109,7 +89,7 @@
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password_confirmation" class="form-label">Xác nhận mật khẩu <span class="text-danger">*</span></label>
-                                    <input id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" type="password" placeholder="Nhập lại mật khẩu" name="password_confirmation" required>
+                                    <input id="password_confirmation" class="form-control @error('password_confirmation') is-invalid @enderror" type="password" placeholder="Nhap lai mat khau" name="password_confirmation" required>
                                     @error('password_confirmation')
                                        <span class="auth-field-error">{{ $message }}</span>
                                     @enderror
@@ -121,11 +101,11 @@
                            </div>
                         </form>
 
-                        <div class="auth-divider">Hoặc đăng ký với</div>
-                        <a href="{{ route('auth.google', ['source' => 'register']) }}" class="auth-google-button text-decoration-none">
+                        <div class="auth-divider">Hoặc đăng ký với<i></i></div>
+                        <button type="button" class="auth-google-button text-decoration-none border-0 bg-transparent w-100">
                            <img src="{{ asset('images/brands/gm.svg') }}" class="auth-google-icon" alt="Google">
                            <span class="auth-google-label">Tiếp tục với Google</span>
-                        </a>
+                        </button>
 
                         <p class="mt-4 text-center">
                            Đã có tài khoản? <a href="{{ route('auth.signin') }}" class="text-underline">Đăng nhập</a>
@@ -146,8 +126,26 @@
             </div>
          </div>
          <div class="col-md-6 d-md-block d-none p-0 mt-n1 vh-100 overflow-hidden auth-side-visual">
-            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khách sạn Peach Valley">
+            <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khach san Peach Valley">
          </div>
       </div>
+
+      <script>
+         document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('[data-ui-only-form]');
+
+            if (!form) {
+               return;
+            }
+
+            form.addEventListener('submit', (event) => {
+               event.preventDefault();
+
+               if (!form.checkValidity()) {
+                  form.reportValidity();
+               }
+            });
+         });
+      </script>
    </section>
 </x-guest-layout>
