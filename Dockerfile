@@ -12,6 +12,12 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev libjpeg-dev libfreetype6-dev libicu-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# --- THÊM NODE.JS VÀO ĐÂY ---
+# Cài đặt Node.js v22 (phù hợp với stage 1)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y nodejs
+# ---------------------------
+
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_mysql mbstring zip bcmath xml intl gd
 
@@ -22,7 +28,7 @@ WORKDIR /var/www
 # Copy toàn bộ code trước
 COPY . .
 
-# CHỈ copy thư mục build từ stage trước (để không đè mất index.php trong public)
+# Copy thư mục build từ stage trước
 COPY --from=node-builder /app/public/build /var/www/public/build
 
 RUN composer install --no-dev --optimize-autoloader
