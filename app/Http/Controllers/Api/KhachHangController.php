@@ -30,8 +30,8 @@ class KhachHangController extends Controller
             'SoDienThoai'  => 'required|unique:KhachHang,SoDienThoai',
             'CCCD'         => 'required|unique:KhachHang,CCCD',
             'NgaySinh'     => 'required|date',
-            'GioiTinh'     => 'required|in:0,1',
-            'DiaChi'       => 'required'
+            'GioiTinh'     => 'required|in:0,1,2',
+            'DiaChi'       => 'nullable'
         ]);
 
         if ($validator->fails()) {
