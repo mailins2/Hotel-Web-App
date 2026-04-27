@@ -28,6 +28,12 @@
         <div class="wrapper">
             {{ $slot }}
         </div>
-         @include('partials.dashboard._scripts')
+        <script src="{{ asset('js/libs.min.js')}}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelector('.loader')?.classList.add('d-none');
+            });
+        </script>
+        @stack('scripts')
     </body>
 </html>
