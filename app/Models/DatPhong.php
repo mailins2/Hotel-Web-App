@@ -17,6 +17,12 @@ class DatPhong extends Model
         'SoLuong',
         'TinhTrang'
     ];
+     // 🔥 TRẠNG THÁI BOOKING
+    const HOLD = 0;        // Đang giữ chỗ (15 phút)
+    const CONFIRMED = 1;   // Đã xác nhận/đặt cọc
+    const CHECKED_IN = 2;  // Đang ở
+    const CHECKED_OUT = 3; // Đã trả phòng
+    const CANCELLED = 4;   // Đã hủy (hết hạn hoặc user hủy)
 
     public function khachHang()
     {
