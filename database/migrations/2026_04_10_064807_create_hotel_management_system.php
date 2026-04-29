@@ -34,7 +34,7 @@ return new class extends Migration
         $table->id('MaKH');
         $table->unsignedBigInteger('MaTK')->unique()->nullable();
         $table->string('TenKH', 100);
-        $table->string('DiaChi', 200);
+        $table->string('DiaChi', 200)->nullable();
         $table->string('SoDienThoai', 15)->unique();
         $table->string('CCCD', 20)->unique();
         $table->date('NgaySinh');

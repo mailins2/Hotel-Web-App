@@ -66,24 +66,21 @@
                            <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                         </a>
                         <h2 class="mb-2 text-center">Đăng nhập</h2>
-                        <form data-ui-only-form data-toggle="validator">
+                        <form action="{{ route('login.store') }}" method="POST" data-login-form data-toggle="validator" novalidate>
+                           @csrf
                            <div class="row">
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="email" class="form-label">Email*</label>
                                     <input id="email" type="email" name="email" value="{{ old('email') }}" class="form-control @error('email') is-invalid @enderror" placeholder="Nhap email dang nhap" required autofocus>
-                                    @error('email')
-                                       <span class="auth-field-error">{{ $message }}</span>
-                                    @enderror
+                                    <span id="email-error" class="auth-field-error">@error('email') {{ $message }} @enderror</span>
                                  </div>
                               </div>
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password" class="form-label">Mật khẩu*</label>
                                     <input id="password" class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Nhap mat khau" name="password" required autocomplete="current-password">
-                                    @error('password')
-                                       <span class="auth-field-error">{{ $message }}</span>
-                                    @enderror
+                                    <span id="password-error" class="auth-field-error">@error('password') {{ $message }} @enderror</span>
                                  </div>
                               </div>
                               <div class="col-lg-12">
@@ -124,21 +121,74 @@
          </div>
       </div>
 
+      @if (session('success') || $errors->any())
+         <div class="modal fade" id="authMessageModal" tabindex="-1" aria-labelledby="authMessageModalTitle" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+               <div class="modal-content">
+                  <div class="modal-header">
+                     <h5 class="modal-title" id="authMessageModalTitle">{{ $errors->any() ? 'Không thể đăng nhập' : 'Thông báo' }}</h5>
+                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                  </div>
+                  <div class="modal-body">
+                     {{ $errors->any() ? $errors->first() : session('success') }}
+                  </div>
+                  <div class="modal-footer">
+                     <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Đóng</button>
+                  </div>
+               </div>
+            </div>
+         </div>
+      @endif
+
       <script>
          document.addEventListener('DOMContentLoaded', () => {
-            const form = document.querySelector('[data-ui-only-form]');
+            const form = document.querySelector('[data-login-form]');
 
             if (!form) {
                return;
             }
 
-            form.addEventListener('submit', (event) => {
-               event.preventDefault();
+            const email = document.getElementById('email');
+            const password = document.getElementById('password');
+            const setError = (input, id, message) => {
+               const element = document.getElementById(id);
+               if (element) element.textContent = message || '';
+               if (!input) return;
 
-               if (!form.checkValidity()) {
-                  form.reportValidity();
+               if (message) input.classList.add('is-invalid');
+               else input.classList.remove('is-invalid');
+            };
+
+            form.addEventListener('submit', (event) => {
+               let valid = true;
+
+               if (!email.value.trim()) {
+                  setError(email, 'email-error', 'Vui lòng nhập email.');
+                  valid = false;
+               } else if (!email.checkValidity()) {
+                  setError(email, 'email-error', 'Email không đúng định dạng.');
+                  valid = false;
+               } else {
+                  setError(email, 'email-error', '');
+               }
+
+               if (!password.value) {
+                  setError(password, 'password-error', 'Vui lòng nhập mật khẩu.');
+                  valid = false;
+               } else {
+                  setError(password, 'password-error', '');
+               }
+
+               if (!valid) {
+                  event.preventDefault();
                }
             });
+
+            const messageModal = document.getElementById('authMessageModal');
+
+            if (messageModal && window.bootstrap) {
+               bootstrap.Modal.getOrCreateInstance(messageModal).show();
+            }
          });
       </script>
    </section>

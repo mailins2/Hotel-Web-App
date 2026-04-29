@@ -40,7 +40,10 @@
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
             <li>
-              <a href="{{ route('login') }}" class="dropdown-item">Đăng xuất</a>
+              <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="dropdown-item">Đăng xuất</button>
+              </form>
             </li>
           </ul>
         </li>

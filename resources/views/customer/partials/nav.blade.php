@@ -1,4 +1,20 @@
-@php($isLoggedIn = $isLoggedIn ?? false)
+@php
+  $authAccount = session('auth_account');
+  $isLoggedIn = $isLoggedIn ?? filled($authAccount);
+  $customerName = $authAccount['Ten'] ?? null;
+
+  if ($isLoggedIn && blank($customerName) && !empty($authAccount['MaTK'])) {
+    $response = app(\App\Http\Controllers\Api\TaiKhoanController::class)->show($authAccount['MaTK']);
+
+    if ($response->getStatusCode() === 200) {
+      $accountData = $response->getData(true);
+      $customerName = data_get($accountData, 'khach_hang.TenKH')
+        ?? data_get($accountData, 'khachHang.TenKH')
+        ?? data_get($accountData, 'nhan_vien.TenNV')
+        ?? data_get($accountData, 'nhanVien.TenNV');
+    }
+  }
+@endphp
 
 <nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
   <div class="container">
@@ -29,7 +45,7 @@
               aria-haspopup="true"
               aria-expanded="false"
             >
-              Tai khoan
+              Xin chào, {{ $customerName ?: 'khách hàng' }}
             </button>
             <div class="dropdown-menu dropdown-menu-right customer-user-dropdown" aria-labelledby="customerUserMenu">
               <a class="dropdown-item customer-user-dropdown-item" href="{{ route('customer.profile') }}">
@@ -44,10 +60,13 @@
                 <span class="customer-user-dropdown-icon ion-ios-pricetag"></span>
                 <span>Kho khuyến mãi</span>
               </a>
-              <a href="{{ route('login') }}" class="dropdown-item customer-user-dropdown-item">
-                <span class="customer-user-dropdown-icon ion-ios-log-in"></span>
-                <span>Đăng xuất</span>
-              </a>
+              <form action="{{ route('logout') }}" method="POST" class="customer-user-logout-form">
+                @csrf
+                <button type="submit" class="dropdown-item customer-user-dropdown-item customer-user-logout">
+                  <span class="customer-user-dropdown-icon ion-ios-log-in"></span>
+                  <span>Đăng xuất</span>
+                </button>
+              </form>
             </div>
           </div>
         @else

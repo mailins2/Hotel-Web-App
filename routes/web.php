@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -37,13 +38,18 @@ Route::redirect('/room-single.html', '/customer/rooms-single');
 */
 
 Route::view('/login', 'auth.login')->name('login');
+Route::post('/login', [AuthController::class, 'login'])->name('login.store');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::redirect('/admin/login', '/login');
 Route::redirect('/reception/login', '/login');
 Route::view('/forgot-password', 'auth.recoverpw')->name('auth.recoverpw');
 Route::view('/new-password', 'auth.new-password')->name('auth.new-password');
 Route::view('/sign-up', 'auth.register')->name('auth.signup');
+Route::post('/register/step-1', [AuthController::class, 'registerStepOne'])->name('register.step1');
+Route::get('/register/details', [AuthController::class, 'showRegisterDetails'])->name('register.details');
+Route::get('/api/districts/{provinceCode}', [AuthController::class, 'getDistricts'])->name('api.districts');
+Route::post('/register/step-2', [AuthController::class, 'registerStepTwo'])->name('register.step2');
 Route::redirect('/sign-in', '/login')->name('auth.signin');
-Route::view('/register/details', 'auth.register-details')->name('register.details');
 
 /*
 |--------------------------------------------------------------------------
