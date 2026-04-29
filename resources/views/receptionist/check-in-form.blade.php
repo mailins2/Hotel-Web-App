@@ -19,35 +19,35 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                 <div>
                     <h1 class="mb-2">Nhận phòng</h1>
-                    <p class="text-muted mb-0">Trang HTML tĩnh để mô tả giao diện xác nhận check-in.</p>
+                    <p class="text-muted mb-0">Danh sách thông tin nhận phòng</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('reception.bookings.create') }}" class="btn btn-light">Tạo booking mới</a>
-                    <a href="{{ route('reception.bookings.index') }}" class="btn btn-light">Danh sách booking</a>
+                    <a href="{{ route('reception.bookings.create') }}" class="btn btn-light">Tạo đặt phòng mới</a>
+                    <a href="{{ route('reception.bookings.index') }}" class="btn btn-light">Danh sách đặt phòng</a>
                 </div>
             </div>
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-4"><div class="ci-card text-center"><div class="small text-uppercase text-muted fw-bold">Booking chờ nhận</div><div class="h4 mb-0 mt-2">5</div></div></div>
+            <div class="col-md-4"><div class="ci-card text-center"><div class="small text-uppercase text-muted fw-bold">Đặt phòng chờ nhận</div><div class="h4 mb-0 mt-2">5</div></div></div>
             <div class="col-md-4"><div class="ci-card text-center"><div class="small text-uppercase text-muted fw-bold">Khách đến hôm nay</div><div class="h4 mb-0 mt-2">2</div></div></div>
-            <div class="col-md-4"><div class="ci-card text-center"><div class="small text-uppercase text-muted fw-bold">Phòng đang sử dụng</div><div class="h4 mb-0 mt-2">42</div></div></div>
+            <div class="col-md-4"><div class="ci-card text-center"><div class="small text-uppercase text-muted fw-bold">Đặt phòng nhận rồi</div><div class="h4 mb-0 mt-2">4</div></div></div>
         </div>
 
         <div class="row g-4">
             <div class="col-xl-5">
                 <div class="ci-card">
-                    <h5 class="mb-3">Booking chờ nhận phòng</h5>
+                    <h5 class="mb-3">Danh sách nhận phòng hôm nay</h5>
                     <div class="ci-booking-card">
-                        <div class="small text-uppercase text-muted fw-bold mb-1">Booking #9001</div>
+                        <div class="small text-uppercase text-muted fw-bold mb-1">Đặt phòng 9001</div>
                         <div class="fw-semibold">Nguyễn Minh An</div>
-                        <div class="text-muted small mt-1">Phòng A101 - Deluxe</div>
+                        <div class="text-muted small mt-1">A101 - Deluxe</div>
                         <div class="text-muted small">08/04/2026 đến 10/04/2026</div>
                     </div>
                     <div class="ci-booking-card">
-                        <div class="small text-uppercase text-muted fw-bold mb-1">Booking #9004</div>
+                        <div class="small text-uppercase text-muted fw-bold mb-1">Đặt phòng 9004</div>
                         <div class="fw-semibold">Phạm Khánh Vy</div>
-                        <div class="text-muted small mt-1">Phòng C301 - Family</div>
+                        <div class="text-muted small mt-1">C301 - Family</div>
                         <div class="text-muted small">08/04/2026 đến 11/04/2026</div>
                     </div>
                 </div>
@@ -60,7 +60,6 @@
                         <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">Khách hàng</div><div class="fw-semibold mt-2">Nguyễn Minh An</div></div>
                         <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">Số điện thoại</div><div class="fw-semibold mt-2">0901234567</div></div>
                         <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">CCCD</div><div class="fw-semibold mt-2">079204000111</div></div>
-                        <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">Điểm tích lũy</div><div class="fw-semibold mt-2">120 điểm</div></div>
                         <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">Thời gian lưu trú</div><div class="fw-semibold mt-2">08/04/2026 đến 10/04/2026</div></div>
                         <div class="border rounded p-3"><div class="small text-uppercase text-muted fw-bold">Số đêm / phòng</div><div class="fw-semibold mt-2">2 đêm - 1 phòng</div></div>
                     </div>

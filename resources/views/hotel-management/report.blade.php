@@ -22,23 +22,101 @@
             margin-bottom: 1rem;
         }
 
-        .report-chart-placeholder {
-            height: 100%;
+        .report-chart-shell {
+            display: grid;
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 1rem;
+            align-items: stretch;
             min-height: 270px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            color: #8a4b2a;
-            gap: 0.75rem;
         }
 
-        .report-chart-placeholder svg {
-            width: 72px;
-            height: 72px;
-            color: #b45309;
-            opacity: 0.8;
+        .report-chart-yaxis {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0.5rem 0 2.75rem;
+            color: #9a6a50;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .report-chart-stage {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-chart-board {
+            position: relative;
+            flex: 1;
+            min-height: 220px;
+            border-radius: 18px;
+            background:
+                linear-gradient(to bottom, rgba(194, 120, 55, 0.06), rgba(194, 120, 55, 0.01)),
+                repeating-linear-gradient(
+                    to bottom,
+                    rgba(194, 120, 55, 0.14) 0,
+                    rgba(194, 120, 55, 0.14) 1px,
+                    transparent 1px,
+                    transparent 52px
+                );
+            overflow: hidden;
+        }
+
+        .report-chart-board svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .report-chart-xaxis {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 0.5rem;
+            padding: 0.85rem 0 0;
+            color: #8b5e45;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .report-chart-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .report-chart-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.55rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.78);
+            border: 1px solid rgba(180, 83, 9, 0.12);
+            color: #8a4b2a;
+            font-size: 0.84rem;
+            font-weight: 600;
+        }
+
+        .report-chart-pill-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            flex-shrink: 0;
+        }
+
+        .report-chart-caption {
+            margin-top: 1rem;
+            text-align: center;
+            color: #8a4b2a;
+        }
+
+        .report-chart-caption p {
+            margin-bottom: 0.35rem;
         }
 
         .report-select-wrap {
@@ -76,6 +154,21 @@
             color: #8a4b2a;
             font-size: 0.98rem;
             line-height: 1.5;
+        }
+
+        .report-room-status-card .card-header {
+            padding-bottom: 1.5rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .report-chart-shell {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+
+            .report-chart-yaxis {
+                display: none;
+            }
         }
     </style>
 
@@ -168,14 +261,14 @@
                         </div>
                         <div class="d-flex align-items-center gap-3 flex-wrap">
                             <div class="report-select-wrap" style="min-width: 180px;">
-                                <select class="form-select" disabled>
+                                <select class="form-select">
                                     <option>Theo ngày</option>
                                     <option selected>Theo tháng</option>
                                     <option>Theo năm</option>
                                 </select>
                             </div>
                             <div class="report-select-wrap" style="min-width: 220px;">
-                                <select class="form-select" disabled>
+                                <select class="form-select">
                                     <option>Tháng 1</option>
                                     <option>Tháng 2</option>
                                     <option>Tháng 3</option>
@@ -189,17 +282,43 @@
                 </div>
                 <div class="card-body">
                     <div class="report-revenue-chart">
-                        <div class="report-chart-placeholder">
-                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 18.5H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                                <path d="M6 15L10 11L13 13.5L18 8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                                <circle cx="6" cy="15" r="1.2" fill="currentColor"/>
-                                <circle cx="10" cy="11" r="1.2" fill="currentColor"/>
-                                <circle cx="13" cy="13.5" r="1.2" fill="currentColor"/>
-                                <circle cx="18" cy="8.5" r="1.2" fill="currentColor"/>
-                            </svg>
-                            <p class="fw-semibold mb-0">Biểu đồ đang ở chế độ giao diện tĩnh.</p>
-                            <p class="mb-0">Bộ lọc vẫn được giữ lại để không vỡ bố cục trang thống kê.</p>
+                        <div class="report-chart-shell">
+                            <div class="report-chart-yaxis">
+                                <span>40 triệu</span>
+                                <span>35 triệu</span>
+                                <span>30 triệu</span>
+                                <span>25 triệu</span>
+                                <span>20 triệu</span>
+                            </div>
+                            <div class="report-chart-stage">
+                                <div class="report-chart-board">
+                                    <svg viewBox="0 0 640 260" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                                        <defs>
+                                            <linearGradient id="reportRevenueFill" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="0%" stop-color="#c77837" stop-opacity="0.28"/>
+                                                <stop offset="100%" stop-color="#c77837" stop-opacity="0.02"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <path d="M56 198C56 198 126 176 168 154C210 132 248 142 284 126C320 110 354 102 396 86C438 70 470 62 518 48C548 39 584 30 584 30V220H56V198Z" fill="url(#reportRevenueFill)"/>
+                                        <path d="M56 198C56 198 126 176 168 154C210 132 248 142 284 126C320 110 354 102 396 86C438 70 470 62 518 48C548 39 584 30 584 30" stroke="#c77837" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="56" cy="198" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                        <circle cx="168" cy="154" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                        <circle cx="284" cy="126" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                        <circle cx="396" cy="86" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                        <circle cx="518" cy="48" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                        <circle cx="584" cy="30" r="6" fill="#fff" stroke="#c77837" stroke-width="4"/>
+                                    </svg>
+                                </div>
+
+                                <div class="report-chart-xaxis">
+                                    <span>Tháng 1</span>
+                                    <span>Tháng 2</span>
+                                    <span>Tháng 3</span>
+                                    <span>Tháng 4</span>
+                                    <span>Tháng 5</span>
+                                    <span>Tháng 6</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -226,7 +345,7 @@
         </div>
 
         <div class="col-lg-5">
-            <div class="card">
+            <div class="card report-room-status-card">
                 <div class="card-header">
                     <div class="header-title">
                         <h4 class="card-title mb-0">Tình trạng phòng</h4>

@@ -1,6 +1,6 @@
 @php
     $isReceptionPortal = request()->routeIs('reception.*');
-    $isAdminPortal = request()->routeIs('hotel.*') || request()->routeIs('admin.dashboard') || request()->routeIs('pages.term-of-use');
+    $isAdminPortal = request()->routeIs('hotel.*') || request()->routeIs('admin.dashboard');
     $dashboardRoute = $isReceptionPortal ? route('reception.dashboard') : ($isAdminPortal ? route('admin.dashboard') : route('customer.home'));
 @endphp
 
