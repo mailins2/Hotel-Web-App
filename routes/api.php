@@ -39,7 +39,8 @@ Route::post('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::cla
 Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::class, 'removeTienNghi']);
 
 
-Route::get('/phong/trong', [PhongController::class, 'phongTrong']);
+
+Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
 Route::apiResource('phong', PhongController::class);
 
 

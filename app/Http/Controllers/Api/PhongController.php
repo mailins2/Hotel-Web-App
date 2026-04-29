@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Phong;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class PhongController extends Controller
 {
@@ -103,30 +104,44 @@ class PhongController extends Controller
         return $this->success(null, 'Xóa phòng thành công');
     }
     //=============================================================================
-    // kiểm tra phòng trống 
-    //GET /api/phong/trong?checkIn=2026-04-10&checkOut=2026-04-12
-  public function phongTrong(Request $request)
+    // kiểm tra phòng trống và số lượng người ở 
+    //GET /api/phong/tim-kiem?checkIn=2026-04-25&checkOut=2026-04-27&soNguoi=2
+
+    public function timKiemPhong(Request $request)
     {
+        // Validate
         $data = $request->validate([
-            'checkIn' => 'required|date',
-            'checkOut' => 'required|date|after:checkIn'
+            'checkIn' => 'required|date|after_or_equal:today',
+            'checkOut' => 'required|date|after:checkIn',
+            'soNguoi' => 'required|integer|min:1'
         ]);
 
         $checkIn = $data['checkIn'];
         $checkOut = $data['checkOut'];
+        $soNguoi = $data['soNguoi'];
 
         $phongs = Phong::with([
-                'loaiPhong.tienNghis',
-                'loaiPhong.bangGias'
+                'loaiPhong:MaLoaiPhong,TenLoaiPhong,SoNguoiToiDa'
             ])
-            ->where('TinhTrang', 0)
+            ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
+
+            // chỉ loại phòng bảo trì
+            ->where('TinhTrang', '!=', 2)
+
+            // lọc theo số người
+            ->whereHas('loaiPhong', function ($q) use ($soNguoi) {
+                $q->where('SoNguoiToiDa', '>=', $soNguoi);
+            })
+
+            // loại phòng bị trùng lịch
             ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
-                $q->whereIn('TinhTrang', [0,1])
+                $q->whereIn('TinhTrang', [0,1,2]) // HOLD + CONFIRM + ĐANG Ở
                 ->where('NgayNhanPhong', '<', $checkOut)
                 ->where('NgayTraPhong', '>', $checkIn);
             })
+
             ->get();
 
-        return response()->json($phongs);
+        return $this->success($phongs, 'Tìm phòng thành công');
     }
 }
