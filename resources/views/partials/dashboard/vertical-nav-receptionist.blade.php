@@ -60,7 +60,7 @@
     </li>
 
     <li class="nav-item">
-        <a class="nav-link {{ request()->is('reception/bookings*') ? 'active' : '' }}" href="{{ route('reception.bookings.index') }}">
+        <a class="nav-link {{ request()->is('reception/check-outs*') ? 'active' : '' }}" href="{{ route('reception.check-outs.create') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 4H19V20H14" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>

@@ -62,15 +62,13 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 
 /*
 |--------------------------------------------------------------------------
-| Admin UI
+| Home admin UI
 |--------------------------------------------------------------------------
 */
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::view('/dashboard', 'hotel-management.report')->name('dashboard');
 });
-
-Route::view('/terms-of-use', 'hotel-management.term-of-use')->name('pages.term-of-use');
 
 /*
 |--------------------------------------------------------------------------
@@ -80,10 +78,33 @@ Route::view('/terms-of-use', 'hotel-management.term-of-use')->name('pages.term-o
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
-    Route::view('/{moduleKey}', 'hotel-management.index')->name('modules.index');
-    Route::view('/{moduleKey}/create', 'hotel-management.form')->name('modules.create');
-    Route::view('/{moduleKey}/{recordId}/edit', 'hotel-management.form')->name('modules.edit');
-    Route::view('/{moduleKey}/{recordId}', 'hotel-management.show')->name('modules.show');
+
+    $hotelManagementViews = [
+        'accounts' => 'hotel-management.accounts',
+        'customers' => 'hotel-management.customers',
+        'employees' => 'hotel-management.employees',
+        'room-types' => 'hotel-management.room-types',
+        'rooms' => 'hotel-management.rooms',
+        'services' => 'hotel-management.services',
+        'promotions' => 'hotel-management.promotions',
+        'invoices' => 'hotel-management.invoices',
+        'payments' => 'hotel-management.payments',
+        'reviews' => 'hotel-management.reviews',
+    ];
+
+    foreach ($hotelManagementViews as $module => $viewBase) {
+        Route::prefix($module)->name($module . '.')->group(function () use ($viewBase, $module) {
+            Route::view('/', $viewBase . '.index')->name('index');
+            Route::view('/create', $viewBase . '.form')->name('create');
+            Route::view('/{recordId}/edit', $viewBase . '.form')->name('edit');
+            if ($module === 'services') {
+                Route::view('/food-and-beverage', $viewBase . '.food-and-beverage')->name('food-and-beverage');
+                Route::view('/room-service', $viewBase . '.room-service')->name('room-service');
+                Route::view('/entertainment', $viewBase . '.entertainment')->name('entertainment');
+            }
+            Route::view('/{recordId}', $viewBase . '.show')->name('show');
+        });
+    }
 });
 
 /*
@@ -94,17 +115,19 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
 
 Route::prefix('reception')->name('reception.')->group(function () {
     Route::view('/dashboard', 'receptionist.dashboard')->name('dashboard');
+    Route::view('/booking-details/{bookingId}', 'receptionist.booking-detail')->name('booking-detail');
 
-    Route::view('/customers', 'receptionist.list')->name('customers.index');
-    Route::view('/customers/create', 'hotel-management.form')->name('customers.create');
-    Route::view('/customers/{customerId}/edit', 'hotel-management.form')->name('customers.edit');
-    Route::view('/customers/{customerId}', 'hotel-management.show')->name('customers.show');
+    Route::view('/customers', 'receptionist.customers.index')->name('customers.index');
+    Route::view('/customers/create', 'receptionist.customers.form')->name('customers.create');
+    Route::view('/customers/{customerId}/edit', 'receptionist.customers.form')->name('customers.edit');
+    Route::view('/customers/{customerId}', 'receptionist.customers.show')->name('customers.show');
 
-    Route::view('/bookings', 'receptionist.list')->name('bookings.index');
-    Route::view('/bookings/create', 'receptionist.booking-form')->name('bookings.create');
-    Route::view('/bookings/{bookingId}/edit', 'hotel-management.form')->name('bookings.edit');
-    Route::view('/bookings/{bookingId}', 'hotel-management.show')->name('bookings.show');
+    Route::view('/bookings', 'receptionist.bookings.index')->name('bookings.index');
+    Route::view('/bookings/create', 'receptionist.bookings.form')->name('bookings.create');
+    Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
+    Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
 
     Route::view('/check-ins/create', 'receptionist.check-in-form')->name('check-ins.create');
-    Route::view('/invoices', 'receptionist.list')->name('invoices.index');
+    Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
+    Route::view('/invoices', 'receptionist.invoices.index')->name('invoices.index');
 });
