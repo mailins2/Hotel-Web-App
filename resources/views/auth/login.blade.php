@@ -68,6 +68,9 @@
                         <h2 class="mb-2 text-center">Đăng nhập</h2>
                         <form action="{{ route('login.store') }}" method="POST" data-login-form data-toggle="validator" novalidate>
                            @csrf
+                           @if (request()->filled('redirect'))
+                              <input type="hidden" name="redirect" value="{{ request('redirect') }}">
+                           @endif
                            <div class="row">
                               <div class="col-lg-12">
                                  <div class="form-group">

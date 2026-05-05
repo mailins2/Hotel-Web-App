@@ -1,3 +1,10 @@
+@php
+  $bookingAccount = $bookingAccount ?? session('auth_account', []);
+  $bookingCustomer = $bookingCustomer ?? null;
+  $bookingCustomerName = old('fullName', $bookingCustomer?->TenKH ?? ($bookingAccount['Ten'] ?? ''));
+  $bookingCustomerEmail = old('email', $bookingCustomer?->taiKhoan?->Email ?? ($bookingAccount['Email'] ?? ''));
+  $bookingCustomerPhone = old('phone', $bookingCustomer?->SoDienThoai ?? '');
+@endphp
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -32,6 +39,7 @@
                     type="text" 
                     id="fullName"
                     name="fullName"
+                    value="{{ $bookingCustomerName }}"
                     placeholder="Nhập họ tên"
                     data-validation="name"
                     required>
@@ -43,6 +51,7 @@
                     type="email" 
                     id="email"
                     name="email"
+                    value="{{ $bookingCustomerEmail }}"
                     placeholder="email@gmail.com"
                     required>
                   <small class="error-message" id="email-error"></small>
@@ -53,6 +62,7 @@
                     type="tel" 
                     id="phone"
                     name="phone"
+                    value="{{ $bookingCustomerPhone }}"
                     inputmode="numeric" 
                     pattern="[0-9]*" 
                     placeholder="0982 123 123"
@@ -127,7 +137,7 @@
                 <div class="booking-summary-title">
                   <span>Thông tin phòng</span>
                 </div>
-                <div class="booking-summary-rooms-scroll">
+                <div class="booking-summary-rooms-scroll" data-booking-rooms>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 1:</strong> Deluxe Twin</p>
                     <p>Số phòng: 1 phòng</p>
@@ -163,10 +173,10 @@
               <div class="booking-promo">
                 <label for="promoCode">Nhập mã khuyến mại/ mã voucher</label>
                 <div class="booking-promo-control">
-                  <input type="text" id="promoCode" name="promoCode" value="PEACH10" autocomplete="off">
+                  <input type="text" id="promoCode" name="promoCode" value="" autocomplete="off">
                   <button type="button" id="applyPromoBtn">ÁP DỤNG</button>
                 </div>
-                <div class="booking-promo-status" data-promo-status>Đã áp dụng mã PEACH10: giảm 10%</div>
+                <div class="booking-promo-status" data-promo-status hidden></div>
               </div>
               <div class="booking-discount-summary" data-booking-discount>
                 <div class="booking-price-row">
@@ -187,6 +197,7 @@
                 <strong data-booking-deposit>6,689,250 VND</strong>
               </div>
               <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với QR</button>
+              <div class="booking-promo-status" data-payment-status hidden></div>
             </div>
           </div>
         </div>
@@ -211,7 +222,17 @@
         const total = document.querySelector('[data-booking-total]');
         const deposit = document.querySelector('[data-booking-deposit]');
         const paymentOptions = document.querySelectorAll('[data-payment-option]');
-        const bookingOriginalTotal = 7432500;
+        const bookingRooms = document.querySelector('[data-booking-rooms]');
+        const bookingDateBlocks = document.querySelectorAll('.booking-date-block');
+        const bookingNights = document.querySelector('.booking-date-divider span:first-child');
+        const paymentStatus = document.querySelector('[data-payment-status]');
+        const zaloPayPaymentUrl = @json(url('/api/zalopay-payment'));
+        const datPhongStoreUrl = @json(url('/api/dat-phong'));
+        const paymentRedirectUrl = `${window.location.origin}/customer/my-bookings`;
+        const customerId = @json($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? null));
+        const customerCode = @json((string) ($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? $bookingAccount['MaTK'] ?? 'guest')));
+        let bookingOriginalTotal = 0;
+        let bookingFinalTotal = 0;
         const bookingDiscountRate = 0.1;
         let appliedPromoCode = promoInput.value.trim();
 
@@ -228,6 +249,91 @@
           return `${Number(value || 0).toLocaleString('vi-VN')} VND`;
         }
 
+        function escapeHtml(value) {
+          return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;',
+          }[char]));
+        }
+
+        function formatBookingDate(value) {
+          const date = new Date(`${value}T00:00:00`);
+
+          if (Number.isNaN(date.getTime())) {
+            return '--';
+          }
+
+          return date.toLocaleDateString('vi-VN', {
+            weekday: 'long',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+          });
+        }
+
+        function getStoredBooking() {
+          try {
+            const rawValue = localStorage.getItem('peachBookingSelection');
+            const booking = rawValue ? JSON.parse(rawValue) : null;
+            return booking && Array.isArray(booking.rooms) ? booking : null;
+          } catch (error) {
+            return null;
+          }
+        }
+
+        function renderStoredBooking() {
+          const booking = getStoredBooking();
+
+          if (!booking || !booking.rooms.length) {
+            bookingOriginalTotal = 0;
+            if (bookingRooms) {
+              bookingRooms.innerHTML = '<div class="booking-summary-room"><p>Chưa có thông tin phòng. Vui lòng quay lại chọn phòng.</p></div>';
+            }
+            return;
+          }
+
+          bookingOriginalTotal = Number(booking.total || 0);
+
+          if (bookingDateBlocks[0]) {
+            bookingDateBlocks[0].querySelector('strong').textContent = formatBookingDate(booking.checkIn);
+          }
+
+          if (bookingDateBlocks[1]) {
+            bookingDateBlocks[1].querySelector('strong').textContent = formatBookingDate(booking.checkOut);
+          }
+
+          if (bookingNights) {
+            bookingNights.textContent = `${Number(booking.nights || 1)} đêm`;
+          }
+
+          if (bookingRooms) {
+            bookingRooms.innerHTML = booking.rooms.map((room, index) => {
+              const quantity = Number(room.quantity || 0);
+              const adultsPerRoom = Number(room.adults || booking.adults || 0);
+              const childrenPerRoom = Number(room.children || booking.children || 0);
+              const adults = adultsPerRoom * quantity;
+              const children = childrenPerRoom * quantity;
+              const guestText = [
+                adults > 0 ? `${adults} người lớn` : '',
+                children > 0 ? `${children} trẻ em` : '',
+              ].filter(Boolean).join(', ') || 'Theo tiêu chí đã chọn';
+              const roomTotal = Number(room.price || 0) * quantity * Number(booking.nights || 1);
+
+              return `
+                <div class="booking-summary-room">
+                  <p><strong>Phòng ${index + 1}:</strong> ${escapeHtml(room.name)}</p>
+                  <p>Số phòng: ${quantity} phòng</p>
+                  <p>Số người: ${escapeHtml(guestText)}</p>
+                  <p class="booking-summary-room-price">Giá phòng: ${formatCurrency(roomTotal)}</p>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+
         function updatePaymentButton(value) {
           document.querySelectorAll('.booking-payment-option').forEach(option => {
             option.classList.toggle('is-selected', option.querySelector('[data-payment-option]')?.dataset.paymentOption === value);
@@ -235,17 +341,93 @@
 
           if (value === 'zalopay') {
             paymentBtn.textContent = 'Thanh toán với QR';
+            paymentBtn.disabled = false;
           } else if (value === 'card') {
             paymentBtn.textContent = 'Thanh toán thẻ';
+            paymentBtn.disabled = true;
           } else {
             paymentBtn.textContent = 'Chọn phương thức thanh toán';
+            paymentBtn.disabled = true;
           }
         }
 
+        function setPaymentStatus(message, isError = false) {
+          if (!paymentStatus) return;
+
+          paymentStatus.hidden = !message;
+          paymentStatus.textContent = message || '';
+          paymentStatus.style.color = isError ? '#dc2626' : '';
+        }
+
+        async function postJson(url, payload) {
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok) {
+            const validationMessage = Object.values(result?.errors || {}).flat().filter(Boolean).join('\n');
+            throw new Error(validationMessage || result?.message || 'Khong the xu ly yeu cau.');
+          }
+
+          return result;
+        }
+
+        async function createBookingHolds(booking) {
+          if (!customerId) {
+            throw new Error('Khong tim thay thong tin khach hang dang dang nhap.');
+          }
+
+          const storedHolds = JSON.parse(localStorage.getItem('peachBookingHolds') || 'null');
+
+          if (
+            storedHolds?.selectionSavedAt === booking.savedAt
+            && Array.isArray(storedHolds.datPhongIds)
+            && storedHolds.datPhongIds.length === 1
+            && Number(storedHolds.total || 0) > 0
+          ) {
+            return storedHolds;
+          }
+
+          const result = await postJson(datPhongStoreUrl, {
+            MaKH: customerId,
+            NgayNhanPhong: booking.checkIn,
+            NgayTraPhong: booking.checkOut,
+            LoaiPhongs: booking.rooms.map((room) => ({
+              MaLoaiPhong: room.id,
+              SoLuong: Number(room.quantity || 0),
+            })),
+          });
+          const maDatPhong = result?.data?.datPhong?.MaDatPhong;
+          const serverTotal = Number(result?.data?.hoaDon?.TongTien || 0);
+
+          if (!result?.success || !maDatPhong || serverTotal <= 0) {
+            throw new Error(result?.message || 'Khong the tao giu cho dat phong.');
+          }
+
+          const datPhongIds = [maDatPhong];
+          const holdData = {
+            selectionSavedAt: booking.savedAt,
+            datPhongIds,
+            total: serverTotal,
+            createdAt: new Date().toISOString(),
+          };
+
+          localStorage.setItem('peachBookingHolds', JSON.stringify(holdData));
+
+          return holdData;
+        }
+
         function updateDiscountUI(promoCode) {
-          const hasPromo = Boolean(promoCode);
+          const hasPromo = false;
           const discountValue = hasPromo ? Math.round(bookingOriginalTotal * bookingDiscountRate) : 0;
           const finalTotal = bookingOriginalTotal - discountValue;
+          bookingFinalTotal = finalTotal;
 
           if (discountSummary) {
             discountSummary.hidden = !hasPromo;
@@ -271,6 +453,59 @@
           if (deposit) {
             deposit.textContent = formatCurrency(finalTotal);
           }
+        }
+
+        async function createZaloPayPayment() {
+          const booking = getStoredBooking();
+
+          if (!booking || !booking.rooms.length) {
+            throw new Error('Vui lòng quay lại chọn ít nhất 1 phòng trước khi thanh toán.');
+          }
+
+          let amount = Math.max(Math.round(Number(bookingFinalTotal || 0)), 0);
+
+          if (amount <= 0) {
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
+          }
+
+          setPaymentStatus('Dang giu phong trong 15 phut...');
+          const holdData = await createBookingHolds(booking);
+          const datPhongIds = holdData.datPhongIds;
+          amount = Math.max(Math.round(Number(holdData.total || bookingFinalTotal || 0)), 0);
+          if (amount <= 0) {
+            throw new Error('Tong tien thanh toan khong hop le.');
+          }
+          setPaymentStatus('Dang tao ma QR thanh toan ZaloPay...');
+
+          const response = await fetch(zaloPayPaymentUrl, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              amount,
+              app_user: customerCode || emailInput.value.trim() || 'guest',
+              description: `Peach Valley - thanh toán đặt phòng ${booking.checkIn} đến ${booking.checkOut}`,
+              redirect_url: paymentRedirectUrl,
+              dat_phong_ids: datPhongIds,
+            }),
+          });
+
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok || result?.status !== 'success' || !result?.order_url) {
+            throw new Error(result?.sub_message || result?.message || 'Không thể tạo thanh toán ZaloPay.');
+          }
+
+          localStorage.setItem('peachBookingPayment', JSON.stringify({
+            appTransId: result.app_trans_id,
+            datPhongIds,
+            amount,
+            createdAt: new Date().toISOString(),
+          }));
+
+          window.location.href = result.order_url;
         }
 
         // Real-time validation for name (letters only)
@@ -374,9 +609,25 @@
 
             const selectedPayment = document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '';
             updatePaymentButton(selectedPayment);
+
+            if (selectedPayment !== 'zalopay') {
+              setPaymentStatus('Hiện tại chỉ hỗ trợ thanh toán QR qua ZaloPay.', true);
+              return;
+            }
+
+            paymentBtn.disabled = true;
+            setPaymentStatus('Đang tạo mã QR thanh toán ZaloPay...');
+
+            createZaloPayPayment()
+              .catch((error) => {
+                console.error('ZaloPay payment error:', error);
+                setPaymentStatus(error.message || 'Không thể tạo thanh toán ZaloPay.', true);
+                paymentBtn.disabled = false;
+              });
           }
         });
 
+        renderStoredBooking();
         updateDiscountUI(appliedPromoCode);
         updatePaymentButton(document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '');
       });

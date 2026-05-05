@@ -34,7 +34,7 @@
           <div class="col-lg-8">
           	<div class="row">
           		<div class="col-md-12 ftco-animate">
-          			<div class="single-slider owl-carousel">
+          			<div class="single-slider owl-carousel" data-room-images>
           				<div class="item">
           					<div class="room-img" data-bg-image="{{ asset('customers/images/deluxe_family1.jpg') }}"></div>
           				</div>
@@ -47,16 +47,17 @@
           			</div>
           		</div>
           		<div class="col-md-12 room-single mt-4 mb-5 ftco-animate">
-          			<h2 class="mb-4">Phòng Deluxe Gia Đình</h2>
-    						<p>Mô tả phòng: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras vitae lacus orci. Donec eu finibus ex. Aliquam vel neque nec eros pretium vulputate sed eu leo. Vestibulum quis neque ornare risus euismod mollis id at diam. Sed vel risus leo. Vestibulum cursus ipsum vel euismod maximus. Integer convallis auctor libero, iaculis fringilla odio molestie eu.</p>
+          			<h2 class="mb-4" data-room-title></h2>
+    						<p data-room-description></p>
     						<div class="d-md-flex mt-5 mb-5">
     							<ul class="list">
-	    							<li><span>Số người ở:</span> 4 người</li>
+	    	    							<li><span>Người lớn:</span> <span data-room-adults>--</span></li>
+	    	    							<li><span>Trẻ em:</span> <span data-room-children>--</span></li>
 	    						</ul>
     						</div>
     						<div class="room-amenities mt-5">
     							<h3 class="room-amenities-title">Tiện ích trong phòng</h3>
-    							<div class="room-amenities-grid">
+    							<div class="room-amenities-grid" data-room-amenities>
     								<div class="room-amenities-col">
 									<div class="room-amenity-item"><span class="room-amenity-icon ion-ios-shirt"></span><span>Tủ quần áo</span></div>
 									<div class="room-amenity-item"><span class="room-amenity-icon ion-logo-no-smoking"></span><span>Phòng không hút thuốc</span></div>
@@ -113,6 +114,127 @@
         </div>
       </div>
     </section> <!-- .section -->
+
+    <script>
+      document.addEventListener('DOMContentLoaded', async function() {
+        const routeRoomId = @json(request()->route('id'));
+        const roomId = routeRoomId || window.location.pathname.match(/\/customer\/room\/([^/]+)/)?.[1];
+
+        if (!roomId) {
+          return;
+        }
+
+        const fallbackDescription = 'Phòng thoải mái và hiện đại.';
+        const getImageUrl = (image) => image?.Url || image?.url || image?.DuongDan || image?.duong_dan || '';
+        const getAmenities = (room) => room.tienNghis || room.tien_nghis || [];
+        const getImages = (room) => room.hinhs || [];
+
+        const setText = (selector, value) => {
+          const element = document.querySelector(selector);
+          if (element) {
+            element.textContent = value;
+          }
+        };
+
+        const applyBackgroundImages = () => {
+          document.querySelectorAll('[data-bg-image]').forEach((element) => {
+            const backgroundImage = element.getAttribute('data-bg-image');
+            if (backgroundImage && backgroundImage !== 'undefined' && backgroundImage !== 'null') {
+              element.style.backgroundImage = `url("${backgroundImage}")`;
+            }
+          });
+        };
+
+        const renderImages = (room) => {
+          const slider = document.querySelector('[data-room-images]');
+          const imageUrls = getImages(room).map(getImageUrl).filter(Boolean);
+
+          if (!slider || imageUrls.length === 0) {
+            return;
+          }
+
+          if (window.jQuery && window.jQuery(slider).data('owl.carousel')) {
+            window.jQuery(slider).trigger('destroy.owl.carousel');
+            slider.classList.remove('owl-loaded', 'owl-hidden');
+          }
+
+          slider.innerHTML = imageUrls.map((url) => `
+            <div class="item">
+              <div class="room-img" data-bg-image="${url}"></div>
+            </div>
+          `).join('');
+
+          applyBackgroundImages();
+
+          if (window.jQuery && window.jQuery.fn?.owlCarousel) {
+            window.jQuery(slider).owlCarousel({
+              animateOut: 'fadeOut',
+              animateIn: 'fadeIn',
+              autoplay: true,
+              loop: imageUrls.length > 1,
+              items: 1,
+              margin: 0,
+              stagePadding: 0,
+              nav: true,
+              dots: true,
+              navText: ['<span class="ion-ios-arrow-back">', '<span class="ion-ios-arrow-forward">'],
+            });
+          }
+        };
+
+        const renderAmenities = (room) => {
+          const amenitiesGrid = document.querySelector('[data-room-amenities]');
+          const amenities = getAmenities(room);
+
+          if (!amenitiesGrid || amenities.length === 0) {
+            return;
+          }
+
+          amenitiesGrid.innerHTML = amenities.map((amenity) => `
+            <div class="room-amenity-item">
+              <span class="room-amenity-icon ion-ios-checkmark-circle"></span>
+              <span>${amenity.TenTienNghi || amenity.ten_tien_nghi || 'Tiện nghi'}</span>
+            </div>
+          `).join('');
+        };
+        const getRoomDetail = async (id) => {
+          if (window.CustomerRoomApi?.getRoomDetail) {
+            return window.CustomerRoomApi.getRoomDetail(id);
+          }
+
+          const response = await fetch(`/api/loai-phong/${encodeURIComponent(id)}`);
+          const result = await response.json();
+          if (!result.success || !result.data) {
+            throw new Error(result.message || 'Failed to load room detail');
+          }
+          return result.data;
+        };
+
+        try {
+          const room = await getRoomDetail(roomId);
+
+          if (!room) {
+            console.error('Failed to load room detail');
+            return;
+          }
+
+          const roomName = room.TenLoaiPhong || room.ten_loai_phong || 'Phòng';
+          const description = room.Mota || room.mo_ta || fallbackDescription;
+          const adults = Number(room.NguoiLon ?? room.nguoi_lon ?? 0);
+          const children = Number(room.TreEm ?? room.tre_em ?? 0);
+
+          setText('[data-room-title]', roomName);
+          setText('[data-room-description]', `Mô tả phòng: ${description}`);
+          setText('[data-room-adults]', `${Number.isFinite(adults) ? adults : 0}`);
+          setText('[data-room-children]', `${Number.isFinite(children) ? children : 0}`);
+
+          renderImages(room);
+          renderAmenities(room);
+        } catch (error) {
+          console.error('Error loading room detail:', error);
+        }
+      });
+    </script>
 
 
     @include('customer.partials.footer')

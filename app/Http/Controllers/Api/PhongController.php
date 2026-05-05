@@ -105,7 +105,7 @@ class PhongController extends Controller
     }
     //=============================================================================
     // kiểm tra phòng trống và số lượng người ở 
-    //GET /api/phong/tim-kiem?checkIn=2026-04-25&checkOut=2026-04-27&soNguoi=2
+    //GET /api/phong/tim-kiem?checkIn=2026-04-25&checkOut=2026-04-27&NguoiLon=2&TreEm=1
 
     public function timKiemPhong(Request $request)
     {
@@ -113,25 +113,26 @@ class PhongController extends Controller
         $data = $request->validate([
             'checkIn' => 'required|date|after_or_equal:today',
             'checkOut' => 'required|date|after:checkIn',
-            'soNguoi' => 'required|integer|min:1'
+            'soNguoi' => 'sometimes|integer|min:1',
+            'NguoiLon' => 'required_without:soNguoi|integer|min:1',
+            'TreEm' => 'sometimes|integer|min:0',
+            'SoPhong' => 'sometimes|integer|min:1',
         ]);
 
         $checkIn = $data['checkIn'];
         $checkOut = $data['checkOut'];
-        $soNguoi = $data['soNguoi'];
+        $nguoiLon = $data['NguoiLon'] ?? $data['soNguoi'];
+        $treEm = $data['TreEm'] ?? 0;
+        $soPhong = $data['SoPhong'] ?? 1;
+        $tongKhach = $nguoiLon + $treEm;
 
         $phongs = Phong::with([
-                'loaiPhong:MaLoaiPhong,TenLoaiPhong,SoNguoiToiDa'
+                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm'
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
 
             // chỉ loại phòng bảo trì
             ->where('TinhTrang', '!=', 2)
-
-            // lọc theo số người
-            ->whereHas('loaiPhong', function ($q) use ($soNguoi) {
-                $q->where('SoNguoiToiDa', '>=', $soNguoi);
-            })
 
             // loại phòng bị trùng lịch
             ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
@@ -141,6 +142,26 @@ class PhongController extends Controller
             })
 
             ->get();
+
+        $phongs = $phongs
+            ->groupBy('MaLoaiPhong')
+            ->filter(function ($rooms) use ($nguoiLon, $treEm, $soPhong, $tongKhach) {
+                $loaiPhong = $rooms->first()?->loaiPhong;
+
+                if (!$loaiPhong || $rooms->count() < $soPhong) {
+                    return false;
+                }
+
+                $sucChuaNguoiLon = max((int) $loaiPhong->NguoiLon, 0);
+                $sucChuaTreEm = max((int) $loaiPhong->TreEm, 0);
+                $sucChuaTong = max($sucChuaNguoiLon + $sucChuaTreEm, $sucChuaNguoiLon, 1);
+
+                return ($sucChuaNguoiLon * $soPhong) >= $nguoiLon
+                    && ($sucChuaTreEm * $soPhong) >= $treEm
+                    && ($sucChuaTong * $soPhong) >= $tongKhach;
+            })
+            ->flatten(1)
+            ->values();
 
         return $this->success($phongs, 'Tìm phòng thành công');
     }

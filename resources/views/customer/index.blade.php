@@ -55,13 +55,13 @@
     	<div class="container">
     		<div class="row no-gutters">
     			<div class="col-lg-12">
-    				<form action="#" class="booking-form aside-stretch">
+    				<form action="{{ route('customer.rooms-booking') }}" method="GET" class="booking-form aside-stretch" data-home-booking-search>
 	        		<div class="row">
 	        			<div class="col-md d-flex py-md-4">
 	        				<div class="form-group align-self-stretch d-flex align-items-end">
 	        					<div class="wrap align-self-stretch py-3 px-4">
 				    					<label for="#">Ngày nhận</label>
-				    					<input type="text" class="form-control checkin_date" placeholder="Chọn ngày">
+				    					<input type="text" name="checkIn" class="form-control checkin_date" placeholder="Chọn ngày">
 			    					</div>
 			    				</div>
 	        			</div>
@@ -69,7 +69,7 @@
 	        				<div class="form-group align-self-stretch d-flex align-items-end">
 	        					<div class="wrap align-self-stretch py-3 px-4">
 				    					<label for="#">Ngày trả</label>
-				    					<input type="text" class="form-control checkout_date" placeholder="Chọn ngày">
+				    					<input type="text" name="checkOut" class="form-control checkout_date" placeholder="Chọn ngày">
 			    					</div>
 			    				</div>
 	        			</div>
@@ -115,7 +115,7 @@
 	        			</div>
 	        			<div class="col-md d-flex">
 	        				<div class="form-group d-flex align-self-stretch">
-			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block"><span>Tìm kiếm</span></a>
+			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block" data-home-booking-search-submit><span>Tìm kiếm</span></a>
 			            </div>
 	        			</div>
 	        		</div>
@@ -611,6 +611,81 @@
 
     <script>
       (() => {
+        const parseHomeSearchDate = (value) => {
+          const normalized = String(value || '').trim();
+          let match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+          if (match) {
+            const [, day, month, year] = match;
+            return new Date(Number(year), Number(month) - 1, Number(day));
+          }
+
+          match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+          if (match) {
+            const [, year, month, day] = match;
+            return new Date(Number(year), Number(month) - 1, Number(day));
+          }
+
+          const parsed = new Date(normalized);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        };
+
+        const formatHomeSearchDate = (value) => {
+          const date = parseHomeSearchDate(value);
+
+          if (!date) {
+            return '';
+          }
+
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+
+        const initHomeSearchSubmit = () => {
+          const form = document.querySelector('[data-home-booking-search]');
+          const submit = document.querySelector('[data-home-booking-search-submit]');
+
+          if (!form || !submit) {
+            return;
+          }
+
+          submit.addEventListener('click', (event) => {
+            event.preventDefault();
+
+            const checkInInput = form.querySelector('.checkin_date');
+            const checkOutInput = form.querySelector('.checkout_date');
+            const checkIn = parseHomeSearchDate(checkInInput?.value);
+            const checkOut = parseHomeSearchDate(checkOutInput?.value);
+            const adults = form.querySelector('[data-guest-input="adults"]')?.value || '2';
+            const children = form.querySelector('[data-guest-input="children"]')?.value || '0';
+            const rooms = form.querySelector('[data-guest-input="rooms"]')?.value || '1';
+
+            if (!checkIn || !checkOut || checkIn >= checkOut) {
+              alert('Vui lòng chọn ngày nhận và ngày trả hợp lệ.');
+              return;
+            }
+
+            const url = new URL(form.action, window.location.origin);
+            url.searchParams.set('checkIn', formatHomeSearchDate(checkInInput.value));
+            url.searchParams.set('checkOut', formatHomeSearchDate(checkOutInput.value));
+            url.searchParams.set('NguoiLon', String(Math.max(Number.parseInt(adults, 10) || 1, 1)));
+            url.searchParams.set('TreEm', String(Math.max(Number.parseInt(children, 10) || 0, 0)));
+            url.searchParams.set('SoPhong', String(Math.max(Number.parseInt(rooms, 10) || 1, 1)));
+            window.location.href = url.toString();
+          });
+        };
+
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', initHomeSearchSubmit, { once: true });
+        } else {
+          initHomeSearchSubmit();
+        }
+      })();
+
+      (() => {
         const initCustomerReviews = () => {
           const section = document.querySelector('[data-customer-reviews]');
 
@@ -715,4 +790,3 @@
 
   </body>
 </html>
-
