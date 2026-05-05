@@ -1,3 +1,15 @@
+@php
+  $initialCheckIn = request('checkIn') ? \Illuminate\Support\Carbon::parse(request('checkIn')) : now();
+  $initialCheckOut = request('checkOut') ? \Illuminate\Support\Carbon::parse(request('checkOut')) : now()->addDay();
+
+  if ($initialCheckOut->lessThanOrEqualTo($initialCheckIn)) {
+    $initialCheckOut = $initialCheckIn->copy()->addDay();
+  }
+
+  $initialAdults = max((int) request('NguoiLon', request('adults', 2)), 1);
+  $initialChildren = max((int) request('TreEm', request('children', 1)), 0);
+  $initialRooms = max((int) request('SoPhong', request('rooms', 1)), 1);
+@endphp
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -20,7 +32,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkin
-              value="14/04/2026"
+              value="{{ $initialCheckIn->format('d/m/Y') }}"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -32,7 +44,7 @@
               type="text"
               class="search-summary-input"
               data-search-checkout
-              value="17/04/2026"
+              value="{{ $initialCheckOut->format('d/m/Y') }}"
               inputmode="numeric"
               autocomplete="off"
               placeholder="dd/mm/yyyy"
@@ -43,7 +55,7 @@
             <div class="search-summary-guest" data-search-guest>
               <button type="button" class="search-summary-guest-trigger" data-search-guest-trigger>
                 <span data-search-guest-text>
-                  2 người lớn - 1 trẻ em
+                  {{ $initialAdults }} người lớn - {{ $initialChildren }} trẻ em - {{ $initialRooms }} phòng
                 </span>
                 <span class="icon ion-ios-arrow-down"></span>
               </button>
@@ -52,7 +64,7 @@
                   <span>Người lớn</span>
                   <div class="search-guest-stepper">
                     <button type="button" data-guest-action="dec" data-guest-type="adults">-</button>
-                    <span data-guest-count="adults">2</span>
+                    <span data-guest-count="adults">{{ $initialAdults }}</span>
                     <button type="button" data-guest-action="inc" data-guest-type="adults">+</button>
                   </div>
                 </div>
@@ -60,8 +72,16 @@
                   <span>Trẻ em</span>
                   <div class="search-guest-stepper">
                     <button type="button" data-guest-action="dec" data-guest-type="children">-</button>
-                    <span data-guest-count="children">1</span>
+                    <span data-guest-count="children">{{ $initialChildren }}</span>
                     <button type="button" data-guest-action="inc" data-guest-type="children">+</button>
+                  </div>
+                </div>
+                <div class="search-guest-row">
+                  <span>Phòng</span>
+                  <div class="search-guest-stepper">
+                    <button type="button" data-guest-action="dec" data-guest-type="rooms">-</button>
+                    <span data-guest-count="rooms">{{ $initialRooms }}</span>
+                    <button type="button" data-guest-action="inc" data-guest-type="rooms">+</button>
                   </div>
                 </div>
               </div>
@@ -79,236 +99,19 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-8">
-            <div
-              class="room-result-card"
-              data-room-card-trigger
-              data-room-title="Deluxe Family Triple"
-              data-room-area="38 m²"
-              data-room-desc="Phòng dành cho gia đình với thiết kế ấm cúng, tầm nhìn đẹp và không gian rộng rãi. Bố trí nội thất hiện đại, phù hợp cho nhóm bạn hoặc gia đình nhỏ muốn nghỉ dưỡng thoải mái."
-              data-room-images="{{ asset('customers/images/deluxe_family.jpg') }}|{{ asset('customers/images/deluxe_family1.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
-            >
-              <div class="room-result-slider" data-room-slider>
-                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
-                  <span class="icon ion-ios-arrow-back"></span>
-                </button>
-                <div class="room-result-slides">
-                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/deluxe_family.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/deluxe_family1.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491790.jpg') }}"></div>
-                </div>
-                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
-                  <span class="icon ion-ios-arrow-forward"></span>
-                </button>
-              </div>
-              <div class="room-result-content">
-                <div class="room-result-header">
-                  <h3>Deluxe Family Triple</h3>
-                  <span class="room-result-capacity">
-                    <span class="icon ion-ios-people"></span>
-                    4 khách
-                  </span>
-                </div>
-                <p class="room-result-desc">Phòng dành cho gia đình, bố trí 1 giường đôi và 1 giường đơn, không gian thoáng và đầy đủ tiện nghi.</p>
-                <div class="room-result-meta">
-                  <span><strong>Giường:</strong> 1 giường đôi, 1 giường đơn</span>
-                  <span><strong>Diện tích:</strong> 38 m²</span>
-                </div>
-                <button
-                  type="button"
-                  class="room-result-amenities-link"
-                  data-room-modal-trigger
-                  data-room-title="Deluxe Family Triple"
-                  data-room-area="38 m²"
-                  data-room-desc="Phòng dành cho gia đình với thiết kế ấm cúng, tầm nhìn đẹp và không gian rộng rãi. Bố trí nội thất hiện đại, phù hợp cho nhóm bạn hoặc gia đình nhỏ muốn nghỉ dưỡng thoải mái."
-                  data-room-images="{{ asset('customers/images/deluxe_family.jpg') }}|{{ asset('customers/images/deluxe_family1.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
-                >
-                  Xem tất cả tiện nghi
-                </button>
-                <div class="room-result-footer">
-                  <div class="room-result-price">
-                    <span class="label">Giá chỉ từ</span>
-                    <span class="room-result-price-line">
-                      <span class="value">1.840.000 VND</span>
-                      <span class="per">/ đêm</span>
-                    </span>
-                  </div>
-                  <div class="room-result-actions">
-                    <div class="room-result-qty-stepper" data-room-qty-stepper>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
-                      <input
-                        type="hidden"
-                        value="0"
-                        min="0"
-                        max="5"
-                        data-room-qty
-                        data-room-qty-input
-                        data-room-name="Deluxe Family Triple"
-                        data-room-price="1840000"
-                      >
-                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="room-result-card"
-              data-room-card-trigger
-              data-room-title="Executive Suite"
-              data-room-area="68 m²"
-              data-room-desc="Phòng hạng cao cấp với khu tiếp khách riêng, tầm nhìn đẹp và nội thất tinh tế. Không gian rộng rãi giúp bạn thư giãn trọn vẹn trong suốt kỳ nghỉ."
-              data-room-images="{{ asset('customers/images/suite.jpg') }}|{{ asset('customers/images/810491789.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
-            >
-              <div class="room-result-slider" data-room-slider>
-                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
-                  <span class="icon ion-ios-arrow-back"></span>
-                </button>
-                <div class="room-result-slides">
-                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/suite.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491789.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/810491790.jpg') }}"></div>
-                </div>
-                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
-                  <span class="icon ion-ios-arrow-forward"></span>
-                </button>
-              </div>
-              <div class="room-result-content">
-                <div class="room-result-header">
-                  <h3>Executive Suite</h3>
-                  <span class="room-result-capacity">
-                    <span class="icon ion-ios-people"></span>
-                    2 khách
-                  </span>
-                </div>
-                <p class="room-result-desc">Không gian rộng với khu tiếp khách riêng, phù hợp cho kỳ nghỉ cao cấp hoặc chuyến công tác dài ngày.</p>
-                <div class="room-result-meta">
-                  <span><strong>Giường:</strong> 1 giường king size</span>
-                  <span><strong>Diện tích:</strong> 68 m²</span>
-                </div>
-                <button
-                  type="button"
-                  class="room-result-amenities-link"
-                  data-room-modal-trigger
-                  data-room-title="Executive Suite"
-                  data-room-area="68 m²"
-                  data-room-desc="Phòng hạng cao cấp với khu tiếp khách riêng, tầm nhìn đẹp và nội thất tinh tế. Không gian rộng rãi giúp bạn thư giãn trọn vẹn trong suốt kỳ nghỉ."
-                  data-room-images="{{ asset('customers/images/suite.jpg') }}|{{ asset('customers/images/810491789.jpg') }}|{{ asset('customers/images/810491790.jpg') }}"
-                >
-                  Xem tất cả tiện nghi
-                </button>
-                <div class="room-result-footer">
-                  <div class="room-result-price">
-                    <span class="label">Giá chỉ từ</span>
-                    <span class="room-result-price-line">
-                      <span class="value">2.530.000 VND</span>
-                      <span class="per">/ đêm</span>
-                    </span>
-                  </div>
-                  <div class="room-result-actions">
-                    <div class="room-result-qty-stepper" data-room-qty-stepper>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
-                      <input
-                        type="hidden"
-                        value="0"
-                        min="0"
-                        max="5"
-                        data-room-qty
-                        data-room-qty-input
-                        data-room-name="Executive Suite"
-                        data-room-price="2530000"
-                      >
-                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="room-result-card"
-              data-room-card-trigger
-              data-room-title="Superior Room"
-              data-room-area="32 m²"
-              data-room-desc="Phòng thiết kế hiện đại, tiện nghi đầy đủ và ánh sáng tự nhiên. Lựa chọn phù hợp cho khách cá nhân hoặc cặp đôi muốn tiết kiệm chi phí."
-              data-room-images="{{ asset('customers/images/superior.jpg') }}|{{ asset('customers/images/room-2.jpg') }}|{{ asset('customers/images/room-3.jpg') }}"
-            >
-              <div class="room-result-slider" data-room-slider>
-                <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
-                  <span class="icon ion-ios-arrow-back"></span>
-                </button>
-                <div class="room-result-slides">
-                  <div class="room-result-slide is-active" data-bg-image="{{ asset('customers/images/superior.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/room-2.jpg') }}"></div>
-                  <div class="room-result-slide" data-bg-image="{{ asset('customers/images/room-3.jpg') }}"></div>
-                </div>
-                <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
-                  <span class="icon ion-ios-arrow-forward"></span>
-                </button>
-              </div>
-              <div class="room-result-content">
-                <div class="room-result-header">
-                  <h3>Superior Room</h3>
-                  <span class="room-result-capacity">
-                    <span class="icon ion-ios-people"></span>
-                    2 khách
-                  </span>
-                </div>
-                <p class="room-result-desc">Lựa chọn cân bằng giữa chi phí và tiện nghi, thiết kế hiện đại, phù hợp cho cặp đôi hoặc khách cá nhân.</p>
-                <div class="room-result-meta">
-                  <span><strong>Giường:</strong> 1 giường queen</span>
-                  <span><strong>Diện tích:</strong> 32 m²</span>
-                </div>
-                <button
-                  type="button"
-                  class="room-result-amenities-link"
-                  data-room-modal-trigger
-                  data-room-title="Superior Room"
-                  data-room-area="32 m²"
-                  data-room-desc="Phòng thiết kế hiện đại, tiện nghi đầy đủ và ánh sáng tự nhiên. Lựa chọn phù hợp cho khách cá nhân hoặc cặp đôi muốn tiết kiệm chi phí."
-                  data-room-images="{{ asset('customers/images/superior.jpg') }}|{{ asset('customers/images/room-2.jpg') }}|{{ asset('customers/images/room-3.jpg') }}"
-                >
-                  Xem tất cả tiện nghi
-                </button>
-                <div class="room-result-footer">
-                  <div class="room-result-price">
-                    <span class="label">Giá chỉ từ</span>
-                    <span class="room-result-price-line">
-                      <span class="value">1.490.000 VND</span>
-                      <span class="per">/ đêm</span>
-                    </span>
-                  </div>
-                  <div class="room-result-actions">
-                    <div class="room-result-qty-stepper" data-room-qty-stepper>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
-                      <input
-                        type="hidden"
-                        value="0"
-                        min="0"
-                        max="5"
-                        data-room-qty
-                        data-room-qty-input
-                        data-room-name="Superior Room"
-                        data-room-price="1490000"
-                      >
-                      <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
-                      <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="room-results-list" data-room-results>
+              <div class="room-results-loading">Đang tải danh sách phòng...</div>
             </div>
           </div>
           <div class="col-lg-4">
             <div
               class="search-summary-card"
               data-booking-summary
-              data-nights="2"
-              data-adults="2"
-              data-children="1"
-              data-checkin="2026-04-14"
+              data-nights="1"
+              data-adults="{{ $initialAdults }}"
+              data-children="{{ $initialChildren }}"
+              data-rooms="{{ $initialRooms }}"
+              data-checkin="{{ $initialCheckIn->toDateString() }}"
             >
               <div class="search-summary-header">
                 <h4>Thông tin phòng</h4>
@@ -319,7 +122,13 @@
                 <span>Tổng cộng</span>
                 <strong data-booking-total>0 VND</strong>
               </div>
-              <a href="{{ route('customer.info-booking') }}" class="btn btn-primary w-100 search-summary-cta">Đặt ngay</a>
+              <a
+                href="{{ route('customer.info-booking') }}"
+                class="btn btn-primary w-100 search-summary-cta disabled"
+                data-booking-continue
+                aria-disabled="true"
+                tabindex="-1"
+              >Đặt ngay</a>
             </div>
           </div>
         </div>
@@ -383,118 +192,780 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', function() {
+        const resultsContainer = document.querySelector('[data-room-results]');
         const searchBtn = document.getElementById('searchBtn');
         const checkInInput = document.querySelector('[data-search-checkin]');
         const checkOutInput = document.querySelector('[data-search-checkout]');
         const adultCount = document.querySelector('[data-guest-count="adults"]');
         const childrenCount = document.querySelector('[data-guest-count="children"]');
-        const roomCards = document.querySelectorAll('.room-result-card');
+        const roomCount = document.querySelector('[data-guest-count="rooms"]');
+        const guestWrapper = document.querySelector('[data-search-guest]');
+        const guestText = document.querySelector('[data-search-guest-text]');
+        const summary = document.querySelector('[data-booking-summary]');
+        const bookingList = document.querySelector('[data-booking-list]');
+        const bookingTotal = document.querySelector('[data-booking-total]');
+        const bookingContinue = document.querySelector('[data-booking-continue]');
+        const isCustomerLoggedIn = @json(filled(session('auth_account')));
+        const loginRedirectUrl = @json(route('login', ['redirect' => route('customer.info-booking')]));
+        const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
+        let allRoomTypes = [];
+        let roomsData = [];
+        const selections = new Map();
 
-        const roomsData = [
-          {
-            name: 'Deluxe Family Triple',
-            capacity: 4,
-            element: roomCards[0]
-          },
-          {
-            name: 'Executive Suite',
-            capacity: 2,
-            element: roomCards[1]
-          },
-          {
-            name: 'Superior Room',
-            capacity: 2,
-            element: roomCards[2]
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        }[char]));
+        const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
+        const getImageUrl = (image) => image?.Url || image?.url || image?.DuongDan || image?.duong_dan || '';
+        const getImages = (room) => {
+          const images = Array.isArray(room.hinhs) ? room.hinhs.map(getImageUrl).filter(Boolean) : [];
+          return images.length ? images : [fallbackImage];
+        };
+        const getPriceForSeason = (room, season) => {
+          const priceRows = room.bangGias || room.bang_gias || [];
+          const rows = Array.isArray(priceRows) ? priceRows : [priceRows];
+          const priceRow = rows.find((item) => Number(item?.Mua ?? item?.mua) === season) || rows[0];
+          const rawPrice = priceRow?.GiaPhong || priceRow?.gia_phong || priceRow?.Gia || priceRow?.gia;
+          const numericPrice = Number(rawPrice);
+          return Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : 0;
+        };
+
+        const getNightlyPrice = (room) => getPriceForSeason(room, 1);
+        const getRoomCount = (room) => {
+          const phongs = room.phongs || [];
+          const count = Number(room.soLuongPhong || room.so_luong_phong || (Array.isArray(phongs) ? phongs.length : 0));
+          return Number.isFinite(count) && count > 0 ? count : 5;
+        };
+        const applyBackgroundImages = (root = document) => {
+          root.querySelectorAll('[data-bg-image]').forEach((element) => {
+            const backgroundImage = element.getAttribute('data-bg-image');
+            if (backgroundImage && backgroundImage !== 'undefined' && backgroundImage !== 'null') {
+              element.style.backgroundImage = `url("${backgroundImage}")`;
+            }
+          });
+        };
+        const roomTypesCacheKey = 'peachvalley:room-types:v1';
+        const roomCacheTtlMs = 10 * 60 * 1000;
+        const jsonHeaders = {
+          Accept: 'application/json',
+        };
+
+        const guestMinimums = {
+          adults: 1,
+          children: 0,
+          rooms: 1,
+        };
+
+        function syncGuestControls() {
+          const adults = Math.max(Number.parseInt(adultCount?.textContent || '1', 10) || 1, guestMinimums.adults);
+          const children = Math.max(Number.parseInt(childrenCount?.textContent || '0', 10) || 0, guestMinimums.children);
+          const rooms = Math.max(Number.parseInt(roomCount?.textContent || '1', 10) || 1, guestMinimums.rooms);
+
+          if (adultCount) adultCount.textContent = String(adults);
+          if (childrenCount) childrenCount.textContent = String(children);
+          if (roomCount) roomCount.textContent = String(rooms);
+
+          guestWrapper?.querySelectorAll('[data-guest-action]').forEach((button) => {
+            const type = button.dataset.guestType;
+            const counter = type ? guestWrapper.querySelector(`[data-guest-count="${type}"]`) : null;
+            const current = Number.parseInt(counter?.textContent || '0', 10);
+            const min = guestMinimums[type] ?? 0;
+
+            button.disabled = button.dataset.guestAction === 'dec' && current <= min;
+          });
+
+          if (guestText) {
+            guestText.textContent = `${adults} người lớn - ${children} trẻ em - ${rooms} phòng`;
           }
-        ];
+
+          if (summary) {
+            summary.dataset.adults = String(adults);
+            summary.dataset.children = String(children);
+            summary.dataset.rooms = String(rooms);
+          }
+        }
+
+        guestWrapper?.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('[data-guest-action]') : null;
+          if (!button || !guestWrapper.contains(button)) return;
+
+          event.preventDefault();
+          event.stopImmediatePropagation();
+
+          const type = button.dataset.guestType;
+          const counter = type ? guestWrapper.querySelector(`[data-guest-count="${type}"]`) : null;
+          if (!type || !counter) return;
+
+          const min = guestMinimums[type] ?? 0;
+          const current = Number.parseInt(counter.textContent || String(min), 10) || min;
+          const next = button.dataset.guestAction === 'inc'
+            ? current + 1
+            : Math.max(current - 1, min);
+
+          counter.textContent = String(next);
+          syncGuestControls();
+          summary?.dispatchEvent(new Event('booking-summary-change'));
+        }, true);
+
+        async function readApiJson(response, fallbackMessage) {
+          const contentType = response.headers.get('content-type') || '';
+
+          if (!contentType.includes('application/json')) {
+            throw new Error(fallbackMessage);
+          }
+
+          return response.json();
+        }
+
+        const readStoredRoomTypes = () => {
+          if (window.CustomerRoomApi?.getStoredRoomTypes) {
+            return window.CustomerRoomApi.getStoredRoomTypes({ allowExpired: true });
+          }
+
+          try {
+            const rawValue = window.localStorage?.getItem(roomTypesCacheKey);
+            const cached = rawValue ? JSON.parse(rawValue) : null;
+            return Array.isArray(cached?.data) ? cached.data : null;
+          } catch (error) {
+            return null;
+          }
+        };
+        const isRoomTypesCacheFresh = () => {
+          if (window.CustomerRoomApi?.isRoomTypesCacheFresh) {
+            return window.CustomerRoomApi.isRoomTypesCacheFresh();
+          }
+
+          try {
+            const rawValue = window.localStorage?.getItem(roomTypesCacheKey);
+            const cached = rawValue ? JSON.parse(rawValue) : null;
+            return Boolean(cached?.expiresAt && cached.expiresAt > Date.now());
+          } catch (error) {
+            return false;
+          }
+        };
+        const storeRoomTypes = (rooms) => {
+          try {
+            window.localStorage?.setItem(roomTypesCacheKey, JSON.stringify({
+              data: rooms,
+              expiresAt: Date.now() + roomCacheTtlMs,
+            }));
+          } catch (error) {
+            // Storage can be unavailable; the API response still renders.
+          }
+        };
+        const getRoomTypes = async (options = {}) => {
+          if (window.CustomerRoomApi?.getRoomTypes) {
+            return window.CustomerRoomApi.getRoomTypes(options);
+          }
+
+          const response = await fetch('/api/loai-phong', {
+            headers: jsonHeaders,
+          });
+          const result = await readApiJson(response, 'Không thể tải danh sách phòng');
+          if (!result.success || !Array.isArray(result.data)) throw new Error(result.message || 'Không thể tải danh sách phòng');
+          storeRoomTypes(result.data);
+          return result.data;
+        };
+
+        function createSearchDate(year, month, day) {
+          const date = new Date(year, month - 1, day);
+          return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day ? date : null;
+        }
 
         function parseSearchDate(value) {
           const normalizedValue = String(value || '').trim();
           let match = normalizedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-
           if (match) {
             const [, day, month, year] = match;
             return createSearchDate(Number(year), Number(month), Number(day));
           }
-
           match = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-
           if (match) {
             const [, year, month, day] = match;
             return createSearchDate(Number(year), Number(month), Number(day));
           }
-
           const parsedDate = new Date(normalizedValue);
           return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
         }
 
-        function createSearchDate(year, month, day) {
-          const date = new Date(year, month - 1, day);
+        function formatApiDate(value) {
+          const date = value instanceof Date ? value : parseSearchDate(value);
+          if (!date) return '';
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        }
 
-          if (
-            date.getFullYear() !== year ||
-            date.getMonth() !== month - 1 ||
-            date.getDate() !== day
-          ) {
+        function formatDisplayDate(value) {
+          const date = value instanceof Date ? value : parseSearchDate(value);
+          if (!date) return '';
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        }
+
+        function applyInitialSearchFromUrl() {
+          const params = new URLSearchParams(window.location.search);
+          const checkIn = parseSearchDate(params.get('checkIn'));
+          const checkOut = parseSearchDate(params.get('checkOut'));
+          const adults = Number.parseInt(params.get('NguoiLon') || params.get('adults') || '', 10);
+          const children = Number.parseInt(params.get('TreEm') || params.get('children') || '', 10);
+          const rooms = Number.parseInt(params.get('SoPhong') || params.get('rooms') || '', 10);
+
+          if (checkIn && checkInInput) {
+            checkInInput.value = formatDisplayDate(checkIn);
+          }
+
+          if (checkOut && checkOutInput) {
+            checkOutInput.value = formatDisplayDate(checkOut);
+          }
+
+          if (Number.isFinite(adults) && adultCount) {
+            adultCount.textContent = String(Math.max(adults, 1));
+          }
+
+          if (Number.isFinite(children) && childrenCount) {
+            childrenCount.textContent = String(Math.max(children, 0));
+          }
+
+          if (Number.isFinite(rooms) && roomCount) {
+            roomCount.textContent = String(Math.max(rooms, 1));
+          }
+        }
+
+        function getNights() {
+          const checkIn = parseSearchDate(checkInInput?.value);
+          const checkOut = parseSearchDate(checkOutInput?.value);
+          if (!checkIn || !checkOut || checkIn >= checkOut) {
+            return Number(summary?.dataset.nights || '1') || 1;
+          }
+          return Math.max(Math.round((checkOut - checkIn) / (24 * 60 * 60 * 1000)), 1);
+        }
+
+        function renderBookingSummary() {
+          if (!bookingList || !bookingTotal) return;
+          bookingList.innerHTML = '';
+          let total = 0;
+          const nights = getNights();
+          let selectedRoomCount = 0;
+
+          selections.forEach((item, key) => {
+            selectedRoomCount += item.quantity;
+            total += item.price * item.quantity * nights;
+            const row = document.createElement('div');
+            row.className = 'booking-item';
+            row.innerHTML = `
+              <div class="booking-item-title">Phòng: ${item.quantity} ${escapeHtml(item.name)}</div>
+              <div class="booking-item-footer">
+                <div class="booking-item-price">${item.price.toLocaleString('vi-VN')} VND / đêm</div>
+                <button type="button" class="booking-item-cancel" data-room-cancel="${escapeAttr(key)}">
+                  <span class="icon ion-ios-close"></span> Hủy
+                </button>
+              </div>
+            `;
+            bookingList.appendChild(row);
+          });
+
+          bookingTotal.textContent = `${total.toLocaleString('vi-VN')} VND`;
+
+          if (bookingContinue) {
+            const hasSelectedRooms = selectedRoomCount > 0;
+            bookingContinue.classList.toggle('disabled', !hasSelectedRooms);
+            bookingContinue.setAttribute('aria-disabled', hasSelectedRooms ? 'false' : 'true');
+
+            if (hasSelectedRooms) {
+              bookingContinue.removeAttribute('tabindex');
+            } else {
+              bookingContinue.setAttribute('tabindex', '-1');
+            }
+          }
+        }
+
+        function buildBookingPayload() {
+          const checkIn = parseSearchDate(checkInInput?.value);
+          const checkOut = parseSearchDate(checkOutInput?.value);
+          const nights = getNights();
+          const adults = Number.parseInt(adultCount?.textContent || '0', 10) || 0;
+          const children = Number.parseInt(childrenCount?.textContent || '0', 10) || 0;
+          const requestedRooms = Number.parseInt(roomCount?.textContent || '1', 10) || 1;
+          const rooms = Array.from(selections.entries()).map(([key, item]) => {
+            const room = roomsData.find((candidate) => String(candidate.id) === String(key)) || {};
+            return {
+              id: key,
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              adults: Number(room.adults ?? item.adults ?? 0),
+              children: Number(room.children ?? item.children ?? 0),
+            };
+          });
+          const total = rooms.reduce((sum, room) => sum + (Number(room.price) || 0) * (Number(room.quantity) || 0) * nights, 0);
+
+          return {
+            checkIn: formatApiDate(checkIn),
+            checkOut: formatApiDate(checkOut),
+            nights,
+            adults,
+            children,
+            requestedRooms,
+            rooms,
+            total,
+            savedAt: new Date().toISOString(),
+          };
+        }
+
+        function storeBookingPayload() {
+          const payload = buildBookingPayload();
+
+          if (!payload.rooms.length) {
+            localStorage.removeItem('peachBookingSelection');
             return null;
           }
 
-          return date;
+          localStorage.setItem('peachBookingSelection', JSON.stringify(payload));
+          return payload;
         }
 
-        function filterRooms() {
-          const checkIn = parseSearchDate(checkInInput.value);
-          const checkOut = parseSearchDate(checkOutInput.value);
-          const adults = parseInt(adultCount.textContent);
-          const children = parseInt(childrenCount.textContent);
-          const totalGuests = adults + children;
+        function syncQuantity(input, nextValue = null, options = {}) {
+          const { updateSelection = true } = options;
+          const min = Number(input.min || '0');
+          const max = Number(input.max || '1');
+          const value = nextValue === null ? Number(input.value || '0') : nextValue;
+          const normalizedValue = Math.min(Math.max(value, min), max);
+          const stepper = input.closest('[data-room-qty-stepper]');
+          const valueLabel = stepper?.querySelector('[data-room-qty-value]');
+          const decrementButton = stepper?.querySelector('[data-room-qty-action="decrement"]');
+          const incrementButton = stepper?.querySelector('[data-room-qty-action="increment"]');
+          const key = input.dataset.roomId || input.dataset.roomName;
+
+          input.value = String(normalizedValue);
+          if (valueLabel) valueLabel.textContent = `${normalizedValue} phòng`;
+          if (decrementButton) decrementButton.disabled = normalizedValue <= min;
+          if (incrementButton) incrementButton.disabled = normalizedValue >= max;
+
+          if (!updateSelection) {
+            renderBookingSummary();
+            return;
+          }
+
+          if (normalizedValue > 0) {
+            selections.set(key, {
+              name: input.dataset.roomName || 'Phòng',
+              price: Number(input.dataset.roomPrice || '0'),
+              quantity: normalizedValue,
+              adults: Number(input.dataset.roomAdults || '0'),
+              children: Number(input.dataset.roomChildren || '0'),
+            });
+          } else {
+            selections.delete(key);
+          }
+          renderBookingSummary();
+        }
+
+        function openAmenitiesModal(trigger) {
+          const modal = document.querySelector('[data-room-modal]');
+          if (!modal) return;
+
+          const title = modal.querySelector('[data-room-modal-title]');
+          const area = modal.querySelector('[data-room-modal-area]');
+          const desc = modal.querySelector('[data-room-modal-desc]');
+          const slidesContainer = modal.querySelector('[data-room-modal-slides]');
+          const amenitiesGrid = modal.querySelector('.room-amenities-modal-list .room-amenities-grid');
+          const images = (trigger.dataset.roomImages || '').split('|').filter(Boolean);
+          const amenities = (trigger.dataset.roomAmenities || '').split('|').filter(Boolean);
+
+          if (title) title.textContent = trigger.dataset.roomTitle || 'Phòng';
+          if (area) area.textContent = trigger.dataset.roomArea || '';
+          if (desc) desc.textContent = trigger.dataset.roomDesc || '';
+          if (slidesContainer) {
+            slidesContainer.innerHTML = images.map((url, index) => `
+              <div class="room-amenities-modal-slide${index === 0 ? ' is-active' : ''}" style="background-image: url('${escapeAttr(url)}')"></div>
+            `).join('');
+          }
+          if (amenitiesGrid) {
+            amenitiesGrid.innerHTML = amenities.length
+              ? amenities.map((item) => `
+                <div class="room-amenity-item">
+                  <span class="room-amenity-icon ion-ios-checkmark-circle"></span>
+                  <span>${escapeHtml(item)}</span>
+                </div>
+              `).join('')
+              : '<div class="room-amenity-item"><span class="room-amenity-icon ion-ios-checkmark-circle"></span><span>Tiện nghi phòng</span></div>';
+          }
+
+          modal.classList.add('is-open');
+          document.body.classList.add('modal-open');
+        }
+
+        function bindDynamicControls() {
+          document.querySelectorAll('[data-room-slider]').forEach((slider) => {
+            const slides = Array.from(slider.querySelectorAll('.room-result-slide'));
+            if (!slides.length) return;
+            let index = slides.findIndex((slide) => slide.classList.contains('is-active'));
+            if (index < 0) {
+              index = 0;
+              slides[0].classList.add('is-active');
+            }
+            const show = (nextIndex) => {
+              slides[index].classList.remove('is-active');
+              index = (nextIndex + slides.length) % slides.length;
+              slides[index].classList.add('is-active');
+            };
+            slider.querySelector('[data-room-slider-prev]')?.addEventListener('click', () => show(index - 1));
+            slider.querySelector('[data-room-slider-next]')?.addEventListener('click', () => show(index + 1));
+          });
+
+          document.querySelectorAll('[data-room-qty-input]').forEach((input) => {
+            const key = input.dataset.roomId || input.dataset.roomName;
+            const selected = selections.get(key);
+
+            if (selected) {
+              input.value = String(Math.min(Number(selected.quantity || 0), Number(input.max || '1')));
+            }
+
+            syncQuantity(input, null, { updateSelection: false });
+          });
+          document.querySelectorAll('[data-room-qty-stepper]').forEach((stepper) => {
+            const input = stepper.querySelector('[data-room-qty-input]');
+            if (!(input instanceof HTMLInputElement)) return;
+            stepper.querySelector('[data-room-qty-action="decrement"]')?.addEventListener('click', () => syncQuantity(input, Number(input.value || '0') - 1));
+            stepper.querySelector('[data-room-qty-action="increment"]')?.addEventListener('click', () => syncQuantity(input, Number(input.value || '0') + 1));
+          });
+
+          document.querySelectorAll('[data-room-modal-trigger]').forEach((trigger) => {
+            trigger.addEventListener('click', (event) => {
+              event.stopPropagation();
+              openAmenitiesModal(trigger);
+            });
+          });
+
+          document.querySelectorAll('[data-room-card-trigger]').forEach((card) => {
+            card.addEventListener('click', (event) => {
+              const target = event.target instanceof Element ? event.target : null;
+              if (target?.closest('a, button, input, select, textarea, .room-result-actions, [data-room-qty-stepper], [data-room-slider-prev], [data-room-slider-next], [data-room-modal-trigger]')) return;
+              openAmenitiesModal(card);
+            });
+          });
+        }
+
+        function bindModalClose() {
+          const modal = document.querySelector('[data-room-modal]');
+          if (!modal) return;
+          modal.querySelectorAll('[data-room-modal-close]').forEach((button) => {
+            button.addEventListener('click', () => {
+              modal.classList.remove('is-open');
+              document.body.classList.remove('modal-open');
+            });
+          });
+
+          const showModalSlide = (step) => {
+            const slides = Array.from(modal.querySelectorAll('.room-amenities-modal-slide'));
+            if (!slides.length) return;
+            let index = slides.findIndex((slide) => slide.classList.contains('is-active'));
+            if (index < 0) index = 0;
+            slides[index].classList.remove('is-active');
+            const nextIndex = (index + step + slides.length) % slides.length;
+            slides[nextIndex].classList.add('is-active');
+          };
+
+          modal.querySelector('[data-room-modal-prev]')?.addEventListener('click', () => showModalSlide(-1));
+          modal.querySelector('[data-room-modal-next]')?.addEventListener('click', () => showModalSlide(1));
+        }
+
+        function getRoomTypeId(room) {
+          return room.MaLoaiPhong || room.ma_loai_phong || room.id;
+        }
+
+        function renderRoomCards(rooms) {
+          roomsData = rooms.map((room) => {
+            const id = getRoomTypeId(room);
+            const name = room.TenLoaiPhong || room.ten_loai_phong || 'Phòng';
+            const description = room.Mota || room.mo_ta || 'Phòng thoải mái, hiện đại và đầy đủ tiện nghi.';
+            const adults = Number(room.NguoiLon ?? room.nguoi_lon ?? 0);
+            const children = Number(room.TreEm ?? room.tre_em ?? 0);
+            const capacity = Math.max((Number.isFinite(adults) ? adults : 0) + (Number.isFinite(children) ? children : 0), 1);
+            const price = getNightlyPrice(room);
+            const images = getImages(room);
+            const roomCount = getRoomCount(room);
+            const amenities = room.tienNghis || room.tien_nghis || [];
+            const amenitiesNames = Array.isArray(amenities) ? amenities.map((item) => item.TenTienNghi || item.ten_tien_nghi).filter(Boolean) : [];
+            return { id, name, description, adults, children, capacity, price, images, roomCount, amenitiesNames };
+          });
+          resultsContainer.innerHTML = '';
+
+          if (roomsData.length === 0) {
+            resultsContainer.innerHTML = '<div class="room-results-loading">Không có loại phòng nào còn trống theo tiêu chí bạn chọn.</div>';
+            renderBookingSummary();
+            return;
+          }
+
+          for (let i = 0; i < roomsData.length; i++) {
+            const room = roomsData[i];
+            const imageAttr = room.images.map(escapeAttr).join('|');
+            const amenitiesAttr = room.amenitiesNames.map(escapeAttr).join('|');
+            const slides = room.images.map((imageUrl, index) => `
+              <div class="room-result-slide${index === 0 ? ' is-active' : ''}" data-bg-image="${escapeAttr(imageUrl)}"></div>
+            `).join('');
+
+            resultsContainer.insertAdjacentHTML('beforeend', `
+              <div
+                class="room-result-card"
+                data-room-card-trigger
+                data-room-id="${escapeAttr(room.id)}"
+                data-room-title="${escapeAttr(room.name)}"
+                data-room-area=""
+                data-room-desc="${escapeAttr(room.description)}"
+                data-room-images="${imageAttr}"
+                data-room-amenities="${amenitiesAttr}"
+              >
+                <div class="room-result-slider" data-room-slider>
+                  <button type="button" class="room-result-slider-btn prev" data-room-slider-prev aria-label="Ảnh trước">
+                    <span class="icon ion-ios-arrow-back"></span>
+                  </button>
+                  <div class="room-result-slides">${slides}</div>
+                  <button type="button" class="room-result-slider-btn next" data-room-slider-next aria-label="Ảnh sau">
+                    <span class="icon ion-ios-arrow-forward"></span>
+                  </button>
+                </div>
+                <div class="room-result-content">
+                  <div class="room-result-header">
+                    <h3>${escapeHtml(room.name)}</h3>
+                    <span class="room-result-capacity">
+                      <span class="icon ion-ios-people"></span>
+                      ${room.capacity} khách
+                    </span>
+                  </div>
+                  <p class="room-result-desc">${escapeHtml(room.description)}</p>
+                  <div class="room-result-meta">
+                    <span><strong>Người lớn:</strong> ${Number.isFinite(room.adults) ? room.adults : 0}</span>
+                    <span><strong>Trẻ em:</strong> ${Number.isFinite(room.children) ? room.children : 0}</span>
+                    <span><strong>Còn trống:</strong> ${room.roomCount} phòng</span>
+                  </div>
+                  <button
+                    type="button"
+                    class="room-result-amenities-link"
+                    data-room-modal-trigger
+                    data-room-title="${escapeAttr(room.name)}"
+                    data-room-area=""
+                    data-room-desc="${escapeAttr(room.description)}"
+                    data-room-images="${imageAttr}"
+                    data-room-amenities="${amenitiesAttr}"
+                  >
+                    Xem tất cả tiện nghi
+                  </button>
+                  <div class="room-result-footer">
+                    <div class="room-result-price">
+                      <span class="room-result-price-line">
+                        <span class="value">${room.price > 0 ? `${room.price.toLocaleString('vi-VN')} VND` : 'Liên hệ'}</span>
+                        <span class="per">/ đêm</span>
+                      </span>
+                    </div>
+                    <div class="room-result-actions">
+                      <div class="room-result-qty-stepper" data-room-qty-stepper>
+                        <button type="button" class="room-result-qty-btn" data-room-qty-action="decrement" aria-label="Giảm số phòng">-</button>
+                        <input
+                          type="hidden"
+                          value="0"
+                          min="0"
+                          max="${room.roomCount}"
+                          data-room-qty
+                          data-room-qty-input
+                          data-room-id="${escapeAttr(room.id)}"
+                          data-room-name="${escapeAttr(room.name)}"
+                          data-room-price="${room.price}"
+                          data-room-adults="${Number.isFinite(room.adults) ? room.adults : 0}"
+                          data-room-children="${Number.isFinite(room.children) ? room.children : 0}"
+                        >
+                        <span class="room-result-qty-value" data-room-qty-value>0 phòng</span>
+                        <button type="button" class="room-result-qty-btn" data-room-qty-action="increment" aria-label="Tăng số phòng">+</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `);
+          }
+
+          applyBackgroundImages(resultsContainer);
+          bindDynamicControls();
+          renderBookingSummary();
+        }
+
+        async function loadRooms() {
+          if (!resultsContainer) return;
+          const storedRooms = readStoredRoomTypes();
+          let renderedFromCache = false;
+
+          if (Array.isArray(storedRooms) && storedRooms.length > 0) {
+            allRoomTypes = storedRooms;
+            await searchAvailableRooms(false);
+            renderedFromCache = true;
+          }
+
+          if (renderedFromCache && isRoomTypesCacheFresh()) {
+            return;
+          }
+
+          try {
+            const rooms = await getRoomTypes({ force: renderedFromCache });
+            if (!Array.isArray(rooms)) throw new Error('Không thể tải danh sách phòng');
+            allRoomTypes = rooms;
+            await searchAvailableRooms(false);
+          } catch (error) {
+            console.error('Error loading room types:', error);
+            if (!renderedFromCache) {
+              resultsContainer.innerHTML = '<div class="room-results-loading">Không thể tải danh sách phòng.</div>';
+            }
+          }
+        }
+
+        function validateSearchInputs(shouldAlert = true) {
+          const checkIn = parseSearchDate(checkInInput?.value);
+          const checkOut = parseSearchDate(checkOutInput?.value);
+          const adults = Number.parseInt(adultCount?.textContent || '0', 10);
+          const children = Number.parseInt(childrenCount?.textContent || '0', 10);
+          const rooms = Number.parseInt(roomCount?.textContent || '1', 10);
 
           if (!checkIn || !checkOut) {
-            alert('Vui lòng nhập ngày theo định dạng dd/mm/yyyy');
-            return;
+            if (shouldAlert) alert('Vui lòng nhập ngày theo định dạng dd/mm/yyyy');
+            return null;
           }
-
-          console.log('[v0] Filtering with:', {
-            checkIn: checkIn.toLocaleDateString('vi-VN'),
-            checkOut: checkOut.toLocaleDateString('vi-VN'),
-            totalGuests: totalGuests,
-            adults: adults,
-            children: children
-          });
-
           if (checkIn >= checkOut) {
-            alert('Ngày nhận phòng phải trước ngày trả phòng');
-            return;
+            if (shouldAlert) alert('Ngày nhận phòng phải trước ngày trả phòng');
+            return null;
           }
 
-          let visibleCount = 0;
-          roomsData.forEach(room => {
-            if (totalGuests > 0 && totalGuests <= room.capacity) {
-              room.element.classList.remove('room-hidden');
-              visibleCount++;
-            } else if (totalGuests > room.capacity) {
-              room.element.classList.add('room-hidden');
-            } else {
-              room.element.classList.remove('room-hidden');
-              visibleCount++;
-            }
-          });
+          return {
+            checkIn,
+            checkOut,
+            adults,
+            children,
+            rooms: Math.max(Number.isFinite(rooms) ? rooms : 1, 1),
+          };
+        }
 
-          if (visibleCount === 0) {
-            alert('Không có phòng nào phù hợp với số khách bạn chọn. Vui lòng thay đổi tiêu chí tìm kiếm.');
-            roomsData.forEach(room => room.element.classList.remove('room-hidden'));
+        async function searchAvailableRooms(shouldAlert = true) {
+          if (!resultsContainer) return;
+          const search = validateSearchInputs(shouldAlert);
+          if (!search) return;
+
+          try {
+            if (!allRoomTypes.length) {
+              allRoomTypes = await getRoomTypes();
+            }
+
+            if (shouldAlert) {
+              resultsContainer.innerHTML = '<div class="room-results-loading">Đang tìm phòng trống...</div>';
+            }
+
+            const params = new URLSearchParams({
+              checkIn: formatApiDate(search.checkIn),
+              checkOut: formatApiDate(search.checkOut),
+              NguoiLon: String(Math.max(search.adults, 1)),
+              TreEm: String(Math.max(search.children, 0)),
+              SoPhong: String(Math.max(search.rooms, 1)),
+            });
+
+            if (shouldAlert) {
+              const nextUrl = new URL(window.location.href);
+              params.forEach((value, key) => nextUrl.searchParams.set(key, value));
+              window.history.replaceState({}, '', nextUrl.toString());
+            }
+
+            const response = await fetch(`/api/phong/tim-kiem?${params.toString()}`, {
+              cache: 'no-store',
+              headers: jsonHeaders,
+            });
+            const result = await readApiJson(response, 'Không thể tìm phòng trống');
+
+            if (!result.success || !Array.isArray(result.data)) {
+              const validationMessage = Object.values(result.errors || {}).flat().filter(Boolean).join('\n');
+              throw new Error(validationMessage || result.message || 'Không thể tìm phòng trống');
+            }
+
+            const availableCounts = new Map();
+            result.data.forEach((room) => {
+              const roomTypeId = room.MaLoaiPhong || room.ma_loai_phong || room.loaiPhong?.MaLoaiPhong || room.loai_phong?.ma_loai_phong;
+              if (!roomTypeId) return;
+              const key = String(roomTypeId);
+              availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+            });
+
+            const availableRoomTypes = allRoomTypes
+              .map((roomType) => {
+                const roomTypeId = getRoomTypeId(roomType);
+                const availableCount = availableCounts.get(String(roomTypeId)) || 0;
+                return availableCount >= Math.max(search.rooms, 1)
+                  ? { ...roomType, soLuongPhong: availableCount, so_luong_phong: availableCount }
+                  : null;
+              })
+              .filter(Boolean);
+
+            renderRoomCards(availableRoomTypes);
+
+            if (availableRoomTypes.length === 0 && shouldAlert) {
+              alert('Không có phòng trống phù hợp với ngày và số khách bạn chọn.');
+            }
+          } catch (error) {
+            console.error('Error searching available rooms:', error);
+            if (shouldAlert) {
+              alert(error.message || 'Không thể tìm phòng trống. Vui lòng thử lại.');
+            }
           }
         }
 
-        searchBtn.addEventListener('click', filterRooms);
+        function filterRooms(shouldAlert = true) {
+          searchAvailableRooms(shouldAlert);
+        }
 
-        checkInInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') filterRooms();
+        bookingList?.addEventListener('click', (event) => {
+          const cancelButton = event.target instanceof Element ? event.target.closest('[data-room-cancel]') : null;
+          if (!cancelButton) return;
+          const key = cancelButton.getAttribute('data-room-cancel');
+          const input = resultsContainer.querySelector(`[data-room-qty-input][data-room-id="${CSS.escape(String(key))}"]`);
+          if (input instanceof HTMLInputElement) {
+            syncQuantity(input, 0);
+            return;
+          }
+
+          selections.delete(key);
+          renderBookingSummary();
         });
 
-        checkOutInput.addEventListener('keypress', function(e) {
-          if (e.key === 'Enter') filterRooms();
+        searchBtn?.addEventListener('click', () => filterRooms(true));
+        bookingContinue?.addEventListener('click', (event) => {
+          if (bookingContinue.getAttribute('aria-disabled') === 'true') {
+            event.preventDefault();
+            alert('Vui lòng chọn ít nhất 1 phòng trước khi đặt.');
+            return;
+          }
+
+          storeBookingPayload();
+
+          if (isCustomerLoggedIn) return;
+
+          event.preventDefault();
+          alert('Vui lòng đăng nhập để tiếp tục đặt phòng.');
+          window.location.href = loginRedirectUrl;
         });
+        checkInInput?.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter') filterRooms(true);
+        });
+        checkOutInput?.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter') filterRooms(true);
+        });
+        summary?.addEventListener('booking-summary-change', renderBookingSummary);
+        applyInitialSearchFromUrl();
+        syncGuestControls();
+        window.setTimeout(syncGuestControls, 0);
+        bindModalClose();
+        loadRooms();
       });
     </script>
   </body>

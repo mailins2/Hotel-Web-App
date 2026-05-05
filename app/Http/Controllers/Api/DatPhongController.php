@@ -118,6 +118,58 @@ class DatPhongController extends Controller
     private function atomicAssignRooms($data, $datPhong)
     {
         $assignedRooms = [];
+        if (!empty($data['LoaiPhongs']) && is_array($data['LoaiPhongs'])) {
+            $ngayNhan = $data['NgayNhanPhong'];
+            $ngayTra = $data['NgayTraPhong'];
+
+            foreach ($data['LoaiPhongs'] as $loaiPhong) {
+                $maLoaiPhong = $loaiPhong['MaLoaiPhong'];
+                $soLuong = $loaiPhong['SoLuong'];
+
+                $availableRooms = DB::table('Phong as p')
+                    ->where('p.MaLoaiPhong', $maLoaiPhong)
+                    ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
+                        $query->select(DB::raw(1))
+                            ->from('ChiTietDatPhong as ctdp')
+                            ->join('DatPhong as dp', 'dp.MaDatPhong', '=', 'ctdp.MaDatPhong')
+                            ->whereColumn('ctdp.MaPhong', 'p.MaPhong')
+                            ->where('dp.NgayNhanPhong', '<', $ngayTra)
+                            ->where('dp.NgayTraPhong', '>', $ngayNhan)
+                            ->where(function ($q) {
+                                $q->whereIn('dp.TinhTrang', [1, 2])
+                                  ->orWhere(function ($q2) {
+                                      $q2->where('dp.TinhTrang', 0)
+                                         ->where('dp.NgayDat', '>=', now()->subMinutes(15));
+                                  });
+                            });
+                    })
+                    ->orderBy('p.MaPhong')
+                    ->limit($soLuong)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($availableRooms->count() < $soLuong) {
+                    throw new \Exception('Khong du phong trong');
+                }
+
+                foreach ($availableRooms as $room) {
+                    try {
+                        ChiTietDatPhong::create([
+                            'MaDatPhong' => $datPhong->MaDatPhong,
+                            'MaPhong' => $room->MaPhong
+                        ]);
+                        $assignedRooms[] = $room->MaPhong;
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        if ($e->getCode() == 23000) {
+                            throw new \Exception('Phong ' . $room->MaPhong . ' vua bi dat boi nguoi khac');
+                        }
+                        throw $e;
+                    }
+                }
+            }
+
+            return $assignedRooms;
+        }
         $maLoaiPhong = $data['MaLoaiPhong'];
         $ngayNhan = $data['NgayNhanPhong'];
         $ngayTra = $data['NgayTraPhong'];
@@ -173,6 +225,30 @@ class DatPhongController extends Controller
     // =========================
     private function validateRequest($request)
     {
+       if ($request->has('LoaiPhongs')) {
+           $data = $request->validate([
+                'MaKH' => 'required|exists:KhachHang,MaKH',
+                'NgayNhanPhong' => [
+                    'required',
+                    'date',
+                    'after_or_equal:today',
+                    'before_or_equal:' . now()->addYear()->toDateString()
+                ],
+                'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
+                'LoaiPhongs' => 'required|array|min:1',
+                'LoaiPhongs.*.MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
+                'LoaiPhongs.*.SoLuong' => 'required|integer|min:1',
+            ], [
+                'NgayNhanPhong.after_or_equal' => 'KhÃ´ng thá»ƒ Ä‘áº·t phÃ²ng trong quÃ¡ khá»©',
+                'NgayNhanPhong.before_or_equal' => 'Chá»‰ Ä‘Æ°á»£c Ä‘áº·t tá»‘i Ä‘a 1 nÄƒm tá»›i',
+                'NgayTraPhong.after' => 'NgÃ y tráº£ pháº£i sau ngÃ y nháº­n'
+            ]);
+
+           $data['SoLuong'] = collect($data['LoaiPhongs'])->sum('SoLuong');
+
+           return $data;
+       }
+
        return $request->validate([
             'MaKH' => 'required|exists:KhachHang,MaKH',
             'NgayNhanPhong' => [
@@ -224,31 +300,7 @@ class DatPhongController extends Controller
     // =========================
     private function getMua($ngay)
     {
-        $date = Carbon::parse($ngay);
-        $thang = $date->month;
-
-        $holidays = ['01-01', '04-30', '05-01', '09-02'];
-        if (in_array($date->format('m-d'), $holidays)) {
-            return 3;
-        }
-
-        if ($thang == 1 || $thang == 2) {
-            return 3;
-        }
-
-        if ($thang >= 6 && $thang <= 8) {
-            return 3;
-        }
-
-        if ($thang >= 9 && $thang <= 11) {
-            return 1;
-        }
-
-        if ($date->isWeekend()) {
-            return 2;
-        }
-
-        return 2;
+        return 1;
     }
 
     // =========================
@@ -260,13 +312,15 @@ class DatPhongController extends Controller
         $end = Carbon::parse($datPhong->NgayTraPhong);
         $tongTien = 0;
 
-        foreach ($datPhong->chiTietDatPhong as $ct) {
+        $roomTypeGroups = $datPhong->chiTietDatPhong->groupBy(fn ($ct) => $ct->phong->MaLoaiPhong);
+
+        foreach ($roomTypeGroups as $maLoaiPhong => $items) {
             $currentDate = $start->copy();
-            $tongPhong = 0;
+            $donGia = 0;
 
             while ($currentDate < $end) {
                 $mua = $this->getMua($currentDate);
-                $bangGia = BangGia::where('MaLoaiPhong', $ct->phong->MaLoaiPhong)
+                $bangGia = BangGia::where('MaLoaiPhong', $maLoaiPhong)
                     ->where('Mua', $mua)
                     ->first();
 
@@ -274,18 +328,20 @@ class DatPhongController extends Controller
                     throw new \Exception('Không có giá cho ngày ' . $currentDate->toDateString());
                 }
 
-                $tongPhong += $bangGia->GiaPhong;
+                $donGia += $bangGia->GiaPhong;
                 $currentDate->addDay();
             }
 
+            $soLuong = $items->count();
+
             ChiTietHoaDon::create([
                 'MaHD' => $hoaDon->MaHD,
-                'MaLoaiPhong' => $ct->phong->MaLoaiPhong,
-                'SoLuong' => 1,
-                'DonGia' => $tongPhong
+                'MaLoaiPhong' => $maLoaiPhong,
+                'SoLuong' => $soLuong,
+                'DonGia' => $donGia
             ]);
 
-            $tongTien += $tongPhong;
+            $tongTien += $soLuong * $donGia;
         }
 
         $hoaDon->update(['TongTien' => $tongTien]);

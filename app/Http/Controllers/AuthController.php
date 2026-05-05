@@ -52,6 +52,12 @@ class AuthController extends Controller
             'Ten' => $taiKhoan->khachHang?->TenKH ?? $taiKhoan->nhanVien?->TenNV,
         ]);
 
+        $redirectTo = $request->input('redirect');
+
+        if ((int) $taiKhoan->LoaiTaiKhoan === 0 && is_string($redirectTo) && str_starts_with($redirectTo, url('/customer'))) {
+            return redirect()->to($redirectTo);
+        }
+
         return redirect()->route(match ((int) $taiKhoan->LoaiTaiKhoan) {
             1 => 'reception.dashboard',
             2 => 'admin.dashboard',

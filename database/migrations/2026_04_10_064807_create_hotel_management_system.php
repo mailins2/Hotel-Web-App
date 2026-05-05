@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up()
 {
+    if (Schema::hasTable('TaiKhoan')) {
+        return;
+    }
+
     // 1. TaiKhoan
     Schema::create('TaiKhoan', function (Blueprint $table) {
         $table->id('MaTK'); // unsignedBigInteger Primary Key
@@ -48,7 +52,8 @@ return new class extends Migration
         $table->id('MaLoaiPhong');
         $table->string('TenLoaiPhong', 50);
         $table->string('Mota', 200)->nullable();
-        $table->integer('SoNguoiToiDa')->default(1);
+        $table->integer('NguoiLon')->default(1);
+        $table->integer('TreEm')->default(0);
     });
 
     // 5. TienNghi

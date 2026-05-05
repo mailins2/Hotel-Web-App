@@ -44,7 +44,8 @@ class LoaiPhongController extends Controller
         $data = $request->validate([
             'TenLoaiPhong' => 'required|string|max:50',
             'Mota' => 'nullable|string',
-            'SoNguoiToiDa' => 'required|integer|min:1'
+            'NguoiLon' => 'required|integer|min:1',
+            'TreEm' => 'required|integer|min:0',
         ]);
 
         $loaiPhong = LoaiPhong::create($data);
@@ -86,7 +87,8 @@ class LoaiPhongController extends Controller
         $data = $request->validate([
             'TenLoaiPhong' => 'required|string|max:50',
             'Mota' => 'nullable|string',
-            'SoNguoiToiDa' => 'required|integer|min:1'
+            'NguoiLon' => 'required|integer|min:1',
+            'TreEm' => 'required|integer|min:0',
         ]);
 
         $loaiPhong->update($data);

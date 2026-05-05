@@ -30,6 +30,192 @@ const hideLoader = () => {
     document.getElementById("ftco-loader")?.classList.remove("show");
 };
 
+const ROOM_TYPES_CACHE_KEY = "peachvalley:room-types:v1";
+const ROOM_DETAIL_CACHE_PREFIX = "peachvalley:room-detail:v1:";
+const ROOM_CACHE_TTL_MS = 10 * 60 * 1000;
+const roomApiRequests = new Map();
+
+const getRoomCacheStorage = () => window.localStorage || window.sessionStorage;
+
+const readJsonCache = (key, { allowExpired = false } = {}) => {
+    try {
+        const storage = getRoomCacheStorage();
+        const rawValue = storage?.getItem(key);
+
+        if (!rawValue) {
+            return null;
+        }
+
+        const cached = JSON.parse(rawValue);
+
+        if (!allowExpired && (!cached?.expiresAt || cached.expiresAt <= Date.now())) {
+            storage?.removeItem(key);
+            return null;
+        }
+
+        return cached.data ?? null;
+    } catch (error) {
+        getRoomCacheStorage()?.removeItem(key);
+        return null;
+    }
+};
+
+const isJsonCacheFresh = (key) => {
+    try {
+        const rawValue = getRoomCacheStorage()?.getItem(key);
+        const cached = rawValue ? JSON.parse(rawValue) : null;
+        return Boolean(cached?.expiresAt && cached.expiresAt > Date.now());
+    } catch (error) {
+        return false;
+    }
+};
+
+const writeJsonCache = (key, data, ttl = ROOM_CACHE_TTL_MS) => {
+    try {
+        getRoomCacheStorage()?.setItem(
+            key,
+            JSON.stringify({
+                data,
+                expiresAt: Date.now() + ttl,
+            }),
+        );
+    } catch (error) {
+        // Ignore: storage can be disabled or full, API fallback still works.
+    }
+};
+
+const getRoomTypeId = (room) =>
+    room?.MaLoaiPhong ?? room?.ma_loai_phong ?? room?.id ?? null;
+
+const fetchApiData = async (url) => {
+    const response = await fetch(url);
+    const result = await response.json();
+
+    if (!result.success) {
+        throw new Error(result.message || "Khong the tai du lieu");
+    }
+
+    return result.data;
+};
+
+const rememberRoomDetails = (rooms) => {
+    if (!Array.isArray(rooms)) {
+        return;
+    }
+
+    rooms.forEach((room) => {
+        const roomId = getRoomTypeId(room);
+
+        if (roomId !== null && roomId !== undefined) {
+            writeJsonCache(`${ROOM_DETAIL_CACHE_PREFIX}${roomId}`, room);
+        }
+    });
+};
+
+const loadCachedRoomTypes = async ({ force = false } = {}) => {
+    if (!force) {
+        const cachedRooms = readJsonCache(ROOM_TYPES_CACHE_KEY);
+
+        if (Array.isArray(cachedRooms)) {
+            rememberRoomDetails(cachedRooms);
+            return cachedRooms;
+        }
+    }
+
+    const requestKey = "room-types";
+
+    if (!roomApiRequests.has(requestKey)) {
+        roomApiRequests.set(
+            requestKey,
+            fetchApiData("/api/loai-phong")
+                .then((rooms) => {
+                    if (!Array.isArray(rooms)) {
+                        throw new Error("Du lieu phong khong hop le");
+                    }
+
+                    writeJsonCache(ROOM_TYPES_CACHE_KEY, rooms);
+                    rememberRoomDetails(rooms);
+                    return rooms;
+                })
+                .finally(() => roomApiRequests.delete(requestKey)),
+        );
+    }
+
+    return roomApiRequests.get(requestKey);
+};
+
+const getStoredRoomTypes = ({ allowExpired = true } = {}) => {
+    const rooms = readJsonCache(ROOM_TYPES_CACHE_KEY, { allowExpired });
+
+    if (Array.isArray(rooms)) {
+        rememberRoomDetails(rooms);
+        return rooms;
+    }
+
+    return null;
+};
+
+const loadCachedRoomDetail = async (roomId, { force = false } = {}) => {
+    const normalizedRoomId = String(roomId || "").trim();
+
+    if (!normalizedRoomId) {
+        return null;
+    }
+
+    const detailCacheKey = `${ROOM_DETAIL_CACHE_PREFIX}${normalizedRoomId}`;
+
+    if (!force) {
+        const cachedDetail = readJsonCache(detailCacheKey);
+
+        if (cachedDetail) {
+            return cachedDetail;
+        }
+
+        const cachedRooms = readJsonCache(ROOM_TYPES_CACHE_KEY);
+        const roomFromList = Array.isArray(cachedRooms)
+            ? cachedRooms.find((room) => String(getRoomTypeId(room)) === normalizedRoomId)
+            : null;
+
+        if (roomFromList) {
+            writeJsonCache(detailCacheKey, roomFromList);
+            return roomFromList;
+        }
+    }
+
+    const requestKey = `room-detail:${normalizedRoomId}`;
+
+    if (!roomApiRequests.has(requestKey)) {
+        roomApiRequests.set(
+            requestKey,
+            fetchApiData(`/api/loai-phong/${encodeURIComponent(normalizedRoomId)}`)
+                .then((room) => {
+                    if (room) {
+                        writeJsonCache(detailCacheKey, room);
+                    }
+
+                    return room;
+                })
+                .finally(() => roomApiRequests.delete(requestKey)),
+        );
+    }
+
+    return roomApiRequests.get(requestKey);
+};
+
+window.CustomerRoomApi = {
+    getRoomTypes: loadCachedRoomTypes,
+    getRoomDetail: loadCachedRoomDetail,
+    getStoredRoomTypes,
+    isRoomTypesCacheFresh: () => isJsonCacheFresh(ROOM_TYPES_CACHE_KEY),
+    clearCache: () => {
+        const storage = getRoomCacheStorage();
+        storage?.removeItem(ROOM_TYPES_CACHE_KEY);
+        Object.keys(storage || {})
+            .filter((key) => key.startsWith(ROOM_DETAIL_CACHE_PREFIX))
+            .forEach((key) => storage.removeItem(key));
+    },
+};
+
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 const getDateAtMidnight = (value = new Date()) => {
@@ -199,8 +385,8 @@ const resetDatepicker = (picker) => {
     }
 };
 
-const formatGuestSummary = (adults, children) =>
-    `${adults} người lớn - ${children} trẻ em`;
+const formatGuestSummary = (adults, children, rooms = 1) =>
+    `${adults} người lớn - ${children} trẻ em - ${rooms} phòng`;
 
 const enhanceBookingForm = () => {
     const bookingForm = document.querySelector(".ftco-booking .booking-form");
@@ -268,7 +454,7 @@ const enhanceBookingForm = () => {
                     <span class="guest-trigger-icon">
                         <span class="ion-ios-person-outline"></span>
                     </span>
-                    <span class="guest-trigger-text" data-guest-summary>${formatGuestSummary(2, 0)}</span>
+                    <span class="guest-trigger-text" data-guest-summary>${formatGuestSummary(2, 0, 1)}</span>
                     <span class="guest-trigger-arrow">
                         <span class="ion-ios-arrow-down"></span>
                     </span>
@@ -294,6 +480,16 @@ const enhanceBookingForm = () => {
                             <button type="button" class="guest-stepper-btn" data-counter-action="increment" data-counter-target="children" aria-label="Tăng số trẻ em">+</button>
                         </div>
                     </div>
+                    <div class="guest-row">
+                        <div class="guest-row-copy">
+                            <div class="guest-row-title">Phòng</div>
+                        </div>
+                        <div class="guest-stepper">
+                            <button type="button" class="guest-stepper-btn" data-counter-action="decrement" data-counter-target="rooms" aria-label="Giảm số phòng">-</button>
+                            <span class="guest-stepper-value" data-guest-count="rooms">1</span>
+                            <button type="button" class="guest-stepper-btn" data-counter-action="increment" data-counter-target="rooms" aria-label="Tăng số phòng">+</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -304,6 +500,59 @@ const enhanceBookingForm = () => {
     if (searchAction) {
         searchAction.innerHTML = `<span class="booking-submit-content"><i class="ion-ios-search"></i>Tìm kiếm</span>`;
     }
+};
+
+const initHomeBookingSearchSync = () => {
+    const bookingForm = document.querySelector(".ftco-booking .booking-form");
+
+    if (!bookingForm) {
+        return;
+    }
+
+    const searchAction = bookingForm.querySelector(".row > .col-md:last-child .btn");
+    const checkinInput = bookingForm.querySelector(".checkin_date");
+    const checkoutInput = bookingForm.querySelector(".checkout_date");
+
+    if (!(searchAction instanceof HTMLAnchorElement)) {
+        return;
+    }
+
+    searchAction.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        const checkinDate = parseDateValue(checkinInput?.value);
+        const checkoutDate = parseDateValue(checkoutInput?.value);
+        const guestPicker = bookingForm.querySelector("[data-guest-picker]");
+        const adults =
+            guestPicker?.querySelector('[data-guest-input="adults"]')?.value || "2";
+        const children =
+            guestPicker?.querySelector('[data-guest-input="children"]')?.value || "0";
+        const rooms =
+            guestPicker?.querySelector('[data-guest-input="rooms"]')?.value || "1";
+
+        if (!checkinDate || !checkoutDate || checkinDate >= checkoutDate) {
+            window.alert("Vui lÃ²ng chá»n ngÃ y nháº­n vÃ  ngÃ y tráº£ há»£p lá»‡.");
+            return;
+        }
+
+        const targetUrl = new URL(searchAction.href, window.location.origin);
+        targetUrl.searchParams.set("checkIn", formatIsoDate(checkinDate));
+        targetUrl.searchParams.set("checkOut", formatIsoDate(checkoutDate));
+        targetUrl.searchParams.set(
+            "NguoiLon",
+            String(Math.max(Number.parseInt(adults, 10) || 1, 1)),
+        );
+        targetUrl.searchParams.set(
+            "TreEm",
+            String(Math.max(Number.parseInt(children, 10) || 0, 0)),
+        );
+        targetUrl.searchParams.set(
+            "SoPhong",
+            String(Math.max(Number.parseInt(rooms, 10) || 1, 1)),
+        );
+
+        window.location.href = targetUrl.toString();
+    });
 };
 
 const initGuestPickers = () => {
@@ -319,11 +568,13 @@ const initGuestPickers = () => {
         const counts = {
             adults: picker.querySelector('[data-guest-count="adults"]'),
             children: picker.querySelector('[data-guest-count="children"]'),
+            rooms: picker.querySelector('[data-guest-count="rooms"]'),
         };
         const controls = picker.querySelectorAll("[data-counter-action]");
         const limits = {
-            adults: { min: 1, max: 10 },
-            children: { min: 0, max: 6 },
+            adults: { min: 1 },
+            children: { min: 0 },
+            rooms: { min: 1 },
         };
 
         if (
@@ -365,6 +616,10 @@ const initGuestPickers = () => {
                 counts.children.textContent = String(children);
             }
 
+            if (counts.rooms instanceof HTMLSpanElement) {
+                counts.rooms.textContent = String(rooms);
+            }
+
             summary.textContent = formatGuestSummary(adults, children, rooms);
 
             controls.forEach((control) => {
@@ -381,10 +636,11 @@ const initGuestPickers = () => {
 
                 const currentValue = getCount(target);
                 const { min, max } = limits[target];
+                const hasMax = Number.isFinite(max);
 
                 control.disabled =
                     (action === "decrement" && currentValue <= min) ||
-                    (action === "increment" && currentValue >= max);
+                    (action === "increment" && hasMax && currentValue >= max);
             });
         };
 
@@ -425,9 +681,11 @@ const initGuestPickers = () => {
                 }
 
                 const currentValue = getCount(target);
+                const max = limits[target].max;
+                const hasMax = Number.isFinite(max);
                 const nextValue =
                     action === "increment"
-                        ? Math.min(currentValue + 1, limits[target].max)
+                        ? (hasMax ? Math.min(currentValue + 1, max) : currentValue + 1)
                         : Math.max(currentValue - 1, limits[target].min);
 
                 setCount(target, nextValue);
@@ -644,6 +902,10 @@ const initRoomAmenitiesModal = () => {
 };
 
 const initRoomSelection = () => {
+    if (document.querySelector("[data-room-results]")) {
+        return;
+    }
+
     const summary = document.querySelector("[data-booking-summary]");
     const totalEl = document.querySelector("[data-booking-total]");
     const listEl = document.querySelector("[data-booking-list]");
@@ -742,10 +1004,58 @@ const initSearchSummaryControls = () => {
 
     const today = getDateAtMidnight(new Date());
     const guestLimits = {
-        adults: { min: 1, max: 10 },
-        children: { min: 0, max: 6 },
+        adults: { min: 1 },
+        children: { min: 0 },
+        rooms: { min: 1 },
     };
     let isSyncingDates = false;
+
+    const applySearchParams = () => {
+        const params = new URLSearchParams(window.location.search);
+        const checkinDate = parseDateValue(params.get("checkIn"));
+        const checkoutDate = parseDateValue(params.get("checkOut"));
+        const adults = Number.parseInt(
+            params.get("NguoiLon") || params.get("adults") || "",
+            10,
+        );
+        const children = Number.parseInt(
+            params.get("TreEm") || params.get("children") || "",
+            10,
+        );
+        const rooms = Number.parseInt(
+            params.get("SoPhong") || params.get("rooms") || "",
+            10,
+        );
+
+        if (checkinDate) {
+            checkinInput.value = formatDisplayDate(checkinDate);
+        }
+
+        if (checkoutDate) {
+            checkoutInput.value = formatDisplayDate(checkoutDate);
+        }
+
+        if (Number.isFinite(adults)) {
+            const counter = guestWrapper?.querySelector('[data-guest-count="adults"]');
+            if (counter) {
+                counter.textContent = String(Math.max(adults, guestLimits.adults.min));
+            }
+        }
+
+        if (Number.isFinite(children)) {
+            const counter = guestWrapper?.querySelector('[data-guest-count="children"]');
+            if (counter) {
+                counter.textContent = String(Math.max(children, guestLimits.children.min));
+            }
+        }
+
+        if (Number.isFinite(rooms)) {
+            const counter = guestWrapper?.querySelector('[data-guest-count="rooms"]');
+            if (counter) {
+                counter.textContent = String(Math.max(rooms, guestLimits.rooms.min));
+            }
+        }
+    };
 
     const calcNights = (checkinValue, checkoutValue) => {
         const checkinDate = parseDateValue(checkinValue);
@@ -821,10 +1131,12 @@ const initSearchSummaryControls = () => {
             }
 
             const current = Number.parseInt(counter.textContent || "0", 10);
+            const max = limit.max;
+            const hasMax = Number.isFinite(max);
             button.disabled =
                 button.dataset.guestAction === "dec"
                     ? current <= limit.min
-                    : current >= limit.max;
+                    : hasMax && current >= max;
         });
     };
 
@@ -842,10 +1154,12 @@ const initSearchSummaryControls = () => {
         if (guestWrapper) {
             const adults = guestWrapper.querySelector("[data-guest-count=\"adults\"]")?.textContent || "1";
             const children = guestWrapper.querySelector("[data-guest-count=\"children\"]")?.textContent || "0";
+            const rooms = guestWrapper.querySelector("[data-guest-count=\"rooms\"]")?.textContent || "1";
             summary.dataset.adults = adults;
             summary.dataset.children = children;
+            summary.dataset.rooms = rooms;
             if (guestText) {
-                guestText.textContent = `${adults} người lớn - ${children} trẻ em`;
+                guestText.textContent = formatGuestSummary(adults, children, rooms);
             }
         }
 
@@ -854,6 +1168,7 @@ const initSearchSummaryControls = () => {
         summary.dispatchEvent(new Event("booking-summary-change"));
     };
 
+    applySearchParams();
     updateSummary();
     checkinInput.addEventListener("change", updateSummary);
     checkoutInput.addEventListener("change", updateSummary);
@@ -882,9 +1197,11 @@ const initSearchSummaryControls = () => {
             }
 
             const current = Number.parseInt(counter.textContent || "0", 10);
+            const max = limit.max;
+            const hasMax = Number.isFinite(max);
             const nextValue =
                 button.dataset.guestAction === "inc"
-                    ? Math.min(current + 1, limit.max)
+                    ? (hasMax ? Math.min(current + 1, max) : current + 1)
                     : Math.max(limit.min, current - 1);
 
             counter.textContent = String(nextValue);
@@ -1156,6 +1473,7 @@ document.addEventListener(
         applyBackgroundImages();
         enhanceBookingForm();
         initGuestPickers();
+        initHomeBookingSearchSync();
         initRoomQuantitySteppers();
         initRoomSliders();
         initRoomAmenitiesModal();
