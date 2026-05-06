@@ -10,9 +10,15 @@ class LoaiPhong extends Model
     protected $primaryKey = 'MaLoaiPhong';
     public $timestamps = false;
     protected $fillable = [
-    'TenLoaiPhong',
-    'Mota',
-    'SoNguoiToiDa'
+        'TenLoaiPhong',
+        'Mota',
+        'NguoiLon',
+        'TreEm',
+    ];
+
+    protected $casts = [
+        'NguoiLon' => 'integer',
+        'TreEm' => 'integer',
     ];
 
     public function phongs()

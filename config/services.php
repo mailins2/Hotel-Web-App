@@ -22,6 +22,14 @@ return [
         'key' => env('RESEND_API_KEY'),
     ],
 
+    'zalopay' => [
+        'app_id' => env('ZALOPAY_APP_ID'),
+        'key1' => env('ZALOPAY_KEY1'),
+        'key2' => env('ZALOPAY_KEY2'),
+        'endpoint' => env('ZALOPAY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2/create'),
+        'callback_url' => env('ZALOPAY_CALLBACK_URL'),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

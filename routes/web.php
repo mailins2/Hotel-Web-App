@@ -15,11 +15,66 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::view('/blog-single', 'customer.blog-single')->name('blog-single');
     Route::view('/services', 'customer.services')->name('services');
     Route::view('/rooms', 'customer.rooms')->name('rooms');
+    Route::view('/room/{id}', 'customer.rooms-single')->name('room.detail');
     Route::view('/rooms-single', 'customer.rooms-single')->name('rooms-single');
     Route::view('/rooms-booking', 'customer.rooms-booking')->name('rooms-booking');
-    Route::view('/info-booking', 'customer.info-booking')->name('info-booking');
+    Route::get('/info-booking', function () {
+        if (!session()->has('auth_account')) {
+            return redirect()->route('login', [
+                'redirect' => route('customer.info-booking'),
+            ]);
+        }
+
+        $authAccount = session('auth_account', []);
+        $bookingCustomer = null;
+
+        if (!empty($authAccount['MaKH'])) {
+            $bookingCustomer = \App\Models\KhachHang::with('taiKhoan')->find($authAccount['MaKH']);
+        } elseif (!empty($authAccount['MaTK'])) {
+            $bookingCustomer = \App\Models\KhachHang::with('taiKhoan')
+                ->where('MaTK', $authAccount['MaTK'])
+                ->first();
+        }
+
+        return view('customer.info-booking', [
+            'bookingAccount' => $authAccount,
+            'bookingCustomer' => $bookingCustomer,
+        ]);
+    })->name('info-booking');
     Route::view('/profile', 'customer.profile')->name('profile');
-    Route::view('/my-bookings', 'customer.my-bookings')->name('my-bookings');
+    Route::get('/my-bookings', function () {
+        if (!session()->has('auth_account')) {
+            return redirect()->route('login', [
+                'redirect' => route('customer.my-bookings'),
+            ]);
+        }
+
+        $authAccount = session('auth_account', []);
+        $customerId = $authAccount['MaKH'] ?? null;
+
+        if (!$customerId && !empty($authAccount['MaTK'])) {
+            $customerId = \App\Models\KhachHang::where('MaTK', $authAccount['MaTK'])->value('MaKH');
+        }
+
+        $customerBookings = collect();
+
+        if ($customerId) {
+            $customerBookings = \App\Models\DatPhong::with([
+                'khachHang.taiKhoan',
+                'hoaDon.chiTietHoaDons.loaiPhong',
+                'hoaDon.thanhToans',
+                'chiTietDatPhong.phong.loaiPhong',
+            ])
+                ->where('MaKH', $customerId)
+                ->orderByDesc('NgayDat')
+                ->orderByDesc('MaDatPhong')
+                ->get();
+        }
+
+        return view('customer.my-bookings', [
+            'customerBookings' => $customerBookings,
+        ]);
+    })->name('my-bookings');
     Route::view('/promotion-wallet', 'customer.promotion-wallet')->name('promotion-wallet');
 
     Route::redirect('/room-single.html', '/customer/rooms-single');

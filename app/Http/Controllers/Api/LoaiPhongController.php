@@ -44,7 +44,8 @@ class LoaiPhongController extends Controller
         $data = $request->validate([
             'TenLoaiPhong' => 'required|string|max:50',
             'Mota' => 'nullable|string',
-            'SoNguoiToiDa' => 'required|integer|min:1'
+            'NguoiLon' => 'required|integer|min:1',
+            'TreEm' => 'required|integer|min:0',
         ]);
 
         $loaiPhong = LoaiPhong::create($data);
@@ -57,15 +58,22 @@ class LoaiPhongController extends Controller
 
     // GET /api/loai-phong/{id}
     public function show($id)
-    {
-        $loaiPhong = LoaiPhong::with($this->fullData())->find($id);
+        {
+            $loaiPhong = LoaiPhong::with([
+                    'phongs', // 👈 load danh sách phòng
+                    'tienNghis',
+                    'bangGias',
+                    'hinhs'
+                ])
+                ->withCount(['phongs as soLuongPhong']) // 👈 đếm luôn
+                ->find($id);
 
-        if (!$loaiPhong) {
-            return $this->error('Không tìm thấy loại phòng', 404);
+            if (!$loaiPhong) {
+                return $this->error('Không tìm thấy loại phòng', 404);
+            }
+
+            return $this->success($loaiPhong, 'Lấy chi tiết thành công');
         }
-
-        return $this->success($loaiPhong, 'Lấy chi tiết thành công');
-    }
 
     // PUT /api/loai-phong/{id}
     public function update(Request $request, $id)
@@ -79,7 +87,8 @@ class LoaiPhongController extends Controller
         $data = $request->validate([
             'TenLoaiPhong' => 'required|string|max:50',
             'Mota' => 'nullable|string',
-            'SoNguoiToiDa' => 'required|integer|min:1'
+            'NguoiLon' => 'required|integer|min:1',
+            'TreEm' => 'required|integer|min:0',
         ]);
 
         $loaiPhong->update($data);

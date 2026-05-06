@@ -22,6 +22,148 @@
             </div>
 
             <div class="customer-booking-list">
+              @php
+                $statusLabels = [
+                  \App\Models\DatPhong::HOLD => 'Chờ thanh toán',
+                  \App\Models\DatPhong::CONFIRMED => 'Đã xác nhận',
+                  \App\Models\DatPhong::CHECKED_IN => 'Đang ở',
+                  \App\Models\DatPhong::CHECKED_OUT => 'Đã trả phòng',
+                  \App\Models\DatPhong::CANCELLED => 'Đã hủy',
+                ];
+              @endphp
+
+              @forelse(($customerBookings ?? collect()) as $booking)
+                @php
+                  $customer = $booking->khachHang;
+                  $invoice = $booking->hoaDon;
+                  $roomGroups = $booking->chiTietDatPhong->groupBy(fn ($detail) => $detail->phong?->MaLoaiPhong ?? 'unknown');
+                  $invoiceDetails = collect($invoice?->chiTietHoaDons ?? []);
+                  $checkIn = \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong);
+                  $checkOut = \Illuminate\Support\Carbon::parse($booking->NgayTraPhong);
+                  $nights = max($checkIn->diffInDays($checkOut), 1);
+                  $statusLabel = $statusLabels[(int) $booking->TinhTrang] ?? 'Đã đặt';
+                  $rooms = $roomGroups->map(function ($items, $roomTypeId) use ($invoiceDetails, $nights) {
+                    $first = $items->first();
+                    $roomType = $first?->phong?->loaiPhong;
+                    $invoiceDetail = $invoiceDetails->firstWhere('MaLoaiPhong', is_numeric($roomTypeId) ? (int) $roomTypeId : $roomTypeId);
+                    $roomCount = $items->count();
+                    $roomNumbers = $items
+                      ->map(fn ($item) => $item->phong?->SoPhong)
+                      ->filter()
+                      ->values()
+                      ->implode(', ');
+                    $lineTotal = (float) (($invoiceDetail?->SoLuong ?? $roomCount) * ($invoiceDetail?->DonGia ?? 0));
+
+                    return [
+                      'TenPhong' => $roomType?->TenLoaiPhong ?? 'Phòng',
+                      'SoPhong' => $roomNumbers,
+                      'SoLuongPhong' => $roomCount,
+                      'SoKhach' => $roomCount * ((int) ($roomType?->NguoiLon ?? 0) + (int) ($roomType?->TreEm ?? 0)),
+                      'GiaMoiDem' => $nights > 0 ? (float) (($invoiceDetail?->DonGia ?? 0) / $nights) : 0,
+                      'ThanhTien' => $lineTotal,
+                    ];
+                  })->values();
+                  $summaryTitle = $rooms->pluck('TenPhong')->unique()->implode(', ') ?: 'Đặt phòng Peach Valley';
+                  $payload = [
+                    'MaDatPhong' => $booking->MaDatPhong,
+                    'MaKH' => $booking->MaKH,
+                    'TenKH' => $customer?->TenKH,
+                    'SoDienThoai' => $customer?->SoDienThoai,
+                    'Email' => $customer?->taiKhoan?->Email,
+                    'CCCD' => $customer?->CCCD,
+                    'NgayDat' => $booking->NgayDat,
+                    'NgayNhanPhong' => $booking->NgayNhanPhong,
+                    'NgayTraPhong' => $booking->NgayTraPhong,
+                    'SoDem' => $nights,
+                    'TongSoKhach' => $rooms->sum('SoKhach') ?: $booking->SoLuong,
+                    'StatusLabel' => $statusLabel,
+                    'SummaryTitle' => $summaryTitle,
+                    'Rooms' => $rooms,
+                    'TongTien' => (float) ($invoice?->TongTien ?? 0),
+                    'TienDatCoc' => (float) ($invoice?->DaThanhToan ?? 0),
+                  ];
+                @endphp
+
+                <div
+                  class="customer-booking-item customer-booking-card"
+                  role="button"
+                  tabindex="0"
+                  data-booking-card
+                  data-booking-payload="{!! e(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) !!}"
+                >
+                  <div class="customer-booking-card-left">
+                    <div class="customer-booking-top">
+                      <div>
+                        <div class="customer-booking-code">Đặt phòng #{{ $booking->MaDatPhong }}</div>
+                        <h3 class="customer-booking-room">{{ $summaryTitle }}</h3>
+                      </div>
+                      <span class="customer-booking-status">{{ $statusLabel }}</span>
+                    </div>
+
+                    <div class="customer-booking-room-list">
+                      @foreach($rooms as $room)
+                        <div class="customer-booking-room-line">
+                          <strong>{{ $room['TenPhong'] }}</strong>
+                          <span>{{ $room['SoLuongPhong'] }} phòng{{ $room['SoPhong'] ? ' - ' . $room['SoPhong'] : '' }}</span>
+                        </div>
+                      @endforeach
+                    </div>
+
+                    <div class="customer-booking-date-line">
+                      {{ $checkIn->format('d/m/Y') }}
+                      -
+                      {{ $checkOut->format('d/m/Y') }}
+                      • {{ $nights }} đêm • {{ $payload['TongSoKhach'] }} khách
+                    </div>
+                  </div>
+
+                  <div class="customer-booking-card-right">
+                    <div class="customer-booking-person-title">Thông tin cá nhân</div>
+                    <div class="customer-booking-person-grid">
+                      <div class="customer-booking-field"><span>Khách hàng</span>{{ $customer?->TenKH ?? '--' }}</div>
+                      <div class="customer-booking-field"><span>Số điện thoại</span>{{ $customer?->SoDienThoai ?? '--' }}</div>
+                      <div class="customer-booking-field"><span>Email</span>{{ $customer?->taiKhoan?->Email ?? '--' }}</div>
+                      <div class="customer-booking-field"><span>CCCD</span>{{ $customer?->CCCD ?? '--' }}</div>
+                    </div>
+
+                    <div class="customer-booking-money">
+                      <span>Tổng tiền</span>
+                      <strong>{{ number_format((float) ($invoice?->TongTien ?? 0), 0, ',', '.') }} VND</strong>
+                    </div>
+
+                    <div class="customer-booking-money">
+                      <span>Đã thanh toán</span>
+                      <strong>{{ number_format((float) ($invoice?->DaThanhToan ?? 0), 0, ',', '.') }} VND</strong>
+                    </div>
+
+                    @if(in_array((int) $booking->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true))
+                      <div class="customer-booking-actions">
+                        <button
+                          type="button"
+                          class="customer-booking-cancel"
+                          data-cancel-booking
+                          data-booking-id="{{ $booking->MaDatPhong }}"
+                        >
+                          Hủy phòng
+                        </button>
+                      </div>
+                    @endif
+                  </div>
+                </div>
+              @empty
+                <div class="customer-booking-item customer-booking-card">
+                  <div class="customer-booking-card-left">
+                    <div class="customer-booking-top">
+                      <div>
+                        <div class="customer-booking-code">Chưa có đặt phòng</div>
+                        <h3 class="customer-booking-room">Các đặt phòng đã xác nhận sẽ hiển thị tại đây.</h3>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              @endforelse
+
+              @if(false)
               <div
                 class="customer-booking-item customer-booking-card"
                 role="button"
@@ -149,6 +291,7 @@
                   </div>
                 </div>
               </div>
+              @endif
             </div>
           </main>
         </div>
