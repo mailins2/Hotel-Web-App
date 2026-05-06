@@ -441,6 +441,6 @@
         <div class="form-group col-md-4"><label class="form-label">Ngày nhận phòng</label><input type="date" class="form-control hm-readonly-input" value="2026-04-08" disabled></div>
         <div class="form-group col-md-4"><label class="form-label">Ngày trả phòng</label><input type="date" class="form-control hm-readonly-input" value="2026-04-10" disabled></div>
         <div class="form-group col-md-6"><label class="form-label">Số lượng người ở</label><input type="number" class="form-control hm-readonly-input" value="2" readonly></div>
-        <div class="form-group col-md-6"><label class="form-label">Tình trạng</label><select class="form-select"><option>Đã đặt</option><option>Đang sử dụng</option><option>Đã hủy</option><option>Đã trả phòng</option></select></div>
+        <div class="form-group col-md-6"><label class="form-label">Tình trạng</label><select class="form-select"><option>Chờ xác nhận</option><option>Đã xác nhận</option><option>Đã hủy</option><option>Đang ở</option><option>Đã trả phòng</option><option>Đã hủy</option></select></div>
     </x-receptionist.form-page>
 @endif

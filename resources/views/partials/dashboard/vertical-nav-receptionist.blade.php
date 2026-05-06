@@ -47,6 +47,22 @@
     </li>
 
     <li class="nav-item">
+        <a class="nav-link {{ request()->is('reception/services*') ? 'active' : '' }}" href="{{ route('reception.services.index') }}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 4V11" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                    <path d="M10 4V11" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                    <path d="M7 8H10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                    <path d="M8.5 11V20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                    <path d="M16 4C17.6569 4 19 5.34315 19 7V11H13V7C13 5.34315 14.3431 4 16 4Z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"></path>
+                    <path d="M16 11V20" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"></path>
+                </svg>
+            </i>
+            <span class="item-name">Dịch Vụ</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
         <a class="nav-link {{ request()->is('reception/check-ins*') ? 'active' : '' }}" href="{{ route('reception.check-ins.create') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -83,6 +99,20 @@
                 </svg>
             </i>
             <span class="item-name">Hóa Đơn</span>
+        </a>
+    </li>
+
+    <li class="nav-item">
+        <a class="nav-link {{ request()->is('reception/payments*') ? 'active' : '' }}" href="{{ route('reception.payments.index') }}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M4 7C4 5.34315 5.34315 4 7 4H17C18.6569 4 20 5.34315 20 7V17C20 18.6569 18.6569 20 17 20H7C5.34315 20 4 18.6569 4 17V7Z" fill="currentColor"></path>
+                    <path d="M4 9H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path d="M8 15H11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path d="M14.5 15H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </i>
+            <span class="item-name">Thanh Toán</span>
         </a>
     </li>
 </ul>

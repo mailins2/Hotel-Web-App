@@ -182,7 +182,14 @@ Route::prefix('reception')->name('reception.')->group(function () {
     Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
     Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
 
+    Route::view('/services', 'receptionist.services.index')->name('services.index');
+    Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
     Route::view('/check-ins/create', 'receptionist.check-in-form')->name('check-ins.create');
     Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
+    Route::view('/payments', 'receptionist.payments.index')->name('payments.index');
+    Route::view('/payments/create', 'receptionist.payments.form')->name('payments.create');
+    Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
     Route::view('/invoices', 'receptionist.invoices.index')->name('invoices.index');
+    Route::view('/invoices/{invoiceId}/edit', 'receptionist.invoices.form')->name('invoices.edit');
+    Route::view('/invoices/{invoiceId}', 'receptionist.invoices.show')->name('invoices.show');
 });

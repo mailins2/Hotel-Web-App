@@ -3,7 +3,7 @@
     'subtitle',
     'createRoute' => null,
     'createLabel' => null,
-    'tableTitle' => 'Bảng dữ liệu',
+    'tableTitle' => 'Danh sách hóa đơn',
 ])
 
 <x-app-layout :assets="['animation']">
