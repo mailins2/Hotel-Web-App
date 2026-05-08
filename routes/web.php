@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Models\DichVu;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,7 +14,58 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::view('/', 'customer.index')->name('home');
     Route::view('/promotion', 'customer.promotion')->name('promotion');
     Route::view('/blog-single', 'customer.blog-single')->name('blog-single');
-    Route::view('/services', 'customer.services')->name('services');
+    Route::get('/services', function () {
+        $services = DichVu::with('hinhs')
+            ->orderBy('LoaiDV')
+            ->orderBy('MaDV')
+            ->get();
+
+        $serviceGroups = [
+            DichVu::TYPE_FOOD_AND_BEVERAGE => [
+                'eyebrow' => 'Dịch vụ ăn uống',
+                'title' => 'Thực đơn của khách sạn',
+                'fallbackImages' => [
+                    'customers/images/menu-1.jpg',
+                    'customers/images/menu-2.jpg',
+                    'customers/images/menu-3.jpg',
+                    'customers/images/menu-4.jpg',
+                    'customers/images/menu-5.jpg',
+                    'customers/images/menu-6.jpg',
+                ],
+            ],
+            DichVu::TYPE_ENTERTAINMENT => [
+                'eyebrow' => 'Dịch vụ giải trí',
+                'title' => 'Loại hình giải trí của khách sạn',
+                'fallbackImages' => [
+                    'customers/images/dv_spa.jpg',
+                    'customers/images/dv_golf.jpg',
+                    'customers/images/view1.jpg',
+                    'customers/images/home4.jpg',
+                ],
+            ],
+            DichVu::TYPE_ROOM_SERVICE => [
+                'eyebrow' => 'Dịch vụ phòng',
+                'title' => 'Dịch vụ phòng của khách sạn',
+                'fallbackImages' => [
+                    'customers/images/room-1.jpg',
+                    'customers/images/room-2.jpg',
+                    'customers/images/room-3.jpg',
+                    'customers/images/room-4.jpg',
+                ],
+            ],
+        ];
+
+        return view('customer.services', [
+            'servicesByType' => $services->groupBy('LoaiDV'),
+            'serviceGroups' => $serviceGroups,
+            'serviceOptions' => $services->map(fn (DichVu $service) => [
+                'id' => (string) $service->MaDV,
+                'name' => $service->TenDV,
+                'type' => (string) $service->LoaiDV,
+                'price' => (float) $service->GiaDV,
+            ])->values(),
+        ]);
+    })->name('services');
     Route::view('/rooms', 'customer.rooms')->name('rooms');
     Route::view('/room/{id}', 'customer.rooms-single')->name('room.detail');
     Route::view('/rooms-single', 'customer.rooms-single')->name('rooms-single');
