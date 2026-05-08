@@ -140,33 +140,28 @@
                 <div class="booking-summary-rooms-scroll" data-booking-rooms>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 1:</strong> Deluxe Twin</p>
-                    <p>Số phòng: 1 phòng</p>
                     <p>Số người: 1 người lớn</p>
-                    <p class="booking-summary-room-price">Giá phòng: 1,732,500 VND</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 577.500 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 2:</strong> Superior King</p>
-                    <p>Số phòng: 1 phòng</p>
                     <p>Số người: 2 người lớn</p>
-                    <p class="booking-summary-room-price">Giá phòng: 1,450,000 VND</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 483.333 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 3:</strong> Suite Junior</p>
-                    <p>Số phòng: 1 phòng</p>
                     <p>Số người: 2 người lớn, 1 trẻ em</p>
-                    <p class="booking-summary-room-price">Giá phòng: 2,100,000 VND</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 700.000 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 4:</strong> Standard Garden</p>
-                    <p>Số phòng: 1 phòng</p>
                     <p>Số người: 1 người lớn</p>
-                    <p class="booking-summary-room-price">Giá phòng: 900,000 VND</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 300.000 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
                     <p><strong>Phòng 5:</strong> Deluxe Family</p>
-                    <p>Số phòng: 1 phòng</p>
                     <p>Số người: 3 người lớn</p>
-                    <p class="booking-summary-room-price">Giá phòng: 1,250,000 VND</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 416.667 vnd/ đêm x 3 đêm</p>
                   </div>
                 </div>
               </div>
@@ -249,6 +244,10 @@
           return `${Number(value || 0).toLocaleString('vi-VN')} VND`;
         }
 
+        function formatUnitPrice(value) {
+          return `${Number(value || 0).toLocaleString('vi-VN')} vnd`;
+        }
+
         function escapeHtml(value) {
           return String(value ?? '').replace(/[&<>"']/g, (char) => ({
             '&': '&amp;',
@@ -310,26 +309,32 @@
           }
 
           if (bookingRooms) {
-            bookingRooms.innerHTML = booking.rooms.map((room, index) => {
+            let roomDisplayIndex = 0;
+
+            bookingRooms.innerHTML = booking.rooms.flatMap((room) => {
               const quantity = Number(room.quantity || 0);
               const adultsPerRoom = Number(room.adults || booking.adults || 0);
               const childrenPerRoom = Number(room.children || booking.children || 0);
-              const adults = adultsPerRoom * quantity;
-              const children = childrenPerRoom * quantity;
+              const adults = adultsPerRoom;
+              const children = childrenPerRoom;
               const guestText = [
                 adults > 0 ? `${adults} người lớn` : '',
                 children > 0 ? `${children} trẻ em` : '',
               ].filter(Boolean).join(', ') || 'Theo tiêu chí đã chọn';
-              const roomTotal = Number(room.price || 0) * quantity * Number(booking.nights || 1);
+              const roomUnitPrice = Number(room.price || 0);
+              const nights = Number(booking.nights || 1);
 
-              return `
+              return Array.from({ length: quantity }, () => {
+                roomDisplayIndex += 1;
+
+                return `
                 <div class="booking-summary-room">
-                  <p><strong>Phòng ${index + 1}:</strong> ${escapeHtml(room.name)}</p>
-                  <p>Số phòng: ${quantity} phòng</p>
+                  <p><strong>Phòng ${roomDisplayIndex}:</strong> ${escapeHtml(room.name)}</p>
                   <p>Số người: ${escapeHtml(guestText)}</p>
-                  <p class="booking-summary-room-price">Giá phòng: ${formatCurrency(roomTotal)}</p>
+                  <p class="booking-summary-room-unit-price">Đơn giá: ${formatUnitPrice(roomUnitPrice)}/ đêm x ${nights} đêm</p>
                 </div>
               `;
+              });
             }).join('');
           }
         }

@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class DichVu extends Model
 {
+    public const TYPE_FOOD_AND_BEVERAGE = 1;
+    public const TYPE_ROOM_SERVICE = 2;
+    public const TYPE_ENTERTAINMENT = 3;
+
     protected $table = 'DichVu';
     protected $primaryKey = 'MaDV';
     public $timestamps = false;
@@ -21,7 +25,6 @@ class DichVu extends Model
         'GiaDVFormatted'
     ];
 
-    // ================= RELATION =================
     public function suDungs()
     {
         return $this->hasMany(SuDungDichVu::class, 'MaDV');
@@ -32,19 +35,18 @@ class DichVu extends Model
         return $this->hasMany(Hinh::class, 'MaDV');
     }
 
-    // ================= ACCESSOR =================
     public function getLoaiDVTextAttribute()
     {
-        return match($this->LoaiDV) {
-            1 => 'DỊCH VỤ ĂN UỐNG',
-            2 => 'DỊCH VỤ PHÒNG',
-            3 => 'DỊCH VỤ GIẢI TRÍ',
-            default => 'KHÁC'
+        return match ((int) $this->LoaiDV) {
+            self::TYPE_FOOD_AND_BEVERAGE => 'Dịch vụ ăn uống',
+            self::TYPE_ROOM_SERVICE => 'Dịch vụ phòng',
+            self::TYPE_ENTERTAINMENT => 'Dịch vụ giải trí',
+            default => 'Khác'
         };
     }
 
     public function getGiaDVFormattedAttribute()
     {
-        return number_format($this->GiaDV, 0, ',', '.') . ' VND';
+        return number_format((float) $this->GiaDV, 0, ',', '.') . ' VND';
     }
 }
