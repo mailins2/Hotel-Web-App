@@ -133,12 +133,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::prefix('bookings')->name('bookings.')->group(function () {
+        Route::view('/', 'hotel-management.bookings.index')->name('index');
+        Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
+    });
 
     $hotelManagementViews = [
         'accounts' => 'hotel-management.accounts',
         'customers' => 'hotel-management.customers',
         'employees' => 'hotel-management.employees',
         'room-types' => 'hotel-management.room-types',
+        'price-lists' => 'hotel-management.price-lists',
         'rooms' => 'hotel-management.rooms',
         'services' => 'hotel-management.services',
         'promotions' => 'hotel-management.promotions',
