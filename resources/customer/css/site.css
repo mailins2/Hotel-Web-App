@@ -3910,6 +3910,40 @@ body.modal-open {
     display: none !important;
 }
 
+.service-page-grid {
+    overflow: hidden;
+}
+
+.service-page-grid.is-sliding-out {
+    animation: servicePageSlideOutLeft 0.22s ease-in forwards;
+}
+
+.service-page-grid.is-sliding-in {
+    animation: servicePageSlideInRight 0.26s ease-out both;
+}
+
+@keyframes servicePageSlideOutLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-34px);
+    }
+}
+
+@keyframes servicePageSlideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(34px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 .service-pricing-entry .desc {
     display: flex;
     flex-direction: column;
@@ -4006,32 +4040,52 @@ body.modal-open {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 8px;
     margin-top: 26px;
+    text-align: center;
 }
 
 .service-pagination[hidden] {
     display: none !important;
 }
 
-.service-pagination button {
-    min-width: 40px;
-    height: 40px;
-    border: 1px solid rgba(140, 74, 52, 0.22);
-    border-radius: 8px;
-    background: #fff;
-    color: var(--customer-accent);
-    font-weight: 900;
+.service-pagination.owl-dots .owl-dot {
+    width: 10px;
+    height: 10px;
+    margin: 5px;
+    border: 0;
+    border-radius: 50%;
+    background: #e6e6e6;
     cursor: pointer;
+    padding: 0 !important;
+    position: relative;
 }
 
-.service-pagination button:hover,
-.service-pagination button:focus,
-.service-pagination button.is-active {
-    border-color: var(--customer-accent);
-    background: var(--customer-accent);
-    color: #fff;
-    outline: none;
+.service-pagination.owl-dots .owl-dot::after {
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: 0;
+    bottom: 0;
+    width: 14px;
+    height: 14px;
+    content: "";
+    border: 1px solid #e6e6e6;
+    border-radius: 50%;
+}
+
+.service-pagination.owl-dots .owl-dot:hover,
+.service-pagination.owl-dots .owl-dot:focus {
+    outline: none !important;
+}
+
+.service-pagination.owl-dots .owl-dot.active,
+.service-pagination.owl-dots .owl-dot:hover {
+    background: var(--customer-accent) !important;
+}
+
+.service-pagination.owl-dots .owl-dot.active::after,
+.service-pagination.owl-dots .owl-dot:hover::after {
+    border-color: var(--customer-accent) !important;
 }
 
 .service-booking-open {
