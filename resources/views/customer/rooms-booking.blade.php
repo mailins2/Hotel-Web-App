@@ -205,8 +205,6 @@
         const bookingList = document.querySelector('[data-booking-list]');
         const bookingTotal = document.querySelector('[data-booking-total]');
         const bookingContinue = document.querySelector('[data-booking-continue]');
-        const isCustomerLoggedIn = @json(filled(session('auth_account')));
-        const loginRedirectUrl = @json(route('login', ['redirect' => route('customer.info-booking')]));
         const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
         let allRoomTypes = [];
         let roomsData = [];
@@ -947,12 +945,6 @@
           }
 
           storeBookingPayload();
-
-          if (isCustomerLoggedIn) return;
-
-          event.preventDefault();
-          alert('Vui lòng đăng nhập để tiếp tục đặt phòng.');
-          window.location.href = loginRedirectUrl;
         });
         checkInInput?.addEventListener('keypress', (event) => {
           if (event.key === 'Enter') filterRooms(true);

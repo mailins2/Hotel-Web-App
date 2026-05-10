@@ -1450,8 +1450,8 @@ const initPaymentOptions = () => {
         if (value === "zalopay") {
             submitButton.textContent = "Thanh toán với QR";
             cardFields?.setAttribute("hidden", "hidden");
-        } else if (value === "card") {
-            submitButton.textContent = "Thanh toán thẻ";
+        } else if (value.startsWith("card-")) {
+            submitButton.textContent = "Thanh toán với VNPAY";
             cardFields?.setAttribute("hidden", "hidden");
         } else {
             submitButton.textContent = "Chọn phương thức thanh toán";
@@ -1463,7 +1463,14 @@ const initPaymentOptions = () => {
         input.addEventListener("change", () => update(input.dataset.paymentOption));
     });
 
-    const checkedOption = document.querySelector("[data-payment-option]:checked");
+    const checkedOption =
+        document.querySelector("[data-payment-option]:checked:not(:disabled)") ||
+        document.querySelector("[data-payment-option]:not(:disabled)");
+
+    if (checkedOption) {
+        checkedOption.checked = true;
+    }
+
     update(checkedOption?.dataset.paymentOption || "");
 };
 

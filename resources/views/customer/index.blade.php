@@ -782,6 +782,299 @@
    
 
     @include('customer.partials.footer')
+
+    <div class="customer-booking-detail-modal" data-guest-payment-modal hidden>
+      <div class="customer-booking-detail-backdrop" data-guest-payment-close></div>
+      <div class="customer-booking-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="guestPaymentTitle">
+        <button type="button" class="customer-booking-detail-close" data-guest-payment-close aria-label="Đóng">×</button>
+        <div class="customer-booking-detail-head">
+          <div>
+            <span data-guest-payment-code>Đặt phòng</span>
+            <h3 id="guestPaymentTitle" data-guest-payment-title>Thanh toán thành công</h3>
+          </div>
+          <strong data-guest-payment-status>Đã xác nhận</strong>
+        </div>
+
+        <div class="customer-booking-detail-grid">
+          <div class="customer-booking-detail-section">
+            <h4>Thông tin phòng đã đặt</h4>
+            <div data-guest-payment-rooms></div>
+          </div>
+          <div class="customer-booking-detail-section">
+            <h4>Thông tin cá nhân</h4>
+            <div class="customer-booking-detail-fields" data-guest-payment-person></div>
+          </div>
+        </div>
+
+        <div class="customer-booking-detail-summary">
+          <div><span>Ngày nhận phòng</span><strong data-guest-payment-checkin>--</strong></div>
+          <div><span>Ngày trả phòng</span><strong data-guest-payment-checkout>--</strong></div>
+          <div><span>Tổng số khách ở</span><strong data-guest-payment-guests>0 khách</strong></div>
+          <div><span>Tổng tiền thanh toán</span><strong data-guest-payment-total>0 VND</strong></div>
+          <div><span>Tiền đặt cọc</span><strong data-guest-payment-deposit>0 VND</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const isCustomerLoggedIn = @json(filled(session('auth_account')));
+        const modal = document.querySelector('[data-guest-payment-modal]');
+        const roomsEl = document.querySelector('[data-guest-payment-rooms]');
+        const personEl = document.querySelector('[data-guest-payment-person]');
+        const statusLabels = {
+          0: 'Chờ thanh toán',
+          1: 'Đã xác nhận',
+          2: 'Đang ở',
+          3: 'Đã trả phòng',
+          4: 'Đã hủy',
+        };
+
+        if (isCustomerLoggedIn || !modal || !roomsEl || !personEl) {
+          return;
+        }
+
+        const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`;
+        const formatDate = (value) => {
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? '--' : date.toLocaleDateString('vi-VN');
+        };
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        }[char]));
+        const getRelation = (item, camelName, snakeName) => item?.[camelName] ?? item?.[snakeName] ?? null;
+        const getArrayRelation = (item, camelName, snakeName) => {
+          const value = getRelation(item, camelName, snakeName);
+          return Array.isArray(value) ? value : [];
+        };
+        const diffDays = (start, end) => {
+          const startDate = new Date(start);
+          const endDate = new Date(end);
+          if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+            return 1;
+          }
+          return Math.max(Math.round((endDate - startDate) / 86400000), 1);
+        };
+
+        const closeModal = () => {
+          modal.classList.remove('is-open');
+          modal.hidden = true;
+          localStorage.removeItem('peachBookingPayment');
+          localStorage.removeItem('peachBookingHolds');
+          localStorage.removeItem('peachBookingSelection');
+        };
+
+        const buildBookingPayload = (booking) => {
+          const customer = getRelation(booking, 'khachHang', 'khach_hang') || {};
+          const account = getRelation(customer, 'taiKhoan', 'tai_khoan') || {};
+          const invoice = getRelation(booking, 'hoaDon', 'hoa_don') || {};
+          const details = getArrayRelation(booking, 'chiTietDatPhong', 'chi_tiet_dat_phong');
+          const invoiceDetails = getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons');
+          const nights = diffDays(booking.NgayNhanPhong, booking.NgayTraPhong);
+          const groupedRooms = new Map();
+
+          details.forEach((detail) => {
+            const room = getRelation(detail, 'phong', 'phong') || {};
+            const roomType = getRelation(room, 'loaiPhong', 'loai_phong') || {};
+            const roomTypeId = room.MaLoaiPhong ?? roomType.MaLoaiPhong ?? 'unknown';
+            const current = groupedRooms.get(roomTypeId) || {
+              roomType,
+              numbers: [],
+              count: 0,
+            };
+            current.count += 1;
+            if (room.SoPhong) {
+              current.numbers.push(room.SoPhong);
+            }
+            groupedRooms.set(roomTypeId, current);
+          });
+
+          const rooms = Array.from(groupedRooms.entries()).map(([roomTypeId, group]) => {
+            const invoiceDetail = invoiceDetails.find((item) => String(item.MaLoaiPhong) === String(roomTypeId)) || {};
+            const quantity = Number(invoiceDetail.SoLuong || group.count || 1);
+            const lineTotal = quantity * Number(invoiceDetail.DonGia || 0);
+            const guestsPerRoom = Number(group.roomType?.NguoiLon || 0) + Number(group.roomType?.TreEm || 0);
+
+            return {
+              TenPhong: group.roomType?.TenLoaiPhong || 'Phòng',
+              SoPhong: group.numbers.join(', '),
+              SoLuongPhong: group.count || quantity,
+              SoKhach: (group.count || quantity) * guestsPerRoom,
+              GiaMoiDem: nights > 0 ? Number(invoiceDetail.DonGia || 0) / nights : 0,
+              ThanhTien: lineTotal,
+            };
+          });
+
+          return {
+            MaDatPhong: booking.MaDatPhong,
+            MaKH: booking.MaKH,
+            TenKH: customer.TenKH,
+            SoDienThoai: customer.SoDienThoai,
+            Email: account.Email,
+            CCCD: customer.CCCD,
+            NgayDat: booking.NgayDat,
+            NgayNhanPhong: booking.NgayNhanPhong,
+            NgayTraPhong: booking.NgayTraPhong,
+            SoDem: nights,
+            TongSoKhach: rooms.reduce((total, room) => total + Number(room.SoKhach || 0), 0) || booking.SoLuong,
+            StatusLabel: statusLabels[Number(booking.TinhTrang)] || 'Đã đặt',
+            SummaryTitle: rooms.map((room) => room.TenPhong).filter(Boolean).join(', ') || 'Đặt phòng Peach Valley',
+            Rooms: rooms,
+            TongTien: Number(invoice.TongTien || 0),
+            TienDatCoc: Number(invoice.DaThanhToan || 0),
+            TinhTrang: Number(booking.TinhTrang),
+            InvoiceStatus: Number(invoice.TrangThai),
+          };
+        };
+
+        const vnpayMessages = {
+          success: {
+            title: 'Thanh toán thành công',
+            status: 'Đã xác nhận',
+            isError: false,
+          },
+          failed: {
+            title: 'Thanh toán thất bại',
+            status: 'Chờ thanh toán',
+            isError: true,
+          },
+          invalid: {
+            title: 'Không thể xác thực thanh toán',
+            status: 'Chờ thanh toán',
+            isError: true,
+          },
+          missing_order: {
+            title: 'Không tìm thấy đơn thanh toán',
+            status: 'Chờ thanh toán',
+            isError: true,
+          },
+          amount_mismatch: {
+            title: 'Số tiền thanh toán không khớp',
+            status: 'Chờ thanh toán',
+            isError: true,
+          },
+          confirm_failed: {
+            title: 'Thanh toán chưa được ghi nhận',
+            status: 'Chờ xác nhận',
+            isError: true,
+          },
+        };
+
+        const renderModal = (booking, options = {}) => {
+          const title = options.title || 'Thanh toán thành công';
+          const status = options.status || booking.StatusLabel || 'Đã xác nhận';
+          document.querySelector('[data-guest-payment-code]').textContent = `Đặt phòng #${booking.MaDatPhong || '--'}`;
+          document.querySelector('[data-guest-payment-title]').textContent = `${title} - ${booking.SoDem || 1} đêm`;
+          document.querySelector('[data-guest-payment-status]').textContent = status;
+          document.querySelector('[data-guest-payment-status]').style.color = options.isError ? '#dc2626' : '';
+          document.querySelector('[data-guest-payment-checkin]').textContent = formatDate(booking.NgayNhanPhong);
+          document.querySelector('[data-guest-payment-checkout]').textContent = formatDate(booking.NgayTraPhong);
+          document.querySelector('[data-guest-payment-guests]').textContent = `${booking.TongSoKhach || 1} khách`;
+          document.querySelector('[data-guest-payment-total]').textContent = formatCurrency(booking.TongTien);
+          document.querySelector('[data-guest-payment-deposit]').textContent = formatCurrency(booking.TienDatCoc);
+
+          roomsEl.innerHTML = '';
+          (booking.Rooms || []).forEach((room) => {
+            const row = document.createElement('div');
+            row.className = 'customer-booking-detail-room';
+            row.innerHTML = `
+              <div>
+                <strong>${escapeHtml(room.TenPhong || 'Phòng')}</strong>
+                <span>${escapeHtml(room.SoLuongPhong || 1)} phòng${room.SoPhong ? ` - ${escapeHtml(room.SoPhong)}` : ''}</span>
+              </div>
+              <div>${formatCurrency(room.ThanhTien)}</div>
+            `;
+            roomsEl.appendChild(row);
+          });
+
+          personEl.innerHTML = `
+            <div><span>Khách hàng</span><strong>${escapeHtml(booking.TenKH || '--')}</strong></div>
+            <div><span>Số điện thoại</span><strong>${escapeHtml(booking.SoDienThoai || '--')}</strong></div>
+            <div><span>Ngày đặt</span><strong>${formatDate(booking.NgayDat)}</strong></div>
+          `;
+
+          modal.hidden = false;
+          modal.classList.add('is-open');
+        };
+
+        const fetchBooking = async (bookingId) => {
+          const response = await fetch(`/api/dat-phong/${encodeURIComponent(bookingId)}`, {
+            headers: { Accept: 'application/json' },
+          });
+          const result = await response.json().catch(() => null);
+          if (!response.ok || !result?.success) {
+            throw new Error(result?.message || 'Không thể tải thông tin đặt phòng.');
+          }
+          return buildBookingPayload(result.data);
+        };
+
+        const waitForPaidBooking = async (bookingId) => {
+          for (let attempt = 0; attempt < 6; attempt += 1) {
+            const booking = await fetchBooking(bookingId);
+            const isPaid = booking.TinhTrang > 0 || booking.InvoiceStatus === 1 || booking.TienDatCoc > 0;
+            if (isPaid) {
+              return booking;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+          }
+          return null;
+        };
+
+        const initGuestPaymentModal = async () => {
+          const query = new URLSearchParams(window.location.search);
+          const vnpayStatus = query.get('vnpay');
+          let payment = null;
+          try {
+            payment = JSON.parse(localStorage.getItem('peachBookingPayment') || 'null');
+          } catch (error) {
+            payment = null;
+          }
+
+          const bookingId = Array.isArray(payment?.datPhongIds) ? payment.datPhongIds[0] : null;
+          const modalKey = `${payment?.appTransId || query.get('txn_ref') || bookingId}:${vnpayStatus || 'payment'}`;
+          if (!bookingId || sessionStorage.getItem(`peachGuestPaymentShown:${modalKey}`)) {
+            return;
+          }
+
+          try {
+            const message = vnpayStatus ? (vnpayMessages[vnpayStatus] || vnpayMessages.failed) : null;
+            const booking = message?.isError
+              ? await fetchBooking(bookingId)
+              : await waitForPaidBooking(bookingId);
+
+            if (!booking) {
+              return;
+            }
+            sessionStorage.setItem(`peachGuestPaymentShown:${modalKey}`, '1');
+            renderModal(booking, message || undefined);
+
+            if (vnpayStatus) {
+              query.delete('vnpay');
+              query.delete('txn_ref');
+              const cleanUrl = `${window.location.pathname}${query.toString() ? `?${query.toString()}` : ''}${window.location.hash}`;
+              window.history.replaceState({}, '', cleanUrl);
+            }
+          } catch (error) {
+            console.error('Guest payment modal error:', error);
+          }
+        };
+
+        document.querySelectorAll('[data-guest-payment-close]').forEach((button) => {
+          button.addEventListener('click', closeModal);
+        });
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && !modal.hidden) {
+            closeModal();
+          }
+        });
+
+        initGuestPaymentModal();
+      });
+    </script>
     
   
 

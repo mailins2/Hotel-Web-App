@@ -8,6 +8,7 @@ use App\Models\ChiTietDatPhong;
 use App\Models\Phong;
 use App\Models\HoaDon;
 use App\Models\ChiTietHoaDon;
+use App\Models\KhachHang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -57,15 +58,17 @@ class DatPhongController extends Controller
         for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
             try {
                 DB::beginTransaction();
+                $bookingData = $data;
+                $bookingData['MaKH'] = $this->resolveCustomerId($bookingData);
 
                 // 1. Tạo DatPhong trước
-                $datPhong = $this->createDatPhong($data);
+                $datPhong = $this->createDatPhong($bookingData);
                 
                 // 2. Atomic assign rooms
-                $assignedRoomIds = $this->atomicAssignRooms($data, $datPhong);
+                $assignedRoomIds = $this->atomicAssignRooms($bookingData, $datPhong);
                 
                 // 3. Kiểm tra đủ phòng
-                if (count($assignedRoomIds) < $data['SoLuong']) {
+                if (count($assignedRoomIds) < $bookingData['SoLuong']) {
                     throw new \Exception('Không đủ phòng trống');
                 }
 
@@ -227,7 +230,9 @@ class DatPhongController extends Controller
     {
        if ($request->has('LoaiPhongs')) {
            $data = $request->validate([
-                'MaKH' => 'required|exists:KhachHang,MaKH',
+                'MaKH' => 'nullable|exists:KhachHang,MaKH',
+                'TenKH' => 'required_without:MaKH|string|max:100',
+                'SoDienThoai' => 'required_without:MaKH|string|max:15',
                 'NgayNhanPhong' => [
                     'required',
                     'date',
@@ -250,7 +255,9 @@ class DatPhongController extends Controller
        }
 
        return $request->validate([
-            'MaKH' => 'required|exists:KhachHang,MaKH',
+            'MaKH' => 'nullable|exists:KhachHang,MaKH',
+            'TenKH' => 'required_without:MaKH|string|max:100',
+            'SoDienThoai' => 'required_without:MaKH|string|max:15',
             'NgayNhanPhong' => [
                 'required',
                 'date',
@@ -270,6 +277,35 @@ class DatPhongController extends Controller
     // =========================
     // 🔹 CREATE DAT PHONG
     // =========================
+    private function resolveCustomerId(array $data)
+    {
+        if (!empty($data['MaKH'])) {
+            return $data['MaKH'];
+        }
+
+        $phone = preg_replace('/\D+/', '', $data['SoDienThoai'] ?? '');
+
+        if ($phone === '') {
+            throw new \InvalidArgumentException('Vui long nhap so dien thoai.');
+        }
+
+        $existingCustomer = KhachHang::where('SoDienThoai', $phone)->first();
+
+        if ($existingCustomer) {
+            return $existingCustomer->MaKH;
+        }
+
+        return KhachHang::create([
+            'MaTK' => null,
+            'TenKH' => $data['TenKH'],
+            'SoDienThoai' => $phone,
+            'CCCD' => null,
+            'NgaySinh' => '1970-01-01',
+            'GioiTinh' => 2,
+            'DiaChi' => null,
+        ])->MaKH;
+    }
+
     private function createDatPhong($data)
     {
         return DatPhong::create([
@@ -352,7 +388,12 @@ class DatPhongController extends Controller
     // =========================
     public function show($id)
     {
-        $data = DatPhong::with('chiTietDatPhong.phong')->find($id);
+        $data = DatPhong::with([
+            'khachHang.taiKhoan',
+            'hoaDon.chiTietHoaDons.loaiPhong',
+            'hoaDon.thanhToans',
+            'chiTietDatPhong.phong.loaiPhong',
+        ])->find($id);
         if (!$data) {
             return $this->error('Không tìm thấy', 404);
         }
