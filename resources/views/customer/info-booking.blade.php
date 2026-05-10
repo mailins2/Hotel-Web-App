@@ -2,7 +2,6 @@
   $bookingAccount = $bookingAccount ?? session('auth_account', []);
   $bookingCustomer = $bookingCustomer ?? null;
   $bookingCustomerName = old('fullName', $bookingCustomer?->TenKH ?? ($bookingAccount['Ten'] ?? ''));
-  $bookingCustomerEmail = old('email', $bookingCustomer?->taiKhoan?->Email ?? ($bookingAccount['Email'] ?? ''));
   $bookingCustomerPhone = old('phone', $bookingCustomer?->SoDienThoai ?? '');
 @endphp
 <!DOCTYPE html>
@@ -46,17 +45,6 @@
                   <small class="error-message" id="fullName-error"></small>
                 </div>
                 <div class="booking-field">
-                  <label for="email">Email *</label>
-                  <input 
-                    type="email" 
-                    id="email"
-                    name="email"
-                    value="{{ $bookingCustomerEmail }}"
-                    placeholder="email@gmail.com"
-                    required>
-                  <small class="error-message" id="email-error"></small>
-                </div>
-                <div class="booking-field">
                   <label for="phone">Số điện thoại *</label>
                   <input 
                     type="tel" 
@@ -98,14 +86,18 @@
             <div class="booking-card">
               <h3>Phương thức thanh toán</h3>
               <div class="booking-payment-group">
-                <label class="booking-payment-option is-selected">
-                  <input type="radio" name="payment" data-payment-option="zalopay" checked>
-                  <span class="booking-payment-title">ZaloPay</span>
+                <label class="booking-payment-option">
+                  <input type="radio" name="payment" data-payment-option="zalopay" disabled>
+                  <span class="booking-payment-title">Thanh toán với mã QR <span class="booking-payment-note">(đang bảo trì)</span></span>
                   <img src="{{ asset('customers/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
                 </label>
+                <label class="booking-payment-option is-selected">
+                  <input type="radio" name="payment" data-payment-option="card-domestic" data-vnpay-bank-code="VNBANK" checked>
+                  <span class="booking-payment-title">Thanh toán bằng thẻ nội địa</span>
+                </label>
                 <label class="booking-payment-option">
-                  <input type="radio" name="payment" data-payment-option="card">
-                  <span class="booking-payment-title">Thẻ thanh toán</span>
+                  <input type="radio" name="payment" data-payment-option="card-international" data-vnpay-bank-code="INTCARD">
+                  <span class="booking-payment-title">Thanh toán bằng thẻ quốc tế</span>
                 </label>
               </div>
             </div>
@@ -191,7 +183,7 @@
                 <span>Tiền đặt cọc:</span>
                 <strong data-booking-deposit>6,689,250 VND</strong>
               </div>
-              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với QR</button>
+              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với VNPAY</button>
               <div class="booking-promo-status" data-payment-status hidden></div>
             </div>
           </div>
@@ -205,7 +197,6 @@
       document.addEventListener('DOMContentLoaded', function() {
         const fullNameInput = document.getElementById('fullName');
         const phoneInput = document.getElementById('phone');
-        const emailInput = document.getElementById('email');
         const paymentBtn = document.getElementById('paymentBtn');
         const bookingForm = document.getElementById('bookingForm');
         const promoInput = document.getElementById('promoCode');
@@ -222,9 +213,10 @@
         const bookingNights = document.querySelector('.booking-date-divider span:first-child');
         const paymentStatus = document.querySelector('[data-payment-status]');
         const zaloPayPaymentUrl = @json(url('/api/zalopay-payment'));
+        const vnPayPaymentUrl = @json(url('/api/vnpay-payment'));
         const datPhongStoreUrl = @json(url('/api/dat-phong'));
-        const paymentRedirectUrl = `${window.location.origin}/customer/my-bookings`;
         const customerId = @json($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? null));
+        const paymentRedirectUrl = customerId ? `${window.location.origin}/customer/my-bookings` : `${window.location.origin}/customer`;
         const customerCode = @json((string) ($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? $bookingAccount['MaTK'] ?? 'guest')));
         let bookingOriginalTotal = 0;
         let bookingFinalTotal = 0;
@@ -340,6 +332,16 @@
         }
 
         function updatePaymentButton(value) {
+          if (!value) {
+            const fallbackOption = document.querySelector('[data-payment-option]:checked:not(:disabled)')
+              || document.querySelector('[data-payment-option]:not(:disabled)');
+            value = fallbackOption?.dataset.paymentOption || '';
+
+            if (fallbackOption) {
+              fallbackOption.checked = true;
+            }
+          }
+
           document.querySelectorAll('.booking-payment-option').forEach(option => {
             option.classList.toggle('is-selected', option.querySelector('[data-payment-option]')?.dataset.paymentOption === value);
           });
@@ -347,13 +349,24 @@
           if (value === 'zalopay') {
             paymentBtn.textContent = 'Thanh toán với QR';
             paymentBtn.disabled = false;
-          } else if (value === 'card') {
-            paymentBtn.textContent = 'Thanh toán thẻ';
-            paymentBtn.disabled = true;
+          } else if (value.startsWith('card-')) {
+            paymentBtn.textContent = 'Thanh toán với VNPAY';
+            paymentBtn.disabled = false;
           } else {
             paymentBtn.textContent = 'Chọn phương thức thanh toán';
             paymentBtn.disabled = true;
           }
+        }
+
+        function syncSelectedPayment() {
+          const selectedOption = document.querySelector('[data-payment-option]:checked:not(:disabled)')
+            || document.querySelector('[data-payment-option]:not(:disabled)');
+
+          if (selectedOption) {
+            selectedOption.checked = true;
+          }
+
+          updatePaymentButton(selectedOption?.dataset.paymentOption || '');
         }
 
         function setPaymentStatus(message, isError = false) {
@@ -362,6 +375,17 @@
           paymentStatus.hidden = !message;
           paymentStatus.textContent = message || '';
           paymentStatus.style.color = isError ? '#dc2626' : '';
+        }
+
+        function focusFirstInvalidField() {
+          const firstInvalidField = document.querySelector('.error-message:not(:empty)')?.closest('.booking-field')?.querySelector('input');
+
+          if (!firstInvalidField) {
+            return;
+          }
+
+          firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          firstInvalidField.focus({ preventScroll: true });
         }
 
         async function postJson(url, payload) {
@@ -384,14 +408,14 @@
         }
 
         async function createBookingHolds(booking) {
-          if (!customerId) {
-            throw new Error('Khong tim thay thong tin khach hang dang dang nhap.');
-          }
-
+          const bookingCustomerKey = customerId
+            ? `customer:${customerId}`
+            : `phone:${phoneInput.value.replace(/\D+/g, '')}`;
           const storedHolds = JSON.parse(localStorage.getItem('peachBookingHolds') || 'null');
 
           if (
             storedHolds?.selectionSavedAt === booking.savedAt
+            && storedHolds?.customerKey === bookingCustomerKey
             && Array.isArray(storedHolds.datPhongIds)
             && storedHolds.datPhongIds.length === 1
             && Number(storedHolds.total || 0) > 0
@@ -401,6 +425,8 @@
 
           const result = await postJson(datPhongStoreUrl, {
             MaKH: customerId,
+            TenKH: fullNameInput.value.trim(),
+            SoDienThoai: phoneInput.value.trim(),
             NgayNhanPhong: booking.checkIn,
             NgayTraPhong: booking.checkOut,
             LoaiPhongs: booking.rooms.map((room) => ({
@@ -418,6 +444,7 @@
           const datPhongIds = [maDatPhong];
           const holdData = {
             selectionSavedAt: booking.savedAt,
+            customerKey: bookingCustomerKey,
             datPhongIds,
             total: serverTotal,
             createdAt: new Date().toISOString(),
@@ -490,7 +517,7 @@
             },
             body: JSON.stringify({
               amount,
-              app_user: customerCode || emailInput.value.trim() || 'guest',
+              app_user: customerCode || phoneInput.value.replace(/\D+/g, '') || 'guest',
               description: `Peach Valley - thanh toán đặt phòng ${booking.checkIn} đến ${booking.checkOut}`,
               redirect_url: paymentRedirectUrl,
               dat_phong_ids: datPhongIds,
@@ -511,6 +538,66 @@
           }));
 
           window.location.href = result.order_url;
+        }
+
+        async function createVnPayPayment(bankCode) {
+          const booking = getStoredBooking();
+
+          if (!['VNBANK', 'INTCARD'].includes(bankCode)) {
+            throw new Error('Vui lòng chọn thẻ nội địa hoặc thẻ quốc tế.');
+          }
+
+          if (!booking || !booking.rooms.length) {
+            throw new Error('Vui lòng quay lại chọn ít nhất 1 phòng trước khi thanh toán.');
+          }
+
+          let amount = Math.max(Math.round(Number(bookingFinalTotal || 0)), 0);
+
+          if (amount <= 0) {
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
+          }
+
+          setPaymentStatus('Đang giữ phòng trong 15 phút...');
+          const holdData = await createBookingHolds(booking);
+          const datPhongIds = holdData.datPhongIds;
+          amount = Math.max(Math.round(Number(holdData.total || bookingFinalTotal || 0)), 0);
+
+          if (amount <= 0) {
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
+          }
+
+          setPaymentStatus('Đang tạo liên kết thanh toán VNPAY...');
+
+          const response = await fetch(vnPayPaymentUrl, {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              amount,
+              description: `Peach Valley thanh toan dat phong ${booking.checkIn} den ${booking.checkOut}`,
+              redirect_url: paymentRedirectUrl,
+              dat_phong_ids: datPhongIds,
+              bank_code: bankCode,
+            }),
+          });
+
+          const result = await response.json().catch(() => null);
+
+          if (!response.ok || result?.status !== 'success' || !result?.payment_url) {
+            throw new Error(result?.message || 'Không thể tạo thanh toán VNPAY.');
+          }
+
+          localStorage.setItem('peachBookingPayment', JSON.stringify({
+            appTransId: result.txn_ref,
+            datPhongIds,
+            amount,
+            provider: 'VNPAY',
+            createdAt: new Date().toISOString(),
+          }));
+
+          window.location.href = result.payment_url;
         }
 
         // Real-time validation for name (letters only)
@@ -565,21 +652,26 @@
         });
 
         paymentOptions.forEach(function(input) {
-          input.addEventListener('change', function() {
+          input.addEventListener('change', function(event) {
+            event.stopImmediatePropagation();
             updatePaymentButton(input.dataset.paymentOption);
-          });
+          }, true);
         });
 
-        // Payment button validation
-        paymentBtn.addEventListener('click', function(e) {
+        function handlePaymentSubmit(e) {
+          if (e.peachPaymentHandled) {
+            return;
+          }
+
+          e.peachPaymentHandled = true;
           e.preventDefault();
           
           const fullName = document.getElementById('fullName').value.trim();
           const phone = document.getElementById('phone').value.trim();
-          const email = document.getElementById('email').value.trim();
 
           // Clear previous errors
           document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+          setPaymentStatus('');
 
           let hasError = false;
 
@@ -599,12 +691,10 @@
             hasError = true;
           }
 
-          if (!email) {
-            document.getElementById('email-error').textContent = 'Vui lòng nhập email';
-            hasError = true;
-          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            document.getElementById('email-error').textContent = 'Email không hợp lệ';
-            hasError = true;
+          if (hasError) {
+            setPaymentStatus('Vui lòng kiểm tra lại thông tin người đặt phòng.', true);
+            focusFirstInvalidField();
+            return;
           }
 
           if (!hasError) {
@@ -613,10 +703,25 @@
             }
 
             const selectedPayment = document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '';
+            const selectedPaymentInput = document.querySelector('[data-payment-option]:checked');
             updatePaymentButton(selectedPayment);
 
+            if (selectedPayment.startsWith('card-')) {
+              const bankCode = selectedPaymentInput?.dataset.vnpayBankCode || '';
+              paymentBtn.disabled = true;
+              setPaymentStatus('Đang tạo liên kết thanh toán VNPAY...');
+
+              createVnPayPayment(bankCode)
+                .catch((error) => {
+                  console.error('VNPAY payment error:', error);
+                  setPaymentStatus(error.message || 'Không thể tạo thanh toán VNPAY.', true);
+                  paymentBtn.disabled = false;
+                });
+              return;
+            }
+
             if (selectedPayment !== 'zalopay') {
-              setPaymentStatus('Hiện tại chỉ hỗ trợ thanh toán QR qua ZaloPay.', true);
+              setPaymentStatus('Vui lòng chọn phương thức thanh toán hợp lệ.', true);
               return;
             }
 
@@ -630,11 +735,25 @@
                 paymentBtn.disabled = false;
               });
           }
-        });
+        }
+
+        // Payment button validation
+        paymentBtn.addEventListener('click', handlePaymentSubmit);
+        document.addEventListener('click', function(event) {
+          const submitButton = event.target.closest('[data-payment-submit]');
+
+          if (!submitButton || submitButton !== paymentBtn) {
+            return;
+          }
+
+          handlePaymentSubmit(event);
+        }, true);
 
         renderStoredBooking();
         updateDiscountUI(appliedPromoCode);
-        updatePaymentButton(document.querySelector('[data-payment-option]:checked')?.dataset.paymentOption || '');
+        syncSelectedPayment();
+        requestAnimationFrame(syncSelectedPayment);
+        window.setTimeout(syncSelectedPayment, 0);
       });
     </script>
   </body>

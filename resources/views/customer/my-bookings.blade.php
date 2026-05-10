@@ -403,8 +403,6 @@
           detailPerson.innerHTML = `
             <div><span>Khách hàng</span><strong>${booking.TenKH || '--'}</strong></div>
             <div><span>Số điện thoại</span><strong>${booking.SoDienThoai || '--'}</strong></div>
-            <div><span>Email</span><strong>${booking.Email || '--'}</strong></div>
-            <div><span>CCCD</span><strong>${booking.CCCD || '--'}</strong></div>
             <div><span>Ngày đặt</span><strong>${formatDate(booking.NgayDat)}</strong></div>
           `;
         };

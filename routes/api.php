@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\ThanhToanController;
 use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
+use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 
 Route::get('/bang-gia', [BangGiaController::class, 'index']);
 Route::post('/bang-gia', [BangGiaController::class, 'store']);
@@ -93,3 +94,7 @@ Route::post('/zalopay-payment', [PaymentController::class, 'createPayment']);
 
 // Route để ZaloPay gọi về (Callback) báo kết quả thanh toán
 Route::post('/zalopay-callback', [PaymentController::class, 'callback']);
+
+Route::post('/vnpay-payment', [VnPayPaymentController::class, 'createPayment']);
+Route::get('/vnpay-ipn', [VnPayPaymentController::class, 'ipn']);
+Route::get('/vnpay-return', [VnPayPaymentController::class, 'return']);
