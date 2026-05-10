@@ -6,25 +6,175 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Mã hóa đơn</label>
-            <input type="text" class="form-control" placeholder="Tìm mã hóa đơn">
+            <input type="text" class="form-control" placeholder="Tìm mã hóa đơn" data-invoice-search>
         </div>
         <div class="col-md-3">
             <label class="form-label">Trạng thái</label>
             <div class="hm-select-wrap">
-                <select class="form-select">
-                    <option>Tất cả trạng thái</option>
-                    <option>Chưa thanh toán</option>
-                    <option>Đã thanh toán</option>
+                <select class="form-select" data-invoice-status>
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="0">Chưa thanh toán</option>
+                    <option value="1">Đã thanh toán</option>
+                    <option value="3">Đã hủy</option>
                 </select>
             </div>
         </div>
     </x-slot:filters>
 
     <table class="table table-striped align-middle">
-        <thead><tr><th>Mã hóa đơn</th><th>Ngày lập</th><th>Tên nhân viên</th><th>Tổng tiền</th><th>Đã thanh toán</th><th>Trạng thái</th><th style="min-width: 180px;">Thao tác</th></tr></thead>
-        <tbody>
-            <tr><td>5001</td><td>08/04/2026</td><td>Phạm Thùy Linh</td><td>4.500.000 VNĐ</td><td>1.500.000 VNĐ</td><td><span class="hm-badge hm-badge--warning">Chưa thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.invoices.show', ['recordId' => 5001]), 'editUrl' => null, 'showDelete' => false])</td></tr>
-            <tr><td>5002</td><td>07/04/2026</td><td>Hoàng Gia Bảo</td><td>3.250.000 VNĐ</td><td>3.250.000 VNĐ</td><td><span class="hm-badge hm-badge--success">Đã thanh toán</span></td><td>@include('hotel-management.partials.action-icons', ['showUrl' => route('hotel.invoices.show', ['recordId' => 5002]), 'editUrl' => null, 'showDelete' => false])</td></tr>
+        <thead>
+            <tr>
+                <th>Mã hóa đơn</th>
+                <th>Ngày lập</th>
+                <th>Tên nhân viên</th>
+                <th>Tổng tiền</th>
+                <th>Đã thanh toán</th>
+                <th>Trạng thái</th>
+                <th style="min-width: 180px;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody id="invoice-table-body">
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">Đang tải dữ liệu hóa đơn...</td>
+            </tr>
         </tbody>
     </table>
+
+    <div
+        id="invoice-index-config"
+        data-show-url-template="{{ route('hotel.invoices.show', ['recordId' => '__INVOICE_ID__']) }}"
+        hidden
+    ></div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const tableBody = document.getElementById('invoice-table-body');
+                const searchInput = document.querySelector('[data-invoice-search]');
+                const statusSelect = document.querySelector('[data-invoice-status]');
+                const filterPanel = document.querySelector('.hm-filter-panel');
+                const config = document.getElementById('invoice-index-config');
+                const applyButton = filterPanel ? filterPanel.querySelector('.btn.btn-primary') : null;
+                const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
+                const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
+
+                let invoices = [];
+
+                const formatDate = function (value) {
+                    if (!value) {
+                        return '--';
+                    }
+                    const parts = String(value).split('-');
+                    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+                };
+
+                const formatCurrency = function (value) {
+                    const number = Number(value);
+                    if (Number.isNaN(number)) {
+                        return '--';
+                    }
+                    return number.toLocaleString('vi-VN') + ' VNĐ';
+                };
+
+                const mapStatus = function (status) {
+                    switch (Number(status)) {
+                        case 0:
+                            return { label: 'Chưa thanh toán', badgeClass: 'warning' };
+                        case 1:
+                            return { label: 'Đã thanh toán', badgeClass: 'success' };
+                        case 3:
+                            return { label: 'Đã hủy', badgeClass: 'danger' };
+                        default:
+                            return { label: 'Không xác định', badgeClass: 'muted' };
+                    }
+                };
+
+                const renderRows = function (rows) {
+                    if (!rows.length) {
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không có hóa đơn phù hợp.</td></tr>';
+                        return;
+                    }
+
+                    tableBody.innerHTML = rows.map(function (invoice) {
+                        const status = mapStatus(invoice.TrangThai);
+                        const showUrl = showUrlTemplate.replace('__INVOICE_ID__', invoice.MaHD);
+                        const employeeName = invoice && invoice.nhan_vien && invoice.nhan_vien.TenNV ? invoice.nhan_vien.TenNV : '--';
+
+                        return `
+                            <tr>
+                                <td>${invoice.MaHD || '--'}</td>
+                                <td>${formatDate(invoice.NgayLapHD)}</td>
+                                <td>${employeeName}</td>
+                                <td>${formatCurrency(invoice.TongTien)}</td>
+                                <td>${formatCurrency(invoice.DaThanhToan)}</td>
+                                <td><span class="hm-badge hm-badge--${status.badgeClass}">${status.label}</span></td>
+                                <td>
+                                    <div class="hm-action-group">
+                                        <a href="${showUrl}" class="btn btn-sm btn-icon text-white" style="background-color: #22c55e; border-color: #22c55e;" title="Xem chi tiết">
+                                            <span class="btn-inner">
+                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M2 12C3.73 8.11 7.52 5.5 12 5.5C16.48 5.5 20.27 8.11 22 12C20.27 15.89 16.48 18.5 12 18.5C7.52 18.5 3.73 15.89 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                </svg>
+                                            </span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                };
+
+                const applyFilters = function () {
+                    const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
+                    const statusValue = (statusSelect ? statusSelect.value : '') || '';
+
+                    const filtered = invoices.filter(function (invoice) {
+                        const matchesKeyword = !keyword
+                            || String(invoice && invoice.MaHD ? invoice.MaHD : '').toLowerCase().includes(keyword);
+                        const matchesStatus = statusValue === ''
+                            || String(invoice && invoice.TrangThai !== undefined ? invoice.TrangThai : '') === statusValue;
+                        return matchesKeyword && matchesStatus;
+                    });
+
+                    renderRows(filtered);
+                };
+
+                const loadInvoices = async function () {
+                    try {
+                        const response = await fetch('/api/hoa-don', {
+                            headers: { 'Accept': 'application/json' }
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Không thể tải danh sách hóa đơn.');
+                        }
+
+                        invoices = await response.json();
+                        applyFilters();
+                    } catch (error) {
+                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
+                    }
+                };
+
+                if (applyButton) {
+                    applyButton.addEventListener('click', applyFilters);
+                }
+
+                if (resetButton) {
+                    resetButton.addEventListener('click', function () {
+                        if (searchInput) {
+                            searchInput.value = '';
+                        }
+                        if (statusSelect) {
+                            statusSelect.value = '';
+                        }
+                        applyFilters();
+                    });
+                }
+
+                loadInvoices();
+            });
+        </script>
+    @endpush
 </x-hotel-management.index-page>

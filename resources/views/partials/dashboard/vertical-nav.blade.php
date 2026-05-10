@@ -84,6 +84,21 @@
         </a>
     </li>
 
+     <li class="nav-item">
+        <a class="nav-link {{ request()->is('hotel/price-lists*') ? 'active' : '' }}" href="{{ route('hotel.price-lists.index') }}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M6 4C4.89543 4 4 4.89543 4 6V18C4 19.1046 4.89543 20 6 20H18C19.1046 20 20 19.1046 20 18V9.41421C20 8.88378 19.7893 8.37507 19.4142 8L16 4.58579C15.6249 4.21071 15.1162 4 14.5858 4H6Z" fill="currentColor"></path>
+                    <path d="M15 4.5V8C15 8.55228 15.4477 9 16 9H19.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M8 12H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    <path d="M8 15.5H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    <path d="M15.5 14C16.3284 14 17 14.6716 17 15.5C17 16.3284 16.3284 17 15.5 17C14.6716 17 14 16.3284 14 15.5C14 14.6716 14.6716 14 15.5 14Z" fill="currentColor"></path>
+                </svg>
+            </i>
+            <span class="item-name">Bảng giá</span>
+        </a>
+    </li>
+
     <li class="nav-item">
         <a class="nav-link {{ request()->is('hotel/rooms*') ? 'active' : '' }}" href="{{ route('hotel.rooms.index') }}">
             <i class="icon">
@@ -94,6 +109,20 @@
                 </svg>
             </i>
             <span class="item-name">Phòng</span>
+        </a>
+    </li>
+
+     <li class="nav-item">
+        <a class="nav-link {{ request()->is('hotel/bookings*') ? 'active' : '' }}" href="{{ route('hotel.bookings.index') }}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M7 4C5.89543 4 5 4.89543 5 6V18C5 19.1046 5.89543 20 7 20H17C18.1046 20 19 19.1046 19 18V9.41421C19 8.88378 18.7893 8.37507 18.4142 8L15 4.58579C14.6249 4.21071 14.1162 4 13.5858 4H7Z" fill="currentColor"></path>
+                    <path d="M14 4.5V8C14 8.55228 14.4477 9 15 9H18.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M8 12H16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                    <path d="M8 15.5H13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+                </svg>
+            </i>
+            <span class="item-name">Danh sách đặt phòng</span>
         </a>
     </li>
 
