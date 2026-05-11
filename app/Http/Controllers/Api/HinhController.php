@@ -20,7 +20,7 @@ class HinhController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'Url'         => 'required|string|max:100',
+            'Url'         => 'required|string|max:500',
             'MaLoaiPhong' => 'nullable|exists:LoaiPhong,MaLoaiPhong',
             'MaDV'        => 'nullable|exists:DichVu,MaDV',
         ]);

@@ -1,4 +1,4 @@
-    <x-hotel-management.form-page
+<x-hotel-management.form-page
     :is-edit="request()->routeIs('hotel.accounts.edit')"
     :index-route="route('hotel.accounts.index')"
 >
@@ -28,17 +28,44 @@
         <div class="invalid-feedback" id="account-email-error"></div>
     </div>
 
-     <div class="form-group col-md-6">
+    <div class="form-group col-md-6">
         <label class="form-label">Loại tài khoản</label>
         <select class="form-select" id="account-type">
             <option value="">Chọn loại tài khoản</option>
             <option value="0">Khách hàng</option>
             <option value="1">Nhân viên</option>
             <option value="2">Quản lý</option>
-            <option value="2">Nhân viên kinh doanh</option>
-            <option value="2">Kế toán</option>
+            <option value="3">Kế toán</option>
+            <option value="4">Nhân viên kinh doanh</option>
         </select>
         <div class="invalid-feedback" id="account-type-error"></div>
+    </div>
+
+    <div class="form-group col-md-6 d-none" id="account-customer-group">
+        <label class="form-label">Mã khách hàng</label>
+        <select class="form-select" id="account-customer-id">
+            <option value="">Chọn khách hàng</option>
+        </select>
+        <div class="form-text" id="account-customer-hint">Chỉ hiển thị khách hàng chưa có tài khoản.</div>
+        <div class="invalid-feedback" id="account-customer-id-error"></div>
+    </div>
+
+    <div class="form-group col-md-6 d-none" id="account-employee-group">
+        <label class="form-label">Mã nhân viên</label>
+        <select class="form-select" id="account-employee-id">
+            <option value="">Chọn nhân viên</option>
+        </select>
+        <div class="form-text" id="account-employee-hint">Chỉ hiển thị nhân viên chưa có tài khoản.</div>
+        <div class="invalid-feedback" id="account-employee-id-error"></div>
+    </div>
+
+    <div class="form-group col-md-6">
+        <label class="form-label">Trạng thái</label>
+        <select class="form-select" id="account-status">
+            <option value="1">Hoạt động</option>
+            <option value="0">Không hoạt động</option>
+        </select>
+        <div class="invalid-feedback" id="account-status-error"></div>
     </div>
 
     <div class="form-group col-md-6">
@@ -64,24 +91,18 @@
         <div class="invalid-feedback" id="account-password-confirmation-error"></div>
     </div>
 
-   
-
-    <div class="form-group col-md-6">
-        <label class="form-label">Trạng thái</label>
-        <select class="form-select" id="account-status">
-            <option value="1">Hoạt động</option>
-            <option value="0">Không hoạt động</option>
-        </select>
-        <div class="invalid-feedback" id="account-status-error"></div>
-    </div>
 
     <div
         id="account-form-config"
         data-is-edit="{{ request()->routeIs('hotel.accounts.edit') ? '1' : '0' }}"
         data-account-id="{{ request()->route('recordId') }}"
-        data-create-url="{{ url('/api/tai-khoan') }}"
-        data-update-url-template="{{ url('/api/tai-khoan/__ACCOUNT_ID__') }}"
+        data-create-url="{{ route('hotel.accounts.store') }}"
+        data-update-url-template="{{ route('hotel.accounts.update', ['recordId' => '__ACCOUNT_ID__']) }}"
+        data-detail-url-template="{{ url('/api/tai-khoan/__ACCOUNT_ID__') }}"
         data-index-url="{{ route('hotel.accounts.index') }}"
+        data-customers-url="{{ url('/api/khach-hang') }}"
+        data-employees-url="{{ url('/api/nhan-vien') }}"
+        data-csrf-token="{{ csrf_token() }}"
         hidden
     ></div>
 
@@ -95,15 +116,25 @@
                 const accountId = config ? (config.dataset.accountId || '') : '';
                 const createUrl = config ? config.dataset.createUrl : '';
                 const updateUrlTemplate = config ? config.dataset.updateUrlTemplate : '';
+                const detailUrlTemplate = config ? config.dataset.detailUrlTemplate : '';
                 const indexUrl = config ? config.dataset.indexUrl : '';
+                const customersUrl = config ? config.dataset.customersUrl : '';
+                const employeesUrl = config ? config.dataset.employeesUrl : '';
+                const csrfToken = config ? config.dataset.csrfToken : '';
 
                 const alertBox = document.getElementById('account-form-alert');
                 const accountIdGroup = document.getElementById('account-id-group');
                 const accountIdInput = document.getElementById('account-id');
                 const emailInput = document.getElementById('account-email');
+                const typeInput = document.getElementById('account-type');
+                const customerGroup = document.getElementById('account-customer-group');
+                const customerInput = document.getElementById('account-customer-id');
+                const customerHint = document.getElementById('account-customer-hint');
+                const employeeGroup = document.getElementById('account-employee-group');
+                const employeeInput = document.getElementById('account-employee-id');
+                const employeeHint = document.getElementById('account-employee-hint');
                 const passwordInput = document.getElementById('account-password');
                 const passwordConfirmationInput = document.getElementById('account-password-confirmation');
-                const typeInput = document.getElementById('account-type');
                 const statusInput = document.getElementById('account-status');
                 const passwordHint = document.getElementById('account-password-hint');
 
@@ -112,7 +143,32 @@
                     MatKhau: passwordInput,
                     MatKhauConfirmation: passwordConfirmationInput,
                     LoaiTaiKhoan: typeInput,
-                    TrangThai: statusInput
+                    TrangThai: statusInput,
+                    customer_id: customerInput,
+                    employee_id: employeeInput,
+                };
+
+                let customers = [];
+                let employees = [];
+                let currentAccount = null;
+                let selectedCustomerId = '';
+                let selectedEmployeeId = '';
+
+                const mapAccountType = function (type) {
+                    switch (Number(type)) {
+                        case 0:
+                            return 'Khách hàng';
+                        case 1:
+                            return 'Nhân viên';
+                        case 2:
+                            return 'Quản lý';
+                        case 3:
+                            return 'Kế toán';
+                        case 4:
+                            return 'Nhân viên kinh doanh';
+                        default:
+                            return 'Không xác định';
+                    }
                 };
 
                 const setAlert = function (type, message) {
@@ -136,7 +192,16 @@
                 const clearFieldErrors = function () {
                     Object.keys(fieldMap).forEach(function (fieldName) {
                         const field = fieldMap[fieldName];
-                        const errorElement = document.getElementById(`account-${fieldName === 'LoaiTaiKhoan' ? 'type' : fieldName === 'TrangThai' ? 'status' : fieldName === 'MatKhau' ? 'password' : fieldName === 'MatKhauConfirmation' ? 'password-confirmation' : 'email'}-error`);
+                        const suffixMap = {
+                            Email: 'email',
+                            MatKhau: 'password',
+                            MatKhauConfirmation: 'password-confirmation',
+                            LoaiTaiKhoan: 'type',
+                            TrangThai: 'status',
+                            customer_id: 'customer-id',
+                            employee_id: 'employee-id',
+                        };
+                        const errorElement = document.getElementById(`account-${suffixMap[fieldName]}-error`);
 
                         if (field) {
                             field.classList.remove('is-invalid');
@@ -154,7 +219,9 @@
                         MatKhau: 'password',
                         MatKhauConfirmation: 'password-confirmation',
                         LoaiTaiKhoan: 'type',
-                        TrangThai: 'status'
+                        TrangThai: 'status',
+                        customer_id: 'customer-id',
+                        employee_id: 'employee-id',
                     };
 
                     const field = fieldMap[fieldName];
@@ -182,6 +249,78 @@
                     });
                 };
 
+                const syncLinkFieldVisibility = function () {
+                    const typeValue = typeInput.value;
+                    const isCustomerType = typeValue === '0';
+                    const shouldShowEmployee = typeValue !== '' && !isCustomerType;
+
+                    if (customerGroup) {
+                        customerGroup.classList.toggle('d-none', !isCustomerType);
+                    }
+
+                    if (employeeGroup) {
+                        employeeGroup.classList.toggle('d-none', !shouldShowEmployee);
+                    }
+                };
+
+                const renderCustomerOptions = function () {
+                    const currentLinkedCustomerId = currentAccount && (currentAccount.khachHang || currentAccount.khach_hang)
+                        ? String((currentAccount.khachHang || currentAccount.khach_hang).MaKH || '')
+                        : '';
+
+                    const availableCustomers = customers.filter(function (customer) {
+                        const customerId = String(customer.MaKH || '');
+                        const linkedAccountId = customer.MaTK !== undefined && customer.MaTK !== null ? String(customer.MaTK) : '';
+
+                        return !linkedAccountId || linkedAccountId === String(accountId || '') || customerId === currentLinkedCustomerId;
+                    });
+
+                    customerInput.innerHTML = '<option value="">Chọn khách hàng</option>' + availableCustomers.map(function (customer) {
+                        const customerId = customer.MaKH || '--';
+                        const customerName = customer.TenKH || '--';
+                        return `<option value="${customerId}">${customerId} - ${customerName}</option>`;
+                    }).join('');
+
+                    if (selectedCustomerId) {
+                        customerInput.value = selectedCustomerId;
+                    }
+
+                    if (customerHint) {
+                        customerHint.textContent = availableCustomers.length
+                            ? 'Chỉ hiển thị khách hàng chưa có tài khoản.'
+                            : 'Hiện chưa có khách hàng trống để gắn tài khoản.';
+                    }
+                };
+
+                const renderEmployeeOptions = function () {
+                    const currentLinkedEmployeeId = currentAccount && (currentAccount.nhanVien || currentAccount.nhan_vien)
+                        ? String((currentAccount.nhanVien || currentAccount.nhan_vien).MaNV || '')
+                        : '';
+
+                    const availableEmployees = employees.filter(function (employee) {
+                        const employeeId = String(employee.MaNV || '');
+                        const linkedAccountId = employee.MaTK !== undefined && employee.MaTK !== null ? String(employee.MaTK) : '';
+
+                        return !linkedAccountId || linkedAccountId === String(accountId || '') || employeeId === currentLinkedEmployeeId;
+                    });
+
+                    employeeInput.innerHTML = '<option value="">Chọn nhân viên</option>' + availableEmployees.map(function (employee) {
+                        const employeeId = employee.MaNV || '--';
+                        const employeeName = employee.TenNV || '--';
+                        return `<option value="${employeeId}">${employeeId} - ${employeeName}</option>`;
+                    }).join('');
+
+                    if (selectedEmployeeId) {
+                        employeeInput.value = selectedEmployeeId;
+                    }
+
+                    if (employeeHint) {
+                        employeeHint.textContent = availableEmployees.length
+                            ? 'Chỉ hiển thị nhân viên chưa có tài khoản.'
+                            : 'Hiện chưa có nhân viên trống để gắn tài khoản.';
+                    }
+                };
+
                 const validateForm = function () {
                     clearFieldErrors();
                     clearAlert();
@@ -194,6 +333,9 @@
 
                     if (!emailValue) {
                         setFieldError('Email', 'Vui lòng nhập email.');
+                        isValid = false;
+                    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                        setFieldError('Email', 'Email không hợp lệ.');
                         isValid = false;
                     }
 
@@ -217,6 +359,16 @@
                         isValid = false;
                     }
 
+                    if (typeValue === '0' && !customerInput.value) {
+                        setFieldError('customer_id', 'Vui lòng chọn khách hàng.');
+                        isValid = false;
+                    }
+
+                    if (typeValue !== '' && typeValue !== '0' && !employeeInput.value) {
+                        setFieldError('employee_id', 'Vui lòng chọn nhân viên.');
+                        isValid = false;
+                    }
+
                     return isValid;
                 };
 
@@ -232,6 +384,7 @@
                 };
 
                 const populateForm = function (account) {
+                    currentAccount = account;
                     accountIdInput.value = account && account.MaTK ? account.MaTK : '--';
                     emailInput.value = account && account.Email ? account.Email : '';
                     typeInput.value = account && account.LoaiTaiKhoan !== undefined && account.LoaiTaiKhoan !== null
@@ -242,29 +395,55 @@
                         : '1';
                     passwordInput.value = '';
                     passwordConfirmationInput.value = '';
+
+                    const linkedCustomer = account && (account.khachHang || account.khach_hang) ? (account.khachHang || account.khach_hang) : null;
+                    const linkedEmployee = account && (account.nhanVien || account.nhan_vien) ? (account.nhanVien || account.nhan_vien) : null;
+
+                    selectedCustomerId = linkedCustomer && linkedCustomer.MaKH ? String(linkedCustomer.MaKH) : '';
+                    selectedEmployeeId = linkedEmployee && linkedEmployee.MaNV ? String(linkedEmployee.MaNV) : '';
+
+                    renderCustomerOptions();
+                    renderEmployeeOptions();
+                    syncLinkFieldVisibility();
+                };
+
+                const loadDependencies = async function () {
+                    const responses = await Promise.all([
+                        fetch(customersUrl, { headers: { 'Accept': 'application/json' } }),
+                        fetch(employeesUrl, { headers: { 'Accept': 'application/json' } }),
+                    ]);
+
+                    if (!responses[0].ok) {
+                        throw new Error('Không thể tải danh sách khách hàng.');
+                    }
+
+                    if (!responses[1].ok) {
+                        throw new Error('Không thể tải danh sách nhân viên.');
+                    }
+
+                    customers = await responses[0].json();
+                    employees = await responses[1].json();
+
+                    renderCustomerOptions();
+                    renderEmployeeOptions();
                 };
 
                 const loadAccount = async function () {
                     if (!isEdit || !accountId) {
+                        syncLinkFieldVisibility();
                         return;
                     }
 
-                    try {
-                        const response = await fetch(updateUrlTemplate.replace('__ACCOUNT_ID__', accountId), {
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
+                    const response = await fetch(detailUrlTemplate.replace('__ACCOUNT_ID__', accountId), {
+                        headers: { 'Accept': 'application/json' }
+                    });
 
-                        if (!response.ok) {
-                            throw new Error('Không thể tải thông tin tài khoản.');
-                        }
-
-                        const account = await response.json();
-                        populateForm(account);
-                    } catch (error) {
-                        setAlert('danger', error.message);
+                    if (!response.ok) {
+                        throw new Error('Không thể tải thông tin tài khoản.');
                     }
+
+                    const account = await response.json();
+                    populateForm(account);
                 };
 
                 if (accountIdGroup) {
@@ -274,6 +453,27 @@
                 if (passwordHint && isEdit) {
                     passwordHint.textContent = 'Để trống nếu không muốn đổi mật khẩu.';
                 }
+
+                typeInput.addEventListener('change', function () {
+                    if (typeInput.value === '0') {
+                        selectedEmployeeId = '';
+                        employeeInput.value = '';
+                    } else {
+                        selectedCustomerId = '';
+                        customerInput.value = '';
+                    }
+
+                    syncLinkFieldVisibility();
+                    clearFieldErrors();
+                });
+
+                customerInput.addEventListener('change', function () {
+                    selectedCustomerId = customerInput.value;
+                });
+
+                employeeInput.addEventListener('change', function () {
+                    selectedEmployeeId = employeeInput.value;
+                });
 
                 if (form) {
                     form.addEventListener('submit', async function (event) {
@@ -286,7 +486,9 @@
                         const payload = {
                             Email: emailInput.value.trim(),
                             LoaiTaiKhoan: typeInput.value,
-                            TrangThai: statusInput.value
+                            TrangThai: statusInput.value,
+                            customer_id: typeInput.value === '0' ? (customerInput.value || null) : null,
+                            employee_id: typeInput.value !== '0' ? (employeeInput.value || null) : null,
                         };
 
                         if (!isEdit || passwordInput.value) {
@@ -296,7 +498,6 @@
                         const requestUrl = isEdit
                             ? updateUrlTemplate.replace('__ACCOUNT_ID__', accountId)
                             : createUrl;
-
                         const requestMethod = isEdit ? 'PUT' : 'POST';
 
                         try {
@@ -308,7 +509,8 @@
                                 method: requestMethod,
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
                                 },
                                 body: JSON.stringify(payload)
                             });
@@ -344,7 +546,15 @@
                     });
                 }
 
-                loadAccount();
+                (async function init() {
+                    try {
+                        await loadDependencies();
+                        await loadAccount();
+                        syncLinkFieldVisibility();
+                    } catch (error) {
+                        setAlert('danger', error.message);
+                    }
+                })();
             });
         </script>
     @endpush

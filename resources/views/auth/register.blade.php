@@ -3,11 +3,22 @@
       <style>
          .auth-panel {
             min-height: 100vh;
+            overflow: hidden;
+         }
+
+         .auth-main-column {
+            display: flex;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px 0;
          }
 
          .auth-side-visual {
             position: relative;
             background: #0f172a;
+            display: flex;
+            min-height: 100vh;
+            overflow: hidden;
          }
 
          .auth-side-visual::after {
@@ -21,6 +32,8 @@
          .auth-side-image {
             width: 100%;
             height: 100%;
+            min-height: 100vh;
+            display: block;
             object-fit: cover;
             object-position: center;
          }
@@ -87,14 +100,37 @@
             font-weight: 600;
          }
 
+         @media (max-width: 1199.98px) {
+            .auth-main-column {
+               padding: 32px 0;
+            }
+
+            .auth-side-image {
+               object-position: 58% center;
+            }
+         }
+
+         @media (max-width: 991.98px) {
+            .auth-side-visual,
+            .auth-side-image {
+               min-height: 100%;
+            }
+         }
+
          @media (max-width: 767.98px) {
             .auth-panel {
                min-height: auto;
+               overflow: visible;
+            }
+
+            .auth-main-column {
+               min-height: auto;
+               padding: 24px 0;
             }
          }
       </style>
-      <div class="row m-0 align-items-center bg-white auth-panel">
-         <div class="col-md-6">
+      <div class="row m-0 align-items-stretch bg-white auth-panel">
+         <div class="col-md-6 auth-main-column">
             <div class="row justify-content-center">
                <div class="col-md-10">
                   <div class="card card-transparent auth-card shadow-none d-flex justify-content-center mb-0">
@@ -179,7 +215,7 @@
                </svg>
             </div>
          </div>
-         <div class="col-md-6 d-md-block d-none p-0 mt-n1 vh-100 overflow-hidden auth-side-visual">
+         <div class="col-md-6 d-md-block d-none p-0 auth-side-visual">
             <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khach san Peach Valley">
          </div>
       </div>

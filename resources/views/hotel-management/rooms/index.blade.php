@@ -61,6 +61,19 @@
 
                 let rooms = [];
 
+                const compareRecordIdDesc = function (left, right, fieldName) {
+                    const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
+                    const rightValue = right && right[fieldName] !== undefined && right[fieldName] !== null ? String(right[fieldName]) : '';
+                    const leftNumber = Number(leftValue);
+                    const rightNumber = Number(rightValue);
+
+                    if (!Number.isNaN(leftNumber) && !Number.isNaN(rightNumber)) {
+                        return rightNumber - leftNumber;
+                    }
+
+                    return rightValue.localeCompare(leftValue, undefined, { numeric: true, sensitivity: 'base' });
+                };
+
                 const mapStatus = function (status) {
                     switch (Number(status)) {
                         case 0:
@@ -89,21 +102,13 @@
                         const roomType = room && room.loai_phong ? room.loai_phong : null;
 
                         return `
-                            <tr>
+                            <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${room.MaPhong || '--'}</td>
                                 <td>${room.SoPhong || '--'}</td>
                                 <td>${roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : '--'}</td>
                                 <td><span class="hm-badge hm-badge--${status.badgeClass}">${status.label}</span></td>
                                 <td>
                                     <div class="hm-action-group">
-                                        <a href="${showUrl}" class="btn btn-sm btn-icon text-white" style="background-color: #22c55e; border-color: #22c55e;" title="Xem chi tiết">
-                                            <span class="btn-inner">
-                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M2 12C3.73 8.11 7.52 5.5 12 5.5C16.48 5.5 20.27 8.11 22 12C20.27 15.89 16.48 18.5 12 18.5C7.52 18.5 3.73 15.89 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                </svg>
-                                            </span>
-                                        </a>
                                         <a href="${editUrl}" class="btn btn-sm btn-warning btn-icon" title="Chỉnh sửa">
                                             <span class="btn-inner">
                                                 <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -130,6 +135,14 @@
                     }).join('');
                 };
 
+                const pagination = typeof window.createHmPagination === 'function'
+                    ? window.createHmPagination({
+                        container: document.querySelector('[data-hm-pagination]'),
+                        pageSize: 10,
+                        onPageChange: renderRows
+                    })
+                    : null;
+
                 const applyFilters = function () {
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
                     const statusValue = (statusSelect ? statusSelect.value : '') || '';
@@ -147,6 +160,11 @@
                         return matchesKeyword && matchesStatus;
                     });
 
+                    if (pagination) {
+                        pagination.setItems(filtered);
+                        return;
+                    }
+
                     renderRows(filtered);
                 };
 
@@ -161,7 +179,11 @@
                         }
 
                         const payload = await response.json();
-                        rooms = Array.isArray(payload.data) ? payload.data : [];
+                        rooms = Array.isArray(payload.data)
+                            ? payload.data.slice().sort(function (left, right) {
+                                return compareRecordIdDesc(left, right, 'MaPhong');
+                            })
+                            : [];
                         applyFilters();
                     } catch (error) {
                         tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">${error.message}</td></tr>`;
