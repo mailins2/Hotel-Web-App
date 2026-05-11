@@ -3,45 +3,46 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\ThanhToan;
+use App\Models\DatPhong;
 use App\Models\HoaDon;
+use App\Models\ThanhToan;
+use App\Services\CustomerPointService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class ThanhToanController extends Controller
 {
-    // =========================
-    // 🔹 GET ALL
     public function index()
     {
         return response()->json(
-            ThanhToan::with('hoaDon')->latest()->get()
+            ThanhToan::with('hoaDon')->latest('MaTT')->get()
         );
     }
 
-    // =========================
-    // 🔹 GET ONE
     public function show($id)
     {
-        $data = ThanhToan::with('hoaDon')->find($id);
+        $thanhToan = ThanhToan::with('hoaDon')->find($id);
 
-        if (!$data) {
-            return response()->json(['message' => 'Không tìm thấy'], 404);
+        if (!$thanhToan) {
+            return response()->json(['message' => 'Không tìm thấy thanh toán'], 404);
         }
 
-        return response()->json($data);
+        return response()->json($thanhToan);
     }
 
-    // =========================
-    // 🔹 CREATE (THANH TOÁN)
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'MaHD' => 'required|exists:HoaDon,MaHD',
             'SoTien' => 'required|numeric|min:1',
             'PhuongThuc' => 'required|in:1,2',
-            'LoaiThanhToan' => 'required|in:0,1'
+            'LoaiThanhToan' => 'required|in:0,1',
+            'NhaCungCap' => 'sometimes|string|max:30',
+            'DinhDanhNguoiThanhToan' => 'nullable|string|max:120',
+            'MaGiaoDich' => 'nullable|string|max:60|unique:ThanhToan,MaGiaoDich',
+            'MaGiaoDichCongThanhToan' => 'nullable|string|max:80',
+            'TrangThaiGiaoDich' => 'sometimes|integer|in:0,1,2',
         ]);
 
         if ($validator->fails()) {
@@ -51,89 +52,95 @@ class ThanhToanController extends Controller
         DB::beginTransaction();
 
         try {
-            $hoaDon = HoaDon::with('thanhToans', 'datPhong')
+            $hoaDon = HoaDon::with('datPhong')
+                ->lockForUpdate()
                 ->find($request->MaHD);
 
             if (!$hoaDon) {
+                DB::rollBack();
                 return response()->json(['message' => 'Không tìm thấy hóa đơn'], 404);
             }
 
-            // ❌ đã thanh toán xong
-            if ($hoaDon->TrangThai == 1) {
-                return response()->json([
-                    'message' => 'Hóa đơn đã thanh toán xong'
-                ], 400);
+            if ((int) $hoaDon->TrangThai === 1) {
+                DB::rollBack();
+                return response()->json(['message' => 'Hóa đơn đã thanh toán xong'], 400);
             }
 
-            // ❌ chưa checkout mà thanh toán cuối
             if (
-                $request->LoaiThanhToan == 1 &&
-                $hoaDon->datPhong->TinhTrang != 2
+                (int) $request->LoaiThanhToan === 1 &&
+                (!$hoaDon->datPhong || (int) $hoaDon->datPhong->TinhTrang !== DatPhong::CHECKED_OUT)
             ) {
-                return response()->json([
-                    'message' => 'Chưa check-out, không thể thanh toán cuối'
-                ], 400);
+                DB::rollBack();
+                return response()->json(['message' => 'Chưa check-out, không thể thanh toán cuối'], 400);
             }
 
-            // 🔥 tổng đã thanh toán
-            $daThanhToan = $hoaDon->thanhToans->sum('SoTien');
+            $daThanhToan = max(
+                (float) $hoaDon->DaThanhToan,
+                (float) ThanhToan::where('MaHD', $hoaDon->MaHD)->sum('SoTien')
+            );
+            $conNo = max((float) $hoaDon->TongTien - $daThanhToan, 0);
 
-            // 🔥 số còn nợ
-            $conNo = $hoaDon->TongTien - $daThanhToan;
-
-            // ❌ không cho thanh toán dư
-            if ($request->SoTien > $conNo) {
+            if ((float) $request->SoTien > $conNo) {
+                DB::rollBack();
                 return response()->json([
                     'message' => 'Số tiền vượt quá số nợ',
-                    'conNo' => $conNo
+                    'conNo' => $conNo,
                 ], 400);
             }
 
-            // 🔥 tạo thanh toán
             $thanhToan = ThanhToan::create([
-                'MaHD' => $request->MaHD,
+                'MaHD' => $hoaDon->MaHD,
                 'SoTien' => $request->SoTien,
                 'PhuongThuc' => $request->PhuongThuc,
-                'LoaiThanhToan' => $request->LoaiThanhToan
+                'LoaiThanhToan' => $request->LoaiThanhToan,
+                'NhaCungCap' => $request->input('NhaCungCap', 'manual'),
+                'DinhDanhNguoiThanhToan' => $request->input('DinhDanhNguoiThanhToan'),
+                'MaGiaoDich' => $request->input('MaGiaoDich'),
+                'MaGiaoDichCongThanhToan' => $request->input('MaGiaoDichCongThanhToan'),
+                'TrangThaiGiaoDich' => $request->input('TrangThaiGiaoDich', 1),
             ]);
 
-            // 🔥 cập nhật lại tổng thanh toán
-            $daThanhToanMoi = $daThanhToan + $request->SoTien;
+            $daThanhToanMoi = min(
+                (float) $hoaDon->TongTien,
+                $daThanhToan + (float) $request->SoTien
+            );
 
-            // 🔥 nếu thanh toán checkout và đủ tiền → DONE
-            if (
-                $request->LoaiThanhToan == 1 &&
-                $daThanhToanMoi >= $hoaDon->TongTien
-            ) {
-                $hoaDon->update(['TrangThai' => 1]);
-            }
+            $hoaDon->update([
+                'DaThanhToan' => $daThanhToanMoi,
+                'TrangThai' => $daThanhToanMoi >= (float) $hoaDon->TongTien ? 1 : 0,
+            ]);
+
+            $diemCong = app(CustomerPointService::class)
+                ->addPointsForPayment($hoaDon, (float) $request->SoTien);
 
             DB::commit();
 
             return response()->json([
                 'message' => 'Thanh toán thành công',
-                'data' => $thanhToan,
+                'data' => $thanhToan->fresh('hoaDon'),
                 'TongTien' => $hoaDon->TongTien,
                 'DaThanhToan' => $daThanhToanMoi,
-                'ConNo' => $hoaDon->TongTien - $daThanhToanMoi
+                'ConNo' => max((float) $hoaDon->TongTien - $daThanhToanMoi, 0),
+                'DiemCong' => $diemCong,
             ], 201);
-
         } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'message' => 'Lỗi server',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
 
-    // =========================
-    // 🔹 GET BY HOÁ ĐƠN
     public function getByHoaDon($maHD)
     {
+        if (!HoaDon::where('MaHD', $maHD)->exists()) {
+            return response()->json(['message' => 'Không tìm thấy hóa đơn'], 404);
+        }
+
         return response()->json(
-            ThanhToan::where('MaHD', $maHD)->get()
+            ThanhToan::where('MaHD', $maHD)->latest('MaTT')->get()
         );
     }
 }

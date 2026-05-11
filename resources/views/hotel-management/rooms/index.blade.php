@@ -171,6 +171,7 @@
                 const loadRooms = async function () {
                     try {
                         const response = await fetch('/api/phong', {
+                            cache: 'no-store',
                             headers: { 'Accept': 'application/json' }
                         });
 
@@ -207,6 +208,11 @@
                 }
 
                 loadRooms();
+                setInterval(function () {
+                    if (!document.hidden) {
+                        loadRooms();
+                    }
+                }, 15000);
             });
         </script>
     @endpush
