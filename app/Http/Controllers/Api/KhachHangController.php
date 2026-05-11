@@ -28,7 +28,7 @@ class KhachHangController extends Controller
             'MaTK'         => 'nullable|exists:TaiKhoan,MaTK|unique:KhachHang,MaTK',
             'TenKH'        => 'required|string|max:100',
             'SoDienThoai'  => 'required|unique:KhachHang,SoDienThoai',
-            'CCCD'         => 'required|unique:KhachHang,CCCD',
+            'CCCD'         => 'nullable|unique:KhachHang,CCCD',
             'NgaySinh'     => 'required|date',
             'GioiTinh'     => 'required|in:0,1,2',
             'DiaChi'       => 'nullable'

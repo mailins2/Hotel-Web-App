@@ -73,12 +73,6 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::view('/rooms-single', 'customer.rooms-single')->name('rooms-single');
     Route::view('/rooms-booking', 'customer.rooms-booking')->name('rooms-booking');
     Route::get('/info-booking', function () {
-        if (!session()->has('auth_account')) {
-            return redirect()->route('login', [
-                'redirect' => route('customer.info-booking'),
-            ]);
-        }
-
         $authAccount = session('auth_account', []);
         $bookingCustomer = null;
 

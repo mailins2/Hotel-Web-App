@@ -1050,6 +1050,12 @@ a:focus,
     color: #111827;
 }
 
+.booking-payment-note {
+    color: #6b7280;
+    font-style: italic;
+    font-weight: 400;
+}
+
 .booking-payment-logo {
     margin-left: auto;
     font-weight: 700;
