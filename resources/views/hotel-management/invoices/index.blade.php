@@ -30,7 +30,7 @@
                 <th>Tổng tiền</th>
                 <th>Đã thanh toán</th>
                 <th>Trạng thái</th>
-                <th style="min-width: 180px;">Thao tác</th>
+                <!-- <th style="min-width: 180px;">Thao tác</th> -->
             </tr>
         </thead>
         <tbody id="invoice-table-body">
@@ -101,29 +101,25 @@
                         const employeeName = invoice && invoice.nhan_vien && invoice.nhan_vien.TenNV ? invoice.nhan_vien.TenNV : '--';
 
                         return `
-                            <tr>
+                            <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${invoice.MaHD || '--'}</td>
                                 <td>${formatDate(invoice.NgayLapHD)}</td>
                                 <td>${employeeName}</td>
                                 <td>${formatCurrency(invoice.TongTien)}</td>
                                 <td>${formatCurrency(invoice.DaThanhToan)}</td>
                                 <td><span class="hm-badge hm-badge--${status.badgeClass}">${status.label}</span></td>
-                                <td>
-                                    <div class="hm-action-group">
-                                        <a href="${showUrl}" class="btn btn-sm btn-icon text-white" style="background-color: #22c55e; border-color: #22c55e;" title="Xem chi tiết">
-                                            <span class="btn-inner">
-                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M2 12C3.73 8.11 7.52 5.5 12 5.5C16.48 5.5 20.27 8.11 22 12C20.27 15.89 16.48 18.5 12 18.5C7.52 18.5 3.73 15.89 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                </svg>
-                                            </span>
-                                        </a>
-                                    </div>
-                                </td>
                             </tr>
                         `;
                     }).join('');
                 };
+
+                const pagination = typeof window.createHmPagination === 'function'
+                    ? window.createHmPagination({
+                        container: document.querySelector('[data-hm-pagination]'),
+                        pageSize: 10,
+                        onPageChange: renderRows
+                    })
+                    : null;
 
                 const applyFilters = function () {
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
@@ -136,6 +132,11 @@
                             || String(invoice && invoice.TrangThai !== undefined ? invoice.TrangThai : '') === statusValue;
                         return matchesKeyword && matchesStatus;
                     });
+
+                    if (pagination) {
+                        pagination.setItems(filtered);
+                        return;
+                    }
 
                     renderRows(filtered);
                 };

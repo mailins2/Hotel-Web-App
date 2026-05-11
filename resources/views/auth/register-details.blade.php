@@ -9,11 +9,15 @@
       <style>
          .auth-panel {
             min-height: 100vh;
+            overflow: hidden;
          }
 
          .auth-side-visual {
             position: relative;
             background: #0f172a;
+            display: flex;
+            min-height: 100vh;
+            overflow: hidden;
          }
 
          .auth-side-visual::after {
@@ -27,6 +31,8 @@
          .auth-side-image {
             width: 100%;
             height: 100%;
+            min-height: 100vh;
+            display: block;
             object-fit: cover;
             object-position: center;
          }
@@ -35,6 +41,7 @@
             max-height: 100vh;
             overflow-y: auto;
             padding: 42px 36px;
+            scrollbar-gutter: stable;
          }
 
          .register-detail-card {
@@ -122,9 +129,41 @@
             color: #fff;
          }
 
+         @media (max-width: 1199.98px) {
+            .register-detail-panel {
+               padding: 32px 22px;
+            }
+
+            .register-detail-card .card-body {
+               padding-left: 18px;
+               padding-right: 18px;
+            }
+
+            .auth-side-image {
+               object-position: 58% center;
+            }
+         }
+
+         @media (max-width: 991.98px) {
+            .register-detail-panel {
+               padding: 28px 18px;
+            }
+
+            .register-detail-card .card-body {
+               padding-left: 8px;
+               padding-right: 8px;
+            }
+
+            .auth-side-visual,
+            .auth-side-image {
+               min-height: 100%;
+            }
+         }
+
          @media (max-width: 767.98px) {
             .auth-panel {
                min-height: auto;
+               overflow: visible;
             }
 
             .register-detail-panel {
@@ -312,7 +351,7 @@
             </div>
          </div>
 
-         <div class="col-md-5 d-md-block d-none p-0 mt-n1 vh-100 overflow-hidden auth-side-visual">
+         <div class="col-md-5 d-md-block d-none p-0 auth-side-visual">
             <img src="{{ asset('images/auth/khachsan.jpg') }}" class="auth-side-image animated-scaleX" alt="Khach san Peach Valley">
          </div>
       </div>

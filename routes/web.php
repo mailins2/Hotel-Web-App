@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccountManagementController;
+use App\Http\Controllers\CustomerManagementController;
 use App\Models\DichVu;
 use Illuminate\Support\Facades\Route;
 
@@ -185,14 +187,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::post('/', [AccountManagementController::class, 'store'])->name('store');
+        Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
+    });
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::view('/', 'hotel-management.bookings.index')->name('index');
         Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
     });
+    Route::prefix('customers')->name('customers.')->group(function () {
+        Route::view('/', 'hotel-management.customers.index')->name('index');
+        Route::get('/create', [CustomerManagementController::class, 'create'])->name('create');
+        Route::post('/', [CustomerManagementController::class, 'store'])->name('store');
+        Route::get('/{recordId}/edit', [CustomerManagementController::class, 'edit'])->name('edit');
+        Route::put('/{recordId}', [CustomerManagementController::class, 'update'])->name('update');
+        Route::view('/{recordId}', 'hotel-management.customers.show')->name('show');
+    });
 
     $hotelManagementViews = [
         'accounts' => 'hotel-management.accounts',
-        'customers' => 'hotel-management.customers',
         'employees' => 'hotel-management.employees',
         'room-types' => 'hotel-management.room-types',
         'price-lists' => 'hotel-management.price-lists',

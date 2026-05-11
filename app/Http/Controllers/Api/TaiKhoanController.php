@@ -30,7 +30,7 @@ class TaiKhoanController extends Controller
         $validator = Validator::make($request->all(), [
             'Email'        => 'required|email|unique:TaiKhoan,Email',
             'MatKhau'      => 'required|min:6',
-            'LoaiTaiKhoan' => 'required|in:0,1,2',
+            'LoaiTaiKhoan' => 'required|in:0,1,2,3,4',
         ]);
 
         if ($validator->fails()) {
@@ -74,7 +74,7 @@ class TaiKhoanController extends Controller
 
         $validator = Validator::make($request->all(), [
             'Email' => 'email|unique:TaiKhoan,Email,' . $id . ',MaTK',
-            'LoaiTaiKhoan' => 'in:0,1,2',
+            'LoaiTaiKhoan' => 'in:0,1,2,3,4',
             'TrangThai' => 'in:0,1'
         ]);
 

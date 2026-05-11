@@ -9,6 +9,7 @@ class Hinh extends Model
     protected $table = 'Hinh';    
     protected $primaryKey = 'Id';
     public $timestamps = false;
+    protected $guarded = [];
 
     public function loaiPhongs()
     {
