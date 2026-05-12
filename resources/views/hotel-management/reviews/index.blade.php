@@ -35,7 +35,7 @@
                 <th>Số sao</th>
                 <th>Mô tả</th>
                 <th>Ngày đánh giá</th>
-                <th style="min-width: 180px;">Thao tác</th>
+                <!-- <th style="min-width: 180px;">Thao tác</th> -->
             </tr>
         </thead>
         <tbody id="review-table-body">
@@ -66,6 +66,19 @@
 
                 let reviews = [];
 
+                const compareRecordIdDesc = function (left, right, fieldName) {
+                    const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
+                    const rightValue = right && right[fieldName] !== undefined && right[fieldName] !== null ? String(right[fieldName]) : '';
+                    const leftNumber = Number(leftValue);
+                    const rightNumber = Number(rightValue);
+
+                    if (!Number.isNaN(leftNumber) && !Number.isNaN(rightNumber)) {
+                        return rightNumber - leftNumber;
+                    }
+
+                    return rightValue.localeCompare(leftValue, undefined, { numeric: true, sensitivity: 'base' });
+                };
+
                 const formatDate = function (value) {
                     if (!value) {
                         return '--';
@@ -84,28 +97,24 @@
                         const showUrl = showUrlTemplate.replace('__REVIEW_ID__', review.MaDG);
 
                         return `
-                            <tr>
+                            <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${review.MaDG || '--'}</td>
                                 <td>${review.MaDatPhong || '--'}</td>
                                 <td>${review.Sao ? `${review.Sao} sao` : '--'}</td>
                                 <td>${review.MoTa || '--'}</td>
                                 <td>${formatDate(review.NgayDanhGia)}</td>
-                                <td>
-                                    <div class="hm-action-group">
-                                        <a href="${showUrl}" class="btn btn-sm btn-icon text-white" style="background-color: #22c55e; border-color: #22c55e;" title="Xem chi tiết">
-                                            <span class="btn-inner">
-                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                    <path d="M2 12C3.73 8.11 7.52 5.5 12 5.5C16.48 5.5 20.27 8.11 22 12C20.27 15.89 16.48 18.5 12 18.5C7.52 18.5 3.73 15.89 2 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                    <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                                </svg>
-                                            </span>
-                                        </a>
-                                    </div>
-                                </td>
                             </tr>
                         `;
                     }).join('');
                 };
+
+                const pagination = typeof window.createHmPagination === 'function'
+                    ? window.createHmPagination({
+                        container: document.querySelector('[data-hm-pagination]'),
+                        pageSize: 10,
+                        onPageChange: renderRows
+                    })
+                    : null;
 
                 const applyFilters = function () {
                     const startValue = startInput && startInput.value ? startInput.value : '';
@@ -120,6 +129,11 @@
                         return matchesStart && matchesEnd && matchesStars;
                     });
 
+                    if (pagination) {
+                        pagination.setItems(filtered);
+                        return;
+                    }
+
                     renderRows(filtered);
                 };
 
@@ -133,7 +147,10 @@
                             throw new Error('Không thể tải danh sách đánh giá.');
                         }
 
-                        reviews = await response.json();
+                        const payload = await response.json();
+                        reviews = (Array.isArray(payload) ? payload : []).slice().sort(function (left, right) {
+                            return compareRecordIdDesc(left, right, 'MaDG');
+                        });
                         applyFilters();
                     } catch (error) {
                         tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${error.message}</td></tr>`;

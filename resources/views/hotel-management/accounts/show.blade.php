@@ -30,6 +30,10 @@
                             return 'Nhân viên';
                         case 2:
                             return 'Quản lý';
+                        case 3:
+                            return 'Kế toán';
+                        case 4:
+                            return 'Nhân viên kinh doanh';
                         default:
                             return 'Không xác định';
                     }

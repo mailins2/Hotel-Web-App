@@ -294,4 +294,5 @@ class AuthController extends Controller
             ->route('login')
             ->with('success', 'Đăng ký thành công. Vui lòng đăng nhập.');
     }
+
 }

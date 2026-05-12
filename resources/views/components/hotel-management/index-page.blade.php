@@ -81,6 +81,35 @@
             height: 100%;
             background: #fff;
         }
+
+        .hm-pagination {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-top: 1.25rem;
+        }
+
+        .hm-pagination__controls,
+        .hm-pagination__pages {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .hm-pagination__button {
+            min-width: 42px;
+            padding: 8px 12px;
+            border-radius: 10px;
+        }
+
+        .hm-clickable-row {
+            cursor: pointer;
+        }
+
+        .hm-clickable-row:hover > td {
+            background: #fff7ed;
+        }
     </style>
 
     <div class="row">
@@ -132,6 +161,18 @@
                     <div class="table-responsive">
                         {{ $slot }}
                     </div>
+
+                    <div class="hm-pagination" data-hm-pagination hidden>
+                        <div class="hm-pagination__controls">
+                            <button type="button" class="btn btn-light btn-sm hm-pagination__button" data-hm-pagination-prev>
+                                Trước
+                            </button>
+                            <div class="hm-pagination__pages" data-hm-pagination-pages></div>
+                            <button type="button" class="btn btn-light btn-sm hm-pagination__button" data-hm-pagination-next>
+                                Sau
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -139,12 +180,199 @@
 
     @push('scripts')
         <script>
+            if (typeof window.createHmPagination !== 'function') {
+                window.createHmPagination = function (options) {
+                    const settings = options || {};
+                    const container = settings.container || null;
+                    const pageSize = Number(settings.pageSize) > 0 ? Number(settings.pageSize) : 10;
+                    const onPageChange = typeof settings.onPageChange === 'function'
+                        ? settings.onPageChange
+                        : function () {};
+
+                    if (!container) {
+                        return {
+                            setItems: function (items) {
+                                onPageChange(Array.isArray(items) ? items : [], {
+                                    currentPage: 1,
+                                    pageSize: pageSize,
+                                    totalItems: Array.isArray(items) ? items.length : 0,
+                                    totalPages: 1,
+                                });
+                            }
+                        };
+                    }
+
+                    const pagesElement = container.querySelector('[data-hm-pagination-pages]');
+                    const prevButton = container.querySelector('[data-hm-pagination-prev]');
+                    const nextButton = container.querySelector('[data-hm-pagination-next]');
+
+                    let items = [];
+                    let currentPage = 1;
+
+                    const getPageWindow = function (totalPages) {
+                        const windowSize = 5;
+                        const start = Math.max(1, currentPage - Math.floor(windowSize / 2));
+                        const end = Math.min(totalPages, start + windowSize - 1);
+                        const adjustedStart = Math.max(1, end - windowSize + 1);
+                        const pages = [];
+
+                        for (let page = adjustedStart; page <= end; page += 1) {
+                            pages.push(page);
+                        }
+
+                        return pages;
+                    };
+
+                    const render = function () {
+                        const totalItems = items.length;
+                        const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+
+                        if (totalItems === 0) {
+                            container.hidden = true;
+                            if (pagesElement) {
+                                pagesElement.innerHTML = '';
+                            }
+                            if (prevButton) {
+                                prevButton.disabled = true;
+                            }
+                            if (nextButton) {
+                                nextButton.disabled = true;
+                            }
+                            onPageChange([], {
+                                currentPage: 1,
+                                pageSize: pageSize,
+                                totalItems: 0,
+                                totalPages: 0,
+                            });
+                            return;
+                        }
+
+                        currentPage = Math.min(Math.max(currentPage, 1), totalPages);
+
+                        const startIndex = (currentPage - 1) * pageSize;
+                        const endIndex = Math.min(startIndex + pageSize, totalItems);
+                        const pageItems = items.slice(startIndex, endIndex);
+
+                        container.hidden = false;
+
+                        if (prevButton) {
+                            prevButton.disabled = currentPage === 1;
+                        }
+
+                        if (nextButton) {
+                            nextButton.disabled = currentPage === totalPages;
+                        }
+
+                        if (pagesElement) {
+                            pagesElement.innerHTML = getPageWindow(totalPages).map(function (page) {
+                                const isActive = page === currentPage;
+                                const buttonClass = isActive ? 'btn-primary' : 'btn-light';
+
+                                return `
+                                    <button
+                                        type="button"
+                                        class="btn btn-sm ${buttonClass} hm-pagination__button"
+                                        data-hm-pagination-page="${page}"
+                                    >
+                                        ${page}
+                                    </button>
+                                `;
+                            }).join('');
+
+                            pagesElement.querySelectorAll('[data-hm-pagination-page]').forEach(function (button) {
+                                button.addEventListener('click', function () {
+                                    currentPage = Number(button.dataset.hmPaginationPage || 1);
+                                    render();
+                                });
+                            });
+                        }
+
+                        onPageChange(pageItems, {
+                            currentPage: currentPage,
+                            pageSize: pageSize,
+                            totalItems: totalItems,
+                            totalPages: totalPages,
+                        });
+                    };
+
+                    if (prevButton) {
+                        prevButton.addEventListener('click', function () {
+                            if (currentPage > 1) {
+                                currentPage -= 1;
+                                render();
+                            }
+                        });
+                    }
+
+                    if (nextButton) {
+                        nextButton.addEventListener('click', function () {
+                            const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+                            if (currentPage < totalPages) {
+                                currentPage += 1;
+                                render();
+                            }
+                        });
+                    }
+
+                    return {
+                        setItems: function (nextItems, paginationOptions) {
+                            const resolvedOptions = paginationOptions || {};
+                            items = Array.isArray(nextItems) ? nextItems : [];
+
+                            if (resolvedOptions.resetPage !== false) {
+                                currentPage = 1;
+                            }
+
+                            render();
+                        }
+                    };
+                };
+            }
+
             document.addEventListener('DOMContentLoaded', function () {
-                document.querySelectorAll('.js-confirm-delete').forEach(function (formElement) {
-                    formElement.addEventListener('submit', function (event) {
-                        event.preventDefault();
-                        window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');
-                    });
+                document.addEventListener('click', function (event) {
+                    const row = event.target && event.target.closest ? event.target.closest('[data-hm-row-link]') : null;
+
+                    if (!row) {
+                        return;
+                    }
+
+                    if (event.target.closest('a, button, input, select, textarea, form, label')) {
+                        return;
+                    }
+
+                    const url = row.getAttribute('data-hm-row-link');
+                    if (url) {
+                        window.location.href = url;
+                    }
+                });
+
+                document.addEventListener('keydown', function (event) {
+                    const row = event.target && event.target.closest ? event.target.closest('[data-hm-row-link]') : null;
+
+                    if (!row) {
+                        return;
+                    }
+
+                    if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    const url = row.getAttribute('data-hm-row-link');
+                    if (url) {
+                        window.location.href = url;
+                    }
+                });
+
+                document.addEventListener('submit', function (event) {
+                    if (!event.target || !event.target.matches('.js-confirm-delete')) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');
                 });
             });
         </script>

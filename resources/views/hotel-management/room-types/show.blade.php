@@ -4,6 +4,32 @@
     :index-route="route('hotel.room-types.index')"
     :edit-route="route('hotel.room-types.edit', ['recordId' => request()->route('recordId') ?? 1])"
 >
+    <style>
+        .hm-room-type-images {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .hm-room-type-images__item {
+            min-width: 0;
+        }
+
+        .hm-room-type-images__img {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+        }
+
+        @media (min-width: 768px) {
+            .hm-room-type-images {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+    </style>
+
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã loại phòng</div><div class="fw-semibold" id="room-type-id">Đang tải...</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên loại phòng</div><div class="fw-semibold" id="room-type-name">Đang tải...</div></div></div>
     <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold" id="room-type-desc">Đang tải...</div></div></div>
@@ -12,7 +38,7 @@
     <div class="col-md-12 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-3">Ảnh phòng</div>
-            <div id="room-type-images" class="d-flex flex-wrap gap-3">
+            <div id="room-type-images" class="hm-room-type-images">
                 <div class="text-muted">Đang tải...</div>
             </div>
         </div>
@@ -44,12 +70,11 @@
                     imageContainer.innerHTML = roomType.hinhs.map(function (image, index) {
                         const imageUrl = getImageUrl(image) || placeholderImage;
                         return `
-                            <div>
+                            <div class="hm-room-type-images__item">
                                 <img
                                     src="${imageUrl}"
                                     alt="Ảnh phòng ${index + 1}"
-                                    class="rounded border bg-light d-block"
-                                    style="width: min(100%, 320px); aspect-ratio: 1 / 1; object-fit: cover; object-position: center;"
+                                    class="hm-room-type-images__img rounded border bg-light"
                                     onerror="this.onerror=null;this.src='${placeholderImage}';"
                                 >
                             </div>

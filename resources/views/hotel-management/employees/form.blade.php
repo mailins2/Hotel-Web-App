@@ -82,6 +82,10 @@
                             return 'Nhân viên';
                         case 2:
                             return 'Quản lý';
+                        case 3:
+                            return 'Kế toán';
+                        case 4:
+                            return 'Nhân viên kinh doanh';
                         default:
                             return 'Không xác định';
                     }
@@ -207,7 +211,10 @@
 
                     const availableAccounts = accounts.filter(function (account) {
                         const accountId = String(account.MaTK || '');
-                        return accountId === currentAccountId || !usedAccountIds.has(accountId);
+                        const accountType = Number(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : -1);
+                        const isEmployeeAccount = accountType !== 0;
+
+                        return isEmployeeAccount && (accountId === currentAccountId || !usedAccountIds.has(accountId));
                     });
 
                     employeeAccountInput.innerHTML = '<option value="">Chọn tài khoản</option>' + availableAccounts.map(function (account) {

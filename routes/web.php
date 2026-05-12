@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AccountManagementController;
+use App\Http\Controllers\CustomerManagementController;
 use App\Models\DichVu;
 use Illuminate\Support\Facades\Route;
 
@@ -87,7 +89,29 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'bookingCustomer' => $bookingCustomer,
         ]);
     })->name('info-booking');
-    Route::view('/profile', 'customer.profile')->name('profile');
+    Route::get('/profile', function () {
+        if (!session()->has('auth_account')) {
+            return redirect()->route('login', [
+                'redirect' => route('customer.profile'),
+            ]);
+        }
+
+        $authAccount = session('auth_account', []);
+        $profileCustomer = null;
+
+        if (!empty($authAccount['MaKH'])) {
+            $profileCustomer = \App\Models\KhachHang::with('taiKhoan')->find($authAccount['MaKH']);
+        } elseif (!empty($authAccount['MaTK'])) {
+            $profileCustomer = \App\Models\KhachHang::with('taiKhoan')
+                ->where('MaTK', $authAccount['MaTK'])
+                ->first();
+        }
+
+        return view('customer.profile', [
+            'profileAccount' => $authAccount,
+            'profileCustomer' => $profileCustomer,
+        ]);
+    })->name('profile');
     Route::get('/my-bookings', function () {
         if (!session()->has('auth_account')) {
             return redirect()->route('login', [
@@ -105,6 +129,21 @@ Route::prefix('customer')->name('customer.')->group(function () {
         $customerBookings = collect();
 
         if ($customerId) {
+            $expiredBookingIds = \App\Models\DatPhong::where('MaKH', $customerId)
+                ->whereIn('TinhTrang', [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED])
+                ->whereDate('NgayNhanPhong', '<', now()->toDateString())
+                ->pluck('MaDatPhong');
+
+            if ($expiredBookingIds->isNotEmpty()) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($expiredBookingIds) {
+                    \App\Models\DatPhong::whereIn('MaDatPhong', $expiredBookingIds)
+                        ->update(['TinhTrang' => \App\Models\DatPhong::CANCELLED]);
+
+                    \App\Models\HoaDon::whereIn('MaDatPhong', $expiredBookingIds)
+                        ->update(['TrangThai' => 3]);
+                });
+            }
+
             $customerBookings = \App\Models\DatPhong::with([
                 'khachHang.taiKhoan',
                 'hoaDon.chiTietHoaDons.loaiPhong',
@@ -121,6 +160,58 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'customerBookings' => $customerBookings,
         ]);
     })->name('my-bookings');
+    Route::post('/my-bookings/{booking}/cancel', function ($booking) {
+        if (!session()->has('auth_account')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vui lòng đăng nhập để hủy đặt phòng.',
+            ], 401);
+        }
+
+        $authAccount = session('auth_account', []);
+        $customerId = $authAccount['MaKH'] ?? null;
+
+        if (!$customerId && !empty($authAccount['MaTK'])) {
+            $customerId = \App\Models\KhachHang::where('MaTK', $authAccount['MaTK'])->value('MaKH');
+        }
+
+        $datPhong = \App\Models\DatPhong::where('MaDatPhong', $booking)
+            ->where('MaKH', $customerId)
+            ->first();
+
+        if (!$datPhong) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy đặt phòng.',
+            ], 404);
+        }
+
+        if (!in_array((int) $datPhong->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không thể hủy đặt phòng này.',
+            ], 400);
+        }
+
+        if (!\Illuminate\Support\Carbon::parse($datPhong->NgayNhanPhong)->startOfDay()->isFuture()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đặt phòng đã quá hạn hủy.',
+            ], 400);
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($datPhong) {
+            $datPhong->update(['TinhTrang' => \App\Models\DatPhong::CANCELLED]);
+
+            \App\Models\HoaDon::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->update(['TrangThai' => 3]);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã hủy đặt phòng thành công.',
+        ]);
+    })->name('my-bookings.cancel');
     Route::view('/promotion-wallet', 'customer.promotion-wallet')->name('promotion-wallet');
 
     Route::redirect('/room-single.html', '/customer/rooms-single');
@@ -179,14 +270,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::prefix('accounts')->name('accounts.')->group(function () {
+        Route::post('/', [AccountManagementController::class, 'store'])->name('store');
+        Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
+    });
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::view('/', 'hotel-management.bookings.index')->name('index');
         Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
     });
+    Route::prefix('customers')->name('customers.')->group(function () {
+        Route::view('/', 'hotel-management.customers.index')->name('index');
+        Route::get('/create', [CustomerManagementController::class, 'create'])->name('create');
+        Route::post('/', [CustomerManagementController::class, 'store'])->name('store');
+        Route::get('/{recordId}/edit', [CustomerManagementController::class, 'edit'])->name('edit');
+        Route::put('/{recordId}', [CustomerManagementController::class, 'update'])->name('update');
+        Route::view('/{recordId}', 'hotel-management.customers.show')->name('show');
+    });
 
     $hotelManagementViews = [
         'accounts' => 'hotel-management.accounts',
-        'customers' => 'hotel-management.customers',
         'employees' => 'hotel-management.employees',
         'room-types' => 'hotel-management.room-types',
         'price-lists' => 'hotel-management.price-lists',

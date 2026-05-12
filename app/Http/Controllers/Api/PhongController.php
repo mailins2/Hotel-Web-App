@@ -29,19 +29,76 @@ class PhongController extends Controller
     // GET /api/phong
     public function index(Request $request)
     {
-        $query = Phong::with('loaiPhong');
+        $today = Carbon::today()->toDateString();
+
+        $query = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong.datPhong' => function ($q) use ($today) {
+                $q->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [0, 1, 2]);
+            },
+        ]);
 
         if ($request->MaLoaiPhong) {
             $query->where('MaLoaiPhong', $request->MaLoaiPhong);
         }
 
+        $data = $query->get()->map(function ($phong) {
+            $datPhongHienTai = $this->resolveDatPhongHienTai($phong);
+
+            $phong->TinhTrangGoc = (int) $phong->TinhTrang;
+            $phong->TinhTrangHienTai = $this->resolveTinhTrangHienTai($phong);
+            $phong->MaDatPhongHienTai = $datPhongHienTai?->MaDatPhong;
+            $phong->DatPhongHienTai = $datPhongHienTai;
+            $phong->TinhTrang = $phong->TinhTrangHienTai;
+            unset($phong->chiTietDatPhong);
+
+            return $phong;
+        });
+
         if ($request->TinhTrang !== null) {
-            $query->where('TinhTrang', $request->TinhTrang);
+            $data = $data
+                ->where('TinhTrangHienTai', (int) $request->TinhTrang)
+                ->values();
         }
 
-        $data = $query->get();
-
         return $this->success($data, 'Lấy danh sách phòng thành công');
+    }
+
+    private function resolveTinhTrangHienTai(Phong $phong): int
+    {
+        if (in_array((int) $phong->TinhTrang, [2, 3], true)) {
+            return (int) $phong->TinhTrang;
+        }
+
+        $bookingsToday = $phong->chiTietDatPhong
+            ->pluck('datPhong')
+            ->filter();
+
+        if ($bookingsToday->contains(fn ($booking) => (int) $booking->TinhTrang === 2)) {
+            return 2;
+        }
+
+        if ($bookingsToday->contains(fn ($booking) => in_array((int) $booking->TinhTrang, [0, 1], true))) {
+            return 1;
+        }
+
+        return 0;
+    }
+
+    private function resolveDatPhongHienTai(Phong $phong)
+    {
+        return $phong->chiTietDatPhong
+            ->pluck('datPhong')
+            ->filter()
+            ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
+                2 => 3,
+                1 => 2,
+                0 => 1,
+                default => 0,
+            })
+            ->first();
     }
 
     // POST /api/phong
@@ -61,11 +118,29 @@ class PhongController extends Controller
     // GET /api/phong/{id}
     public function show($id)
     {
-        $phong = Phong::with('loaiPhong')->find($id);
+        $today = Carbon::today()->toDateString();
+
+        $phong = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong.datPhong' => function ($q) use ($today) {
+                $q->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [0, 1, 2]);
+            },
+        ])->find($id);
 
         if (!$phong) {
             return $this->error('Không tìm thấy phòng', 404);
         }
+
+        $datPhongHienTai = $this->resolveDatPhongHienTai($phong);
+
+        $phong->TinhTrangGoc = (int) $phong->TinhTrang;
+        $phong->TinhTrangHienTai = $this->resolveTinhTrangHienTai($phong);
+        $phong->MaDatPhongHienTai = $datPhongHienTai?->MaDatPhong;
+        $phong->DatPhongHienTai = $datPhongHienTai;
+        $phong->TinhTrang = $phong->TinhTrangHienTai;
+        unset($phong->chiTietDatPhong);
 
         return $this->success($phong, 'Lấy chi tiết phòng thành công');
     }
