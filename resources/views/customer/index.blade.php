@@ -260,64 +260,209 @@
             <h2 class="mb-4">Các loại phòng của khách sạn</h2>
           </div>
         </div>  
-    		<div class="row no-gutters">
-    			<div class="col-lg-6">
-    				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/deluxe_family.jpg') }}"></a>
-    					<div class="half left-arrow d-flex align-items-center">
-    						<div class="text p-4 text-center">
-								<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Deluxe Gia Đình</a></h3> 
-								<p class="room-description mb-3">Khong gian gon gang, day du tien nghi va phu hop cho ky nghi ngan ngay hoac chuyen cong tac.</p>
-    							<p class="mb-0"><span class="price mr-1">1.000.000</span> <span class="per">VNĐ/Đêm</span></p> 
-	    						<p class="pt-1"><a href="room-single.html" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
-    						</div>
-    					</div>
-    				</div>
-    			</div>
-    			<div class="col-lg-6">
-    				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img" data-bg-image="{{ asset('customers/images/suite_junior.jpg') }}"></a>
-    					<div class="half left-arrow d-flex align-items-center">
-    						<div class="text p-4 text-center">
-    							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite Junior</a></h3>
-								<p class="room-description mb-3">Khong gian gon gang, day du tien nghi va phu hop cho ky nghi ngan ngay hoac chuyen cong tac.</p>
-    							<p class="mb-0"><span class="price mr-1">800.000</span> <span class="per">VNĐ/Đêm</span></p>
-	    						<p class="pt-1"><a href="room-single.html" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
-    						</div>
-    					</div>
-    				</div>
-    			</div>
-
-    			<div class="col-lg-6">
-    				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/suite.jpg') }}"></a>
-    					<div class="half right-arrow d-flex align-items-center">
-    						<div class="text p-4 text-center">
-    							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Suite</a></h3>
-								<p class="room-description mb-3">Khong gian gon gang, day du tien nghi va phu hop cho ky nghi ngan ngay hoac chuyen cong tac.</p> 
-    							<p class="mb-0"><span class="price mr-1">2.000.000</span> <span class="per">VNĐ/Đêm</span></p>
-	    						<p class="pt-1"><a href="room-single.html" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
-    						</div>
-    					</div>
-    				</div>
-    			</div>
-    			<div class="col-lg-6">
-    				<div class="room-wrap d-md-flex ftco-animate">
-    					<a href="#" class="img order-md-last" data-bg-image="{{ asset('customers/images/superior.jpg') }}"></a>
-    					<div class="half right-arrow d-flex align-items-center">
-    						<div class="text p-4 text-center">
-    							<h3 class="mb-3"><a href="{{ route('customer.rooms') }}">Phòng Superior</a></h3>
-								<p class="room-description mb-3">Khong gian gon gang, day du tien nghi va phu hop cho ky nghi ngan ngay hoac chuyen cong.</p>
-    							<p class="mb-0"><span class="price mr-1">900.000</span> <span class="per">VNĐ/Đêm</span></p>
-	    						<p class="pt-1"><a href="room-single.html" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
-    						</div>
-    					</div>
-    				</div>
-    			</div>
-
+    		<div class="row no-gutters home-room-grid" data-home-room-list>
+          <div class="col-12">
+            <div class="home-room-loading">Đang tải dữ liệu phòng...</div>
+          </div>
     		</div>
+        <div class="home-room-controls" data-home-room-controls hidden>
+          <button type="button" class="home-room-nav" data-home-room-prev aria-label="Trang phòng trước">
+            <span class="ion-ios-arrow-back"></span>
+          </button>
+          <span class="home-room-counter" data-home-room-counter>1 / 1</span>
+          <button type="button" class="home-room-nav" data-home-room-next aria-label="Trang phòng tiếp theo">
+            <span class="ion-ios-arrow-forward"></span>
+          </button>
+        </div>
     	</div>
     </section>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const roomList = document.querySelector('[data-home-room-list]');
+        const controls = document.querySelector('[data-home-room-controls]');
+        const prevButton = document.querySelector('[data-home-room-prev]');
+        const nextButton = document.querySelector('[data-home-room-next]');
+        const counter = document.querySelector('[data-home-room-counter]');
+
+        if (!roomList) {
+          return;
+        }
+
+        const fallbackImage = @json(asset('customers/images/room-6.jpg'));
+        const roomDetailBaseUrl = @json(url('/customer/room'));
+        const roomsPerPage = 4;
+        let roomPages = [];
+        let currentPage = 0;
+        let touchStartX = null;
+
+        const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;',
+        }[char]));
+        const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
+        const getRoomTypeId = (room, fallback) => room?.MaLoaiPhong || room?.ma_loai_phong || room?.id || fallback;
+        const getImageUrl = (image) => image?.Url || image?.url || image?.DuongDan || image?.duong_dan || '';
+        const getPrimaryImage = (room) => {
+          const images = Array.isArray(room?.hinhs) ? room.hinhs.map(getImageUrl).filter(Boolean) : [];
+          return images[0] || fallbackImage;
+        };
+        const getNightlyPrice = (room) => {
+          const priceRows = room?.bangGias || room?.bang_gias || [];
+          const rows = Array.isArray(priceRows) ? priceRows : [priceRows];
+          const priceRow = rows.find((item) => Number(item?.Mua ?? item?.mua) === 1) || rows[0];
+          const rawPrice = priceRow?.GiaPhong || priceRow?.gia_phong || priceRow?.Gia || priceRow?.gia;
+          const numericPrice = Number(rawPrice);
+
+          return Number.isFinite(numericPrice) && numericPrice > 0
+            ? numericPrice.toLocaleString('vi-VN')
+            : 'Liên hệ';
+        };
+
+        const getRoomTypes = async () => {
+          if (window.CustomerRoomApi?.getRoomTypes) {
+            return window.CustomerRoomApi.getRoomTypes();
+          }
+
+          const response = await fetch('/api/loai-phong', {
+            headers: { Accept: 'application/json' },
+          });
+          const result = await response.json();
+
+          if (!result.success || !Array.isArray(result.data)) {
+            throw new Error(result.message || 'Không thể tải dữ liệu phòng.');
+          }
+
+          return result.data;
+        };
+
+        const applyRoomBackgroundImages = () => {
+          roomList.querySelectorAll('[data-bg-image]').forEach((element) => {
+            const backgroundImage = element.getAttribute('data-bg-image');
+
+            if (backgroundImage && backgroundImage !== 'undefined' && backgroundImage !== 'null') {
+              element.style.backgroundImage = `url("${backgroundImage}")`;
+            }
+          });
+        };
+
+        const renderRoomCards = (rooms) => rooms.map((room, index) => {
+          const roomId = getRoomTypeId(room, index + 1);
+          const roomName = room.TenLoaiPhong || room.ten_loai_phong || 'Phòng Peach Valley';
+          const description = room.Mota || room.mo_ta || 'Phòng thoải mái, hiện đại và đầy đủ tiện nghi.';
+          const detailUrl = `${roomDetailBaseUrl}/${encodeURIComponent(roomId)}`;
+          const imageUrl = getPrimaryImage(room);
+          const isReverse = index > 1;
+          const arrowClass = isReverse ? 'right-arrow' : 'left-arrow';
+          const imageOrderClass = isReverse ? 'order-md-last' : '';
+          const animationDelay = `${index * 90}ms`;
+
+          return `
+            <div class="col-lg-6 home-room-item" style="--home-room-delay: ${animationDelay}">
+              <div class="room-wrap d-md-flex home-room-card">
+                <a href="${detailUrl}" class="img ${imageOrderClass}" data-bg-image="${escapeAttr(imageUrl)}" aria-label="${escapeAttr(roomName)}"></a>
+                <div class="half ${arrowClass} d-flex align-items-center">
+                  <div class="text p-4 text-center">
+                    <h3 class="mb-3"><a href="${detailUrl}">${escapeHtml(roomName)}</a></h3>
+                    <p class="room-description mb-3">${escapeHtml(description)}</p>
+                    <p class="mb-0"><span class="price mr-1">${getNightlyPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
+                    <p class="pt-1"><a href="${detailUrl}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const syncControls = () => {
+          const pageCount = roomPages.length;
+
+          if (controls) {
+            controls.hidden = pageCount <= 1;
+          }
+
+          if (counter) {
+            counter.textContent = `${currentPage + 1} / ${Math.max(pageCount, 1)}`;
+          }
+        };
+
+        const renderCurrentPage = (direction = 'next') => {
+          const rooms = roomPages[currentPage] || [];
+
+          roomList.classList.remove('is-next', 'is-prev');
+          void roomList.offsetWidth;
+          roomList.classList.add(direction === 'prev' ? 'is-prev' : 'is-next');
+          roomList.innerHTML = renderRoomCards(rooms);
+          applyRoomBackgroundImages();
+          syncControls();
+        };
+
+        const goToPage = (nextPage, direction) => {
+          const pageCount = roomPages.length;
+
+          if (pageCount <= 1) {
+            return;
+          }
+
+          currentPage = (nextPage + pageCount) % pageCount;
+          renderCurrentPage(direction);
+        };
+
+        const renderRooms = (rooms) => {
+          if (!Array.isArray(rooms) || !rooms.length) {
+            roomList.innerHTML = '<div class="col-12"><div class="home-room-loading">Chưa có dữ liệu phòng để hiển thị.</div></div>';
+            if (controls) {
+              controls.hidden = true;
+            }
+            return;
+          }
+
+          roomPages = [];
+
+          for (let index = 0; index < rooms.length; index += roomsPerPage) {
+            roomPages.push(rooms.slice(index, index + roomsPerPage));
+          }
+
+          currentPage = 0;
+          renderCurrentPage('next');
+        };
+
+        prevButton?.addEventListener('click', () => goToPage(currentPage - 1, 'prev'));
+        nextButton?.addEventListener('click', () => goToPage(currentPage + 1, 'next'));
+        roomList.addEventListener('touchstart', (event) => {
+          touchStartX = event.touches[0]?.clientX ?? null;
+        }, { passive: true });
+        roomList.addEventListener('touchend', (event) => {
+          if (touchStartX === null) {
+            return;
+          }
+
+          const touchEndX = event.changedTouches[0]?.clientX ?? touchStartX;
+          const deltaX = touchEndX - touchStartX;
+          touchStartX = null;
+
+          if (Math.abs(deltaX) < 45) {
+            return;
+          }
+
+          if (deltaX > 0) {
+            goToPage(currentPage - 1, 'prev');
+          } else {
+            goToPage(currentPage + 1, 'next');
+          }
+        }, { passive: true });
+
+        getRoomTypes()
+          .then(renderRooms)
+          .catch((error) => {
+            console.error('Home room data error:', error);
+            roomList.innerHTML = '<div class="col-12"><div class="home-room-loading">Không thể tải dữ liệu phòng.</div></div>';
+          });
+      });
+    </script>
 
 	  <section id="customer-reviews" class="ftco-section customer-reviews-section" data-customer-reviews>
       <div class="container">
@@ -1024,6 +1169,17 @@
           return null;
         };
 
+        const getPaymentShownKey = (modalKey) => `peachGuestPaymentShown:${modalKey}`;
+        const wasPaymentModalShown = (modalKey) => {
+          const shownKey = getPaymentShownKey(modalKey);
+          return localStorage.getItem(shownKey) || sessionStorage.getItem(shownKey);
+        };
+        const rememberPaymentModalShown = (modalKey) => {
+          const shownKey = getPaymentShownKey(modalKey);
+          localStorage.setItem(shownKey, '1');
+          sessionStorage.setItem(shownKey, '1');
+        };
+
         const initGuestPaymentModal = async () => {
           const query = new URLSearchParams(window.location.search);
           const vnpayStatus = query.get('vnpay');
@@ -1036,7 +1192,7 @@
 
           const bookingId = Array.isArray(payment?.datPhongIds) ? payment.datPhongIds[0] : null;
           const modalKey = `${payment?.appTransId || query.get('txn_ref') || bookingId}:${vnpayStatus || 'payment'}`;
-          if (!bookingId || sessionStorage.getItem(`peachGuestPaymentShown:${modalKey}`)) {
+          if (!bookingId || wasPaymentModalShown(modalKey)) {
             return;
           }
 
@@ -1049,7 +1205,7 @@
             if (!booking) {
               return;
             }
-            sessionStorage.setItem(`peachGuestPaymentShown:${modalKey}`, '1');
+            rememberPaymentModalShown(modalKey);
             renderModal(booking, message || undefined);
 
             if (vnpayStatus) {

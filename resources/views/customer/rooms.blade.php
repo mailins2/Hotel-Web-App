@@ -36,136 +36,347 @@
             <h2 class="mb-4">Các loại phòng của khách sạn</h2>
           </div>
         </div>  
-    		<div class="row room-list-vertical" id="roomContainer">
+        <div class="room-filter-toolbar" data-room-list-filters>
+          <div class="room-filter-field room-filter-search">
+            <label for="roomListFilterSearch">Tìm phòng</label>
+            <div class="room-filter-input-wrap">
+              <span class="icon ion-ios-search"></span>
+              <input
+                type="search"
+                id="roomListFilterSearch"
+                data-room-list-filter-search
+                placeholder="Tên phòng, mô tả, tiện nghi"
+                autocomplete="off"
+              >
+            </div>
+          </div>
+          <div class="room-filter-field">
+            <label for="roomListFilterSort">Sắp xếp giá</label>
+            <select id="roomListFilterSort" data-room-list-filter-sort>
+              <option value="">Mặc định</option>
+              <option value="price-asc">Giá tăng dần</option>
+              <option value="price-desc">Giá giảm dần</option>
+            </select>
+          </div>
+          <div class="room-filter-field room-filter-number">
+            <label for="roomListFilterAdults">Người lớn tối đa</label>
+            <input
+              type="number"
+              id="roomListFilterAdults"
+              data-room-list-filter-adults
+              min="0"
+              step="1"
+              placeholder="Bất kỳ"
+              inputmode="numeric"
+            >
+          </div>
+          <div class="room-filter-field room-filter-number">
+            <label for="roomListFilterChildren">Trẻ em tối đa</label>
+            <input
+              type="number"
+              id="roomListFilterChildren"
+              data-room-list-filter-children
+              min="0"
+              step="1"
+              placeholder="Bất kỳ"
+              inputmode="numeric"
+            >
+          </div>
+          <button type="button" class="room-filter-reset" data-room-list-filter-reset>
+            Xóa lọc
+          </button>
+        </div>
+    		<div class="row room-list-vertical" id="roomContainer" aria-live="polite">
+    			<div class="col-12">
+    				<div class="room-list-loading" role="status">
+    					<span class="room-list-spinner" aria-hidden="true"></span>
+    					<span>Đang tải danh sách phòng...</span>
+    				</div>
+    			</div>
     		</div>
+        <nav class="room-list-pagination" id="roomPagination" aria-label="Phân trang phòng" hidden></nav>
     	</div>
     </section>
 
     <script>
-    	// Debug: log all navigation attempts
-    	window.addEventListener('beforeunload', function() {
-    		console.log('Page unload, current URL:', window.location.href);
-    	});
+      const roomContainer = document.getElementById('roomContainer');
+      const roomPagination = document.getElementById('roomPagination');
+      const roomListFilterSearch = document.querySelector('[data-room-list-filter-search]');
+      const roomListFilterSort = document.querySelector('[data-room-list-filter-sort]');
+      const roomListFilterAdults = document.querySelector('[data-room-list-filter-adults]');
+      const roomListFilterChildren = document.querySelector('[data-room-list-filter-children]');
+      const roomListFilterReset = document.querySelector('[data-room-list-filter-reset]');
+      const roomsPerPage = 5;
+      let allRooms = [];
+      let visibleRooms = [];
+      let currentRoomPage = 1;
 
-    	// Intercept all link clicks
-    	document.addEventListener('click', function(e) {
-    		if (e.target.tagName === 'A') {
-    			console.log('Link clicked:', e.target.href);
-    		}
-    	}, true);
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+      }[char]));
+      const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
+      const getRoomPrice = (room) => {
+        const priceRows = room.bangGias || room.bang_gias || [];
+        const firstPrice = Array.isArray(priceRows) ? priceRows[0] : priceRows;
+        const rawPrice = firstPrice?.GiaPhong || firstPrice?.gia_phong || firstPrice?.Gia || firstPrice?.gia;
+        const numericPrice = Number(rawPrice);
 
-    	// Log all fetch requests
-    	const originalFetch = window.fetch;
-    	window.fetch = function(...args) {
-    		console.log('Fetch request:', args[0]);
-    		return originalFetch.apply(this, args);
-    	};
+        return Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : 0;
+      };
+      const formatRoomPrice = (room) => {
+        const numericPrice = getRoomPrice(room);
 
-    	// Log XMLHttpRequest
-    	const originalXHR = window.XMLHttpRequest.prototype.open;
-    	window.XMLHttpRequest.prototype.open = function(method, url) {
-    		console.log('XHR request:', method, url);
-    		return originalXHR.apply(this, arguments);
-    	};
+        if (numericPrice <= 0) {
+          return 'Liên hệ';
+        }
 
-    	// Log resource load errors
-    	window.addEventListener('error', function(e) {
-    		if (e.filename || e.target?.src) {
-    			console.error('Resource error:', e.filename || e.target.src);
-    		}
-    	}, true);
+        return numericPrice.toLocaleString('vi-VN');
+      };
 
-    	async function getRoomTypes() {
-    		if (window.CustomerRoomApi?.getRoomTypes) {
-    			return window.CustomerRoomApi.getRoomTypes();
-    		}
+      function getRoomAmenities(room) {
+        const amenities = room.tienNghis || room.tien_nghis || [];
+        return Array.isArray(amenities) ? amenities.map((item) => item.TenTienNghi || item.ten_tien_nghi).filter(Boolean) : [];
+      }
 
-    		const response = await fetch('/api/loai-phong');
-    		const result = await response.json();
-    		if (!result.success || !Array.isArray(result.data)) {
-    			throw new Error(result.message || 'Failed to load rooms');
-    		}
-    		return result.data;
-    	}
+      function getRoomListFilterValues() {
+        const adults = Number.parseInt(roomListFilterAdults?.value || '', 10);
+        const children = Number.parseInt(roomListFilterChildren?.value || '', 10);
 
-    	async function loadRooms() {
-    		try {
-    			const rooms = await getRoomTypes();
-    			if (!Array.isArray(rooms)) {
-    				console.error('Failed to load rooms: invalid room data');
-    				return;
-    			}
+        return {
+          keyword: String(roomListFilterSearch?.value || '').trim().toLowerCase(),
+          sort: roomListFilterSort?.value || '',
+          adults: Number.isFinite(adults) && adults > 0 ? adults : 0,
+          children: Number.isFinite(children) && children > 0 ? children : 0,
+        };
+      }
 
-    			console.log('Loaded rooms count:', rooms.length);
-    			const container = document.getElementById('roomContainer');
-    			const formatRoomPrice = (room) => {
-    				const priceRows = room.bangGias || room.bang_gias || [];
-    				const firstPrice = Array.isArray(priceRows) ? priceRows[0] : priceRows;
-    				const rawPrice = firstPrice?.GiaPhong || firstPrice?.gia_phong || firstPrice?.Gia || firstPrice?.gia;
-    				const numericPrice = Number(rawPrice);
+      function getFilteredRooms() {
+        const filters = getRoomListFilterValues();
+        const rooms = allRooms.filter((room) => {
+          const adults = Number(room.NguoiLon ?? room.nguoi_lon ?? 0);
+          const children = Number(room.TreEm ?? room.tre_em ?? 0);
+          const searchableText = [
+            room.TenLoaiPhong || room.ten_loai_phong || '',
+            room.Mota || room.mo_ta || '',
+            ...getRoomAmenities(room),
+          ].join(' ').toLowerCase();
+          const matchesKeyword = !filters.keyword || searchableText.includes(filters.keyword);
+          const matchesAdults = !filters.adults || (Number.isFinite(adults) && adults >= filters.adults);
+          const matchesChildren = !filters.children || (Number.isFinite(children) && children >= filters.children);
 
-    				if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-    					return 'Liên hệ';
-    				}
+          return matchesKeyword && matchesAdults && matchesChildren;
+        });
 
-    				return numericPrice.toLocaleString('vi-VN');
-    			};
-    			let html = '';
-    			
-    			for (let i = 0; i < rooms.length; i++) {
-    				const room = rooms[i];
-    				
-    				// Get ID - try different property names
-    				const roomId = room.MaLoaiPhong || room.id || i + 1;
-    				console.log(`Room ${i}: ID=${roomId}, Name=${room.TenLoaiPhong}`);
-    				
-    				const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
-    				const firstImage = Array.isArray(room.hinhs) ? room.hinhs[0] : null;
-    				const imageSrc = firstImage?.Url || firstImage?.url || firstImage?.DuongDan || firstImage?.duong_dan || fallbackImage;
+        if (filters.sort === 'price-asc') {
+          rooms.sort((left, right) => getRoomPrice(left) - getRoomPrice(right));
+        }
 
-    				const price = formatRoomPrice(room);
+        if (filters.sort === 'price-desc') {
+          rooms.sort((left, right) => getRoomPrice(right) - getRoomPrice(left));
+        }
 
-    				const arrowClass = i % 2 === 0 ? 'left-arrow' : 'right-arrow';
-    				const orderClass = i % 2 === 0 ? '' : 'order-md-last';
+        return rooms;
+      }
 
-    				html += `
-    					<div class="col-12">
-    						<div class="room-wrap d-md-flex">
-    							<a href="#" class="img ${orderClass}" data-bg-image="${imageSrc}"></a>
-    							<div class="half ${arrowClass} d-flex align-items-center">
-    								<div class="text p-4 text-center">
-    									<h3 class="mb-3"><a href="/customer/room/${roomId}">${room.TenLoaiPhong}</a></h3>
-    									<p class="room-description mb-3">${room.Mota || 'Phòng thoải mái và hiện đại'}</p>
-    									<p class="mb-0"><span class="price mr-1">${price}</span> <span class="per">VNĐ/Đêm</span></p>
-    									<p class="pt-1"><a href="/customer/room/${roomId}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
-    								</div>
-    							</div>
-    						</div>
-    					</div>
-    				`;
-    			}
-    			
-    			container.innerHTML = html;
+      function setRoomsLoading() {
+        if (!roomContainer) return;
 
-    			// Apply background images
-    			document.querySelectorAll('[data-bg-image]').forEach((element) => {
-    				const backgroundImage = element.getAttribute('data-bg-image');
-    				if (backgroundImage && backgroundImage !== 'undefined' && backgroundImage !== 'null') {
-    					element.style.backgroundImage = `url("${backgroundImage}")`;
-    				}
-    			});
-    		} catch (error) {
-    			console.error('Error loading rooms:', error);
-    		}
-    	}
+        if (roomPagination) {
+          roomPagination.hidden = true;
+          roomPagination.innerHTML = '';
+        }
 
-    	if (document.readyState === 'loading') {
-    		document.addEventListener('DOMContentLoaded', loadRooms);
-    	} else {
-    		loadRooms();
-    	}
+        roomContainer.innerHTML = `
+          <div class="col-12">
+            <div class="room-list-loading" role="status">
+              <span class="room-list-spinner" aria-hidden="true"></span>
+              <span>Đang tải danh sách phòng...</span>
+            </div>
+          </div>
+        `;
+      }
 
-    	console.log('✅ Rooms page script loaded successfully');
+      function setRoomsMessage(message, canRetry = false) {
+        if (!roomContainer) return;
+
+        if (roomPagination) {
+          roomPagination.hidden = true;
+          roomPagination.innerHTML = '';
+        }
+
+        roomContainer.innerHTML = `
+          <div class="col-12">
+            <div class="room-list-loading room-list-message">
+              <span>${message}</span>
+              ${canRetry ? '<button type="button" class="room-list-retry" data-room-retry>Tải lại</button>' : ''}
+            </div>
+          </div>
+        `;
+
+        roomContainer.querySelector('[data-room-retry]')?.addEventListener('click', loadRooms);
+      }
+
+      async function getRoomTypes() {
+        if (window.CustomerRoomApi?.getRoomTypes) {
+          return window.CustomerRoomApi.getRoomTypes();
+        }
+
+        const response = await fetch('/api/loai-phong', {
+          headers: { Accept: 'application/json' },
+        });
+        const result = await response.json();
+
+        if (!result.success || !Array.isArray(result.data)) {
+          throw new Error(result.message || 'Failed to load rooms');
+        }
+
+        return result.data;
+      }
+
+      function applyRoomImages() {
+        roomContainer.querySelectorAll('[data-bg-image]').forEach((element) => {
+          const backgroundImage = element.getAttribute('data-bg-image');
+          if (backgroundImage && backgroundImage !== 'undefined' && backgroundImage !== 'null') {
+            element.style.backgroundImage = `url("${backgroundImage}")`;
+          }
+        });
+      }
+
+      function renderPagination() {
+        if (!roomPagination) return;
+
+        const pageCount = Math.ceil(visibleRooms.length / roomsPerPage);
+        roomPagination.hidden = pageCount <= 1;
+
+        if (pageCount <= 1) {
+          roomPagination.innerHTML = '';
+          return;
+        }
+
+        const pageButtons = Array.from({ length: pageCount }, (_, index) => {
+          const page = index + 1;
+          return `
+            <button
+              type="button"
+              class="room-list-page${page === currentRoomPage ? ' is-active' : ''}"
+              data-room-page="${page}"
+              aria-current="${page === currentRoomPage ? 'page' : 'false'}"
+            >${page}</button>
+          `;
+        }).join('');
+
+        roomPagination.innerHTML = `
+          <button type="button" class="room-list-page" data-room-page-prev ${currentRoomPage === 1 ? 'disabled' : ''}>Trước</button>
+          ${pageButtons}
+          <button type="button" class="room-list-page" data-room-page-next ${currentRoomPage === pageCount ? 'disabled' : ''}>Sau</button>
+        `;
+
+        roomPagination.querySelector('[data-room-page-prev]')?.addEventListener('click', () => renderRoomsPage(currentRoomPage - 1, true));
+        roomPagination.querySelector('[data-room-page-next]')?.addEventListener('click', () => renderRoomsPage(currentRoomPage + 1, true));
+        roomPagination.querySelectorAll('[data-room-page]').forEach((button) => {
+          button.addEventListener('click', () => renderRoomsPage(Number(button.dataset.roomPage), true));
+        });
+      }
+
+      function renderRoomsPage(page, shouldScroll = false) {
+        const pageCount = Math.max(Math.ceil(visibleRooms.length / roomsPerPage), 1);
+        currentRoomPage = Math.min(Math.max(Number(page) || 1, 1), pageCount);
+
+        const startIndex = (currentRoomPage - 1) * roomsPerPage;
+        const rooms = visibleRooms.slice(startIndex, startIndex + roomsPerPage);
+        const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
+        const html = rooms.map((room, index) => {
+          const absoluteIndex = startIndex + index;
+          const roomId = room.MaLoaiPhong || room.id || absoluteIndex + 1;
+          const detailUrl = `/customer/room/${encodeURIComponent(roomId)}`;
+          const firstImage = Array.isArray(room.hinhs) ? room.hinhs[0] : null;
+          const imageSrc = firstImage?.Url || firstImage?.url || firstImage?.DuongDan || firstImage?.duong_dan || fallbackImage;
+          const arrowClass = absoluteIndex % 2 === 0 ? 'left-arrow' : 'right-arrow';
+          const orderClass = absoluteIndex % 2 === 0 ? '' : 'order-md-last';
+
+          return `
+            <div class="col-12">
+              <div class="room-wrap d-md-flex">
+                <a href="${detailUrl}" class="img ${orderClass}" data-bg-image="${escapeAttr(imageSrc)}" aria-label="${escapeAttr(room.TenLoaiPhong || 'Phòng Peach Valley')}"></a>
+                <div class="half ${arrowClass} d-flex align-items-center">
+                  <div class="text p-4 text-center">
+                    <h3 class="mb-3"><a href="${detailUrl}">${escapeHtml(room.TenLoaiPhong || 'Phòng Peach Valley')}</a></h3>
+                    <p class="room-description mb-3">${escapeHtml(room.Mota || 'Phòng thoải mái và hiện đại')}</p>
+                    <p class="mb-0"><span class="price mr-1">${formatRoomPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
+                    <p class="pt-1"><a href="${detailUrl}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        roomContainer.innerHTML = html;
+        applyRoomImages();
+        renderPagination();
+
+        if (shouldScroll) {
+          roomContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+
+      function applyRoomListFilters() {
+        visibleRooms = getFilteredRooms();
+        currentRoomPage = 1;
+
+        if (!visibleRooms.length) {
+          setRoomsMessage('Không có loại phòng phù hợp với bộ lọc bạn chọn.');
+          return;
+        }
+
+        renderRoomsPage(1);
+      }
+
+      async function loadRooms() {
+        setRoomsLoading();
+
+        try {
+          const rooms = await getRoomTypes();
+
+          if (!Array.isArray(rooms)) {
+            setRoomsMessage('Dữ liệu phòng không hợp lệ.', true);
+            return;
+          }
+
+          if (!rooms.length) {
+            setRoomsMessage('Hiện chưa có loại phòng nào để hiển thị.');
+            return;
+          }
+
+          allRooms = rooms;
+          applyRoomListFilters();
+        } catch (error) {
+          console.error('Error loading rooms:', error);
+          setRoomsMessage('Không thể tải danh sách phòng. Vui lòng thử lại.', true);
+        }
+      }
+
+      roomListFilterSearch?.addEventListener('input', applyRoomListFilters);
+      roomListFilterSort?.addEventListener('change', applyRoomListFilters);
+      roomListFilterAdults?.addEventListener('input', applyRoomListFilters);
+      roomListFilterChildren?.addEventListener('input', applyRoomListFilters);
+      roomListFilterReset?.addEventListener('click', () => {
+        if (roomListFilterSearch) roomListFilterSearch.value = '';
+        if (roomListFilterSort) roomListFilterSort.value = '';
+        if (roomListFilterAdults) roomListFilterAdults.value = '';
+        if (roomListFilterChildren) roomListFilterChildren.value = '';
+        applyRoomListFilters();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadRooms);
+      } else {
+        loadRooms();
+      }
     </script>
 
 
