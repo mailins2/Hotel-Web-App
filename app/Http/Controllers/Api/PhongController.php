@@ -126,24 +126,23 @@ class PhongController extends Controller
         $soPhong = $data['SoPhong'] ?? 1;
         $tongKhach = $nguoiLon + $treEm;
 
+        // ✅ Load đầy đủ: hinhs, bangGias, tienNghis
         $phongs = Phong::with([
-                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm'
+                'loaiPhong.hinhs',
+                'loaiPhong.bangGias',
+                'loaiPhong.tienNghis',
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
-
-            // chỉ loại phòng bảo trì
             ->where('TinhTrang', '!=', 2)
-
-            // loại phòng bị trùng lịch
             ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
-                $q->whereIn('TinhTrang', [0,1,2]) // HOLD + CONFIRM + ĐANG Ở
-                ->where('NgayNhanPhong', '<', $checkOut)
-                ->where('NgayTraPhong', '>', $checkIn);
+                $q->whereIn('TinhTrang', [0, 1, 2])
+                    ->where('NgayNhanPhong', '<', $checkOut)
+                    ->where('NgayTraPhong', '>', $checkIn);
             })
-
             ->get();
 
-        $phongs = $phongs
+        // ✅ Gom nhóm + trả về object đầy đủ
+        $ketQua = $phongs
             ->groupBy('MaLoaiPhong')
             ->filter(function ($rooms) use ($nguoiLon, $treEm, $soPhong, $tongKhach) {
                 $loaiPhong = $rooms->first()?->loaiPhong;
@@ -154,15 +153,53 @@ class PhongController extends Controller
 
                 $sucChuaNguoiLon = max((int) $loaiPhong->NguoiLon, 0);
                 $sucChuaTreEm = max((int) $loaiPhong->TreEm, 0);
-                $sucChuaTong = max($sucChuaNguoiLon + $sucChuaTreEm, $sucChuaNguoiLon, 1);
+                $sucChuaTong = max($sucChuaNguoiLon + $sucChuaTreEm, 1);
 
                 return ($sucChuaNguoiLon * $soPhong) >= $nguoiLon
                     && ($sucChuaTreEm * $soPhong) >= $treEm
                     && ($sucChuaTong * $soPhong) >= $tongKhach;
             })
-            ->flatten(1)
+            ->map(function ($rooms) use ($soPhong) {
+                $loaiPhong = $rooms->first()->loaiPhong;
+                $soPhongTrong = $rooms->where('TinhTrang', 0)->count();
+
+                return [
+                    'MaLoaiPhong' => $loaiPhong->MaLoaiPhong,
+                    'TenLoaiPhong' => $loaiPhong->TenLoaiPhong,
+                    'Mota' => $loaiPhong->Mota ?? '',
+                    'NguoiLon' => (int) $loaiPhong->NguoiLon,
+                    'TreEm' => (int) $loaiPhong->TreEm,
+                    'soPhongTrong' => $soPhongTrong,
+                    'tongPhong' => $rooms->count(),
+                    'soPhongCanThiet' => $soPhong,
+                    // ✅ Ảnh
+                    'hinhs' => $loaiPhong->hinhs->map(fn($h) => [
+                        'Id' => $h->Id,
+                        'Url' => $h->Url,
+                    ])->values(),
+                    // ✅ Giá
+                    'bang_gias' => $loaiPhong->bangGias->map(fn($bg) => [
+                        'MaLoaiPhong' => $bg->MaLoaiPhong,
+                        'Mua' => $bg->Mua,
+                        'GiaPhong' => $bg->GiaPhong,
+                    ])->values(),
+                    // ✅ Giá thấp nhất
+                    'giaThapNhat' => $loaiPhong->bangGias->min('GiaPhong') ?? 0,
+                    // ✅ Tiện nghi
+                    'tien_nghis' => $loaiPhong->tienNghis->map(fn($tn) => [
+                        'MaTienNghi' => $tn->MaTienNghi,
+                        'TenTienNghi' => $tn->TenTienNghi,
+                    ])->values(),
+                    // Danh sách phòng
+                    'danhSachPhong' => $rooms->map(fn($p) => [
+                        'MaPhong' => $p->MaPhong,
+                        'SoPhong' => $p->SoPhong,
+                        'TinhTrang' => $p->TinhTrang,
+                    ])->values(),
+                ];
+            })
             ->values();
 
-        return $this->success($phongs, 'Tìm phòng thành công');
+        return $this->success($ketQua, 'Tìm phòng thành công');
     }
 }

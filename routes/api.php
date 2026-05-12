@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
+use App\Http\Controllers\Api\AuthMobileController;
 
 Route::get('/bang-gia', [BangGiaController::class, 'index']);
 Route::post('/bang-gia', [BangGiaController::class, 'store']);
@@ -98,3 +99,17 @@ Route::post('/zalopay-callback', [PaymentController::class, 'callback']);
 Route::post('/vnpay-payment', [VnPayPaymentController::class, 'createPayment']);
 Route::get('/vnpay-ipn', [VnPayPaymentController::class, 'ipn']);
 Route::get('/vnpay-return', [VnPayPaymentController::class, 'return']);
+
+// route đăng ký tài khoản khách hàng qua mobile app
+
+
+// Auth Mobile
+Route::post('/mobile/login', [AuthMobileController::class, 'login']);
+Route::post('/mobile/register/step1', [AuthMobileController::class, 'registerStepOne']);
+Route::post('/mobile/register/step2', [AuthMobileController::class, 'registerStepTwo']);
+Route::get('/mobile/provinces', [AuthMobileController::class, 'getProvinces']);
+Route::get('/mobile/districts/{provinceCode}', [AuthMobileController::class, 'getDistricts']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/mobile/logout', [AuthMobileController::class, 'logout']);
+});
