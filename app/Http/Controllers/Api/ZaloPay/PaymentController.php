@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
 use App\Models\ThanhToan;
+use App\Services\CustomerPointService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -274,6 +275,8 @@ class PaymentController extends Controller
                             'MaGiaoDichCongThanhToan' => isset($data['zp_trans_id']) ? (string) $data['zp_trans_id'] : null,
                             'TrangThaiGiaoDich' => 1,
                         ]);
+
+                        app(CustomerPointService::class)->addPointsForPayment($hoaDon, $paymentAmount);
                     }
 
                     $remainingAmount = max($remainingAmount - $paymentAmount, 0);

@@ -4,6 +4,7 @@
     <title>Peach Valley</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo_hotel.png') }}">
     <meta charset="utf-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link href="https://fonts.googleapis.com/css?family=Nunito+Sans:200,300,400,600,700&display=swap" rel="stylesheet">
     @vite(['resources/customer/css/site.css', 'resources/customer/js/site.js'])
@@ -42,6 +43,8 @@
                   $checkOut = \Illuminate\Support\Carbon::parse($booking->NgayTraPhong);
                   $nights = max($checkIn->diffInDays($checkOut), 1);
                   $statusLabel = $statusLabels[(int) $booking->TinhTrang] ?? 'Đã đặt';
+                  $canCancel = in_array((int) $booking->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true)
+                    && $checkIn->copy()->startOfDay()->isFuture();
                   $rooms = $roomGroups->map(function ($items, $roomTypeId) use ($invoiceDetails, $nights) {
                     $first = $items->first();
                     $roomType = $first?->phong?->loaiPhong;
@@ -136,7 +139,7 @@
                       <strong>{{ number_format((float) ($invoice?->DaThanhToan ?? 0), 0, ',', '.') }} VND</strong>
                     </div>
 
-                    @if(in_array((int) $booking->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true))
+                    @if($canCancel)
                       <div class="customer-booking-actions">
                         <button
                           type="button"
@@ -343,6 +346,12 @@
       </div>
     </div>
 
+    <div
+      id="customer-bookings-config"
+      data-cancel-url-template="{{ route('customer.my-bookings.cancel', ['booking' => '__BOOKING_ID__']) }}"
+      hidden
+    ></div>
+
     @include('customer.partials.footer')
     <div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>
 
@@ -350,9 +359,14 @@
       document.addEventListener('DOMContentLoaded', () => {
         const cancelModal = document.querySelector('[data-cancel-modal]');
         const cancelLabel = document.querySelector('[data-cancel-booking-label]');
+        const cancelConfirmButton = document.querySelector('[data-cancel-modal-confirm]');
+        const config = document.getElementById('customer-bookings-config');
+        const cancelUrlTemplate = config ? config.dataset.cancelUrlTemplate : '';
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
         const detailModal = document.querySelector('[data-booking-detail-modal]');
         const detailRooms = document.querySelector('[data-booking-detail-rooms]');
         const detailPerson = document.querySelector('[data-booking-detail-person]');
+        let selectedCancelBookingId = null;
 
         const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`;
         const formatDate = (value) => {
@@ -361,14 +375,48 @@
         };
 
         const openCancelModal = (bookingId) => {
+          selectedCancelBookingId = bookingId;
           cancelLabel.textContent = bookingId ? `#${bookingId}` : '';
           cancelModal.hidden = false;
           cancelModal.classList.add('is-open');
         };
 
         const closeCancelModal = () => {
+          selectedCancelBookingId = null;
           cancelModal.classList.remove('is-open');
           cancelModal.hidden = true;
+        };
+
+        const cancelBooking = async () => {
+          if (!selectedCancelBookingId || !cancelUrlTemplate || !cancelConfirmButton) {
+            return;
+          }
+
+          const originalText = cancelConfirmButton.textContent;
+          cancelConfirmButton.disabled = true;
+          cancelConfirmButton.textContent = 'Đang hủy...';
+
+          try {
+            const response = await fetch(cancelUrlTemplate.replace('__BOOKING_ID__', selectedCancelBookingId), {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+              },
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok || payload.success === false) {
+              throw new Error(payload.message || 'Không thể hủy đặt phòng.');
+            }
+
+            window.location.reload();
+          } catch (error) {
+            alert(error.message);
+          } finally {
+            cancelConfirmButton.disabled = false;
+            cancelConfirmButton.textContent = originalText;
+          }
         };
 
         const closeDetailModal = () => {
@@ -436,9 +484,11 @@
           button.addEventListener('click', () => openCancelModal(button.dataset.bookingId || ''));
         });
 
-        document.querySelectorAll('[data-cancel-modal-close], [data-cancel-modal-confirm]').forEach((button) => {
+        document.querySelectorAll('[data-cancel-modal-close]').forEach((button) => {
           button.addEventListener('click', closeCancelModal);
         });
+
+        cancelConfirmButton?.addEventListener('click', cancelBooking);
 
         document.querySelectorAll('[data-booking-detail-close]').forEach((button) => {
           button.addEventListener('click', closeDetailModal);
