@@ -287,7 +287,7 @@
 
                     if (customerHint) {
                         customerHint.textContent = availableCustomers.length
-                            ? 'Chỉ hiển thị khách hàng chưa có tài khoản.'
+                            ? 'Danh sách khách hàng chưa có tài khoản.'
                             : 'Hiện chưa có khách hàng trống để gắn tài khoản.';
                     }
                 };
@@ -316,7 +316,7 @@
 
                     if (employeeHint) {
                         employeeHint.textContent = availableEmployees.length
-                            ? 'Chỉ hiển thị nhân viên chưa có tài khoản.'
+                            ? 'Danh sách nhân viên chưa có tài khoản.'
                             : 'Hiện chưa có nhân viên trống để gắn tài khoản.';
                     }
                 };
