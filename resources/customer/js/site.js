@@ -30,8 +30,8 @@ const hideLoader = () => {
     document.getElementById("ftco-loader")?.classList.remove("show");
 };
 
-const ROOM_TYPES_CACHE_KEY = "peachvalley:room-types:v1";
-const ROOM_DETAIL_CACHE_PREFIX = "peachvalley:room-detail:v1:";
+const ROOM_TYPES_CACHE_KEY = "peachvalley:room-types:v2";
+const ROOM_DETAIL_CACHE_PREFIX = "peachvalley:room-detail:v2:";
 const ROOM_CACHE_TTL_MS = 10 * 60 * 1000;
 const roomApiRequests = new Map();
 
