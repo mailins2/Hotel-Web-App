@@ -23,14 +23,14 @@ class NhanVienController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'TenNV' => 'required|string|max:100',
-            'MaTK'  => 'required|exists:TaiKhoan,MaTK|unique:NhanVien,MaTK',
+            'MaTK'  => 'nullable|exists:TaiKhoan,MaTK|unique:NhanVien,MaTK',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $nhanVien = NhanVien::create($request->all());
+        $nhanVien = NhanVien::create($validator->validated());
         return response()->json([
             'message' => 'Thêm nhân viên thành công',
             'data' => $nhanVien
@@ -63,14 +63,14 @@ class NhanVienController extends Controller
         // Nếu cập nhật MaTK thì cũng cần kiểm tra unique, ngoại trừ chính nó
         $validator = Validator::make($request->all(), [
             'TenNV' => 'sometimes|string|max:100',
-            'MaTK'  => 'sometimes|exists:TaiKhoan,MaTK|unique:NhanVien,MaTK,' . $id . ',MaNV',
+            'MaTK'  => 'sometimes|nullable|exists:TaiKhoan,MaTK|unique:NhanVien,MaTK,' . $id . ',MaNV',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $nhanVien->update($request->all());
+        $nhanVien->update($validator->validated());
         return response()->json(['message' => 'Cập nhật thành công', 'data' => $nhanVien], 200);
     }
 
