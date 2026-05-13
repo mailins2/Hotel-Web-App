@@ -270,6 +270,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::view('/room-amenities', 'hotel-management.room-amenities.index')->name('room-amenities.index');
+    Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
+    Route::view('/room-amenities/{recordId}', 'hotel-management.room-amenities.show')->name('room-amenities.show');
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::post('/', [AccountManagementController::class, 'store'])->name('store');
         Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
