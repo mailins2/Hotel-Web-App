@@ -16,6 +16,16 @@ class DanhGiaController extends Controller
         return response()->json($danhGias, 200);
     }
 
+    public function filterByLoaiPhong($maLoaiPhong)
+    {
+        $danhGias = DanhGia::whereHas('datPhong.chiTietDatPhong.phong', function ($query) use ($maLoaiPhong) {
+                $query->where('MaLoaiPhong', $maLoaiPhong);
+            })
+            ->get();
+
+        return response()->json($danhGias, 200);
+    }
+
     // 2. Gửi đánh giá mới
     public function store(Request $request)
     {

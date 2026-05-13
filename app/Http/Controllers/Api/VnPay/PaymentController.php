@@ -232,7 +232,7 @@ class PaymentController extends Controller
                     ThanhToan::create([
                         'MaHD' => $hoaDon->MaHD,
                         'SoTien' => $paymentAmount,
-                        'PhuongThuc' => 2,
+                        'PhuongThuc' => 1,
                         'LoaiThanhToan' => 0,
                         'NhaCungCap' => 'VNPAY',
                         'DinhDanhNguoiThanhToan' => $data['vnp_BankCode'] ?? null,

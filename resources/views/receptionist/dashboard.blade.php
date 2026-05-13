@@ -119,12 +119,33 @@
             border-radius: 999px;
             font-weight: 600;
             border: 1px solid transparent;
+            cursor: pointer;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        }
+
+        .fd-legend-button {
+            appearance: none;
+            background: transparent;
+            font: inherit;
+        }
+
+        .fd-legend-button:hover,
+        .fd-legend-button:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 22px rgba(120, 74, 44, 0.10);
+            outline: none;
+        }
+
+        .fd-legend-button.is-active {
+            border-color: currentColor;
+            box-shadow: 0 12px 24px rgba(120, 74, 44, 0.14);
         }
 
         .fd-legend-item--empty { background: #dcfce7; color: #166534; }
         .fd-legend-item--booked { background: #fef3c7; color: #92400e; }
         .fd-legend-item--using { background: #dbeafe; color: #1d4ed8; }
         .fd-legend-item--cleaning { background: #f3e8ff; color: #7e22ce; }
+        .fd-legend-item--all { background: #fff7ed; color: #9a4f35; }
 
         .fd-legend-dot {
             width: 11px;
@@ -137,6 +158,7 @@
         .fd-legend-dot--booked { background: #92400e; }
         .fd-legend-dot--using { background: #1d4ed8; }
         .fd-legend-dot--cleaning { background: #7e22ce; }
+        .fd-legend-dot--all { background: #9a4f35; }
 
         .fd-list-item {
             display: flex;
@@ -195,13 +217,40 @@
                     <div class="text-muted">Theo dõi tình trạng phòng tại khách sạn</div>
                 </div>
                 <div class="fd-legend">
-                    <span class="fd-legend-item fd-legend-item--empty"><span class="fd-legend-dot fd-legend-dot--empty"></span>Trống</span>
-                    <span class="fd-legend-item fd-legend-item--booked"><span class="fd-legend-dot fd-legend-dot--booked"></span>Đã đặt</span>
-                    <span class="fd-legend-item fd-legend-item--using"><span class="fd-legend-dot fd-legend-dot--using"></span>Đang sử dụng</span>
-                    <span class="fd-legend-item fd-legend-item--cleaning"><span class="fd-legend-dot fd-legend-dot--cleaning"></span>Đang dọn dẹp</span>
+                    <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--all is-active" data-room-status-filter=""><span class="fd-legend-dot fd-legend-dot--all"></span>Tất cả</button>
+                    <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--empty" data-room-status-filter="empty"><span class="fd-legend-dot fd-legend-dot--empty"></span>Trống</button>
+                    <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--booked" data-room-status-filter="booked"><span class="fd-legend-dot fd-legend-dot--booked"></span>Đã đặt</button>
+                    <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--using" data-room-status-filter="using"><span class="fd-legend-dot fd-legend-dot--using"></span>Đang sử dụng</button>
+                    <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--cleaning" data-room-status-filter="cleaning"><span class="fd-legend-dot fd-legend-dot--cleaning"></span>Đang dọn dẹp</button>
                 </div>
             </div>
 
+            @forelse(($roomFloors ?? collect()) as $floor => $rooms)
+                <div class="{{ $loop->last ? '' : 'mb-3' }}" data-room-floor>
+                    <div class="fw-semibold mb-2" style="font-weight: 600">Tầng {{ $floor }}</div>
+                    <div class="fd-room-grid">
+                        @foreach($rooms as $room)
+                            @php
+                                $roomClass = 'fd-' . $room['status'];
+                                $roomBody = '<div class="fw-bold">' . e($room['number']) . '</div>'
+                                    . '<div>' . e($room['statusLabel']) . '</div>'
+                                    . ($room['type'] ? '<div class="text-muted small mt-1">' . e($room['type']) . '</div>' : '');
+                            @endphp
+
+                            @if($room['bookingId'] && in_array($room['status'], ['booked', 'using'], true))
+                                <a href="{{ route('reception.booking-detail', ['bookingId' => $room['bookingId']]) }}" class="fd-room-link {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</a>
+                            @else
+                                <div class="fd-room {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</div>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            @empty
+                <div class="text-muted">Chưa có dữ liệu phòng để hiển thị.</div>
+            @endforelse
+            <div class="text-muted d-none" data-room-filter-empty>Không có phòng nào thuộc trạng thái này.</div>
+
+            @if(false)
             <div class="mb-3">
                 <div class="fw-semibold mb-2" style="font-weight: 600">Tầng 1</div>
                 <div class="fd-room-grid">
@@ -222,6 +271,7 @@
                     <a href="{{ route('reception.booking-detail', ['bookingId' => 9005]) }}" class="fd-room-link fd-using"><div class="fw-bold">B206</div><div>Đang sử dụng</div></a>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- <div class="row g-3">
@@ -251,4 +301,45 @@
             </div>
         </div> -->
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const filterButtons = Array.from(document.querySelectorAll('[data-room-status-filter]'));
+            const allButton = document.querySelector('[data-room-status-filter=""]');
+            const floors = document.querySelectorAll('[data-room-floor]');
+            const emptyState = document.querySelector('[data-room-filter-empty]');
+
+            filterButtons.forEach((button) => {
+                button.addEventListener('click', () => {
+                    const selectedStatus = button.dataset.roomStatusFilter || '';
+                    const currentFilter = button.classList.contains('is-active') && selectedStatus ? '' : selectedStatus;
+                    let visibleRoomCount = 0;
+
+                    filterButtons.forEach((item) => {
+                        const itemStatus = item.dataset.roomStatusFilter || '';
+                        item.classList.toggle('is-active', itemStatus === currentFilter);
+                    });
+
+                    if (!currentFilter && allButton) {
+                        allButton.classList.add('is-active');
+                    }
+
+                    floors.forEach((floor) => {
+                        let floorHasVisibleRoom = false;
+                        floor.querySelectorAll('[data-room-status]').forEach((room) => {
+                            const isVisible = !currentFilter || room.dataset.roomStatus === currentFilter;
+                            room.classList.toggle('d-none', !isVisible);
+                            floorHasVisibleRoom = floorHasVisibleRoom || isVisible;
+                            visibleRoomCount += isVisible ? 1 : 0;
+                        });
+
+                        floor.classList.toggle('d-none', !floorHasVisibleRoom);
+                    });
+
+                    if (emptyState) {
+                        emptyState.classList.toggle('d-none', visibleRoomCount > 0);
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>
