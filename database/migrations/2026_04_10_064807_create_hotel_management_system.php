@@ -140,7 +140,7 @@ return new class extends Migration
 
     // 14. KhuyenMai
     Schema::create('KhuyenMai', function (Blueprint $table) {
-        $table->id('MaKM');
+        $table->string('MaKM', 10)->primary();
         $table->string('TenKM', 100);
         $table->string('MoTa', 200)->nullable();
         $table->integer('Diem')->nullable();
@@ -151,7 +151,7 @@ return new class extends Migration
 
     // 15. KhoKhuyenMai
     Schema::create('KhoKhuyenMai', function (Blueprint $table) {
-        $table->unsignedBigInteger('MaKM');
+        $table->string('MaKM', 10);
         $table->unsignedBigInteger('MaKH');
         $table->integer('TrangThai')->default(0); // 0: Chưa sử dụng[cite: 3]
         $table->primary(['MaKM', 'MaKH']);
@@ -164,7 +164,7 @@ return new class extends Migration
         $table->id('MaHD');
         $table->unsignedBigInteger('MaDatPhong')->unique();
         $table->date('NgayLapHD');
-        $table->unsignedBigInteger('MaKM')->nullable();
+        $table->string('MaKM', 10)->nullable();
         $table->decimal('TongTien', 18, 2);
         $table->unsignedBigInteger('MaNV')->nullable();
         $table->integer('TrangThai'); // 0: Chưa thanh toán, 1: Đã thanh toán[cite: 3]

@@ -22,17 +22,29 @@
               <div class="eyebrow">Đặt phòng của bạn</div>
             </div>
 
-            <div class="customer-booking-list">
-              @php
-                $statusLabels = [
-                  \App\Models\DatPhong::HOLD => 'Chờ thanh toán',
-                  \App\Models\DatPhong::CONFIRMED => 'Đã xác nhận',
-                  \App\Models\DatPhong::CHECKED_IN => 'Đang ở',
-                  \App\Models\DatPhong::CHECKED_OUT => 'Đã trả phòng',
-                  \App\Models\DatPhong::CANCELLED => 'Đã hủy',
-                ];
-              @endphp
+            @php
+              $statusLabels = [
+                \App\Models\DatPhong::HOLD => 'Chờ thanh toán',
+                \App\Models\DatPhong::CONFIRMED => 'Đã xác nhận',
+                \App\Models\DatPhong::CHECKED_IN => 'Đang ở',
+                \App\Models\DatPhong::CHECKED_OUT => 'Đã trả phòng',
+                \App\Models\DatPhong::CANCELLED => 'Đã hủy',
+              ];
+            @endphp
 
+            @if(($customerBookings ?? collect())->isNotEmpty())
+              <div class="customer-booking-filter" data-booking-status-filter>
+                <span>Lọc trạng thái</span>
+                <div class="customer-booking-filter-options">
+                  <button type="button" class="is-active" data-booking-filter-value="all">Tất cả</button>
+                  @foreach($statusLabels as $statusValue => $label)
+                    <button type="button" data-booking-filter-value="{{ $statusValue }}">{{ $label }}</button>
+                  @endforeach
+                </div>
+              </div>
+            @endif
+
+            <div class="customer-booking-list">
               @forelse(($customerBookings ?? collect()) as $booking)
                 @php
                   $customer = $booking->khachHang;
@@ -92,6 +104,7 @@
                   role="button"
                   tabindex="0"
                   data-booking-card
+                  data-booking-status="{{ (int) $booking->TinhTrang }}"
                   data-booking-payload="{!! e(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) !!}"
                 >
                   <div class="customer-booking-card-left">
@@ -165,6 +178,10 @@
                   </div>
                 </div>
               @endforelse
+
+              <div class="customer-booking-filter-empty" data-booking-filter-empty hidden>
+                Không có đặt phòng nào ở trạng thái này.
+              </div>
 
               @if(false)
               <div
@@ -366,6 +383,8 @@
         const detailModal = document.querySelector('[data-booking-detail-modal]');
         const detailRooms = document.querySelector('[data-booking-detail-rooms]');
         const detailPerson = document.querySelector('[data-booking-detail-person]');
+        const bookingFilter = document.querySelector('[data-booking-status-filter]');
+        const bookingFilterEmpty = document.querySelector('[data-booking-filter-empty]');
         let selectedCancelBookingId = null;
 
         const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`;
@@ -454,6 +473,35 @@
             <div><span>Ngày đặt</span><strong>${formatDate(booking.NgayDat)}</strong></div>
           `;
         };
+
+        const applyBookingStatusFilter = (status) => {
+          const cards = Array.from(document.querySelectorAll('[data-booking-card]'));
+          let visibleCount = 0;
+
+          cards.forEach((card) => {
+            const isVisible = status === 'all' || card.dataset.bookingStatus === status;
+            card.hidden = !isVisible;
+            if (isVisible) {
+              visibleCount += 1;
+            }
+          });
+
+          if (bookingFilterEmpty) {
+            bookingFilterEmpty.hidden = visibleCount !== 0;
+          }
+        };
+
+        bookingFilter?.addEventListener('click', (event) => {
+          const button = event.target instanceof Element ? event.target.closest('[data-booking-filter-value]') : null;
+          if (!button || !bookingFilter.contains(button)) {
+            return;
+          }
+
+          bookingFilter.querySelectorAll('[data-booking-filter-value]').forEach((item) => {
+            item.classList.toggle('is-active', item === button);
+          });
+          applyBookingStatusFilter(button.dataset.bookingFilterValue || 'all');
+        });
 
         document.querySelectorAll('[data-booking-card]').forEach((card) => {
           const openDetail = () => {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\KhuyenMai;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
@@ -23,6 +24,7 @@ class KhuyenMaiController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
+            'MaKM'             => 'sometimes|required|string|max:10|unique:KhuyenMai,MaKM',
             'TenKM'            => 'required|string|max:100',
             'MoTa'             => 'nullable|string|max:200',
             'Diem'             => 'required|integer|min:0', // Điểm cần để đổi hoặc điểm tặng
@@ -35,7 +37,12 @@ class KhuyenMaiController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $khuyenMai = KhuyenMai::create($request->all());
+        $payload = $validator->validated();
+        $khuyenMai = DB::transaction(function () use ($payload) {
+            $payload['MaKM'] = $payload['MaKM'] ?? $this->generatePromotionId();
+
+            return KhuyenMai::create($payload);
+        });
 
         return response()->json([
             'message' => 'Tạo khuyến mãi thành công',
@@ -119,5 +126,22 @@ class KhuyenMaiController extends Controller
                         ->where('NgayKetThuc', '>=', $today)
                         ->get();
         return response()->json($active, 200);
+    }
+
+    private function generatePromotionId(): string
+    {
+        $latestId = KhuyenMai::where('MaKM', 'like', 'KM%')
+            ->orderByRaw('CAST(SUBSTRING(MaKM, 3) AS UNSIGNED) DESC')
+            ->lockForUpdate()
+            ->value('MaKM');
+
+        $nextNumber = $latestId ? ((int) substr($latestId, 2)) + 1 : 1;
+
+        do {
+            $candidate = 'KM' . str_pad((string) $nextNumber, 8, '0', STR_PAD_LEFT);
+            $nextNumber++;
+        } while (KhuyenMai::whereKey($candidate)->exists());
+
+        return $candidate;
     }
 }

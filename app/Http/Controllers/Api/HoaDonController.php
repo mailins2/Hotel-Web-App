@@ -34,7 +34,7 @@ class HoaDonController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'MaDatPhong' => 'required|exists:DatPhong,MaDatPhong|unique:HoaDon,MaDatPhong',
-            'MaKM' => 'nullable|exists:KhuyenMai,MaKM',
+            'MaKM' => 'nullable|string|max:10|exists:KhuyenMai,MaKM',
             'MaNV' => 'required|exists:NhanVien,MaNV'
         ]);
 
@@ -206,7 +206,7 @@ class HoaDonController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'MaKM' => 'nullable|exists:KhuyenMai,MaKM',
+            'MaKM' => 'nullable|string|max:10|exists:KhuyenMai,MaKM',
             'TrangThai' => 'sometimes|in:0,1'
         ]);
 

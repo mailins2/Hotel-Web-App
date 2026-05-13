@@ -55,7 +55,7 @@ class DichVuController extends Controller
         $data = $request->validate([
             'TenDV' => 'required|string|max:100',
             'GiaDV' => 'required|numeric|min:0',
-            'LoaiDV' => 'required|in:1,2,3'
+            'LoaiDV' => 'required|in:1,2,3,4'
         ]);
 
         $dv = DichVu::create($data);
