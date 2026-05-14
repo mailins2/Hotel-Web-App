@@ -100,6 +100,7 @@ Route::post('thanh-toan', [ThanhToanController::class, 'store']);
 Route::get('thanh-toan/{id}', [ThanhToanController::class, 'show']);
 Route::get('thanh-toan/hoa-don/{maHD}', [ThanhToanController::class, 'getByHoaDon']);
 
+Route::get('danh-gia/loai-phong/{maLoaiPhong}', [DanhGiaController::class, 'filterByLoaiPhong']);
 Route::apiResource('danh-gia', DanhGiaController::class);
 
 Route::apiResource('hinh-anh', HinhController::class);

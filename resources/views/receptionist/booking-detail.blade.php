@@ -1,4 +1,38 @@
 <x-app-layout :assets="['animation']">
+    @php
+        $statusLabels = [
+            \App\Models\DatPhong::HOLD => 'Đang giữ chỗ',
+            \App\Models\DatPhong::CONFIRMED => 'Đã đặt',
+            \App\Models\DatPhong::CHECKED_IN => 'Đang sử dụng',
+            \App\Models\DatPhong::CHECKED_OUT => 'Đã trả phòng',
+            \App\Models\DatPhong::CANCELLED => 'Đã hủy',
+        ];
+
+        $statusClasses = [
+            \App\Models\DatPhong::HOLD => 'bd-badge--hold',
+            \App\Models\DatPhong::CONFIRMED => 'bd-badge--booked',
+            \App\Models\DatPhong::CHECKED_IN => 'bd-badge--using',
+            \App\Models\DatPhong::CHECKED_OUT => 'bd-badge--done',
+            \App\Models\DatPhong::CANCELLED => 'bd-badge--cancelled',
+        ];
+
+        $formatDate = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '--';
+        $formatDateTime = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y H:i') : '--';
+        $formatMoney = fn ($amount) => number_format((float) ($amount ?? 0), 0, ',', '.') . ' VND';
+
+        $checkIn = $booking->NgayNhanPhong ? \Carbon\Carbon::parse($booking->NgayNhanPhong) : null;
+        $checkOut = $booking->NgayTraPhong ? \Carbon\Carbon::parse($booking->NgayTraPhong) : null;
+        $nights = ($checkIn && $checkOut) ? max($checkIn->diffInDays($checkOut), 1) : 0;
+        $customer = $booking->khachHang;
+        $account = $customer?->taiKhoan;
+        $invoice = $booking->hoaDon;
+        $paidAmount = (float) ($invoice?->DaThanhToan ?? $invoice?->thanhToans?->sum('SoTien') ?? 0);
+        $totalAmount = (float) ($invoice?->TongTien ?? 0);
+        $remainingAmount = max($totalAmount - $paidAmount, 0);
+        $roomDetails = $booking->chiTietDatPhong ?? collect();
+        $serviceUsages = $booking->suDungDichVu ?? collect();
+    @endphp
+
     <style>
         .bd-shell { padding-top: 4.75rem; }
 
@@ -20,14 +54,6 @@
             height: 100%;
         }
 
-        .bd-summary-card {
-            border: 1px solid rgba(217, 119, 6, 0.14);
-            border-radius: 20px;
-            background: #fff;
-            padding: 1rem;
-            height: 100%;
-        }
-
         .bd-label {
             color: #8b5e3c;
             font-size: 0.78rem;
@@ -41,6 +67,7 @@
             font-size: 1.05rem;
             font-weight: 600;
             margin-top: 0.35rem;
+            overflow-wrap: anywhere;
         }
 
         .bd-badge {
@@ -52,15 +79,11 @@
             font-size: 0.82rem;
         }
 
-        .bd-badge--booked {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .bd-badge--using {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
+        .bd-badge--hold { background: #ffedd5; color: #9a3412; }
+        .bd-badge--booked { background: #fef3c7; color: #92400e; }
+        .bd-badge--using { background: #dbeafe; color: #1d4ed8; }
+        .bd-badge--done { background: #dcfce7; color: #166534; }
+        .bd-badge--cancelled { background: #fee2e2; color: #991b1b; }
 
         .bd-info-grid {
             display: grid;
@@ -73,6 +96,25 @@
             border-radius: 18px;
             background: #fff;
             padding: 1rem;
+        }
+
+        .bd-list {
+            display: grid;
+            gap: 0.85rem;
+        }
+
+        .bd-list-item {
+            border: 1px solid rgba(217, 119, 6, 0.14);
+            border-radius: 18px;
+            background: #fff;
+            padding: 1rem;
+        }
+
+        .bd-list-line {
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            align-items: flex-start;
         }
 
         .bd-note {
@@ -89,14 +131,12 @@
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
                 <div>
                     <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
-                        <h2 class="mb-0">Chi tiết đặt phòng</h2>
-                        @if(request()->route('bookingId') == 9002 || request()->route('bookingId') == 9005)
-                            <span class="bd-badge bd-badge--using">Đang sử dụng</span>
-                        @else
-                            <span class="bd-badge bd-badge--booked">Đã đặt</span>
-                        @endif
+                        <h2 class="mb-0">Chi tiết đặt phòng #{{ $booking->MaDatPhong }}</h2>
+                        <span class="bd-badge {{ $statusClasses[(int) $booking->TinhTrang] ?? 'bd-badge--booked' }}">
+                            {{ $statusLabels[(int) $booking->TinhTrang] ?? 'Không xác định' }}
+                        </span>
                     </div>
-                    <p class="text-muted mb-0">Thông tin chi tiết đặt phòng tại khách sạn</p>
+                    <p class="text-muted mb-0">Dữ liệu được lấy trực tiếp từ đặt phòng, phòng, khách hàng và hóa đơn.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <a href="{{ route('reception.bookings.index') }}" class="btn btn-light">Danh sách đặt phòng</a>
@@ -105,227 +145,145 @@
             </div>
         </div>
 
-        @if(request()->route('bookingId') == 9002)
-            <div class="row g-4">
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin khách hàng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">KH002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">Trần Bảo Ngọc</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">0938 222 456</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">baongoc@gmail.com</div></div>
-                            <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">048204000222</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">92 Nguyễn Thị Minh Khai, Quận 3, TP.HCM</div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin phòng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Số phòng</div><div class="bd-value">A102</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Loại phòng</div><div class="bd-value">Suite</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Sức chứa tối đa</div><div class="bd-value">4 khách</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số người ở</div><div class="bd-value">2 người ở</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Giá phòng</div><div class="bd-value">2.150.000 VNĐ / đêm</div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin đặt phòng</h4>
-                        <div class="bd-info-grid mb-3">
-                            <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#9002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">04/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">07/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">09/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">2 đêm</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tiền đặt cọc</div><div class="bd-value">2.000.000 VNĐ</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Trạng thái đặt phòng</div><div class="bd-value">Đang sử dụng</div></div>
-                        </div>
+        <div class="row g-4">
+            <div class="col-xl-6">
+                <div class="bd-section">
+                    <h4 class="mb-3">Thông tin khách hàng đặt</h4>
+                    <div class="bd-info-grid">
+                        <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">{{ $customer?->MaKH ?? '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">{{ $customer?->TenKH ?? '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">{{ $customer?->SoDienThoai ?? '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">{{ $account?->Email ?? '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">{{ $customer?->CCCD ?? '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">{{ $customer?->DiaChi ?? '--' }}</div></div>
                     </div>
                 </div>
             </div>
-        @elseif(request()->route('bookingId') == 9003)
-            <div class="row g-4">
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin khách hàng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">KH004</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">Phạm Khánh Vy</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">0912 888 321</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">khanhvy@gmail.com</div></div>
-                            <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">079304000567</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">45 Võ Văn Tần, Quận 3, TP.HCM</div></div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin phòng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Số phòng</div><div class="bd-value">B203</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Loại phòng</div><div class="bd-value">Family</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Sức chứa tối đa</div><div class="bd-value">5 khách</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số người ở</div><div class="bd-value">4 người ở</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Giá phòng</div><div class="bd-value">2.750.000 VNĐ / đêm</div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin đặt phòng</h4>
-                        <div class="bd-info-grid mb-3">
-                            <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#9002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">06/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">09/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">12/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">3 đêm</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tiền đặt cọc</div><div class="bd-value">2.500.000 VNĐ</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Trạng thái đặt phòng</div><div class="bd-value">Đã đặt</div></div>
-                        </div>
+            <div class="col-xl-6">
+                <div class="bd-section">
+                    <h4 class="mb-3">Thông tin đặt phòng</h4>
+                    <div class="bd-info-grid">
+                        <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#{{ $booking->MaDatPhong }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">{{ $formatDate($booking->NgayDat) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">{{ $formatDate($booking->NgayNhanPhong) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">{{ $formatDate($booking->NgayTraPhong) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">{{ $nights }} đêm</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Số lượng khách</div><div class="bd-value">{{ $booking->SoLuong ?? 0 }} khách</div></div>
                     </div>
                 </div>
             </div>
-        @elseif(request()->route('bookingId') == 9004)
-            <div class="row g-4">
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin khách hàng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">KH005</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">Hoàng Gia Bảo</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">0987 654 210</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">giabao@gmail.com</div></div>
-                            <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">031204000889</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">18 Lê Lợi, TP. Thủ Dầu Một, Bình Dương</div></div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin phòng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Số phòng</div><div class="bd-value">B204</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Loại phòng</div><div class="bd-value">Executive</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Sức chứa tối đa</div><div class="bd-value">3 khách</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số người ở</div><div class="bd-value">2 người ở</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Giá phòng</div><div class="bd-value">2.350.000 VNĐ / đêm</div></div>
+            <div class="col-12">
+                <div class="bd-section">
+                    <h4 class="mb-3">Phòng đã đặt</h4>
+                    @if($roomDetails->isNotEmpty())
+                        <div class="bd-list">
+                            @foreach($roomDetails as $detail)
+                                @php
+                                    $room = $detail->phong;
+                                    $roomType = $room?->loaiPhong;
+                                    $price = $roomType?->bangGias?->first()?->GiaPhong;
+                                @endphp
+                                <div class="bd-list-item">
+                                    <div class="bd-list-line">
+                                        <div>
+                                            <div class="bd-label">Phòng {{ $room?->SoPhong ?? '--' }}</div>
+                                            <div class="bd-value">{{ $roomType?->TenLoaiPhong ?? 'Chưa có loại phòng' }}</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="bd-label">Giá phòng</div>
+                                            <div class="bd-value">{{ $price !== null ? $formatMoney($price) . ' / đêm' : '--' }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="bd-info-grid mt-3">
+                                        <div><div class="bd-label">Mã phòng</div><div class="bd-value">{{ $room?->MaPhong ?? '--' }}</div></div>
+                                        <div><div class="bd-label">Mã loại phòng</div><div class="bd-value">{{ $roomType?->MaLoaiPhong ?? '--' }}</div></div>
+                                        <div><div class="bd-label">Người lớn tối đa</div><div class="bd-value">{{ $roomType?->NguoiLon ?? 0 }}</div></div>
+                                        <div><div class="bd-label">Trẻ em tối đa</div><div class="bd-value">{{ $roomType?->TreEm ?? 0 }}</div></div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                    </div>
+                    @else
+                        <div class="bd-note">Chưa có phòng nào trong đặt phòng này.</div>
+                    @endif
                 </div>
+            </div>
 
-                <div class="col-12">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin đặt phòng</h4>
-                        <div class="bd-info-grid mb-3">
-                             <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#9002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">06/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">10/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">12/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">2 đêm</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tiền đặt cọc</div><div class="bd-value">1.800.000 VNĐ</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Trạng thái đặt phòng</div><div class="bd-value">Đã đặt</div></div>
-                        </div>
+            <div class="col-xl-6">
+                <div class="bd-section">
+                    <h4 class="mb-3">Hóa đơn</h4>
+                    <div class="bd-info-grid">
+                        <div class="bd-info-card"><div class="bd-label">Mã hóa đơn</div><div class="bd-value">{{ $invoice?->MaHD ? '#' . $invoice->MaHD : '--' }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Ngày lập</div><div class="bd-value">{{ $formatDate($invoice?->NgayLapHD) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Tổng tiền</div><div class="bd-value">{{ $formatMoney($totalAmount) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Đã thanh toán</div><div class="bd-value">{{ $formatMoney($paidAmount) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Còn lại</div><div class="bd-value">{{ $formatMoney($remainingAmount) }}</div></div>
+                        <div class="bd-info-card"><div class="bd-label">Khuyến mãi</div><div class="bd-value">{{ $invoice?->khuyenMai?->TenKM ?? ($invoice?->MaKM ?? '--') }}</div></div>
                     </div>
                 </div>
             </div>
-        @elseif(request()->route('bookingId') == 9005)
 
-            <div class="row g-4">
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin khách hàng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">KH006</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">Đỗ Thanh Tùng</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">0909 765 321</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">thanhtung@gmail.com</div></div>
-                            <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">077104000654</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">5 Phan Đình Phùng, Phú Nhuận, TP.HCM</div></div>
+            <div class="col-xl-6">
+                <div class="bd-section">
+                    <h4 class="mb-3">Dịch vụ đã sử dụng</h4>
+                    @if($serviceUsages->isNotEmpty())
+                        <div class="bd-list">
+                            @foreach($serviceUsages as $usage)
+                                <div class="bd-list-item">
+                                    <div class="bd-list-line">
+                                        <div>
+                                            <div class="bd-label">{{ $usage->dichVu?->TenDV ?? 'Dịch vụ' }}</div>
+                                            <div class="bd-value">Số lượng: {{ $usage->SoLuong ?? 0 }}</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="bd-label">Thời gian</div>
+                                            <div class="bd-value">{{ $formatDateTime($usage->ThoiGian) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin phòng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Số phòng</div><div class="bd-value">B206</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Loại phòng</div><div class="bd-value">Suite</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Sức chứa tối đa</div><div class="bd-value">4 khách</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số người ở</div><div class="bd-value">3 người ở</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Giá phòng</div><div class="bd-value">2.100.000 VNĐ / đêm</div></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin đặt phòng</h4>
-                        <div class="bd-info-grid mb-3">
-                            <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#9002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">05/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">08/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">11/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">3 đêm</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tiền đặt cọc</div><div class="bd-value">2.100.000 VNĐ</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Trạng thái đặt phòng</div><div class="bd-value">Đang sử dụng</div></div>
-                        </div>
-                    </div>
+                    @else
+                        <div class="bd-note">Chưa có dịch vụ nào được đăng ký cho đặt phòng này.</div>
+                    @endif
                 </div>
             </div>
-        @else
-            <div class="row g-4">
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin khách hàng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Mã khách hàng</div><div class="bd-value">KH001</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tên khách hàng</div><div class="bd-value">Nguyễn Minh An</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số điện thoại</div><div class="bd-value">0901 234 567</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Email</div><div class="bd-value">minhan@gmail.com</div></div>
-                            <div class="bd-info-card"><div class="bd-label">CCCD</div><div class="bd-value">079204000111</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Địa chỉ</div><div class="bd-value">12 Nguyễn Huệ, Quận 1, TP.HCM</div></div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="col-xl-6">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin phòng đặt</h4>
-                        <div class="bd-info-grid">
-                            <div class="bd-info-card"><div class="bd-label">Số phòng</div><div class="bd-value">A103</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Loại phòng</div><div class="bd-value">Deluxe</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Sức chứa tối đa</div><div class="bd-value">2 khách</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Số người ở</div><div class="bd-value">2 người ở</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Giá phòng</div><div class="bd-value">1.450.000 VNĐ / đêm</div></div>
+            <div class="col-12">
+                <div class="bd-section">
+                    <h4 class="mb-3">Chi tiết hóa đơn</h4>
+                    @if($invoice && $invoice->chiTietHoaDons->isNotEmpty())
+                        <div class="bd-list">
+                            @foreach($invoice->chiTietHoaDons as $item)
+                                @php
+                                    $itemName = $item->loaiPhong?->TenLoaiPhong
+                                        ?? $item->suDung?->dichVu?->TenDV
+                                        ?? $item->denBu?->MoTa
+                                        ?? $item->MoTa
+                                        ?? 'Khoản thu';
+                                    $lineTotal = (float) $item->SoLuong * (float) $item->DonGia;
+                                @endphp
+                                <div class="bd-list-item">
+                                    <div class="bd-list-line">
+                                        <div>
+                                            <div class="bd-label">{{ $itemName }}</div>
+                                            <div class="bd-value">{{ $item->MoTa ?? 'Chi tiết #' . $item->MaCTHD }}</div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="bd-label">{{ $item->SoLuong }} x {{ $formatMoney($item->DonGia) }}</div>
+                                            <div class="bd-value">{{ $formatMoney($lineTotal) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="bd-section">
-                        <h4 class="mb-3">Thông tin đặt phòng</h4>
-                        <div class="bd-info-grid mb-3">
-                            <div class="bd-info-card"><div class="bd-label">Mã đặt phòng</div><div class="bd-value">#9002</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày đặt phòng</div><div class="bd-value">05/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày nhận phòng</div><div class="bd-value">08/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Ngày trả phòng</div><div class="bd-value">10/04/2026</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Thời gian lưu trú</div><div class="bd-value">2 đêm</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Tiền đặt cọc</div><div class="bd-value">1.500.000 VNĐ</div></div>
-                            <div class="bd-info-card"><div class="bd-label">Trạng thái đặt phòng</div><div class="bd-value">Đã đặt</div></div>
-                        </div>
-                    </div>
+                    @else
+                        <div class="bd-note">Chưa có chi tiết hóa đơn để hiển thị.</div>
+                    @endif
                 </div>
             </div>
-        @endif
+        </div>
     </div>
 </x-app-layout>

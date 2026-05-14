@@ -91,6 +91,32 @@
             <span class="icon ion-ios-search"></span>
             Tìm kiếm
           </button>
+          <div class="room-filter-toolbar search-summary-filters" data-room-filter-toolbar>
+            <div class="room-filter-field room-filter-search">
+              <label for="roomFilterSearch">Tìm phòng</label>
+              <div class="room-filter-input-wrap">
+                <span class="icon ion-ios-search"></span>
+                <input
+                  type="search"
+                  id="roomFilterSearch"
+                  data-room-filter-search
+                  placeholder="Tên phòng, mô tả, tiện nghi"
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+            <div class="room-filter-field">
+              <label for="roomFilterSort">Sắp xếp giá</label>
+              <select id="roomFilterSort" data-room-filter-sort>
+                <option value="">Mặc định</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+              </select>
+            </div>
+            <button type="button" class="room-filter-reset" data-room-filter-reset>
+              Xóa lọc
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -99,56 +125,6 @@
       <div class="container">
         <div class="row">
           <div class="col-lg-8">
-            <div class="room-filter-toolbar" data-room-filter-toolbar>
-              <div class="room-filter-field room-filter-search">
-                <label for="roomFilterSearch">Tìm phòng</label>
-                <div class="room-filter-input-wrap">
-                  <span class="icon ion-ios-search"></span>
-                  <input
-                    type="search"
-                    id="roomFilterSearch"
-                    data-room-filter-search
-                    placeholder="Tên phòng, mô tả, tiện nghi"
-                    autocomplete="off"
-                  >
-                </div>
-              </div>
-              <div class="room-filter-field">
-                <label for="roomFilterSort">Sắp xếp giá</label>
-                <select id="roomFilterSort" data-room-filter-sort>
-                  <option value="">Mặc định</option>
-                  <option value="price-asc">Giá tăng dần</option>
-                  <option value="price-desc">Giá giảm dần</option>
-                </select>
-              </div>
-              <div class="room-filter-field room-filter-number">
-                <label for="roomFilterAdults">Người lớn tối đa</label>
-                <input
-                  type="number"
-                  id="roomFilterAdults"
-                  data-room-filter-adults
-                  min="0"
-                  step="1"
-                  placeholder="Bất kỳ"
-                  inputmode="numeric"
-                >
-              </div>
-              <div class="room-filter-field room-filter-number">
-                <label for="roomFilterChildren">Trẻ em tối đa</label>
-                <input
-                  type="number"
-                  id="roomFilterChildren"
-                  data-room-filter-children
-                  min="0"
-                  step="1"
-                  placeholder="Bất kỳ"
-                  inputmode="numeric"
-                >
-              </div>
-              <button type="button" class="room-filter-reset" data-room-filter-reset>
-                Xóa lọc
-              </button>
-            </div>
             <div class="room-results-list" data-room-results>
               <div class="room-results-loading">Đang tải danh sách phòng...</div>
             </div>
@@ -257,8 +233,6 @@
         const bookingContinue = document.querySelector('[data-booking-continue]');
         const roomFilterSearch = document.querySelector('[data-room-filter-search]');
         const roomFilterSort = document.querySelector('[data-room-filter-sort]');
-        const roomFilterAdults = document.querySelector('[data-room-filter-adults]');
-        const roomFilterChildren = document.querySelector('[data-room-filter-children]');
         const roomFilterReset = document.querySelector('[data-room-filter-reset]');
         const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
         const assetBaseUrl = @json(rtrim(asset(''), '/') . '/');
@@ -773,14 +747,9 @@
         }
 
         function getRoomFilterValues() {
-          const adults = Number.parseInt(roomFilterAdults?.value || '', 10);
-          const children = Number.parseInt(roomFilterChildren?.value || '', 10);
-
           return {
             keyword: String(roomFilterSearch?.value || '').trim().toLowerCase(),
             sort: roomFilterSort?.value || '',
-            adults: Number.isFinite(adults) && adults > 0 ? adults : 0,
-            children: Number.isFinite(children) && children > 0 ? children : 0,
           };
         }
 
@@ -798,10 +767,8 @@
               ...view.amenitiesNames,
             ].join(' ').toLowerCase();
             const matchesKeyword = !filters.keyword || searchableText.includes(filters.keyword);
-            const matchesAdults = !filters.adults || (Number.isFinite(view.adults) && view.adults >= filters.adults);
-            const matchesChildren = !filters.children || (Number.isFinite(view.children) && view.children >= filters.children);
 
-            return matchesKeyword && matchesAdults && matchesChildren;
+            return matchesKeyword;
           });
 
           if (filters.sort === 'price-asc') {
@@ -1069,13 +1036,9 @@
         searchBtn?.addEventListener('click', () => filterRooms(true));
         roomFilterSearch?.addEventListener('input', applyRoomDisplayFilters);
         roomFilterSort?.addEventListener('change', applyRoomDisplayFilters);
-        roomFilterAdults?.addEventListener('input', applyRoomDisplayFilters);
-        roomFilterChildren?.addEventListener('input', applyRoomDisplayFilters);
         roomFilterReset?.addEventListener('click', () => {
           if (roomFilterSearch) roomFilterSearch.value = '';
           if (roomFilterSort) roomFilterSort.value = '';
-          if (roomFilterAdults) roomFilterAdults.value = '';
-          if (roomFilterChildren) roomFilterChildren.value = '';
           applyRoomDisplayFilters();
         });
         bookingContinue?.addEventListener('click', (event) => {

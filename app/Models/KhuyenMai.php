@@ -11,6 +11,8 @@ class KhuyenMai extends Model
 
     protected $table = 'KhuyenMai';
     protected $primaryKey = 'MaKM';
+    protected $keyType = 'string';
+    public $incrementing = false;
     public $timestamps = false;
     protected $guarded = [];
 

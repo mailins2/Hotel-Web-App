@@ -51,7 +51,7 @@
 	    </section>
 	  </div>
 
-    <section class="ftco-booking ftco-section ftco-no-pt ftco-no-pb">
+    <section class="ftco-booking ftco-section ftco-no-pt ftco-no-pb home-booking-section">
     	<div class="container">
     		<div class="row no-gutters">
     			<div class="col-lg-12">
@@ -76,46 +76,66 @@
 	        			<div class="col-md d-flex py-md-4">
 	        				<div class="form-group align-self-stretch d-flex align-items-end">
 	        					<div class="wrap align-self-stretch py-3 px-4">
-			      					<label for="#">Phòng</label>
-			      					<div class="form-field">
-			        					<div class="select-wrap">
-			                    <div class="icon"><span class="ion-ios-arrow-down"></span></div>
-			                    <select name="" id="" class="form-control">
-			                    	<option value="">Suite</option>
-			                      <option value="">Family Room</option>
-			                      <option value="">Deluxe Room</option>
-			                      <option value="">Classic Room</option>
-			                      <option value="">Superior Room</option>
-			                      <option value="">Luxury Room</option>
-			                    </select>
-			                  </div>
-				              </div>
-				            </div>
-		              </div>
-	        			</div>
-	        			<div class="col-md d-flex py-md-4">
-	        				<div class="form-group align-self-stretch d-flex align-items-end">
-	        					<div class="wrap align-self-stretch py-3 px-4">
-			      					<label for="#">Số khách</label>
-			      					<div class="form-field">
-			        					<div class="select-wrap">
-			                    <div class="icon"><span class="ion-ios-arrow-down"></span></div>
-			                    <select name="" id="" class="form-control">
-			                    	<option value="">1 Adult</option>
-			                      <option value="">2 Adult</option>
-			                      <option value="">3 Adult</option>
-			                      <option value="">4 Adult</option>
-			                      <option value="">5 Adult</option>
-			                      <option value="">6 Adult</option>
-			                    </select>
-			                  </div>
-				              </div>
+			      					<label for="guest-trigger">Số khách</label>
+			      					<div class="booking-guests" data-guest-picker>
+                        <input type="hidden" name="adults" value="2" data-guest-input="adults">
+                        <input type="hidden" name="children" value="0" data-guest-input="children">
+                        <input type="hidden" name="rooms" value="1" data-guest-input="rooms">
+                        <button
+                          type="button"
+                          id="guest-trigger"
+                          class="guest-trigger"
+                          data-guest-trigger
+                          aria-expanded="false"
+                          aria-haspopup="dialog"
+                        >
+                          <span class="guest-trigger-icon">
+                            <span class="ion-ios-person-outline"></span>
+                          </span>
+                          <span class="guest-trigger-text" data-guest-summary>2 người lớn - 0 trẻ em - 1 phòng</span>
+                          <span class="guest-trigger-arrow">
+                            <span class="ion-ios-arrow-down"></span>
+                          </span>
+                        </button>
+                        <div class="guest-dropdown" data-guest-dropdown hidden>
+                          <div class="guest-row">
+                            <div class="guest-row-copy">
+                              <div class="guest-row-title">Người lớn</div>
+                            </div>
+                            <div class="guest-stepper">
+                              <button type="button" class="guest-stepper-btn" data-counter-action="decrement" data-counter-target="adults" aria-label="Giảm số người lớn">-</button>
+                              <span class="guest-stepper-value" data-guest-count="adults">2</span>
+                              <button type="button" class="guest-stepper-btn" data-counter-action="increment" data-counter-target="adults" aria-label="Tăng số người lớn">+</button>
+                            </div>
+                          </div>
+                          <div class="guest-row">
+                            <div class="guest-row-copy">
+                              <div class="guest-row-title">Trẻ em</div>
+                            </div>
+                            <div class="guest-stepper">
+                              <button type="button" class="guest-stepper-btn" data-counter-action="decrement" data-counter-target="children" aria-label="Giảm số trẻ em">-</button>
+                              <span class="guest-stepper-value" data-guest-count="children">0</span>
+                              <button type="button" class="guest-stepper-btn" data-counter-action="increment" data-counter-target="children" aria-label="Tăng số trẻ em">+</button>
+                            </div>
+                          </div>
+                          <div class="guest-row">
+                            <div class="guest-row-copy">
+                              <div class="guest-row-title">Phòng</div>
+                            </div>
+                            <div class="guest-stepper">
+                              <button type="button" class="guest-stepper-btn" data-counter-action="decrement" data-counter-target="rooms" aria-label="Giảm số phòng">-</button>
+                              <span class="guest-stepper-value" data-guest-count="rooms">1</span>
+                              <button type="button" class="guest-stepper-btn" data-counter-action="increment" data-counter-target="rooms" aria-label="Tăng số phòng">+</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 				            </div>
 		              </div>
 	        			</div>
 	        			<div class="col-md d-flex">
 	        				<div class="form-group d-flex align-self-stretch">
-			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block" data-home-booking-search-submit><span>Tìm kiếm</span></a>
+			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block" data-home-booking-search-submit><span class="booking-submit-content"><i class="ion-ios-search"></i>Tìm kiếm</span></a>
 			            </div>
 	        			</div>
 	        		</div>

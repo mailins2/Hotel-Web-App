@@ -20,7 +20,7 @@ class KhoKhuyenMaiController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'MaKM' => 'required|exists:KhuyenMai,MaKM',
+            'MaKM' => 'required|string|max:10|exists:KhuyenMai,MaKM',
             'MaKH' => 'required|exists:KhachHang,MaKH',
             'TrangThai' => 'nullable|integer|in:0,1' // 0: Chưa dùng, 1: Đã dùng
         ]);
@@ -58,7 +58,7 @@ class KhoKhuyenMaiController extends Controller
     public function updateStatus(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'MaKM' => 'required',
+            'MaKM' => 'required|string|max:10',
             'MaKH' => 'required',
             'TrangThai' => 'required|integer'
         ]);

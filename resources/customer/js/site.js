@@ -397,15 +397,16 @@ const enhanceBookingForm = () => {
 
     const bookingColumns = bookingForm.querySelectorAll(".row > .col-md");
 
-    if (bookingColumns.length < 5) {
+    if (bookingColumns.length < 4) {
         return;
     }
 
-    const roomColumn = bookingColumns[2];
-    const guestColumn = bookingColumns[3];
-    const searchColumn = bookingColumns[4];
+    const hasRoomColumn = bookingColumns.length >= 5;
+    const roomColumn = hasRoomColumn ? bookingColumns[2] : null;
+    const guestColumn = hasRoomColumn ? bookingColumns[3] : bookingColumns[2];
+    const searchColumn = hasRoomColumn ? bookingColumns[4] : bookingColumns[3];
 
-    roomColumn.classList.add("booking-room-field");
+    roomColumn?.classList.add("booking-room-field");
 
     const checkinLabel = bookingColumns[0].querySelector("label");
     const checkoutLabel = bookingColumns[1].querySelector("label");
@@ -436,7 +437,7 @@ const enhanceBookingForm = () => {
 
     const guestWrap = guestColumn.querySelector(".wrap");
 
-    if (guestWrap) {
+    if (guestWrap && !guestWrap.querySelector("[data-guest-picker]")) {
         guestWrap.innerHTML = `
             <label for="guest-trigger">Số khách</label>
             <div class="booking-guests" data-guest-picker>

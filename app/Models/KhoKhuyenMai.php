@@ -12,6 +12,7 @@ class KhoKhuyenMai extends Model
     
     // Thêm dòng này vì bảng không có cột 'id' tăng tự động
     public $incrementing = false; 
+    protected $keyType = 'string';
     protected $primaryKey = ['MaKM', 'MaKH'];
     
     public function khachHang()

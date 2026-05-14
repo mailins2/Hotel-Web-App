@@ -3,7 +3,13 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountManagementController;
 use App\Http\Controllers\CustomerManagementController;
+use App\Models\DatPhong;
 use App\Models\DichVu;
+use App\Models\HoaDon;
+use App\Models\KhachHang;
+use App\Models\Phong;
+use App\Models\ThanhToan;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,6 +62,37 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 ],
             ],
         ];
+        $authAccount = session('auth_account', []);
+        $customerId = $authAccount['MaKH'] ?? null;
+
+        if (!$customerId && !empty($authAccount['MaTK'])) {
+            $customerId = \App\Models\KhachHang::where('MaTK', $authAccount['MaTK'])->value('MaKH');
+        }
+
+        $serviceBookingOptions = collect();
+
+        if ($customerId) {
+            $serviceBookingOptions = DatPhong::with('chiTietDatPhong.phong')
+                ->where('MaKH', $customerId)
+                ->where('TinhTrang', DatPhong::CHECKED_IN)
+                ->orderByDesc('MaDatPhong')
+                ->get()
+                ->map(function (DatPhong $booking) {
+                    $roomNumbers = $booking->chiTietDatPhong
+                        ->map(fn ($detail) => $detail->phong?->SoPhong)
+                        ->filter()
+                        ->values()
+                        ->implode(', ');
+
+                    return [
+                        'id' => (string) $booking->MaDatPhong,
+                        'label' => $roomNumbers
+                            ? "#{$booking->MaDatPhong} - {$roomNumbers}"
+                            : "#{$booking->MaDatPhong}",
+                    ];
+                })
+                ->values();
+        }
 
         return view('customer.services', [
             'servicesByType' => $services->groupBy('LoaiDV'),
@@ -66,6 +103,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 'type' => (string) $service->LoaiDV,
                 'price' => (float) $service->GiaDV,
             ])->values(),
+            'serviceBookingOptions' => $serviceBookingOptions,
         ]);
     })->name('services');
     Route::view('/rooms', 'customer.rooms')->name('rooms');
@@ -329,15 +367,112 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
 */
 
 Route::prefix('reception')->name('reception.')->group(function () {
-    Route::view('/dashboard', 'receptionist.dashboard')->name('dashboard');
-    Route::view('/booking-details/{bookingId}', 'receptionist.booking-detail')->name('booking-detail');
+    Route::get('/dashboard', function () {
+        $today = Carbon::today()->toDateString();
 
-    Route::view('/customers', 'receptionist.customers.index')->name('customers.index');
+        $rooms = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong.datPhong' => function ($query) use ($today) {
+                $query->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [
+                        DatPhong::HOLD,
+                        DatPhong::CONFIRMED,
+                        DatPhong::CHECKED_IN,
+                    ]);
+            },
+            'chiTietDatPhong.datPhong.khachHang',
+        ])
+            ->orderBy('SoPhong')
+            ->get()
+            ->map(function (Phong $room) {
+                $activeBookings = $room->chiTietDatPhong
+                    ->pluck('datPhong')
+                    ->filter()
+                    ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
+                        DatPhong::CHECKED_IN => 3,
+                        DatPhong::CONFIRMED => 2,
+                        DatPhong::HOLD => 1,
+                        default => 0,
+                    });
+
+                $activeBooking = $activeBookings->first();
+                $status = match (true) {
+                    (int) $room->TinhTrang === 3 => 'cleaning',
+                    $activeBookings->contains(fn ($booking) => (int) $booking->TinhTrang === DatPhong::CHECKED_IN) => 'using',
+                    $activeBookings->contains(fn ($booking) => in_array((int) $booking->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
+                    default => 'empty',
+                };
+
+                $statusLabel = [
+                    'empty' => 'Trống',
+                    'booked' => 'Đã đặt',
+                    'using' => 'Đang sử dụng',
+                    'cleaning' => 'Đang dọn dẹp',
+                ][$status];
+
+                $roomNumber = (string) $room->SoPhong;
+                preg_match('/\d+/', $roomNumber, $matches);
+                $floor = isset($matches[0]) ? (int) substr($matches[0], 0, 1) : 0;
+
+                return [
+                    'id' => $room->MaPhong,
+                    'number' => $roomNumber,
+                    'floor' => $floor > 0 ? $floor : 'Khác',
+                    'type' => $room->loaiPhong?->TenLoaiPhong,
+                    'status' => $status,
+                    'statusLabel' => $statusLabel,
+                    'bookingId' => $activeBooking?->MaDatPhong,
+                    'guestName' => $activeBooking?->khachHang?->TenKH,
+                ];
+            });
+
+        return view('receptionist.dashboard', [
+            'roomFloors' => $rooms->groupBy('floor')->sortKeys(),
+        ]);
+    })->name('dashboard');
+    Route::get('/booking-details/{bookingId}', function ($bookingId) {
+        $booking = DatPhong::with([
+            'khachHang.taiKhoan',
+            'chiTietDatPhong.phong.loaiPhong.bangGias',
+            'hoaDon.khuyenMai',
+            'hoaDon.thanhToans',
+            'hoaDon.chiTietHoaDons.loaiPhong',
+            'hoaDon.chiTietHoaDons.suDung.dichVu',
+            'hoaDon.chiTietHoaDons.denBu',
+            'suDungDichVu.dichVu',
+        ])->findOrFail($bookingId);
+
+        return view('receptionist.booking-detail', [
+            'booking' => $booking,
+        ]);
+    })->name('booking-detail');
+
+    Route::get('/customers', function () {
+        $customers = KhachHang::with('taiKhoan')
+            ->orderByDesc('MaKH')
+            ->get();
+
+        return view('receptionist.customers.index', [
+            'customers' => $customers,
+        ]);
+    })->name('customers.index');
     Route::view('/customers/create', 'receptionist.customers.form')->name('customers.create');
     Route::view('/customers/{customerId}/edit', 'receptionist.customers.form')->name('customers.edit');
     Route::view('/customers/{customerId}', 'receptionist.customers.show')->name('customers.show');
 
-    Route::view('/bookings', 'receptionist.bookings.index')->name('bookings.index');
+    Route::get('/bookings', function () {
+        $bookings = DatPhong::with([
+            'khachHang',
+            'chiTietDatPhong.phong.loaiPhong',
+        ])
+            ->orderByDesc('MaDatPhong')
+            ->get();
+
+        return view('receptionist.bookings.index', [
+            'bookings' => $bookings,
+        ]);
+    })->name('bookings.index');
     Route::view('/bookings/create', 'receptionist.bookings.form')->name('bookings.create');
     Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
     Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
@@ -346,10 +481,32 @@ Route::prefix('reception')->name('reception.')->group(function () {
     Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
     Route::view('/check-ins/create', 'receptionist.check-in-form')->name('check-ins.create');
     Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
-    Route::view('/payments', 'receptionist.payments.index')->name('payments.index');
+    Route::get('/payments', function () {
+        $payments = ThanhToan::with([
+            'hoaDon.datPhong.khachHang',
+        ])
+            ->orderByDesc('MaTT')
+            ->get();
+
+        return view('receptionist.payments.index', [
+            'payments' => $payments,
+        ]);
+    })->name('payments.index');
     Route::view('/payments/create', 'receptionist.payments.form')->name('payments.create');
     Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
-    Route::view('/invoices', 'receptionist.invoices.index')->name('invoices.index');
+    Route::get('/invoices', function () {
+        $invoices = HoaDon::with([
+            'datPhong.khachHang',
+            'nhanVien',
+            'thanhToans',
+        ])
+            ->orderByDesc('MaHD')
+            ->get();
+
+        return view('receptionist.invoices.index', [
+            'invoices' => $invoices,
+        ]);
+    })->name('invoices.index');
     Route::view('/invoices/{invoiceId}/edit', 'receptionist.invoices.form')->name('invoices.edit');
     Route::view('/invoices/{invoiceId}', 'receptionist.invoices.show')->name('invoices.show');
 });

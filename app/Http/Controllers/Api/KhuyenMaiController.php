@@ -7,6 +7,7 @@ use App\Models\KhuyenMai;
 use App\Services\Guards\KhuyenMaiSoftDeleteGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class KhuyenMaiController extends Controller
@@ -55,23 +56,34 @@ class KhuyenMaiController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'TenKM' => 'required|string|max:100',
-            'MoTa' => 'nullable|string|max:200',
-            'Diem' => 'required|integer|min:0',
-            'NgayBatDau' => 'required|date',
-            'NgayKetThuc' => 'required|date|after_or_equal:NgayBatDau',
-            'PhanTramGiamGia' => 'required|numeric|between:0,100',
+            'MaKM'             => 'sometimes|required|string|max:10|unique:KhuyenMai,MaKM',
+            'TenKM'            => 'required|string|max:100',
+            'MoTa'             => 'nullable|string|max:200',
+            'Diem'             => 'required|integer|min:0', // Điểm cần để đổi hoặc điểm tặng
+            'NgayBatDau'       => 'required|date',
+            'NgayKetThuc'      => 'required|date|after_or_equal:NgayBatDau',
+            'PhanTramGiamGia'  => 'required|numeric|between:0,100',
         ]);
 
         if ($validator->fails()) {
             return $this->error('Dữ liệu không hợp lệ', 422, $validator->errors()->toArray());
         }
 
-        $khuyenMai = KhuyenMai::create($request->all());
+        $payload = $validator->validated();
+        $khuyenMai = DB::transaction(function () use ($payload) {
+            $payload['MaKM'] = $payload['MaKM'] ?? $this->generatePromotionId();
 
-        return $this->success($khuyenMai, 'Tạo khuyến mãi thành công', 201);
+            return KhuyenMai::create($payload);
+        });
+
+        return response()->json([
+            'message' => 'Tạo khuyến mãi thành công',
+            'data' => $khuyenMai
+        ], 201);
     }
 
+    // 3. Xem chi tiết 1 khuyến mãi
+    //get /api/khuyen-mai/id
     public function show($id)
     {
         $khuyenMai = KhuyenMai::with('khoKhuyenMai')->find($id);
@@ -177,5 +189,22 @@ class KhuyenMaiController extends Controller
             ->get();
 
         return $this->success($active, 'Lấy danh sách khuyến mãi còn hạn thành công');
+    }
+
+    private function generatePromotionId(): string
+    {
+        $latestId = KhuyenMai::where('MaKM', 'like', 'KM%')
+            ->orderByRaw('CAST(SUBSTRING(MaKM, 3) AS UNSIGNED) DESC')
+            ->lockForUpdate()
+            ->value('MaKM');
+
+        $nextNumber = $latestId ? ((int) substr($latestId, 2)) + 1 : 1;
+
+        do {
+            $candidate = 'KM' . str_pad((string) $nextNumber, 8, '0', STR_PAD_LEFT);
+            $nextNumber++;
+        } while (KhuyenMai::whereKey($candidate)->exists());
+
+        return $candidate;
     }
 }
