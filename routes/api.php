@@ -45,7 +45,8 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
 Route::apiResource('phong', PhongController::class);
 
-
+// Lịch sử đặt phòng của khách hàng
+Route::get('/khach-hang/{maKH}/dat-phong', [DatPhongController::class, 'lichSuDatPhong']);
 Route::post('dat-phong/{id}/change-room', [DatPhongController::class, 'changeRoom']);
 Route::post('dat-phong/{id}/add-room', [DatPhongController::class, 'addRoom']);
 Route::delete('dat-phong/{id}/remove-room/{maPhong}', [DatPhongController::class, 'removeRoom']);
@@ -100,8 +101,7 @@ Route::post('/vnpay-payment', [VnPayPaymentController::class, 'createPayment']);
 Route::get('/vnpay-ipn', [VnPayPaymentController::class, 'ipn']);
 Route::get('/vnpay-return', [VnPayPaymentController::class, 'return']);
 
-// route đăng ký tài khoản khách hàng qua mobile app
-
+// route mobile app
 
 // Auth Mobile
 Route::post('/mobile/login', [AuthMobileController::class, 'login']);
@@ -113,3 +113,19 @@ Route::get('/mobile/districts/{provinceCode}', [AuthMobileController::class, 'ge
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mobile/logout', [AuthMobileController::class, 'logout']);
 });
+
+Route::get('/vnpay/check-status/{txnRef}', function ($txnRef) {
+    $mapping = Cache::get("vnpay:txn:{$txnRef}");
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'txn_ref' => $txnRef,
+            'paid' => $mapping['paid'] ?? false,
+            'paid_at' => $mapping['paid_at'] ?? null,
+            'amount' => $mapping['amount'] ?? 0,
+        ],
+    ]);
+});
+// Thêm dòng này vào sau các route của DatPhongController
+Route::post('/dat-phong/{id}/cancel', [DatPhongController::class, 'cancel']);

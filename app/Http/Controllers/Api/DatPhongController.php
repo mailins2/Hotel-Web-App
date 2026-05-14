@@ -655,4 +655,85 @@ class DatPhongController extends Controller
 
         return $this->success(null, 'Đã xóa phòng');
     }
+
+    /**
+     * Lấy lịch sử đặt phòng của khách hàng
+     * GET /api/khach-hang/{maKH}/dat-phong
+     */
+    public function lichSuDatPhong($maKH)
+    {
+        $datPhongs = DatPhong::with([
+                'chiTietDatPhong.phong.loaiPhong',
+                'hoaDon.thanhToans',
+            ])
+            ->where('MaKH', $maKH)
+            ->orderBy('NgayDat', 'desc')
+            ->get()
+            ->map(function ($dp) {
+                // Tính tổng tiền từ hóa đơn
+                $tongTien = 0;
+                $daThanhToan = 0;
+                $trangThaiHD = null;
+                
+                if ($dp->hoaDon) {
+                    $tongTien = (float) $dp->hoaDon->TongTien;
+                    $daThanhToan = (float) $dp->hoaDon->DaThanhToan;
+                    $trangThaiHD = (int) $dp->hoaDon->TrangThai;
+                }
+
+                return [
+                    'MaDatPhong' => $dp->MaDatPhong,
+                    'MaKH' => $dp->MaKH,
+                    'NgayDat' => $dp->NgayDat,
+                    'NgayNhanPhong' => $dp->NgayNhanPhong,
+                    'NgayTraPhong' => $dp->NgayTraPhong,
+                    'SoLuong' => $dp->SoLuong,
+                    'TinhTrang' => (int) $dp->TinhTrang,
+                    'TinhTrangText' => $this->getTinhTrangText($dp->TinhTrang),
+                    'hoa_don' => [
+                        'MaHD' => $dp->hoaDon->MaHD ?? null,
+                        'TongTien' => $tongTien,
+                        'DaThanhToan' => $daThanhToan,
+                        'ConLai' => $tongTien - $daThanhToan,
+                        'TrangThai' => $trangThaiHD,
+                        'TrangThaiText' => $this->getTrangThaiHDText($trangThaiHD),
+                    ],
+                    'phongs' => $dp->chiTietDatPhong->map(function ($ct) {
+                        return [
+                            'MaPhong' => $ct->phong->MaPhong,
+                            'SoPhong' => $ct->phong->SoPhong,
+                            'TenLoaiPhong' => $ct->phong->loaiPhong->TenLoaiPhong ?? '',
+                            'GiaPhong' => $ct->phong->loaiPhong->bangGias->first()->GiaPhong ?? 0,
+                        ];
+                    })->values(),
+                    'tongPhong' => $dp->chiTietDatPhong->count(),
+                    'soDem' => Carbon::parse($dp->NgayNhanPhong)->diffInDays(Carbon::parse($dp->NgayTraPhong)),
+                ];
+            });
+
+        return $this->success($datPhongs, 'Lấy lịch sử đặt phòng thành công');
+    }
+
+    private function getTinhTrangText($tinhTrang)
+    {
+        return match ((int) $tinhTrang) {
+            0 => 'Chờ xác nhận',
+            1 => 'Đã xác nhận',
+            2 => 'Đang ở',
+            3 => 'Đã trả phòng',
+            4 => 'Đã hủy',
+            default => 'Không xác định',
+        };
+    }
+
+    private function getTrangThaiHDText($trangThai)
+    {
+        return match ((int) $trangThai) {
+            0 => 'Chưa thanh toán',
+            1 => 'Đã thanh toán',
+            2 => 'Đã hoàn tất',
+            3 => 'Đã hủy',
+            default => 'Không xác định',
+        };
+    }
 }

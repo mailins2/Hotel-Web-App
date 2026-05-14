@@ -346,3 +346,20 @@ Route::prefix('reception')->name('reception.')->group(function () {
     Route::view('/invoices/{invoiceId}/edit', 'receptionist.invoices.form')->name('invoices.edit');
     Route::view('/invoices/{invoiceId}', 'receptionist.invoices.show')->name('invoices.show');
 });
+//==================
+Route::get('/payment/vnpay-return', function (Request $request) {
+    $status = $request->get('status', 'failed');
+    $txnRef = $request->get('txn_ref', '');
+    $redirectUrl = url('/customer/my-bookings');
+    $query = http_build_query([
+        'vnpay' => $status,
+        'txn_ref' => $txnRef,
+    ]);
+
+    return view('payment.vnpay-result', [
+        'status' => $status,
+        'txnRef' => $txnRef,
+        'redirectUrl' => $redirectUrl . '?' . $query,
+        'deepLink' => 'peachvalley://vnpay-result?status=' . $status . '&txn_ref=' . $txnRef,
+    ]);
+});
