@@ -17,6 +17,8 @@
       $servicesByType = $servicesByType ?? collect();
       $serviceGroups = $serviceGroups ?? [];
       $serviceOptions = collect($serviceOptions ?? []);
+      $serviceBookingOptions = collect($serviceBookingOptions ?? []);
+      $isCustomerLoggedIn = session()->has('auth_account');
 
       $serviceImageUrl = function ($service, string $fallback) {
           $url = $service->hinhs->first()->Url ?? $fallback;
@@ -96,10 +98,13 @@
                   <div class="desc p-4">
                     <div class="d-md-flex text align-items-start">
                       <h3><span>{{ $service->TenDV }}</span></h3>
-                      <span class="price">{{ $service->GiaDVFormatted }}</span>
+                      @if($isCustomerLoggedIn)
+                        <span class="price">{{ $service->GiaDVFormatted }}</span>
+                      @endif
                     </div>
                     <div class="d-block">
                       <p class="service-type-label">{{ $service->LoaiDVText }}</p>
+                      @if($isCustomerLoggedIn)
                       <button
                         class="service-booking-trigger"
                         type="button"
@@ -109,6 +114,7 @@
                       >
                         Đặt dịch vụ
                       </button>
+                      @endif
                     </div>
                   </div>
                 </div>
@@ -125,10 +131,12 @@
       </section>
     @endforeach
 
+    @if($isCustomerLoggedIn)
     <div
       class="service-booking-modal"
       data-service-booking-modal
       data-service-options="{{ $serviceOptions->toJson() }}"
+      data-service-bookings="{{ $serviceBookingOptions->toJson() }}"
       hidden
     >
       <div class="service-booking-backdrop" data-service-booking-close></div>
@@ -149,8 +157,9 @@
 
           <label for="service_booking_room">Số phòng</label>
           <select id="service_booking_room" name="MaDatPhong" required>
-            <option value="PV9010">A101, A102</option>
-            <option value="PV9011">D401</option>
+            @foreach($serviceBookingOptions as $bookingOption)
+              <option value="{{ $bookingOption['id'] }}">{{ $bookingOption['label'] }}</option>
+            @endforeach
           </select>
 
           <label for="service_booking_type">Loại dịch vụ</label>
@@ -199,6 +208,22 @@
         </form>
       </div>
     </div>
+    @endif
+
+    @if($isCustomerLoggedIn)
+    <div class="service-booking-warning-modal" data-service-booking-warning-modal hidden>
+      <div class="service-booking-warning-backdrop" data-service-booking-warning-close></div>
+      <div class="service-booking-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="service_booking_warning_title">
+        <button class="service-booking-warning-close" type="button" aria-label="Đóng thông báo" data-service-booking-warning-close>&times;</button>
+        <div class="service-booking-warning-icon">
+          <span class="ion-ios-alert"></span>
+        </div>
+        <h2 id="service_booking_warning_title">Chưa có booking hợp lệ</h2>
+        <p>Bạn cần có đặt phòng đang lưu trú để đặt dịch vụ.</p>
+        <button class="service-booking-warning-action" type="button" data-service-booking-warning-close>Đã hiểu</button>
+      </div>
+    </div>
+    @endif
 
     @include('customer.partials.footer')
 
@@ -331,12 +356,20 @@
           const hourSelect = modal.querySelector('[data-service-hour]');
           const minuteSelect = modal.querySelector('[data-service-minute]');
           const timeInput = modal.querySelector('[data-service-time]');
+          const warningModal = document.querySelector('[data-service-booking-warning-modal]');
           let services = [];
+          let activeBookings = [];
 
           try {
             services = JSON.parse(modal.dataset.serviceOptions || '[]');
           } catch (error) {
             services = [];
+          }
+
+          try {
+            activeBookings = JSON.parse(modal.dataset.serviceBookings || '[]');
+          } catch (error) {
+            activeBookings = [];
           }
 
           const pad = (value) => String(value).padStart(2, '0');
@@ -388,7 +421,43 @@
             });
           };
 
+          const openWarningModal = () => {
+            if (!warningModal) {
+              alert('Bạn cần có đặt phòng đang lưu trú hợp lệ để đặt dịch vụ.');
+              return;
+            }
+
+            warningModal.hidden = false;
+            window.requestAnimationFrame(() => warningModal.classList.add('is-open'));
+          };
+
+          const closeWarningModal = () => {
+            if (!warningModal) {
+              return;
+            }
+
+            warningModal.classList.remove('is-open');
+            window.setTimeout(() => {
+              warningModal.hidden = true;
+            }, 160);
+          };
+
           const openModal = (trigger) => {
+            if (!activeBookings.length) {
+              openWarningModal();
+              return;
+            }
+
+            if (false) {
+              if (bookingAlert) {
+                bookingAlert.hidden = false;
+                bookingAlert.classList.add('is-open');
+              } else {
+                alert('Bạn cần có đặt phòng đang lưu trú hợp lệ để đặt dịch vụ.');
+              }
+              return;
+            }
+
             typeSelect.value = trigger.dataset.serviceType || typeSelect.value;
             renderServiceOptions(trigger.dataset.serviceId || '');
             syncServiceTime();
@@ -413,6 +482,10 @@
             button.addEventListener('click', closeModal);
           });
 
+          document.querySelectorAll('[data-service-booking-warning-close]').forEach((button) => {
+            button.addEventListener('click', closeWarningModal);
+          });
+
           typeSelect.addEventListener('change', () => renderServiceOptions());
 
           form?.addEventListener('submit', (event) => {
@@ -430,6 +503,10 @@
           });
 
           document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && warningModal && !warningModal.hidden) {
+              closeWarningModal();
+            }
+
             if (event.key === 'Escape' && modal.classList.contains('is-open')) {
               closeModal();
             }

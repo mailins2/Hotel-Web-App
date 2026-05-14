@@ -91,6 +91,32 @@
             <span class="icon ion-ios-search"></span>
             Tìm kiếm
           </button>
+          <div class="room-filter-toolbar search-summary-filters" data-room-filter-toolbar>
+            <div class="room-filter-field room-filter-search">
+              <label for="roomFilterSearch">Tìm phòng</label>
+              <div class="room-filter-input-wrap">
+                <span class="icon ion-ios-search"></span>
+                <input
+                  type="search"
+                  id="roomFilterSearch"
+                  data-room-filter-search
+                  placeholder="Tên phòng, mô tả, tiện nghi"
+                  autocomplete="off"
+                >
+              </div>
+            </div>
+            <div class="room-filter-field">
+              <label for="roomFilterSort">Sắp xếp giá</label>
+              <select id="roomFilterSort" data-room-filter-sort>
+                <option value="">Mặc định</option>
+                <option value="price-asc">Giá tăng dần</option>
+                <option value="price-desc">Giá giảm dần</option>
+              </select>
+            </div>
+            <button type="button" class="room-filter-reset" data-room-filter-reset>
+              Xóa lọc
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -205,8 +231,13 @@
         const bookingList = document.querySelector('[data-booking-list]');
         const bookingTotal = document.querySelector('[data-booking-total]');
         const bookingContinue = document.querySelector('[data-booking-continue]');
+        const roomFilterSearch = document.querySelector('[data-room-filter-search]');
+        const roomFilterSort = document.querySelector('[data-room-filter-sort]');
+        const roomFilterReset = document.querySelector('[data-room-filter-reset]');
         const fallbackImage = '{{ asset("customers/images/room-6.jpg") }}';
+        const assetBaseUrl = @json(rtrim(asset(''), '/') . '/');
         let allRoomTypes = [];
+        let availableRoomTypes = [];
         let roomsData = [];
         const selections = new Map();
 
@@ -218,10 +249,21 @@
           "'": '&#039;',
         }[char]));
         const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
-        const getImageUrl = (image) => image?.Url || image?.url || image?.DuongDan || image?.duong_dan || '';
+        const normalizeImageUrl = (value) => {
+          const url = String(value || '').trim();
+          if (!url) return '';
+          if (/^(https?:)?\/\//i.test(url) || /^(data|blob):/i.test(url) || url.startsWith('/')) return url;
+          return `${assetBaseUrl}${url.replace(/^public\//i, '').replace(/^\/+/, '')}`;
+        };
+        const getImageUrl = (image) => normalizeImageUrl(
+          image?.Url || image?.url || image?.DuongDan || image?.duong_dan || image?.path || image?.src || ''
+        );
         const getImages = (room) => {
-          const images = Array.isArray(room.hinhs) ? room.hinhs.map(getImageUrl).filter(Boolean) : [];
-          return images.length ? images : [fallbackImage];
+          const rawImages = room.hinhs || room.hinhAnhs || room.hinh_anhs || room.images || [];
+          const rows = Array.isArray(rawImages) ? rawImages : [rawImages];
+          const images = rows.map((image) => (typeof image === 'string' ? normalizeImageUrl(image) : getImageUrl(image))).filter(Boolean);
+          const uniqueImages = [...new Set(images)];
+          return uniqueImages.length ? uniqueImages : [fallbackImage];
         };
         const getPriceForSeason = (room, season) => {
           const priceRows = room.bangGias || room.bang_gias || [];
@@ -246,7 +288,7 @@
             }
           });
         };
-        const roomTypesCacheKey = 'peachvalley:room-types:v1';
+        const roomTypesCacheKey = 'peachvalley:room-types:v2';
         const roomCacheTtlMs = 10 * 60 * 1000;
         const jsonHeaders = {
           Accept: 'application/json',
@@ -680,25 +722,79 @@
           return room.MaLoaiPhong || room.ma_loai_phong || room.id;
         }
 
-        function renderRoomCards(rooms) {
-          roomsData = rooms.map((room) => {
-            const id = getRoomTypeId(room);
-            const name = room.TenLoaiPhong || room.ten_loai_phong || 'Phòng';
-            const description = room.Mota || room.mo_ta || 'Phòng thoải mái, hiện đại và đầy đủ tiện nghi.';
-            const adults = Number(room.NguoiLon ?? room.nguoi_lon ?? 0);
-            const children = Number(room.TreEm ?? room.tre_em ?? 0);
-            const capacity = Math.max((Number.isFinite(adults) ? adults : 0) + (Number.isFinite(children) ? children : 0), 1);
-            const price = getNightlyPrice(room);
-            const images = getImages(room);
-            const roomCount = getRoomCount(room);
-            const amenities = room.tienNghis || room.tien_nghis || [];
-            const amenitiesNames = Array.isArray(amenities) ? amenities.map((item) => item.TenTienNghi || item.ten_tien_nghi).filter(Boolean) : [];
-            return { id, name, description, adults, children, capacity, price, images, roomCount, amenitiesNames };
+        function normalizeRoomType(room) {
+          const id = getRoomTypeId(room);
+          const name = room.TenLoaiPhong || room.ten_loai_phong || 'Phòng';
+          const description = room.Mota || room.mo_ta || 'Phòng thoải mái, hiện đại và đầy đủ tiện nghi.';
+          const adults = Number(room.NguoiLon ?? room.nguoi_lon ?? 0);
+          const children = Number(room.TreEm ?? room.tre_em ?? 0);
+          const amenities = room.tienNghis || room.tien_nghis || [];
+          const amenitiesNames = Array.isArray(amenities) ? amenities.map((item) => item.TenTienNghi || item.ten_tien_nghi).filter(Boolean) : [];
+          const capacity = Math.max((Number.isFinite(adults) ? adults : 0) + (Number.isFinite(children) ? children : 0), 1);
+
+          return {
+            id,
+            name,
+            description,
+            adults,
+            children,
+            capacity,
+            price: getNightlyPrice(room),
+            images: getImages(room),
+            roomCount: getRoomCount(room),
+            amenitiesNames,
+          };
+        }
+
+        function getRoomFilterValues() {
+          return {
+            keyword: String(roomFilterSearch?.value || '').trim().toLowerCase(),
+            sort: roomFilterSort?.value || '',
+          };
+        }
+
+        function getVisibleRoomTypes() {
+          const filters = getRoomFilterValues();
+          const normalizedRooms = availableRoomTypes.map((room) => ({
+            source: room,
+            view: normalizeRoomType(room),
+          }));
+
+          const filteredRooms = normalizedRooms.filter(({ view }) => {
+            const searchableText = [
+              view.name,
+              view.description,
+              ...view.amenitiesNames,
+            ].join(' ').toLowerCase();
+            const matchesKeyword = !filters.keyword || searchableText.includes(filters.keyword);
+
+            return matchesKeyword;
           });
+
+          if (filters.sort === 'price-asc') {
+            filteredRooms.sort((left, right) => left.view.price - right.view.price);
+          }
+
+          if (filters.sort === 'price-desc') {
+            filteredRooms.sort((left, right) => right.view.price - left.view.price);
+          }
+
+          return filteredRooms.map(({ source }) => source);
+        }
+
+        function applyRoomDisplayFilters() {
+          renderRoomCards(getVisibleRoomTypes());
+        }
+
+        function renderRoomCards(rooms) {
+          roomsData = rooms.map(normalizeRoomType);
           resultsContainer.innerHTML = '';
 
           if (roomsData.length === 0) {
-            resultsContainer.innerHTML = '<div class="room-results-loading">Không có loại phòng nào còn trống theo tiêu chí bạn chọn.</div>';
+            const emptyMessage = availableRoomTypes.length > 0
+              ? 'Không có loại phòng phù hợp với bộ lọc bạn chọn.'
+              : 'Không có loại phòng nào còn trống theo tiêu chí bạn chọn.';
+            resultsContainer.innerHTML = `<div class="room-results-loading">${emptyMessage}</div>`;
             renderBookingSummary();
             return;
           }
@@ -895,7 +991,7 @@
               availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
             });
 
-            const availableRoomTypes = allRoomTypes
+            const searchedRoomTypes = allRoomTypes
               .map((roomType) => {
                 const roomTypeId = getRoomTypeId(roomType);
                 const availableCount = availableCounts.get(String(roomTypeId)) || 0;
@@ -905,9 +1001,10 @@
               })
               .filter(Boolean);
 
-            renderRoomCards(availableRoomTypes);
+            availableRoomTypes = searchedRoomTypes;
+            renderRoomCards(getVisibleRoomTypes());
 
-            if (availableRoomTypes.length === 0 && shouldAlert) {
+            if (searchedRoomTypes.length === 0 && shouldAlert) {
               alert('Không có phòng trống phù hợp với ngày và số khách bạn chọn.');
             }
           } catch (error) {
@@ -937,6 +1034,13 @@
         });
 
         searchBtn?.addEventListener('click', () => filterRooms(true));
+        roomFilterSearch?.addEventListener('input', applyRoomDisplayFilters);
+        roomFilterSort?.addEventListener('change', applyRoomDisplayFilters);
+        roomFilterReset?.addEventListener('click', () => {
+          if (roomFilterSearch) roomFilterSearch.value = '';
+          if (roomFilterSort) roomFilterSort.value = '';
+          applyRoomDisplayFilters();
+        });
         bookingContinue?.addEventListener('click', (event) => {
           if (bookingContinue.getAttribute('aria-disabled') === 'true') {
             event.preventDefault();
