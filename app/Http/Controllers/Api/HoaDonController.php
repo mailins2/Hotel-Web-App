@@ -149,6 +149,7 @@ class HoaDonController extends Controller
     {
         $hoaDon = HoaDon::with([
             'datPhong',
+            'datPhong.chiTietDatPhong.phong',
             'nhanVien',
             'khuyenMai',
             'chiTietHoaDons.loaiPhong',

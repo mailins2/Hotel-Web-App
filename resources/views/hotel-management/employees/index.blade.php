@@ -88,7 +88,10 @@
                         const showUrl = showUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
                         const editUrl = editUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
                         const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const accountType = mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null);
+                        const hasAccountId = employee && employee.MaTK !== undefined && employee.MaTK !== null && String(employee.MaTK).trim() !== '';
+                        const accountType = hasAccountId
+                            ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null)
+                            : '--';
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
@@ -126,7 +129,10 @@
 
                     const filtered = employees.filter(function (employee) {
                         const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const accountType = mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null).toLowerCase();
+                        const hasAccountId = employee && employee.MaTK !== undefined && employee.MaTK !== null && String(employee.MaTK).trim() !== '';
+                        const accountType = hasAccountId
+                            ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null).toLowerCase()
+                            : '';
 
                         return !keyword
                             || String(employee && employee.MaNV ? employee.MaNV : '').toLowerCase().includes(keyword)

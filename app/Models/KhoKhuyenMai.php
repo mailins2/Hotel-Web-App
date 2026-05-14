@@ -20,6 +20,6 @@ class KhoKhuyenMai extends Model
     }
     public function khuyenMai()
     {
-        return $this->belongsTo(KhuyenMai::class, 'MaKM');
+        return $this->belongsTo(KhuyenMai::class, 'MaKM')->withTrashed();
     }
 }

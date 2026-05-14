@@ -4,29 +4,35 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Phong;
-use Illuminate\Http\Request;
+use App\Services\Guards\PhongSoftDeleteGuard;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PhongController extends Controller
 {
-    private function success($data = null, $message = 'Success', $code = 200)
+    public function __construct(
+        private PhongSoftDeleteGuard $guard
+    ) {
+    }
+
+    private function success($data = null, string $message = 'Success', int $code = 200)
     {
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
         ], $code);
     }
 
-    private function error($message = 'Error', $code = 400)
+    private function error(string $message = 'Error', int $code = 400)
     {
         return response()->json([
             'success' => false,
-            'message' => $message
+            'message' => $message,
         ], $code);
     }
 
-    // GET /api/phong
     public function index(Request $request)
     {
         $today = Carbon::today()->toDateString();
@@ -66,6 +72,13 @@ class PhongController extends Controller
         return $this->success($data, 'Lấy danh sách phòng thành công');
     }
 
+    public function trash()
+    {
+        $data = Phong::onlyTrashed()->with('loaiPhong')->get();
+
+        return $this->success($data, 'Lấy danh sách phòng trong thùng rác thành công');
+    }
+
     private function resolveTinhTrangHienTai(Phong $phong): int
     {
         if (in_array((int) $phong->TinhTrang, [2, 3], true)) {
@@ -101,13 +114,15 @@ class PhongController extends Controller
             ->first();
     }
 
-    // POST /api/phong
     public function store(Request $request)
     {
         $data = $request->validate([
             'SoPhong' => 'required|unique:Phong,SoPhong',
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
-            'TinhTrang' => 'required|integer'
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
+            'TinhTrang' => 'required|integer',
         ]);
 
         $phong = Phong::create($data);
@@ -115,7 +130,6 @@ class PhongController extends Controller
         return $this->success($phong, 'Tạo phòng thành công', 201);
     }
 
-    // GET /api/phong/{id}
     public function show($id)
     {
         $today = Carbon::today()->toDateString();
@@ -145,7 +159,6 @@ class PhongController extends Controller
         return $this->success($phong, 'Lấy chi tiết phòng thành công');
     }
 
-    // PUT /api/phong/{id}
     public function update(Request $request, $id)
     {
         $phong = Phong::find($id);
@@ -156,8 +169,11 @@ class PhongController extends Controller
 
         $data = $request->validate([
             'SoPhong' => 'required|unique:Phong,SoPhong,' . $id . ',MaPhong',
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
-            'TinhTrang' => 'required|integer'
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
+            'TinhTrang' => 'required|integer',
         ]);
 
         $phong->update($data);
@@ -165,7 +181,6 @@ class PhongController extends Controller
         return $this->success($phong, 'Cập nhật phòng thành công');
     }
 
-    // DELETE /api/phong/{id}
     public function destroy($id)
     {
         $phong = Phong::find($id);
@@ -174,17 +189,49 @@ class PhongController extends Controller
             return $this->error('Không tìm thấy phòng', 404);
         }
 
+        $decision = $this->guard->canSoftDelete($phong);
+        if (!$decision['allowed']) {
+            return $this->error($decision['message'], 409);
+        }
+
         $phong->delete();
 
-        return $this->success(null, 'Xóa phòng thành công');
+        return $this->success(null, 'Đã chuyển phòng vào thùng rác');
     }
-    //=============================================================================
-    // kiểm tra phòng trống và số lượng người ở 
-    //GET /api/phong/tim-kiem?checkIn=2026-04-25&checkOut=2026-04-27&NguoiLon=2&TreEm=1
+
+    public function restore($id)
+    {
+        $phong = Phong::onlyTrashed()->with('loaiPhong')->find($id);
+
+        if (!$phong) {
+            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
+        }
+
+        $phong->restore();
+
+        return $this->success($phong->fresh(['loaiPhong']), 'Khôi phục phòng thành công');
+    }
+
+    public function forceDelete($id)
+    {
+        $phong = Phong::onlyTrashed()->find($id);
+
+        if (!$phong) {
+            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
+        }
+
+        $decision = $this->guard->canForceDelete($phong);
+        if (!$decision['allowed']) {
+            return $this->error($decision['message'], 409);
+        }
+
+        $phong->forceDelete();
+
+        return $this->success(null, 'Xóa vĩnh viễn phòng thành công');
+    }
 
     public function timKiemPhong(Request $request)
     {
-        // Validate
         $data = $request->validate([
             'checkIn' => 'required|date|after_or_equal:today',
             'checkOut' => 'required|date|after:checkIn',
@@ -205,17 +252,12 @@ class PhongController extends Controller
                 'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm'
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
-
-            // chỉ loại phòng bảo trì
             ->where('TinhTrang', '!=', 2)
-
-            // loại phòng bị trùng lịch
             ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
-                $q->whereIn('TinhTrang', [0,1,2]) // HOLD + CONFIRM + ĐANG Ở
-                ->where('NgayNhanPhong', '<', $checkOut)
-                ->where('NgayTraPhong', '>', $checkIn);
+                $q->whereIn('TinhTrang', [0, 1, 2])
+                    ->where('NgayNhanPhong', '<', $checkOut)
+                    ->where('NgayTraPhong', '>', $checkIn);
             })
-
             ->get();
 
         $phongs = $phongs

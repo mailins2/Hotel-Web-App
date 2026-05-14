@@ -17,7 +17,7 @@ class ChiTietDatPhong extends Model
 
     public function phong()
     {
-        return $this->belongsTo(Phong::class, 'MaPhong');
+        return $this->belongsTo(Phong::class, 'MaPhong')->withTrashed();
     }
     public function datPhong()
     {

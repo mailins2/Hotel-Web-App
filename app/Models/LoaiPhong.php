@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LoaiPhong extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'LoaiPhong';
     protected $primaryKey = 'MaLoaiPhong';
     public $timestamps = false;
@@ -25,7 +28,7 @@ class LoaiPhong extends Model
     {
         return $this->hasMany(Phong::class, 'MaLoaiPhong');
     }
-        public function bangGias()
+    public function bangGias()
     {
         return $this->hasMany(BangGia::class, 'MaLoaiPhong');
     }
@@ -37,7 +40,7 @@ class LoaiPhong extends Model
     {
         return $this->hasMany(Hinh::class, 'MaLoaiPhong');
     }
-        public function tienNghis()
+    public function tienNghis()
     {
         return $this->belongsToMany(
             TienNghi::class,

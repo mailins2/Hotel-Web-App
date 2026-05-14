@@ -466,7 +466,7 @@
 
                         const payload = {
                             TenLoaiPhong: roomTypeNameInput.value.trim(),
-                            Mota: roomTypeDescriptionInput.value.trim(),
+                            Mota: roomTypeDescriptionInput.value,
                             NguoiLon: Number(roomTypeAdultsInput.value),
                             TreEm: Number(roomTypeChildrenInput.value)
                         };

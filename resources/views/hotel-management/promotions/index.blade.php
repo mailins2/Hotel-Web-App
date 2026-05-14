@@ -2,6 +2,7 @@
     title="Quản lý khuyến mãi"
     subtitle="Danh sách chương trình khuyến mãi tại khách sạn"
     :create-route="route('hotel.promotions.create')"
+    :trash-route="route('hotel.promotions.trash')"
 >
     <x-slot:filters>
         <div class="col-md-3">
@@ -37,6 +38,7 @@
         id="promotion-index-config"
         data-show-url-template="{{ route('hotel.promotions.show', ['recordId' => '__PROMOTION_ID__']) }}"
         data-edit-url-template="{{ route('hotel.promotions.edit', ['recordId' => '__PROMOTION_ID__']) }}"
+        data-delete-url-template="{{ url('/api/khuyen-mai/__PROMOTION_ID__') }}"
         hidden
     ></div>
 
@@ -52,6 +54,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
+                const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
                 let promotions = [];
 
@@ -75,6 +78,10 @@
 
                     const parts = String(value).split('-');
                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+                };
+
+                const buildDeleteUrl = function (promotionId) {
+                    return String(deleteUrlTemplate || '').replace('__PROMOTION_ID__', encodeURIComponent(promotionId || ''));
                 };
 
                 const renderRows = function (rows) {
@@ -105,7 +112,12 @@
                                                 </svg>
                                             </span>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger btn-icon" title="Xóa" onclick="window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-danger btn-icon"
+                                            title="Xóa"
+                                            data-delete-promotion-id="${promotion.MaKM || ''}"
+                                        >
                                             <span class="btn-inner">
                                                 <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -162,7 +174,8 @@
                         }
 
                         const payload = await response.json();
-                        promotions = (Array.isArray(payload) ? payload : []).slice().sort(function (left, right) {
+                        const items = Array.isArray(payload && payload.data) ? payload.data : [];
+                        promotions = items.slice().sort(function (left, right) {
                             return compareRecordIdDesc(left, right, 'MaKM');
                         });
                         applyFilters();
@@ -186,6 +199,49 @@
                         applyFilters();
                     });
                 }
+
+                document.addEventListener('click', async function (event) {
+                    const deleteButton = event.target && event.target.closest
+                        ? event.target.closest('[data-delete-promotion-id]')
+                        : null;
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const promotionId = deleteButton.getAttribute('data-delete-promotion-id') || '';
+
+                    if (!promotionId || !window.confirm(`Xóa khuyến mãi ${promotionId}?`)) {
+                        return;
+                    }
+
+                    const originalDisabledState = deleteButton.disabled;
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(buildDeleteUrl(promotionId), {
+                            method: 'DELETE',
+                            headers: { Accept: 'application/json' }
+                        });
+
+                        const payload = await response.json().catch(function () {
+                            return {};
+                        });
+
+                        if (!response.ok || payload.success === false) {
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể xóa khuyến mãi.');
+                        }
+
+                        await loadPromotions();
+                    } catch (error) {
+                        window.alert(error.message);
+                    } finally {
+                        deleteButton.disabled = originalDisabledState;
+                    }
+                });
 
                 loadPromotions();
             });

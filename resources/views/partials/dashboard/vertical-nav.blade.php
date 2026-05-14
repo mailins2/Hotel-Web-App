@@ -97,7 +97,7 @@
                     <path d="M12 15.5H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
                 </svg>
             </i>
-            <span class="item-name">Tiện Nghi Phòng</span>
+            <span class="item-name">Tiện Nghi</span>
         </a>
     </li>
 

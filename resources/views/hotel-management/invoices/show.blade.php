@@ -72,7 +72,7 @@
 
     .hm-invoice-value {
         font-size: 1rem;
-        font-weight: 600;
+        font-weight: 500;
         line-height: 1.5;
         color: #0f172a;
         word-break: break-word;
@@ -151,17 +151,6 @@
         font-size: 1.25rem;
     }
 
-    .hm-invoice-summary-callout {
-        margin-top: 1rem;
-        padding: 1rem;
-        border-radius: 18px;
-        border: 1px solid #f3d7c2;
-        background: #fff5ec;
-        color: #9a3412;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-
     .hm-invoice-table-wrap {
         overflow-x: auto;
     }
@@ -170,7 +159,8 @@
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        min-width: 720px;
+        min-width: 860px;
+        table-layout: fixed;
     }
 
     .hm-invoice-table thead th {
@@ -183,6 +173,10 @@
         letter-spacing: 0.08em;
         text-transform: uppercase;
         white-space: nowrap;
+    }
+
+    .hm-invoice-table thead th.hm-invoice-th-num {
+        text-align: right;
     }
 
     .hm-invoice-table tbody td {
@@ -208,23 +202,12 @@
         font-size: 0.85rem;
         line-height: 1.45;
         color: #64748b;
+        word-break: break-word;
     }
 
-    .hm-invoice-chip {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.42rem 0.72rem;
-        border-radius: 999px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
+    .hm-invoice-room-cell {
+        min-width: 0;
     }
-
-    .hm-invoice-chip--room { background: #ede9fe; color: #6d28d9; }
-    .hm-invoice-chip--service { background: #dbeafe; color: #1d4ed8; }
-    .hm-invoice-chip--compensation { background: #fee2e2; color: #b91c1c; }
-    .hm-invoice-chip--other { background: #e2e8f0; color: #475569; }
 
     .hm-invoice-num {
         text-align: right;
@@ -382,7 +365,6 @@
                 <div class="hm-invoice-card">
                     <div class="hm-invoice-card-head">
                         <h3 class="hm-invoice-card-title">Tổng kết thanh toán</h3>
-                        <span class="hm-invoice-card-note">Từ hóa đơn và thanh toán</span>
                     </div>
 
                     <div class="hm-invoice-summary">
@@ -420,27 +402,30 @@
                         </div>
                     </div>
 
-                    <div class="hm-invoice-summary-callout" id="invoice-summary-note">
-                        Đang tải dữ liệu hóa đơn.
-                    </div>
                 </div>
             </div>
 
             <div class="hm-invoice-card">
                 <div class="hm-invoice-card-head">
                     <h3 class="hm-invoice-card-title">Chi tiết tính tiền</h3>
-                    <span class="hm-invoice-card-note" id="invoice-line-count">0 dòng</span>
                 </div>
 
                 <div class="hm-invoice-table-wrap">
                     <table class="hm-invoice-table">
+                        <colgroup>
+                            <col style="width: 30%;">
+                            <col style="width: 24%;">
+                            <col style="width: 8%;">
+                            <col style="width: 19%;">
+                            <col style="width: 19%;">
+                        </colgroup>
                         <thead>
                             <tr>
-                                <th>Hạng mục</th>
                                 <th>Nội dung</th>
-                                <th>SL</th>
-                                <th>Đơn giá</th>
-                                <th>Thành tiền</th>
+                                <th>Số phòng</th>
+                                <th class="hm-invoice-th-num">SL</th>
+                                <th class="hm-invoice-th-num">Đơn giá</th>
+                                <th class="hm-invoice-th-num">Thành tiền</th>
                             </tr>
                         </thead>
                         <tbody id="invoice-line-items">
@@ -456,7 +441,6 @@
                 <div class="hm-invoice-card">
                     <div class="hm-invoice-card-head">
                         <h3 class="hm-invoice-card-title">Dịch vụ sử dụng</h3>
-                        <span class="hm-invoice-card-note" id="invoice-service-count">0 dịch vụ</span>
                     </div>
 
                     <div id="invoice-service-items" class="hm-invoice-list">
@@ -467,7 +451,6 @@
                 <div class="hm-invoice-card">
                     <div class="hm-invoice-card-head">
                         <h3 class="hm-invoice-card-title">Đền bù / hư hỏng</h3>
-                        <span class="hm-invoice-card-note" id="invoice-compensation-count">0 khoản</span>
                     </div>
 
                     <div id="invoice-compensation-items" class="hm-invoice-list">
@@ -540,6 +523,33 @@
                 const getArrayRelation = function (record) {
                     const relation = getRelation.apply(null, arguments);
                     return Array.isArray(relation) ? relation : [];
+                };
+
+                const getRoomDetailsByType = function (invoice) {
+                    const booking = getRelation(invoice, 'datPhong', 'dat_phong');
+                    const bookingDetails = getArrayRelation(booking, 'chiTietDatPhong', 'chi_tiet_dat_phong');
+                    const roomsByType = {};
+
+                    bookingDetails.forEach(function (detail) {
+                        const room = getRelation(detail, 'phong', 'phong');
+
+                        if (!room || !room.MaLoaiPhong) {
+                            return;
+                        }
+
+                        const roomTypeId = String(room.MaLoaiPhong);
+                        const roomNumber = room.SoPhong ? String(room.SoPhong) : (room.MaPhong ? 'Phòng #' + String(room.MaPhong) : '--');
+
+                        if (!roomsByType[roomTypeId]) {
+                            roomsByType[roomTypeId] = [];
+                        }
+
+                        if (!roomsByType[roomTypeId].includes(roomNumber)) {
+                            roomsByType[roomTypeId].push(roomNumber);
+                        }
+                    });
+
+                    return roomsByType;
                 };
 
                 const formatDate = function (value) {
@@ -623,6 +633,7 @@
 
                 const buildLineItems = function (invoice) {
                     const detailLines = getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons');
+                    const roomsByType = getRoomDetailsByType(invoice);
                     const roomBuckets = {};
                     const otherItems = [];
 
@@ -641,7 +652,9 @@
                                     categoryLabel: 'Phòng',
                                     categoryClass: 'room',
                                     description: roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : 'Tiền phòng',
-                                    meta: 'Chi phí lưu trú',
+                                    meta: '--',
+                                    roomLabel: (roomsByType[roomTypeId] || []).join(', ') || '--',
+                                    roomMeta: '',
                                     quantity: 0,
                                     unitPrice: unitPrice,
                                     total: 0,
@@ -671,6 +684,8 @@
                                 categoryClass: 'service',
                                 description: service && service.TenDV ? service.TenDV : 'Dịch vụ phát sinh',
                                 meta: metaParts.join(' • ') || 'Chi phí dịch vụ',
+                                roomLabel: '--',
+                                roomMeta: '--',
                                 quantity: quantity,
                                 unitPrice: unitPrice,
                                 total: total,
@@ -695,6 +710,8 @@
                                 categoryClass: 'compensation',
                                 description: 'Khoản đền bù / hư hỏng',
                                 meta: metaParts.join(' • ') || 'Phát sinh trong quá trình lưu trú',
+                                roomLabel: '--',
+                                roomMeta: '--',
                                 quantity: quantity,
                                 unitPrice: unitPrice,
                                 total: total,
@@ -707,6 +724,8 @@
                             categoryClass: 'other',
                             description: line && line.MoTa ? String(line.MoTa) : 'Hạng mục khác',
                             meta: 'Chi tiết hóa đơn',
+                            roomLabel: '--',
+                            roomMeta: '--',
                             quantity: quantity,
                             unitPrice: unitPrice,
                             total: total,
@@ -799,9 +818,6 @@
                 const renderLineItems = function (items) {
                     const tableBody = document.getElementById('invoice-line-items');
 
-                    setText('invoice-line-count', items.length + ' dòng');
-                    setText('invoice-summary-lines', String(items.length));
-
                     if (!tableBody) {
                         return;
                     }
@@ -812,11 +828,21 @@
                     }
 
                     tableBody.innerHTML = items.map(function (item) {
+                        const descriptionMeta = item.meta && item.meta !== '--'
+                            ? '<div class="hm-invoice-item-meta">' + escapeHtml(item.meta) + '</div>'
+                            : '';
+                        const roomMeta = item.roomMeta && item.roomMeta !== '--'
+                            ? '<div class="hm-invoice-item-meta">' + escapeHtml(item.roomMeta) + '</div>'
+                            : '';
+
                         return '<tr>' +
-                            '<td><span class="hm-invoice-chip hm-invoice-chip--' + escapeHtml(item.categoryClass) + '">' + escapeHtml(item.categoryLabel) + '</span></td>' +
                             '<td>' +
                                 '<p class="hm-invoice-item-title">' + escapeHtml(item.description) + '</p>' +
-                                '<div class="hm-invoice-item-meta">' + escapeHtml(item.meta || '--') + '</div>' +
+                                descriptionMeta +
+                            '</td>' +
+                            '<td class="hm-invoice-room-cell">' +
+                                '<p class="hm-invoice-item-title">' + escapeHtml(item.roomLabel || '--') + '</p>' +
+                                roomMeta +
                             '</td>' +
                             '<td class="hm-invoice-num">' + escapeHtml(String(item.quantity)) + '</td>' +
                             '<td class="hm-invoice-num">' + escapeHtml(formatCurrency(item.unitPrice)) + '</td>' +
@@ -827,7 +853,6 @@
 
                 const renderServiceItems = function (items) {
                     const container = document.getElementById('invoice-service-items');
-                    setText('invoice-service-count', items.length + ' dịch vụ');
 
                     if (!container) {
                         return;
@@ -858,7 +883,6 @@
 
                 const renderCompensationItems = function (items) {
                     const container = document.getElementById('invoice-compensation-items');
-                    setText('invoice-compensation-count', items.length + ' khoản');
 
                     if (!container) {
                         return;
@@ -946,13 +970,6 @@
                     setText('invoice-discount', discountValue > 0 ? '- ' + formatCurrency(discountValue) : '0 VNĐ');
                     setText('invoice-paid-total', formatCurrency(paidTotal));
                     setText('invoice-remaining-total', formatCurrency(remainingTotal));
-                    setText(
-                        'invoice-summary-note',
-                        remainingTotal > 0
-                            ? 'Khách vẫn còn công nợ ' + formatCurrency(remainingTotal) + '. Kiểm tra kỹ các dịch vụ và khoản đền bù trước khi chốt.'
-                            : 'Khoản thanh toán đã khớp với tổng hóa đơn. Có thể dùng màn hình này để đối soát dịch vụ và đền bù.'
-                    );
-
                     const statusBadge = document.getElementById('invoice-status-badge');
                     if (statusBadge) {
                         statusBadge.className = 'hm-invoice-status hm-invoice-status--' + status.className;
@@ -982,7 +999,6 @@
                         statusBadge.textContent = 'Lỗi tải dữ liệu';
                     }
 
-                    setText('invoice-summary-note', error.message);
                     document.getElementById('invoice-line-items').innerHTML =
                         '<tr><td colspan="5" class="text-center text-danger py-4">' + escapeHtml(error.message) + '</td></tr>';
                     document.getElementById('invoice-service-items').innerHTML =

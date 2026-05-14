@@ -1,37 +1,55 @@
 <x-hotel-management.form-page
-    :is-edit="true"
+    :is-edit="request()->routeIs('hotel.room-amenities.edit')"
     :index-route="route('hotel.room-amenities.index')"
 >
-    <div class="col-md-6 mb-4">
-        <label for="room-amenity-id" class="form-label">Mã tiện nghi</label>
-        <input type="text" id="room-amenity-id" class="form-control hm-readonly-input" readonly value="Đang tải...">
-    </div>
+    @if (request()->routeIs('hotel.room-amenities.edit'))
+        <div class="col-md-6 mb-4">
+            <label for="room-amenity-id" class="form-label">Mã tiện nghi</label>
+            <input
+                type="text"
+                id="room-amenity-id"
+                class="form-control hm-readonly-input"
+                readonly
+                value="Đang tải..."
+            >
+        </div>
+    @endif
 
     <div class="col-md-6 mb-4">
         <label for="room-amenity-name" class="form-label">Tên tiện nghi</label>
-        <input type="text" id="room-amenity-name" class="form-control" maxlength="100" placeholder="Nhập tên tiện nghi">
-        <div class="invalid-feedback" id="room-amenity-name-error"></div>
+        <input
+            type="text"
+            id="room-amenity-name"
+            class="form-control"
+            maxlength="100"
+            placeholder="Nhập tên tiện nghi"
+        >
+        <div class="invalid-feedback d-block" id="room-amenity-name-error"></div>
     </div>
 
-    <div class="col-md-12 mb-4">
-        <div class="border rounded p-3 h-100 bg-light">
-            <div class="text-muted small mb-2">Các loại phòng đang gắn</div>
-            <div id="room-amenity-linked-room-types" class="fw-semibold">Đang tải...</div>
-        </div>
-    </div>
-
-    <div id="room-amenity-form-config" data-room-amenity-id="{{ request()->route('recordId') }}" hidden></div>
+    <div
+        id="room-amenity-form-config"
+        data-room-amenity-id="{{ request()->route('recordId') }}"
+        data-is-edit="{{ request()->routeIs('hotel.room-amenities.edit') ? 'true' : 'false' }}"
+        data-update-url-template="/api/tien-nghi/__ROOM_AMENITY_ID__"
+        data-store-url="/api/tien-nghi"
+        data-index-url="{{ route('hotel.room-amenities.index') }}"
+        hidden
+    ></div>
 
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const config = document.getElementById('room-amenity-form-config');
-                const amenityId = config ? config.dataset.roomAmenityId : '';
+                const currentAmenityId = config ? config.dataset.roomAmenityId : '';
+                const isEdit = config ? config.dataset.isEdit === 'true' : false;
+                const updateUrlTemplate = config ? config.dataset.updateUrlTemplate : '';
+                const storeUrl = config ? config.dataset.storeUrl : '';
+                const indexUrl = config ? config.dataset.indexUrl : '';
                 const form = document.querySelector('[data-ui-only-form]');
                 const idInput = document.getElementById('room-amenity-id');
                 const nameInput = document.getElementById('room-amenity-name');
                 const nameError = document.getElementById('room-amenity-name-error');
-                const linkedRoomTypes = document.getElementById('room-amenity-linked-room-types');
                 const submitButton = form ? form.querySelector('button[type="submit"]') : null;
 
                 const setSubmittingState = function (isSubmitting) {
@@ -40,7 +58,9 @@
                     }
 
                     submitButton.disabled = isSubmitting;
-                    submitButton.textContent = isSubmitting ? 'Đang lưu...' : 'Lưu thay đổi';
+                    submitButton.textContent = isSubmitting
+                        ? (isEdit ? 'Đang lưu...' : 'Đang tạo...')
+                        : (isEdit ? 'Lưu thay đổi' : 'Tạo mới');
                 };
 
                 const clearValidation = function () {
@@ -48,37 +68,27 @@
                     nameError.textContent = '';
                 };
 
-                const renderRoomTypes = function (roomTypes) {
-                    if (!Array.isArray(roomTypes) || !roomTypes.length) {
-                        linkedRoomTypes.textContent = 'Chưa có loại phòng nào được gán.';
+                const loadAmenity = async function () {
+                    if (!isEdit) {
                         return;
                     }
 
-                    linkedRoomTypes.textContent = roomTypes.map(function (roomType) {
-                        const code = roomType && roomType.MaLoaiPhong ? roomType.MaLoaiPhong : '--';
-                        const name = roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : 'Loại phòng';
-                        return `${code} - ${name}`;
-                    }).join(', ');
-                };
-
-                const loadAmenity = async function () {
-                    const response = await fetch(`/api/tien-nghi/${encodeURIComponent(amenityId)}`, {
-                        headers: { 'Accept': 'application/json' }
+                    const response = await fetch(`/api/tien-nghi/${encodeURIComponent(currentAmenityId)}`, {
+                        headers: { Accept: 'application/json' }
                     });
 
                     if (!response.ok) {
-                        throw new Error('Không thể tải thông tin tiện nghi phòng.');
+                        throw new Error('Không thể tải thông tin tiện nghi.');
                     }
 
                     const payload = await response.json();
                     const amenity = payload && payload.data ? payload.data : null;
-                    const roomTypes = Array.isArray(amenity && amenity.loai_phongs)
-                        ? amenity.loai_phongs
-                        : (Array.isArray(amenity && amenity.loaiPhongs) ? amenity.loaiPhongs : []);
 
-                    idInput.value = amenity && amenity.MaTienNghi ? amenity.MaTienNghi : '--';
+                    if (idInput) {
+                        idInput.value = amenity && amenity.MaTienNghi ? amenity.MaTienNghi : '--';
+                    }
+
                     nameInput.value = amenity && amenity.TenTienNghi ? amenity.TenTienNghi : '';
-                    renderRoomTypes(roomTypes);
                 };
 
                 form.addEventListener('submit', async function (event) {
@@ -96,10 +106,13 @@
                     setSubmittingState(true);
 
                     try {
-                        const response = await fetch(`/api/tien-nghi/${encodeURIComponent(amenityId)}`, {
-                            method: 'PUT',
+                        const targetUrl = isEdit
+                            ? updateUrlTemplate.replace('__ROOM_AMENITY_ID__', encodeURIComponent(currentAmenityId))
+                            : storeUrl;
+                        const response = await fetch(targetUrl, {
+                            method: isEdit ? 'PUT' : 'POST',
                             headers: {
-                                'Accept': 'application/json',
+                                Accept: 'application/json',
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -112,11 +125,10 @@
                         });
 
                         if (!response.ok || payload.success === false) {
-                            const message = payload && payload.message ? payload.message : 'Không thể cập nhật tiện nghi.';
-                            throw new Error(message);
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể lưu tiện nghi.');
                         }
 
-                        window.location.href = `{{ route('hotel.room-amenities.show', ['recordId' => '__ROOM_AMENITY_ID__']) }}`.replace('__ROOM_AMENITY_ID__', encodeURIComponent(amenityId));
+                        window.location.href = indexUrl;
                     } catch (error) {
                         nameInput.classList.add('is-invalid');
                         nameError.textContent = error.message;
@@ -126,9 +138,10 @@
                 });
 
                 loadAmenity().catch(function (error) {
-                    idInput.value = '--';
-                    nameInput.value = '';
-                    linkedRoomTypes.textContent = '--';
+                    if (idInput) {
+                        idInput.value = '--';
+                    }
+
                     nameInput.classList.add('is-invalid');
                     nameError.textContent = error.message;
                 });
