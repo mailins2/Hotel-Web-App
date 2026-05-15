@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class DichVu extends Model
 {
+    use SoftDeletes;
+
     public const TYPE_FOOD_AND_BEVERAGE = 1;
     public const TYPE_ROOM_SERVICE = 2;
     public const TYPE_ENTERTAINMENT = 3;

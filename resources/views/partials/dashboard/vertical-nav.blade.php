@@ -69,8 +69,7 @@
             <span class="item-name">Nhân Viên</span>
         </a>
     </li>
-
-    <li class="nav-item">
+     <li class="nav-item">
         <a class="nav-link {{ request()->is('hotel/room-types*') ? 'active' : '' }}" href="{{ route('hotel.room-types.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -84,6 +83,25 @@
         </a>
     </li>
 
+
+    <li class="nav-item">
+        <a class="nav-link {{ request()->is('hotel/room-amenities*') ? 'active' : '' }}" href="{{ route('hotel.room-amenities.index') }}">
+            <i class="icon">
+                <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path opacity="0.4" d="M6 4H18C19.1046 4 20 4.89543 20 6V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V6C4 4.89543 4.89543 4 6 4Z" fill="currentColor"></path>
+                    <path d="M8 8.5C8 7.94772 8.44772 7.5 9 7.5C9.55228 7.5 10 7.94772 10 8.5C10 9.05228 9.55228 9.5 9 9.5C8.44772 9.5 8 9.05228 8 8.5Z" fill="currentColor"></path>
+                    <path d="M8 12C8 11.4477 8.44772 11 9 11C9.55228 11 10 11.4477 10 12C10 12.5523 9.55228 13 9 13C8.44772 13 8 12.5523 8 12Z" fill="currentColor"></path>
+                    <path d="M8 15.5C8 14.9477 8.44772 14.5 9 14.5C9.55228 14.5 10 14.9477 10 15.5C10 16.0523 9.55228 16.5 9 16.5C8.44772 16.5 8 16.0523 8 15.5Z" fill="currentColor"></path>
+                    <path d="M12 8.5H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path d="M12 12H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path d="M12 15.5H16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+            </i>
+            <span class="item-name">Tiện Nghi</span>
+        </a>
+    </li>
+
+    
      <li class="nav-item">
         <a class="nav-link {{ request()->is('hotel/price-lists*') ? 'active' : '' }}" href="{{ route('hotel.price-lists.index') }}">
             <i class="icon">

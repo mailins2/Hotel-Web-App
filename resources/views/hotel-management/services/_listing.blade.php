@@ -15,6 +15,7 @@
     :title="$pageTitle"
     :subtitle="$pageSubtitle"
     :create-route="route('hotel.services.create')"
+    :trash-route="route('hotel.services.trash')"
 >
     <x-slot:filters>
         <div class="col-md-4">
@@ -77,6 +78,7 @@
         id="service-index-config"
         data-show-url-template="{{ route('hotel.services.show', ['recordId' => '__SERVICE_ID__']) }}"
         data-edit-url-template="{{ route('hotel.services.edit', ['recordId' => '__SERVICE_ID__']) }}"
+        data-delete-url-template="{{ url('/api/dich-vu/__SERVICE_ID__') }}"
         data-placeholder-image="https://placehold.co/600x600/f3f4f6/9ca3af?text=Service"
         data-default-service-type="{{ $defaultType }}"
         hidden
@@ -93,6 +95,7 @@
                 const config = document.getElementById('service-index-config');
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
+                const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
                 const placeholderImage = config ? config.dataset.placeholderImage : '';
                 const defaultType = config ? config.dataset.defaultServiceType || '' : '';
 
@@ -165,6 +168,10 @@
                     `;
                 };
 
+                const buildDeleteUrl = function (serviceId) {
+                    return String(deleteUrlTemplate || '').replace('__SERVICE_ID__', encodeURIComponent(serviceId || ''));
+                };
+
                 const renderTable = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không có dịch vụ phù hợp.</td></tr>';
@@ -200,7 +207,12 @@
                                                 </svg>
                                             </span>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger btn-icon" title="Xóa" onclick="window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-danger btn-icon"
+                                            title="Xóa"
+                                            data-delete-service-id="${service.MaDV || ''}"
+                                        >
                                             <span class="btn-inner">
                                                 <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -288,6 +300,49 @@
                         applyFilters();
                     });
                 }
+
+                document.addEventListener('click', async function (event) {
+                    const deleteButton = event.target && event.target.closest
+                        ? event.target.closest('[data-delete-service-id]')
+                        : null;
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const serviceId = deleteButton.getAttribute('data-delete-service-id') || '';
+
+                    if (!serviceId || !window.confirm(`Xóa dịch vụ ${serviceId}?`)) {
+                        return;
+                    }
+
+                    const originalDisabledState = deleteButton.disabled;
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(buildDeleteUrl(serviceId), {
+                            method: 'DELETE',
+                            headers: { Accept: 'application/json' }
+                        });
+
+                        const payload = await response.json().catch(function () {
+                            return {};
+                        });
+
+                        if (!response.ok || payload.success === false) {
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể xóa dịch vụ.');
+                        }
+
+                        await loadData();
+                    } catch (error) {
+                        window.alert(error.message);
+                    } finally {
+                        deleteButton.disabled = originalDisabledState;
+                    }
+                });
 
                 loadData();
             });

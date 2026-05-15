@@ -18,15 +18,6 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Mã tài khoản</label>
-        <select class="form-select" id="customer-account-id">
-            <option value="">Không gắn tài khoản</option>
-        </select>
-        <!-- <div class="form-text" id="customer-account-hint">Danh sách tài khoản khách hàng chưa được gắn cho khách hàng khác.</div> -->
-        <div class="invalid-feedback" id="customer-account-id-error"></div>
-    </div>
-
-    <div class="form-group col-md-6">
         <label class="form-label">Tên khách hàng</label>
         <input
             type="text"
@@ -127,7 +118,6 @@
         data-update-url-template="{{ route('hotel.customers.update', ['recordId' => '__CUSTOMER_ID__']) }}"
         data-detail-url-template="{{ url('/api/khach-hang/__CUSTOMER_ID__') }}"
         data-index-url="{{ route('hotel.customers.index') }}"
-        data-accounts-url="{{ url('/api/tai-khoan') }}"
         data-customers-url="{{ url('/api/khach-hang') }}"
         data-communes='@json($communes)'
         data-csrf-token="{{ csrf_token() }}"
@@ -146,7 +136,6 @@
                 const updateUrlTemplate = config ? config.dataset.updateUrlTemplate : '';
                 const detailUrlTemplate = config ? config.dataset.detailUrlTemplate : '';
                 const indexUrl = config ? config.dataset.indexUrl : '';
-                const accountsUrl = config ? config.dataset.accountsUrl : '';
                 const customersUrl = config ? config.dataset.customersUrl : '';
                 const csrfToken = config ? config.dataset.csrfToken : '';
                 const communesData = JSON.parse(config ? (config.dataset.communes || '{}') : '{}');
@@ -154,8 +143,6 @@
                 const alertBox = document.getElementById('customer-form-alert');
                 const customerIdGroup = document.getElementById('customer-id-group');
                 const customerIdInput = document.getElementById('customer-id');
-                const customerAccountInput = document.getElementById('customer-account-id');
-                const customerAccountHint = document.getElementById('customer-account-hint');
                 const customerNameInput = document.getElementById('customer-name');
                 const customerBirthdayInput = document.getElementById('customer-birthday');
                 const customerGenderInput = document.getElementById('customer-gender');
@@ -170,7 +157,6 @@
                     digits: /[^0-9]/g,
                 };
 
-                let accounts = [];
                 let customers = [];
                 let currentCustomer = null;
                 let selectedDistrict = '';
@@ -208,7 +194,6 @@
 
                 const clearFieldErrors = function () {
                     [
-                        'customer-account-id',
                         'customer-name',
                         'customer-birthday',
                         'customer-gender',
@@ -231,7 +216,6 @@
 
                 const setFieldError = function (fieldName, message) {
                     const keyMap = {
-                        account_id: 'customer-account-id',
                         full_name: 'customer-name',
                         birthday: 'customer-birthday',
                         gender: 'customer-gender',
@@ -338,45 +322,6 @@
                     }
 
                     syncFullAddress();
-                };
-
-                const renderAccountOptions = function () {
-                    const usedAccountIds = new Set(
-                        customers
-                            .filter(function (customer) {
-                                return !currentCustomer || String(customer.MaKH || '') !== String(currentCustomer.MaKH || '');
-                            })
-                            .map(function (customer) {
-                                return String(customer.MaTK || '');
-                            })
-                            .filter(Boolean)
-                    );
-
-                    const currentAccountId = currentCustomer && currentCustomer.MaTK !== undefined && currentCustomer.MaTK !== null
-                        ? String(currentCustomer.MaTK)
-                        : '';
-
-                    const availableAccounts = accounts.filter(function (account) {
-                        const accountId = String(account.MaTK || '');
-                        const isCustomerAccount = Number(account.LoaiTaiKhoan) === 0;
-                        return isCustomerAccount && (accountId === currentAccountId || !usedAccountIds.has(accountId));
-                    });
-
-                    customerAccountInput.innerHTML = '<option value="">Không gắn tài khoản</option>' + availableAccounts.map(function (account) {
-                        const accountId = account && account.MaTK ? account.MaTK : '--';
-                        const accountEmail = account && account.Email ? account.Email : '--';
-                        return `<option value="${accountId}">${accountId} - ${accountEmail}</option>`;
-                    }).join('');
-
-                    if (currentAccountId) {
-                        customerAccountInput.value = currentAccountId;
-                    }
-
-                    if (customerAccountHint) {
-                        customerAccountHint.textContent = availableAccounts.length
-                            ? 'Danh sách tài khoản khách hàng chưa được gắn cho khách hàng khác.'
-                            : 'Hiện chưa có tài khoản khách hàng trống để gắn.';
-                    }
                 };
 
                 const parseExistingAddress = function (address) {
@@ -501,32 +446,17 @@
                         : '';
                     customerPhoneInput.value = customer && customer.SoDienThoai ? customer.SoDienThoai : '';
                     customerCccdInput.value = customer && customer.CCCD ? customer.CCCD : '';
-                    renderAccountOptions();
                     parseExistingAddress(customer && customer.DiaChi ? customer.DiaChi : '');
                 };
 
                 const loadDependencies = async function () {
-                    const responses = await Promise.all([
-                        fetch(accountsUrl, { headers: { 'Accept': 'application/json' } }),
-                        fetch(customersUrl, { headers: { 'Accept': 'application/json' } })
-                    ]);
+                    const response = await fetch(customersUrl, { headers: { 'Accept': 'application/json' } });
 
-                    if (!responses[0].ok) {
-                        throw new Error('Không thể tải danh sách tài khoản.');
-                    }
-
-                    if (!responses[1].ok) {
+                    if (!response.ok) {
                         throw new Error('Không thể tải danh sách khách hàng.');
                     }
 
-                    const accountPayload = await responses[0].json();
-                    const customerPayload = await responses[1].json();
-
-                    accounts = Array.isArray(accountPayload && accountPayload.data)
-                        ? accountPayload.data.slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaTK');
-                        })
-                        : [];
+                    const customerPayload = await response.json();
                     customers = Array.isArray(customerPayload)
                         ? customerPayload.slice().sort(function (left, right) {
                             return compareRecordIdDesc(left, right, 'MaKH');
@@ -534,7 +464,6 @@
                         : [];
 
                     renderDistricts();
-                    renderAccountOptions();
                 };
 
                 const loadCustomer = async function () {
@@ -600,7 +529,6 @@
                         }
 
                         const payload = {
-                            account_id: customerAccountInput.value || null,
                             full_name: customerNameInput.value.trim(),
                             phone: customerPhoneInput.value.trim(),
                             cccd: customerCccdInput.value.trim(),

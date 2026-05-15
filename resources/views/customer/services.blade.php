@@ -130,8 +130,143 @@
         </div>
       </section>
     @endforeach
+<style>
+      .service-booking-modal {
+        align-items: flex-start !important;
+        padding: 10px !important;
+        overflow-y: auto !important;
+      }
 
-    @if($isCustomerLoggedIn)
+      .service-booking-dialog {
+        grid-template-columns: 200px minmax(0, 1fr) !important;
+        width: min(1120px, calc(100vw - 20px)) !important;
+        max-height: calc(100vh - 20px) !important;
+        margin: auto !important;
+        border-radius: 18px !important;
+      }
+
+      .service-booking-side {
+        min-height: 100% !important;
+        padding: 32px 26px !important;
+      }
+
+      .service-booking-form {
+        max-height: calc(100vh - 20px) !important;
+        overflow-y: scroll !important;
+        overscroll-behavior: contain;
+        padding: 34px 40px 38px !important;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(140, 74, 52, 0.55) rgba(140, 74, 52, 0.12);
+      }
+
+      .service-booking-form::-webkit-scrollbar {
+        width: 12px;
+      }
+
+      .service-booking-form::-webkit-scrollbar-track {
+        background: rgba(140, 74, 52, 0.1);
+        border-radius: 999px;
+      }
+
+      .service-booking-form::-webkit-scrollbar-thumb {
+        background: rgba(140, 74, 52, 0.5);
+        border-radius: 999px;
+        border: 2px solid rgba(255, 255, 255, 0.88);
+      }
+
+      .service-booking-form::-webkit-scrollbar-thumb:hover {
+        background: rgba(140, 74, 52, 0.72);
+      }
+
+      .service-booking-food-list {
+        display: grid;
+        gap: 0.85rem;
+      }
+
+      .service-booking-food-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 120px auto;
+        gap: 0.75rem;
+        align-items: end;
+      }
+
+      .service-booking-food-row label {
+        margin-bottom: 0.4rem;
+      }
+
+      .service-booking-food-row .service-booking-food-remove {
+        height: 36px;
+        align-self: end;
+        margin-bottom: 22px;
+      }
+
+      .service-booking-food-add,
+      .service-booking-food-remove {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        min-height: 36px !important;
+        padding: 0 16px !important;
+        border-radius: 6px !important;
+        border: 1px solid transparent !important;
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        transition: all 0.2s ease !important;
+      }
+
+      .service-booking-food-add {
+        background: #8c4a34 !important;
+        border-color: #8c4a34 !important;
+        color: #fff !important;
+        box-shadow: 0 10px 22px rgba(140, 74, 52, 0.18) !important;
+      }
+
+      .service-booking-food-add:hover,
+      .service-booking-food-add:focus {
+        background: #6f3928 !important;
+        border-color: #6f3928 !important;
+        color: #fff !important;
+        outline: none !important;
+      }
+
+      .service-booking-food-remove {
+        background: rgba(140, 74, 52, 0.08) !important;
+        border-color: rgba(140, 74, 52, 0.24) !important;
+        color: #8c4a34 !important;
+      }
+
+      .service-booking-food-remove:hover,
+      .service-booking-food-remove:focus {
+        background: rgba(140, 74, 52, 0.15) !important;
+        border-color: rgba(140, 74, 52, 0.35) !important;
+        color: #6f3928 !important;
+        outline: none !important;
+      }
+
+      @media (max-width: 767.98px) {
+        .service-booking-dialog {
+          grid-template-columns: 1fr !important;
+          width: min(100%, calc(100vw - 12px)) !important;
+        }
+
+        .service-booking-side {
+          padding: 24px 22px !important;
+        }
+
+        .service-booking-form {
+          padding: 26px 20px 30px !important;
+        }
+
+        .service-booking-food-row {
+          grid-template-columns: 1fr;
+        }
+
+        .service-booking-food-row .service-booking-food-remove {
+          width: 100%;
+        }
+      }
+    </style>
+     @if($isCustomerLoggedIn)
     <div
       class="service-booking-modal"
       data-service-booking-modal
@@ -169,13 +304,25 @@
             @endforeach
           </select>
 
-          <label for="service_booking_service">Tên dịch vụ</label>
-          <select id="service_booking_service" name="MaDV" data-service-name-select required></select>
+          <div data-service-single-block>
+            <label for="service_booking_service">Tên dịch vụ</label>
+            <select id="service_booking_service" name="MaDV" data-service-name-select required></select>
+          </div>
+
+          <div data-service-food-block hidden>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+              <label class="mb-0">Món ăn đã chọn</label>
+              <button type="button" class="service-booking-food-add" data-service-food-add-row>
+                Thêm món
+              </button>
+            </div>
+            <div class="service-booking-food-list" data-service-food-list></div>
+          </div>
 
           <div class="service-booking-grid">
-            <div>
-              <label for="service_booking_quantity">Số lượng người</label>
-              <input id="service_booking_quantity" name="SoLuong" type="number" min="1" max="20" value="1" required>
+            <div data-service-quantity-block>
+              <label for="service_booking_quantity" data-service-quantity-label>Số lượng người</label>
+              <input id="service_booking_quantity" name="SoLuong" type="number" min="1" max="20" value="1" data-service-quantity-input required>
             </div>
             <div>
               <label for="service_booking_date">Ngày sử dụng</label>
@@ -351,6 +498,13 @@
           const closeButtons = modal.querySelectorAll('[data-service-booking-close]');
           const typeSelect = modal.querySelector('[data-service-type-select]');
           const nameSelect = modal.querySelector('[data-service-name-select]');
+          const singleServiceBlock = modal.querySelector('[data-service-single-block]');
+          const foodServiceBlock = modal.querySelector('[data-service-food-block]');
+          const foodList = modal.querySelector('[data-service-food-list]');
+          const addFoodRowButton = modal.querySelector('[data-service-food-add-row]');
+          const quantityBlock = modal.querySelector('[data-service-quantity-block]');
+          const quantityLabel = modal.querySelector('[data-service-quantity-label]');
+          const quantityInput = modal.querySelector('[data-service-quantity-input]');
           const form = modal.querySelector('[data-service-booking-form]');
           const dateInput = modal.querySelector('[data-service-date]');
           const hourSelect = modal.querySelector('[data-service-hour]');
@@ -402,9 +556,18 @@
             input?.addEventListener('input', syncServiceTime);
           });
 
+          const getServicesByType = (type) => services.filter((service) => String(service.type) === String(type));
+
+          const buildFoodOptionHtml = (selectedId = '') => {
+            return getServicesByType('1').map((service) => {
+              const selected = String(service.id) === String(selectedId) ? ' selected' : '';
+              return `<option value="${service.id}"${selected}>${service.name}</option>`;
+            }).join('');
+          };
+
           const renderServiceOptions = (selectedId = '') => {
             const selectedType = typeSelect.value;
-            const filteredServices = services.filter((service) => service.type === selectedType);
+            const filteredServices = getServicesByType(selectedType);
 
             nameSelect.innerHTML = '';
 
@@ -421,25 +584,92 @@
             });
           };
 
-          const openWarningModal = () => {
-            if (!warningModal) {
-              alert('Bạn cần có đặt phòng đang lưu trú hợp lệ để đặt dịch vụ.');
-              return;
-            }
+          const refreshFoodRemoveButtons = () => {
+            const rows = foodList ? Array.from(foodList.querySelectorAll('[data-service-food-row]')) : [];
 
-            warningModal.hidden = false;
-            window.requestAnimationFrame(() => warningModal.classList.add('is-open'));
+            rows.forEach((row) => {
+              const removeButton = row.querySelector('[data-service-food-remove]');
+              if (removeButton) {
+                removeButton.hidden = rows.length <= 1;
+                removeButton.disabled = rows.length <= 1;
+              }
+            });
           };
 
-          const closeWarningModal = () => {
-            if (!warningModal) {
+          const createFoodRow = (selectedId = '', quantityValue = '1') => {
+            if (! foodList) {
               return;
             }
 
-            warningModal.classList.remove('is-open');
-            window.setTimeout(() => {
-              warningModal.hidden = true;
-            }, 160);
+            const row = document.createElement('div');
+            row.className = 'service-booking-food-row';
+            row.setAttribute('data-service-food-row', '');
+            row.innerHTML = `
+              <div>
+                <label>Tên món ăn</label>
+                <select class="service-booking-food-select" data-service-food-select required>
+                  ${buildFoodOptionHtml(selectedId)}
+                </select>
+              </div>
+              <div>
+                <label>Số lượng món</label>
+                <input class="service-booking-food-qty" data-service-food-qty type="number" min="1" max="20" value="${quantityValue}" required>
+              </div>
+              <button type="button" class="service-booking-food-remove" data-service-food-remove>
+                Bỏ món
+              </button>
+            `;
+
+            foodList.append(row);
+            refreshFoodRemoveButtons();
+          };
+
+          const resetFoodRows = (selectedId = '') => {
+            if (! foodList) {
+              return;
+            }
+
+            foodList.innerHTML = '';
+            createFoodRow(selectedId || '');
+          };
+
+          const updateBookingMode = (selectedType, selectedId = '') => {
+            const normalizedType = String(selectedType || '');
+            const isFood = normalizedType === '1';
+            const isRoomService = normalizedType === '2';
+
+            if (singleServiceBlock) {
+              singleServiceBlock.hidden = isFood;
+            }
+
+            if (foodServiceBlock) {
+              foodServiceBlock.hidden = !isFood;
+            }
+
+            if (nameSelect) {
+              nameSelect.disabled = isFood;
+              nameSelect.required = !isFood;
+            }
+
+            if (quantityBlock) {
+              quantityBlock.hidden = isFood;
+            }
+
+            if (quantityInput) {
+              quantityInput.disabled = isFood;
+              quantityInput.required = !isFood;
+              quantityInput.value = '1';
+            }
+
+            if (quantityLabel) {
+              quantityLabel.textContent = isRoomService ? 'Số lượng dịch vụ' : 'Số lượng người';
+            }
+
+            if (isFood) {
+              resetFoodRows(selectedId);
+            } else {
+              renderServiceOptions(selectedId);
+            }
           };
 
           const openModal = (trigger) => {
@@ -486,7 +716,27 @@
             button.addEventListener('click', closeWarningModal);
           });
 
-          typeSelect.addEventListener('change', () => renderServiceOptions());
+        typeSelect.addEventListener('change', () => updateBookingMode(typeSelect.value));
+
+          addFoodRowButton?.addEventListener('click', () => {
+            createFoodRow('', '1');
+          });
+
+          foodList?.addEventListener('click', (event) => {
+            const removeButton = event.target && event.target.closest
+              ? event.target.closest('[data-service-food-remove]')
+              : null;
+
+            if (! removeButton) {
+              return;
+            }
+
+            const row = removeButton.closest('[data-service-food-row]');
+            if (row) {
+              row.remove();
+              refreshFoodRemoveButtons();
+            }
+          });
 
           form?.addEventListener('submit', (event) => {
             event.preventDefault();
@@ -512,7 +762,7 @@
             }
           });
 
-          renderServiceOptions();
+          updateBookingMode(typeSelect.value);
           syncServiceTime();
         };
 

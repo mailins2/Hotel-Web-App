@@ -22,7 +22,7 @@ class SuDungDichVu extends Model
     }
     public function dichVu()
     {
-        return $this->belongsTo(DichVu::class, 'MaDV');
+        return $this->belongsTo(DichVu::class, 'MaDV')->withTrashed();
     }
     public function chiTietHoaDon()
     {

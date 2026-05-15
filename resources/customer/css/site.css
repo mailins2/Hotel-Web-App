@@ -639,7 +639,10 @@ a:focus,
 
 .room-filter-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1.5fr) minmax(150px, 0.8fr) minmax(120px, 0.55fr) minmax(120px, 0.55fr) auto;
+    grid-template-columns: minmax(220px, 1.5fr) minmax(150px, 0.8fr) minmax(
+            120px,
+            0.55fr
+        ) minmax(120px, 0.55fr) auto;
     align-items: end;
     gap: 12px;
     margin-bottom: 18px;
@@ -2040,7 +2043,9 @@ body.modal-open {
     height: 44px;
     justify-content: center;
     line-height: 1;
-    transition: background 0.2s ease, transform 0.2s ease;
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
     width: 44px;
 }
 
@@ -2114,9 +2119,15 @@ body.modal-open {
 }
 
 .room-list-vertical {
-    width: min(100%, 1080px);
-    margin: 0 auto;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     row-gap: 28px;
+}
+
+.room-list-vertical > .col-12 {
+    padding-left: 0;
+    padding-right: 0;
 }
 
 .room-list-loading {
@@ -2186,7 +2197,10 @@ body.modal-open {
     min-height: 40px;
     min-width: 42px;
     padding: 8px 14px;
-    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease;
 }
 
 .room-list-page:hover,
@@ -4596,9 +4610,10 @@ body.modal-open {
     inset: 0;
     z-index: 1300;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     padding: 24px;
+    overflow-y: auto;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.16s ease;
@@ -4705,10 +4720,11 @@ body.modal-open {
     z-index: 1;
     display: grid;
     grid-template-columns: 240px minmax(0, 1fr);
-    width: min(740px, 100%);
+    width: min(980px, 100%);
     max-height: calc(100vh - 48px);
+    margin: auto 0;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 18px;
     background: #fff;
     box-shadow: 0 28px 70px rgba(17, 24, 39, 0.28);
 }
@@ -4762,7 +4778,29 @@ body.modal-open {
 .service-booking-form {
     position: relative;
     overflow-y: auto;
+    max-height: calc(100vh - 48px);
     padding: 36px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(140, 74, 52, 0.5) rgba(140, 74, 52, 0.1);
+}
+
+.service-booking-form::-webkit-scrollbar {
+    width: 10px;
+}
+
+.service-booking-form::-webkit-scrollbar-track {
+    background: rgba(140, 74, 52, 0.08);
+    border-radius: 999px;
+}
+
+.service-booking-form::-webkit-scrollbar-thumb {
+    background: rgba(140, 74, 52, 0.45);
+    border-radius: 999px;
+    border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.service-booking-form::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 74, 52, 0.68);
 }
 
 .service-booking-close {
@@ -4869,6 +4907,49 @@ body.modal-open {
     cursor: not-allowed;
     opacity: 0.58;
     transform: none;
+}
+
+.service-booking-food-add,
+.service-booking-food-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 18px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-weight: 800;
+    transition: all 0.2s ease;
+}
+
+.service-booking-food-add {
+    background: var(--customer-accent);
+    border-color: var(--customer-accent);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(140, 74, 52, 0.18);
+}
+
+.service-booking-food-add:hover,
+.service-booking-food-add:focus {
+    background: var(--customer-accent-dark);
+    border-color: var(--customer-accent-dark);
+    color: #fff;
+    outline: none;
+}
+
+.service-booking-food-remove {
+    background: rgba(140, 74, 52, 0.08);
+    border-color: rgba(140, 74, 52, 0.2);
+    color: var(--customer-accent);
+}
+
+.service-booking-food-remove:hover,
+.service-booking-food-remove:focus {
+    background: rgba(140, 74, 52, 0.14);
+    border-color: rgba(140, 74, 52, 0.3);
+    color: var(--customer-accent-dark);
+    outline: none;
 }
 
 .service-booking-success-modal {
@@ -4994,6 +5075,7 @@ body.modal-open {
 
     .service-booking-dialog {
         grid-template-columns: 1fr;
+        width: min(100%, 680px);
     }
 
     .service-booking-side {

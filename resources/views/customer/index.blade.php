@@ -285,7 +285,7 @@
             <div class="home-room-loading">Đang tải dữ liệu phòng...</div>
           </div>
     		</div>
-        <div class="home-room-controls" data-home-room-controls hidden>
+        <div class="home-room-controls" style="margin-bottom: 20px;" data-home-room-controls hidden>
           <button type="button" class="home-room-nav" data-home-room-prev aria-label="Trang phòng trước">
             <span class="ion-ios-arrow-back"></span>
           </button>
