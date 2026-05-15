@@ -89,6 +89,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
                         'label' => $roomNumbers
                             ? "#{$booking->MaDatPhong} - {$roomNumbers}"
                             : "#{$booking->MaDatPhong}",
+                        'checkIn' => \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString(),
+                        'checkOut' => \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString(),
                     ];
                 })
                 ->values();

@@ -3,8 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChiTietHoaDon;
+use App\Models\DatPhong;
+use App\Models\DichVu;
+use App\Models\HoaDon;
 use App\Models\SuDungDichVu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class SuDungDichVuController extends Controller
 {
@@ -13,7 +19,7 @@ class SuDungDichVuController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $data
+            'data' => $data,
         ], $code);
     }
 
@@ -21,102 +27,197 @@ class SuDungDichVuController extends Controller
     {
         return response()->json([
             'success' => false,
-            'message' => $message
+            'message' => $message,
         ], $code);
     }
 
-    // =========================
-    // GET /api/su-dung-dich-vu
     public function index()
     {
         $data = SuDungDichVu::with('dichVu')->get();
 
-        return $this->success($data, 'Danh sách sử dụng dịch vụ');
+        return $this->success($data, 'Danh sach su dung dich vu');
     }
 
-    // =========================
-    // GET /api/su-dung-dich-vu/{id}
     public function show($id)
     {
         $item = SuDungDichVu::with('dichVu')->find($id);
 
         if (!$item) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('Khong tim thay', 404);
         }
 
-        return $this->success($item, 'Chi tiết');
+        return $this->success($item, 'Chi tiet');
     }
 
-    // =========================
-    // GET /api/su-dung-dich-vu/dat-phong/{id}
     public function byDatPhong($id)
     {
         $data = SuDungDichVu::with('dichVu')
             ->where('MaDatPhong', $id)
             ->get();
 
-        return $this->success($data, 'Dịch vụ theo đơn');
+        return $this->success($data, 'Dich vu theo don');
     }
 
-    // =========================
-    // POST /api/su-dung-dich-vu
     public function store(Request $request)
     {
         $data = $request->validate([
             'MaDatPhong' => 'required|exists:DatPhong,MaDatPhong',
-            'MaDV' => 'required|exists:DichVu,MaDV',
-            'SoLuong' => 'required|integer|min:1'
+            'ThoiGian' => 'nullable|date',
+            'MaDV' => [
+                'required_without:items',
+                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+            ],
+            'SoLuong' => 'required_without:items|integer|min:1',
+            'items' => 'sometimes|array|min:1',
+            'items.*.MaDV' => [
+                'required',
+                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+            ],
+            'items.*.SoLuong' => 'required|integer|min:1',
         ]);
 
-        // nếu đã có thì tăng số lượng
-        $existing = SuDungDichVu::where('MaDatPhong', $data['MaDatPhong'])
-            ->where('MaDV', $data['MaDV'])
-            ->first();
+        $items = collect($data['items'] ?? [[
+            'MaDV' => $data['MaDV'],
+            'SoLuong' => $data['SoLuong'],
+        ]])->map(fn ($item) => [
+            'MaDV' => (int) $item['MaDV'],
+            'SoLuong' => (int) $item['SoLuong'],
+        ])->values();
 
-        if ($existing) {
-            $existing->increment('SoLuong', $data['SoLuong']);
-            return $this->success($existing, 'Tăng số lượng dịch vụ');
+        if ($items->isEmpty()) {
+            return $this->error('Vui long chon dich vu', 422);
         }
 
-        $new = SuDungDichVu::create([
-            ...$data,
-            'ThoiGian' => now()
-        ]);
+        try {
+            $result = DB::transaction(function () use ($data, $items) {
+                $datPhong = DatPhong::select('MaDatPhong', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang')
+                    ->find($data['MaDatPhong']);
 
-        return $this->success($new, 'Thêm dịch vụ thành công', 201);
+                if (!$datPhong || (int) $datPhong->TinhTrang !== DatPhong::CHECKED_IN) {
+                    throw new \RuntimeException('Chi co the dat dich vu sau khi check-in.');
+                }
+
+                $serviceDate = isset($data['ThoiGian'])
+                    ? \Illuminate\Support\Carbon::parse($data['ThoiGian'])->toDateString()
+                    : now()->toDateString();
+                $minDate = max(
+                    \Illuminate\Support\Carbon::parse($datPhong->NgayNhanPhong)->toDateString(),
+                    now()->toDateString()
+                );
+                $maxDate = \Illuminate\Support\Carbon::parse($datPhong->NgayTraPhong)->toDateString();
+
+                if ($serviceDate < $minDate || $serviceDate > $maxDate) {
+                    throw new \RuntimeException('Ngay su dung phai nam trong thoi gian luu tru.');
+                }
+
+                $hoaDon = HoaDon::where('MaDatPhong', $datPhong->MaDatPhong)
+                    ->lockForUpdate()
+                    ->first(['MaHD', 'MaDatPhong', 'MaKM', 'TongTien', 'DaThanhToan', 'TrangThai']);
+
+                if (!$hoaDon) {
+                    throw new \RuntimeException('Khong tim thay hoa don cua dat phong.');
+                }
+
+                $createdServiceIds = [];
+                $createdDetailIds = [];
+                $addedSubtotal = 0;
+                $thoiGian = isset($data['ThoiGian'])
+                    ? \Illuminate\Support\Carbon::parse($data['ThoiGian'])->toDateTimeString()
+                    : now();
+                $services = DichVu::whereIn('MaDV', $items->pluck('MaDV')->unique()->values())
+                    ->get(['MaDV', 'TenDV', 'GiaDV'])
+                    ->keyBy('MaDV');
+
+                foreach ($items as $item) {
+                    $dichVu = $services->get($item['MaDV']);
+
+                    if (!$dichVu) {
+                        throw new \RuntimeException('Dich vu khong hop le.');
+                    }
+
+                    $suDung = SuDungDichVu::create([
+                        'MaDatPhong' => $datPhong->MaDatPhong,
+                        'MaDV' => $dichVu->MaDV,
+                        'SoLuong' => $item['SoLuong'],
+                        'ThoiGian' => $thoiGian,
+                    ]);
+
+                    $chiTiet = ChiTietHoaDon::create([
+                        'MaHD' => $hoaDon->MaHD,
+                        'MaSuDung' => $suDung->MaSuDung,
+                        'MoTa' => $dichVu->TenDV,
+                        'SoLuong' => $item['SoLuong'],
+                        'DonGia' => $dichVu->GiaDV,
+                    ]);
+
+                    $createdServiceIds[] = $suDung->MaSuDung;
+                    $createdDetailIds[] = $chiTiet->MaCTHD;
+                    $addedSubtotal += (float) $dichVu->GiaDV * (int) $item['SoLuong'];
+                }
+
+                $discountRate = 0;
+
+                if ($hoaDon->MaKM) {
+                    $discountRate = (float) DB::table('KhuyenMai')
+                        ->where('MaKM', $hoaDon->MaKM)
+                        ->whereNull('deleted_at')
+                        ->value('PhanTramGiamGia');
+                }
+
+                $daThanhToan = (float) $hoaDon->DaThanhToan;
+                $addedTotal = $addedSubtotal * (1 - ($discountRate / 100));
+                $tongTien = (float) $hoaDon->TongTien + $addedTotal;
+
+                $hoaDon->update([
+                    'TongTien' => $tongTien,
+                    'TrangThai' => $daThanhToan >= $tongTien ? 1 : 0,
+                ]);
+
+                return [
+                    'suDungDichVuIds' => $createdServiceIds,
+                    'chiTietHoaDonIds' => $createdDetailIds,
+                    'MaHD' => $hoaDon->MaHD,
+                    'TongTien' => $tongTien,
+                    'DaThanhToan' => $daThanhToan,
+                    'ConNo' => max($tongTien - $daThanhToan, 0),
+                ];
+            });
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        } catch (\Throwable $e) {
+            return $this->error('Khong the dat dich vu. Vui long thu lai.', 500);
+        }
+
+        return $this->success($result, 'Dat dich vu thanh cong', 201);
     }
 
-    // =========================
-    // PUT /api/su-dung-dich-vu/{id}
     public function update(Request $request, $id)
     {
         $item = SuDungDichVu::find($id);
 
         if (!$item) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('Khong tim thay', 404);
         }
 
         $data = $request->validate([
-            'SoLuong' => 'required|integer|min:1'
+            'SoLuong' => 'required|integer|min:1',
         ]);
 
         $item->update($data);
 
-        return $this->success($item, 'Cập nhật thành công');
+        return $this->success($item, 'Cap nhat thanh cong');
     }
 
-    // =========================
-    // DELETE /api/su-dung-dich-vu/{id}
     public function destroy($id)
     {
         $item = SuDungDichVu::find($id);
 
         if (!$item) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('Khong tim thay', 404);
         }
 
         $item->delete();
 
-        return $this->success(null, 'Xóa thành công');
+        return $this->success(null, 'Xoa thanh cong');
     }
 }
