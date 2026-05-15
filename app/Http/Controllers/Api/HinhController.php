@@ -8,19 +8,55 @@ use Cloudinary\Cloudinary;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class HinhController extends Controller
 {
     public function index()
     {
-        $hinhs = Hinh::with(['loaiPhongs', 'dichVus'])->get();
-
+        $hinhs = Hinh::with([
+                'loaiPhongs' => function ($query) {
+                    $query->whereNull('LoaiPhong.deleted_at');
+                },
+                'dichVus' => function ($query) {
+                    $query->whereNull('DichVu.deleted_at');
+                },
+            ])
+            ->where(function ($query) {
+                $query->where(function ($q) {
+                    $q->whereNotNull('MaLoaiPhong')
+                        ->whereHas('loaiPhongs', function ($relation) {
+                            $relation->whereNull('LoaiPhong.deleted_at');
+                        });
+                })
+                    ->orWhere(function ($q) {
+                        $q->whereNotNull('MaDV')
+                            ->whereHas('dichVus', function ($relation) {
+                                $relation->whereNull('DichVu.deleted_at');
+                            });
+                    })
+                    ->orWhere(function ($q) {
+                        $q->whereNull('MaLoaiPhong')
+                            ->whereNull('MaDV');
+                    });
+            })
+            ->get();
         return response()->json($hinhs, 200);
     }
 
     public function store(Request $request)
     {
-        $validator = $this->makeValidator($request, false);
+        $validator = Validator::make($request->all(), [
+            'Url'         => 'required|string|max:500',
+            'MaLoaiPhong' => [
+                'nullable',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
+            'MaDV'        => [
+                'nullable',
+                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+            ],
+        ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -54,7 +90,23 @@ class HinhController extends Controller
             return response()->json(['message' => 'Không tìm thấy'], 404);
         }
 
-        $validator = $this->makeValidator($request, true);
+        $validator = Validator::make($request->all(), [
+            'Url'         => 'sometimes|string|max:500',
+            'MaLoaiPhong' => [
+                'nullable',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
+            'MaDV'        => [
+                'nullable',
+                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+            ],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+                $validator = $this->makeValidator($request, true);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);

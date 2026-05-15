@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LoaiPhong;
+use App\Models\TienNghi;
 use App\Services\Guards\LoaiPhongSoftDeleteGuard;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class LoaiPhongController extends Controller
 {
@@ -157,6 +159,7 @@ class LoaiPhongController extends Controller
     {
         $request->validate([
             'tienNghiIds' => 'present|array',
+            'tienNghiIds.*' => Rule::exists('TienNghi', 'MaTienNghi')->whereNull('deleted_at'),
         ]);
 
         $loaiPhong = LoaiPhong::find($id);
@@ -195,6 +198,10 @@ class LoaiPhongController extends Controller
 
         if ($exists) {
             return $this->error('Tiện nghi đã tồn tại trên loại phòng này', 409);
+        }
+
+        if (!TienNghi::where('MaTienNghi', $tienNghiId)->exists()) {
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y tiá»‡n nghi', 404);
         }
 
         $loaiPhong->tienNghis()->attach($tienNghiId);
