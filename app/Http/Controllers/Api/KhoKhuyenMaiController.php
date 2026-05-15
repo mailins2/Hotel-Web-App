@@ -6,13 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\KhoKhuyenMai;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class KhoKhuyenMaiController extends Controller
 {
     // 1. Lấy danh sách tất cả kho khuyến mãi (có kèm thông tin khách và tên KM)
     public function index()
     {
-        $kho = KhoKhuyenMai::with(['khachHang', 'khuyenMai'])->get();
+        $kho = KhoKhuyenMai::with(['khachHang', 'khuyenMai'])
+            ->whereHas('khuyenMai', function ($query) {
+                $query->whereNull('KhuyenMai.deleted_at');
+            })
+            ->get();
         return response()->json($kho, 200);
     }
 
@@ -20,7 +25,12 @@ class KhoKhuyenMaiController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'MaKM' => 'required|string|max:10|exists:KhuyenMai,MaKM',
+            'MaKM' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
             'MaKH' => 'required|exists:KhachHang,MaKH',
             'TrangThai' => 'nullable|integer|in:0,1' // 0: Chưa dùng, 1: Đã dùng
         ]);
@@ -47,6 +57,9 @@ class KhoKhuyenMaiController extends Controller
     public function showByKhachHang($maKH)
     {
         $danhSach = KhoKhuyenMai::with('khuyenMai')
+            ->whereHas('khuyenMai', function ($query) {
+                $query->whereNull('KhuyenMai.deleted_at');
+            })
             ->where('MaKH', $maKH)
             ->get();
 

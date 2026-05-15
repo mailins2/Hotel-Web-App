@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\BangGia;
+use Illuminate\Validation\Rule;
 
 class DatPhongController extends Controller
 {
@@ -131,6 +132,7 @@ class DatPhongController extends Controller
 
                 $availableRooms = DB::table('Phong as p')
                     ->where('p.MaLoaiPhong', $maLoaiPhong)
+                    ->whereNull('p.deleted_at')
                     ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                         $query->select(DB::raw(1))
                             ->from('ChiTietDatPhong as ctdp')
@@ -181,6 +183,7 @@ class DatPhongController extends Controller
         // Lấy phòng trống với FOR UPDATE
         $availableRooms = DB::table('Phong as p')
             ->where('p.MaLoaiPhong', $maLoaiPhong)
+            ->whereNull('p.deleted_at')
             ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                 $query->select(DB::raw(1))
                     ->from('ChiTietDatPhong as ctdp')
@@ -241,7 +244,10 @@ class DatPhongController extends Controller
                 ],
                 'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
                 'LoaiPhongs' => 'required|array|min:1',
-                'LoaiPhongs.*.MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
+                'LoaiPhongs.*.MaLoaiPhong' => [
+                    'required',
+                    Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                ],
                 'LoaiPhongs.*.SoLuong' => 'required|integer|min:1',
             ], [
                 'NgayNhanPhong.after_or_equal' => 'KhÃ´ng thá»ƒ Ä‘áº·t phÃ²ng trong quÃ¡ khá»©',
@@ -265,7 +271,10 @@ class DatPhongController extends Controller
                 'before_or_equal:' . now()->addYear()->toDateString() 
             ],
             'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
             'SoLuong' => 'required|integer|min:1'
         ], [
             'NgayNhanPhong.after_or_equal' => 'Không thể đặt phòng trong quá khứ',
@@ -534,8 +543,19 @@ class DatPhongController extends Controller
     {
         $request->validate([
             'oldPhong' => 'required|exists:Phong,MaPhong',
-            'newPhong' => 'required|exists:Phong,MaPhong'
+            'newPhong' => [
+                'required',
+                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+            ],
         ]);
+
+        if (!Phong::where('MaPhong', $request->newPhong)
+            ->whereHas('loaiPhong', function ($query) {
+                $query->whereNull('LoaiPhong.deleted_at');
+            })
+            ->exists()) {
+            return $this->error('PhÃ²ng má»›i khÃ´ng kháº£ dá»¥ng', 422);
+        }
 
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {
@@ -583,8 +603,19 @@ class DatPhongController extends Controller
     public function addRoom(Request $request, $id)
     {
         $request->validate([
-            'MaPhong' => 'required|exists:Phong,MaPhong'
+            'MaPhong' => [
+                'required',
+                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+            ],
         ]);
+
+        if (!Phong::where('MaPhong', $request->MaPhong)
+            ->whereHas('loaiPhong', function ($query) {
+                $query->whereNull('LoaiPhong.deleted_at');
+            })
+            ->exists()) {
+            return $this->error('PhÃ²ng khÃ´ng kháº£ dá»¥ng', 422);
+        }
 
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {

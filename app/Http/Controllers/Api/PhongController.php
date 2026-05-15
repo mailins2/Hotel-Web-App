@@ -44,7 +44,9 @@ class PhongController extends Controller
                     ->where('NgayTraPhong', '>=', $today)
                     ->whereIn('TinhTrang', [0, 1, 2]);
             },
-        ]);
+        ])->whereHas('loaiPhong', function ($q) {
+            $q->whereNull('LoaiPhong.deleted_at');
+        });
 
         if ($request->MaLoaiPhong) {
             $query->where('MaLoaiPhong', $request->MaLoaiPhong);
@@ -253,6 +255,9 @@ class PhongController extends Controller
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
             ->where('TinhTrang', '!=', 2)
+            ->whereHas('loaiPhong', function ($q) {
+                $q->whereNull('LoaiPhong.deleted_at');
+            })
             ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
                 $q->whereIn('TinhTrang', [0, 1, 2])
                     ->where('NgayNhanPhong', '<', $checkOut)

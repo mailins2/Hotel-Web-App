@@ -185,7 +185,7 @@
 
       .service-booking-food-row {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 120px auto;
+        grid-template-columns: minmax(0, 1fr) 120px 140px auto;
         gap: 0.75rem;
         align-items: end;
       }
@@ -243,6 +243,72 @@
         outline: none !important;
       }
 
+      .service-booking-status {
+        margin: 12px 0 0;
+        color: #b91c1c;
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .service-booking-price-note,
+      .service-booking-food-line-total {
+        color: #8c4a34;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .service-booking-price-note {
+        margin: 8px 0 0;
+      }
+
+      .service-booking-food-line-total {
+        padding-bottom: 29px;
+        white-space: nowrap;
+      }
+
+      .service-booking-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 16px 0 0;
+        padding: 14px 16px;
+        border-radius: 8px;
+        background: rgba(140, 74, 52, 0.08);
+        color: #4f2b21;
+        font-weight: 800;
+      }
+
+      .service-booking-total strong {
+        color: #8c4a34;
+        font-size: 18px;
+      }
+
+      .service-booking-submit.is-loading {
+        color: transparent !important;
+        position: relative;
+        pointer-events: none;
+      }
+
+      .service-booking-submit.is-loading::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 22px;
+        height: 22px;
+        margin: auto;
+        border: 3px solid rgba(255, 255, 255, 0.45);
+        border-top-color: #fff;
+        border-radius: 999px;
+        animation: service-booking-spin 0.75s linear infinite;
+      }
+
+      @keyframes service-booking-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
       @media (max-width: 767.98px) {
         .service-booking-dialog {
           grid-template-columns: 1fr !important;
@@ -259,6 +325,10 @@
 
         .service-booking-food-row {
           grid-template-columns: 1fr;
+        }
+
+        .service-booking-food-line-total {
+          padding-bottom: 0;
         }
 
         .service-booking-food-row .service-booking-food-remove {
@@ -307,6 +377,7 @@
           <div data-service-single-block>
             <label for="service_booking_service">Tên dịch vụ</label>
             <select id="service_booking_service" name="MaDV" data-service-name-select required></select>
+            <p class="service-booking-price-note" data-service-single-price></p>
           </div>
 
           <div data-service-food-block hidden>
@@ -349,10 +420,32 @@
             </div>
           </div>
 
+          <div class="service-booking-status" data-service-booking-status hidden></div>
+
+          <div class="service-booking-total">
+            <span>T&#7893;ng ti&#7873;n d&#7883;ch v&#7909;</span>
+            <strong data-service-booking-total>0 VND</strong>
+          </div>
+
           <button class="service-booking-submit" type="submit">
             Hoàn tất đăng ký <span aria-hidden="true">→</span>
           </button>
         </form>
+      </div>
+    </div>
+    @endif
+
+    @if($isCustomerLoggedIn)
+    <div class="service-booking-warning-modal service-booking-success-modal" data-service-booking-success-modal hidden>
+      <div class="service-booking-warning-backdrop" data-service-booking-success-close></div>
+      <div class="service-booking-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="service_booking_success_title">
+        <button class="service-booking-warning-close" type="button" aria-label="ÄÃ³ng thÃ´ng bÃ¡o" data-service-booking-success-close>&times;</button>
+        <div class="service-booking-warning-icon">
+          <span class="ion-ios-checkmark-circle"></span>
+        </div>
+        <h2 id="service_booking_success_title">Äáº·t dá»‹ch vá»¥ thÃ nh cÃ´ng</h2>
+        <p>YÃªu cáº§u dá»‹ch vá»¥ Ä‘Ã£ Ä‘Æ°á»£c ghi nháº­n vÃ  cáº­p nháº­t vÃ o hÃ³a Ä‘Æ¡n cá»§a báº¡n.</p>
+        <button class="service-booking-warning-action" type="button" data-service-booking-success-close>ÄÃ£ hiá»ƒu</button>
       </div>
     </div>
     @endif
@@ -365,8 +458,8 @@
         <div class="service-booking-warning-icon">
           <span class="ion-ios-alert"></span>
         </div>
-        <h2 id="service_booking_warning_title">Chưa có booking hợp lệ</h2>
-        <p>Bạn cần có đặt phòng đang lưu trú để đặt dịch vụ.</p>
+        <h2 id="service_booking_warning_title">Chưa thể đặt dịch vụ</h2>
+        <p>Bạn cần check-in phòng trước khi đặt dịch vụ. Vui lòng quay lại sau khi nhận phòng.</p>
         <button class="service-booking-warning-action" type="button" data-service-booking-warning-close>Đã hiểu</button>
       </div>
     </div>
@@ -496,6 +589,7 @@
 
           const triggers = document.querySelectorAll('[data-service-booking-trigger]');
           const closeButtons = modal.querySelectorAll('[data-service-booking-close]');
+          const roomSelect = modal.querySelector('select[name="MaDatPhong"]');
           const typeSelect = modal.querySelector('[data-service-type-select]');
           const nameSelect = modal.querySelector('[data-service-name-select]');
           const singleServiceBlock = modal.querySelector('[data-service-single-block]');
@@ -505,14 +599,32 @@
           const quantityBlock = modal.querySelector('[data-service-quantity-block]');
           const quantityLabel = modal.querySelector('[data-service-quantity-label]');
           const quantityInput = modal.querySelector('[data-service-quantity-input]');
+          const singlePrice = modal.querySelector('[data-service-single-price]');
+          const totalPrice = modal.querySelector('[data-service-booking-total]');
           const form = modal.querySelector('[data-service-booking-form]');
           const dateInput = modal.querySelector('[data-service-date]');
           const hourSelect = modal.querySelector('[data-service-hour]');
           const minuteSelect = modal.querySelector('[data-service-minute]');
           const timeInput = modal.querySelector('[data-service-time]');
+          const submitButton = modal.querySelector('.service-booking-submit');
+          const statusBox = modal.querySelector('[data-service-booking-status]');
           const warningModal = document.querySelector('[data-service-booking-warning-modal]');
+          const successModal = document.querySelector('[data-service-booking-success-modal]');
+          const serviceStoreUrl = @json(url('/api/su-dung-dich-vu'));
           let services = [];
           let activeBookings = [];
+
+          if (successModal) {
+            const title = successModal.querySelector('#service_booking_success_title');
+            const message = successModal.querySelector('p');
+            const action = successModal.querySelector('[data-service-booking-success-close].service-booking-warning-action');
+            const close = successModal.querySelector('.service-booking-warning-close');
+
+            if (title) title.textContent = '\u0110\u1eb7t d\u1ecbch v\u1ee5 th\u00e0nh c\u00f4ng';
+            if (message) message.textContent = 'Y\u00eau c\u1ea7u d\u1ecbch v\u1ee5 \u0111\u00e3 \u0111\u01b0\u1ee3c ghi nh\u1eadn v\u00e0 c\u1eadp nh\u1eadt v\u00e0o h\u00f3a \u0111\u01a1n c\u1ee7a b\u1ea1n.';
+            if (action) action.textContent = '\u0110\u00e3 hi\u1ec3u';
+            if (close) close.setAttribute('aria-label', '\u0110\u00f3ng th\u00f4ng b\u00e1o');
+          }
 
           try {
             services = JSON.parse(modal.dataset.serviceOptions || '[]');
@@ -530,6 +642,60 @@
           const now = new Date();
           const todayValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 
+          const openWarningModal = () => {
+            if (! warningModal) {
+              alert('Bạn cần check-in phòng trước khi đặt dịch vụ.');
+              return;
+            }
+
+            warningModal.hidden = false;
+            document.body.classList.add('service-booking-open');
+            window.requestAnimationFrame(() => warningModal.classList.add('is-open'));
+          };
+
+          const closeWarningModal = () => {
+            if (! warningModal) {
+              return;
+            }
+
+            warningModal.classList.remove('is-open');
+            document.body.classList.remove('service-booking-open');
+            window.setTimeout(() => {
+              warningModal.hidden = true;
+            }, 160);
+          };
+
+          const openSuccessModal = () => {
+            if (! successModal) {
+              return;
+            }
+
+            successModal.hidden = false;
+            document.body.classList.add('service-booking-open');
+            window.requestAnimationFrame(() => successModal.classList.add('is-open'));
+          };
+
+          const closeSuccessModal = () => {
+            if (! successModal) {
+              return;
+            }
+
+            successModal.classList.remove('is-open');
+            document.body.classList.remove('service-booking-open');
+            window.setTimeout(() => {
+              successModal.hidden = true;
+            }, 160);
+          };
+
+          const setBookingStatus = (message = '') => {
+            if (! statusBox) {
+              return;
+            }
+
+            statusBox.textContent = message;
+            statusBox.hidden = !message;
+          };
+
           const syncServiceTime = () => {
             if (! dateInput || ! hourSelect || ! minuteSelect || ! timeInput) {
               return;
@@ -538,8 +704,26 @@
             timeInput.value = `${dateInput.value}T${hourSelect.value}:${minuteSelect.value}`;
           };
 
+          const syncBookingDateBounds = () => {
+            if (! dateInput || ! roomSelect) {
+              return;
+            }
+
+            const booking = activeBookings.find((item) => String(item.id) === String(roomSelect.value));
+            const minDate = [booking?.checkIn, todayValue].filter(Boolean).sort().pop() || todayValue;
+            const maxDate = booking?.checkOut || minDate;
+
+            dateInput.min = minDate;
+            dateInput.max = maxDate;
+
+            if (!dateInput.value || dateInput.value < minDate || dateInput.value > maxDate) {
+              dateInput.value = minDate;
+            }
+
+            syncServiceTime();
+          };
+
           if (dateInput) {
-            dateInput.min = todayValue;
             dateInput.value = dateInput.value || todayValue;
           }
 
@@ -557,12 +741,55 @@
           });
 
           const getServicesByType = (type) => services.filter((service) => String(service.type) === String(type));
+          const getServiceById = (id) => services.find((service) => String(service.id) === String(id));
+          const formatMoney = (value) => {
+            return `${Number(value || 0).toLocaleString('vi-VN')} VND`;
+          };
 
           const buildFoodOptionHtml = (selectedId = '') => {
             return getServicesByType('1').map((service) => {
               const selected = String(service.id) === String(selectedId) ? ' selected' : '';
-              return `<option value="${service.id}"${selected}>${service.name}</option>`;
+              return `<option value="${service.id}" data-price="${Number(service.price || 0)}"${selected}>${service.name} - ${formatMoney(service.price)}</option>`;
             }).join('');
+          };
+
+          const updatePriceSummary = () => {
+            const selectedType = String(typeSelect.value || '');
+            let total = 0;
+
+            if (selectedType === '1') {
+              Array.from(foodList?.querySelectorAll('[data-service-food-row]') || []).forEach((row) => {
+                const service = getServiceById(row.querySelector('[data-service-food-select]')?.value || '');
+                const quantity = Number(row.querySelector('[data-service-food-qty]')?.value || 0);
+                const lineTotal = Number(service?.price || 0) * Math.max(quantity, 0);
+                const lineTotalEl = row.querySelector('[data-service-food-line-total]');
+
+                total += lineTotal;
+
+                if (lineTotalEl) {
+                  lineTotalEl.textContent = formatMoney(lineTotal);
+                }
+              });
+
+              if (singlePrice) {
+                singlePrice.textContent = '';
+              }
+            } else {
+              const service = getServiceById(nameSelect?.value || '');
+              const quantity = Number(quantityInput?.value || 0);
+              const unitPrice = Number(service?.price || 0);
+              total = unitPrice * Math.max(quantity, 0);
+
+              if (singlePrice) {
+                singlePrice.textContent = service
+                  ? `Don gia: ${formatMoney(unitPrice)}`
+                  : '';
+              }
+            }
+
+            if (totalPrice) {
+              totalPrice.textContent = formatMoney(total);
+            }
           };
 
           const renderServiceOptions = (selectedId = '') => {
@@ -574,7 +801,8 @@
             filteredServices.forEach((service) => {
               const option = document.createElement('option');
               option.value = service.id;
-              option.textContent = service.name;
+              option.dataset.price = Number(service.price || 0);
+              option.textContent = `${service.name} - ${formatMoney(service.price)}`;
 
               if (service.id === selectedId) {
                 option.selected = true;
@@ -582,6 +810,8 @@
 
               nameSelect.append(option);
             });
+
+            updatePriceSummary();
           };
 
           const refreshFoodRemoveButtons = () => {
@@ -615,6 +845,7 @@
                 <label>Số lượng món</label>
                 <input class="service-booking-food-qty" data-service-food-qty type="number" min="1" max="20" value="${quantityValue}" required>
               </div>
+              <div class="service-booking-food-line-total" data-service-food-line-total>0 VND</div>
               <button type="button" class="service-booking-food-remove" data-service-food-remove>
                 Bỏ món
               </button>
@@ -622,6 +853,7 @@
 
             foodList.append(row);
             refreshFoodRemoveButtons();
+            updatePriceSummary();
           };
 
           const resetFoodRows = (selectedId = '') => {
@@ -670,6 +902,8 @@
             } else {
               renderServiceOptions(selectedId);
             }
+
+            updatePriceSummary();
           };
 
           const openModal = (trigger) => {
@@ -678,18 +912,9 @@
               return;
             }
 
-            if (false) {
-              if (bookingAlert) {
-                bookingAlert.hidden = false;
-                bookingAlert.classList.add('is-open');
-              } else {
-                alert('Bạn cần có đặt phòng đang lưu trú hợp lệ để đặt dịch vụ.');
-              }
-              return;
-            }
-
             typeSelect.value = trigger.dataset.serviceType || typeSelect.value;
-            renderServiceOptions(trigger.dataset.serviceId || '');
+            updateBookingMode(typeSelect.value, trigger.dataset.serviceId || '');
+            syncBookingDateBounds();
             syncServiceTime();
             modal.hidden = false;
             document.body.classList.add('service-booking-open');
@@ -699,6 +924,7 @@
           const closeModal = () => {
             modal.classList.remove('is-open');
             document.body.classList.remove('service-booking-open');
+            setBookingStatus('');
             window.setTimeout(() => {
               modal.hidden = true;
             }, 160);
@@ -716,11 +942,22 @@
             button.addEventListener('click', closeWarningModal);
           });
 
+          document.querySelectorAll('[data-service-booking-success-close]').forEach((button) => {
+            button.addEventListener('click', closeSuccessModal);
+          });
+
         typeSelect.addEventListener('change', () => updateBookingMode(typeSelect.value));
+        roomSelect?.addEventListener('change', syncBookingDateBounds);
+        nameSelect?.addEventListener('change', updatePriceSummary);
+        quantityInput?.addEventListener('input', updatePriceSummary);
+        quantityInput?.addEventListener('change', updatePriceSummary);
 
           addFoodRowButton?.addEventListener('click', () => {
             createFoodRow('', '1');
           });
+
+          foodList?.addEventListener('input', updatePriceSummary);
+          foodList?.addEventListener('change', updatePriceSummary);
 
           foodList?.addEventListener('click', (event) => {
             const removeButton = event.target && event.target.closest
@@ -735,12 +972,55 @@
             if (row) {
               row.remove();
               refreshFoodRemoveButtons();
+              updatePriceSummary();
             }
           });
 
-          form?.addEventListener('submit', (event) => {
+          const buildServiceBookingPayload = () => {
+            const selectedType = String(typeSelect.value || '');
+            const payload = {
+              MaDatPhong: roomSelect?.value || '',
+              ThoiGian: timeInput?.value || '',
+            };
+
+            if (selectedType === '1') {
+              payload.items = Array.from(foodList?.querySelectorAll('[data-service-food-row]') || [])
+                .map((row) => ({
+                  MaDV: row.querySelector('[data-service-food-select]')?.value || '',
+                  SoLuong: Number(row.querySelector('[data-service-food-qty]')?.value || 0),
+                }))
+                .filter((item) => item.MaDV && item.SoLuong > 0);
+            } else {
+              payload.MaDV = nameSelect?.value || '';
+              payload.SoLuong = Number(quantityInput?.value || 0);
+            }
+
+            return payload;
+          };
+
+          const postServiceBooking = async (payload) => {
+            const response = await fetch(serviceStoreUrl, {
+              method: 'POST',
+              headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            });
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok || result?.success === false) {
+              const validationMessage = Object.values(result?.errors || {}).flat().filter(Boolean).join('\n');
+              throw new Error(validationMessage || result?.message || 'Khong the dat dich vu.');
+            }
+
+            return result;
+          };
+
+          form?.addEventListener('submit', async (event) => {
             event.preventDefault();
             syncServiceTime();
+            setBookingStatus('');
 
             if (! timeInput?.value) {
               dateInput?.focus();
@@ -749,6 +1029,35 @@
 
             if (! form.checkValidity()) {
               form.reportValidity();
+              return;
+            }
+
+            const payload = buildServiceBookingPayload();
+
+            if (!payload.MaDatPhong || (!payload.MaDV && !payload.items?.length)) {
+              setBookingStatus('Vui long chon phong va dich vu.');
+              return;
+            }
+
+            if (submitButton) {
+              submitButton.disabled = true;
+              submitButton.classList.add('is-loading');
+            }
+
+            try {
+              await postServiceBooking(payload);
+              modal.classList.remove('is-open');
+              modal.hidden = true;
+              setBookingStatus('');
+              updatePriceSummary();
+              openSuccessModal();
+            } catch (error) {
+              setBookingStatus(error.message || 'Khong the dat dich vu.');
+            } finally {
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.classList.remove('is-loading');
+              }
             }
           });
 
@@ -757,12 +1066,17 @@
               closeWarningModal();
             }
 
+            if (event.key === 'Escape' && successModal && !successModal.hidden) {
+              closeSuccessModal();
+            }
+
             if (event.key === 'Escape' && modal.classList.contains('is-open')) {
               closeModal();
             }
           });
 
           updateBookingMode(typeSelect.value);
+          syncBookingDateBounds();
           syncServiceTime();
         };
 

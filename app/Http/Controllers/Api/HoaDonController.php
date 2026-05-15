@@ -14,6 +14,7 @@ use App\Models\DenBuHuHong;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class HoaDonController extends Controller
 {
@@ -34,7 +35,12 @@ class HoaDonController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'MaDatPhong' => 'required|exists:DatPhong,MaDatPhong|unique:HoaDon,MaDatPhong',
-            'MaKM' => 'nullable|string|max:10|exists:KhuyenMai,MaKM',
+            'MaKM' => [
+                'nullable',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
             'MaNV' => 'required|exists:NhanVien,MaNV'
         ]);
 
@@ -207,7 +213,12 @@ class HoaDonController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'MaKM' => 'nullable|string|max:10|exists:KhuyenMai,MaKM',
+            'MaKM' => [
+                'nullable',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
             'TrangThai' => 'sometimes|in:0,1'
         ]);
 
