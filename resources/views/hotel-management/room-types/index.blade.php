@@ -5,8 +5,20 @@
     :trash-route="route('hotel.room-types.trash')"
 >
     <style>
+        .hm-room-type-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .hm-room-type-table th:nth-child(3),
+        .hm-room-type-table td:nth-child(3) {
+            width: 42%;
+        }
+
         .hm-truncate-cell {
-            max-width: 360px;
+            display: block;
+            width: 100%;
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -24,7 +36,7 @@
         </div>
     </x-slot:filters>
 
-    <table class="table table-striped align-middle">
+    <table class="table table-striped align-middle hm-room-type-table">
         <thead>
             <tr>
                 <th>Mã loại</th>

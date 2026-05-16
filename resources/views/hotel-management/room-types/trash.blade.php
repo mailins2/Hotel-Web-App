@@ -3,7 +3,28 @@
     subtitle="Danh sách loại phòng đã xóa mềm"
     :index-route="route('hotel.room-types.index')"
 >
-    <table class="table table-striped align-middle">
+    <style>
+        .hm-room-type-trash-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .hm-room-type-trash-table th:nth-child(3),
+        .hm-room-type-trash-table td:nth-child(3) {
+            width: 30%;
+        }
+
+        .hm-room-type-trash-truncate {
+            display: block;
+            width: 100%;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+
+    <table class="table table-striped align-middle hm-room-type-trash-table">
         <thead>
             <tr>
                 <th>Mã loại</th>
@@ -69,7 +90,11 @@
                             <tr>
                                 <td>${escapeHtml(roomType.MaLoaiPhong || '--')}</td>
                                 <td>${escapeHtml(roomType.TenLoaiPhong || '--')}</td>
-                                <td>${escapeHtml(roomType.Mota || '--')}</td>
+                                <td>
+                                    <div class="hm-room-type-trash-truncate" title="${escapeHtml(roomType.Mota || '--')}">
+                                        ${escapeHtml(roomType.Mota || '--')}
+                                    </div>
+                                </td>
                                 <td>${escapeHtml(roomType.NguoiLon ?? '--')}</td>
                                 <td>${escapeHtml(roomType.TreEm ?? 0)}</td>
                                 <td>${escapeHtml(formatDateTime(roomType.deleted_at))}</td>

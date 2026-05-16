@@ -95,38 +95,47 @@ class KhuyenMaiController extends Controller
         return $this->success($khuyenMai, 'Lấy chi tiết khuyến mãi thành công');
     }
 
-    public function update(Request $request, $id)
-    {
-        $khuyenMai = KhuyenMai::find($id);
+   public function update(Request $request, $id)
+        {
+            $khuyenMai = KhuyenMai::find($id);
 
-        if (!$khuyenMai) {
-            return $this->error('Không tìm thấy khuyến mãi', 404);
+            if (!$khuyenMai) {
+                return response()->json([
+                    'message' => 'Không tìm thấy khuyến mãi'
+                ], 404);
+            }
+
+            // Validate đầy đủ các field có thể update
+            $validator = Validator::make($request->all(), [
+                'TenKM' => 'sometimes|string|max:100',
+                'MoTa' => 'sometimes|string|max:200',
+                'Diem' => 'sometimes|integer|min:0',
+                'NgayBatDau' => 'sometimes|date',
+                'NgayKetThuc' => 'sometimes|date|after_or_equal:NgayBatDau',
+                'PhanTramGiamGia' => 'sometimes|numeric|between:0,100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Chỉ update field cho phép (anti-hack 💀)
+            $khuyenMai->update($request->only([
+                'TenKM',
+                'MoTa',
+                'Diem',
+                'NgayBatDau',
+                'NgayKetThuc',
+                'PhanTramGiamGia'
+            ]));
+
+            return response()->json([
+                'message' => 'Cập nhật thành công',
+                'data' => $khuyenMai
+            ], 200);
         }
-
-        $validator = Validator::make($request->all(), [
-            'TenKM' => 'sometimes|string|max:100',
-            'MoTa' => 'sometimes|string|max:200',
-            'Diem' => 'sometimes|integer|min:0',
-            'NgayBatDau' => 'sometimes|date',
-            'NgayKetThuc' => 'sometimes|date|after_or_equal:NgayBatDau',
-            'PhanTramGiamGia' => 'sometimes|numeric|between:0,100',
-        ]);
-
-        if ($validator->fails()) {
-            return $this->error('Dữ liệu không hợp lệ', 422, $validator->errors()->toArray());
-        }
-
-        $khuyenMai->update($request->only([
-            'TenKM',
-            'MoTa',
-            'Diem',
-            'NgayBatDau',
-            'NgayKetThuc',
-            'PhanTramGiamGia',
-        ]));
-
-        return $this->success($khuyenMai, 'Cập nhật khuyến mãi thành công');
-    }
 
     public function destroy($id)
     {

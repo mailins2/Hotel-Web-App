@@ -36,13 +36,22 @@
         }
 
         .hm-icon-button {
-            width: 42px;
             height: 42px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 10px;
-            padding: 0;
+            gap: 0.5rem;
+            min-width: 42px;
+            padding: 0 0.9rem;
+            border-radius: 5px;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .hm-icon-button svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
         }
 
         .hm-select-wrap {
@@ -138,14 +147,13 @@
                         @endisset
 
                         @if($trashRoute)
-                            <a href="{{ $trashRoute }}" class="btn btn-light btn-sm hm-icon-button" title="Thùng rác" aria-label="Thùng rác">
+                            <a href="{{ $trashRoute }}" class="btn btn-light btn-sm hm-icon-button" title="Lịch sử xóa" aria-label="Lịch sử xóa">
                                 <svg width="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                    <path d="M9 7V4.8C9 4.35817 9.35817 4 9.8 4H14.2C14.6418 4 15 4.35817 15 4.8V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M10 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
-                                    <path d="M14 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                    <path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C15.0481 3 17.7421 4.51684 19.3696 6.83739" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M21 4V8H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
                                 </svg>
+                                Lịch sử xóa
                             </a>
                         @endif
 

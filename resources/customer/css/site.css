@@ -3309,8 +3309,11 @@ body.modal-open {
 }
 
 .customer-booking-field {
+    min-width: 0;
     color: #111827;
     font-weight: 700;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .customer-booking-field span {
