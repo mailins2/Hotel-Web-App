@@ -113,6 +113,7 @@ Route::get('/mobile/districts/{provinceCode}', [AuthMobileController::class, 'ge
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/mobile/logout', [AuthMobileController::class, 'logout']);
+     Route::get('/mobile/user-profile', [AuthMobileController::class, 'getUserProfile']);
 });
 
 Route::get('/vnpay/check-status/{txnRef}', function ($txnRef) {
