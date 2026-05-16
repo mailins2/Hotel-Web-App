@@ -276,8 +276,15 @@
                         throw new Error('Không thể tải thông tin khuyến mãi.');
                     }
 
-                    const promotion = await response.json();
-                    populateForm(promotion);
+                    const payload = await response.json().catch(function () {
+                        return {};
+                    });
+
+                    if (!response.ok || payload.success === false) {
+                        throw new Error(payload.message || 'Không thể tải thông tin khuyến mãi.');
+                    }
+
+                    populateForm(payload.data || null);
                 };
 
                 if (promotionIdGroup) {

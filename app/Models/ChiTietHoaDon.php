@@ -30,12 +30,12 @@ class ChiTietHoaDon extends Model
     {
         return $this->belongsTo(DenBuHuHong::class, 'MaDenBu');
     }
-        public function suDung()
+    public function suDung()
     {
         return $this->belongsTo(SuDungDichVu::class, 'MaSuDung');
     }
     public function loaiPhong()
     {
-        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong');
+        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong')->withTrashed();
     }
 }

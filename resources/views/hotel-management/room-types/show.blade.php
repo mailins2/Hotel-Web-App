@@ -23,6 +23,27 @@
             display: block;
         }
 
+        .hm-room-type-description {
+            white-space: pre-line;
+        }
+
+        .hm-room-type-amenities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .hm-room-type-amenity {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.55rem 0.9rem;
+            border-radius: 999px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            color: #9a3412;
+            font-weight: 600;
+        }
+
         @media (min-width: 768px) {
             .hm-room-type-images {
                 grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -32,9 +53,17 @@
 
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã loại phòng</div><div class="fw-semibold" id="room-type-id">Đang tải...</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên loại phòng</div><div class="fw-semibold" id="room-type-name">Đang tải...</div></div></div>
-    <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold" id="room-type-desc">Đang tải...</div></div></div>
+    <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold hm-room-type-description" id="room-type-desc">Đang tải...</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người lớn</div><div class="fw-semibold" id="room-type-adults">Đang tải...</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trẻ em</div><div class="fw-semibold" id="room-type-children">Đang tải...</div></div></div>
+    <div class="col-md-12 mb-4">
+        <div class="border rounded p-3 h-100">
+            <div class="text-muted small mb-3">Tiện nghi phòng</div>
+            <div id="room-type-amenities" class="hm-room-type-amenities">
+                <div class="text-muted">Đang tải...</div>
+            </div>
+        </div>
+    </div>
     <div class="col-md-12 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-3">Ảnh phòng</div>
@@ -52,6 +81,7 @@
                 const roomTypeId = config ? config.dataset.roomTypeId : '';
                 const placeholderImage = config ? config.dataset.placeholderImage : '';
                 const imageContainer = document.getElementById('room-type-images');
+                const amenitiesContainer = document.getElementById('room-type-amenities');
 
                 const getImageUrl = function (image) {
                     if (!image) {
@@ -82,6 +112,29 @@
                     }).join('');
                 };
 
+                const renderAmenities = function (roomType) {
+                    const amenities = roomType && Array.isArray(roomType.tienNghis)
+                        ? roomType.tienNghis
+                        : (roomType && Array.isArray(roomType.tien_nghis) ? roomType.tien_nghis : []);
+
+                    if (!amenitiesContainer) {
+                        return;
+                    }
+
+                    if (!amenities.length) {
+                        amenitiesContainer.innerHTML = '<div class="text-muted">Chưa có tiện nghi phòng.</div>';
+                        return;
+                    }
+
+                    amenitiesContainer.innerHTML = amenities.map(function (amenity) {
+                        const amenityName = amenity && (amenity.TenTienNghi || amenity.ten_tien_nghi)
+                            ? (amenity.TenTienNghi || amenity.ten_tien_nghi)
+                            : 'Tiện nghi';
+
+                        return `<span class="hm-room-type-amenity">${amenityName}</span>`;
+                    }).join('');
+                };
+
                 try {
                     const response = await fetch(`/api/loai-phong/${roomTypeId}`, {
                         headers: { 'Accept': 'application/json' }
@@ -98,7 +151,8 @@
                     document.getElementById('room-type-name').textContent = roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : '--';
                     document.getElementById('room-type-desc').textContent = roomType && roomType.Mota ? roomType.Mota : '--';
                     document.getElementById('room-type-adults').textContent = roomType && roomType.NguoiLon ? roomType.NguoiLon : '--';
-                    document.getElementById('room-type-children').textContent = roomType && roomType.TreEm !== undefined ? roomType.TreEm : '--';
+                    document.getElementById('room-type-children').textContent = roomType && roomType.TreEm !== undefined ? roomType.TreEm : 0;
+                    renderAmenities(roomType);
                     renderImages(roomType);
                 } catch (error) {
                     ['room-type-id', 'room-type-desc', 'room-type-adults', 'room-type-children']
@@ -106,6 +160,9 @@
                             document.getElementById(id).textContent = '--';
                         });
                     document.getElementById('room-type-name').textContent = error.message;
+                    if (amenitiesContainer) {
+                        amenitiesContainer.innerHTML = '<div class="text-muted">--</div>';
+                    }
                     imageContainer.innerHTML = '<div class="text-muted">--</div>';
                 }
             });

@@ -31,9 +31,9 @@
     <div class="form-group col-md-6">
         <label class="form-label">Mã tài khoản</label>
         <select class="form-select" id="employee-account-id">
-            <option value="">Chọn tài khoản</option>
+            <option value="">Không gắn tài khoản</option>
         </select>
-        <div class="form-text" id="employee-account-hint">Danh sách các tài khoản chưa được gắn cho nhân viên khác</div>
+        <div class="form-text" id="employee-account-hint">Có thể bỏ trống nếu chưa cần gắn tài khoản cho nhân viên.</div>
         <div class="invalid-feedback" id="employee-account-id-error"></div>
     </div>
 
@@ -175,11 +175,6 @@
                         isValid = false;
                     }
 
-                    if (!employeeAccountInput.value) {
-                        setFieldError('MaTK', 'Vui lòng chọn tài khoản.');
-                        isValid = false;
-                    }
-
                     return isValid;
                 };
 
@@ -217,7 +212,7 @@
                         return isEmployeeAccount && (accountId === currentAccountId || !usedAccountIds.has(accountId));
                     });
 
-                    employeeAccountInput.innerHTML = '<option value="">Chọn tài khoản</option>' + availableAccounts.map(function (account) {
+                    employeeAccountInput.innerHTML = '<option value="">Không gắn tài khoản</option>' + availableAccounts.map(function (account) {
                         const accountId = account && account.MaTK ? account.MaTK : '--';
                         const accountEmail = account && account.Email ? account.Email : '--';
                         return `<option value="${accountId}">${accountId} - ${accountEmail} (${mapAccountType(account.LoaiTaiKhoan)})</option>`;
@@ -229,8 +224,8 @@
 
                     if (accountHint) {
                         accountHint.textContent = availableAccounts.length
-                            ? 'Danh sách các tài khoản chưa được gắn cho nhân viên khác.'
-                            : 'Hiện chưa có tài khoản trống để gắn cho nhân viên.';
+                            ? 'Có thể bỏ trống hoặc chọn một tài khoản chưa được gắn cho nhân viên khác.'
+                            : 'Hiện chưa có tài khoản trống. Bạn vẫn có thể lưu nhân viên mà không gắn tài khoản.';
                     }
                 };
 
@@ -243,8 +238,8 @@
 
                 const loadDependencies = async function () {
                     const responses = await Promise.all([
-                        fetch(accountsUrl, { headers: { 'Accept': 'application/json' } }),
-                        fetch(employeesUrl, { headers: { 'Accept': 'application/json' } })
+                        fetch(accountsUrl, { headers: { Accept: 'application/json' } }),
+                        fetch(employeesUrl, { headers: { Accept: 'application/json' } })
                     ]);
 
                     if (!responses[0].ok) {
@@ -268,7 +263,7 @@
                     }
 
                     const response = await fetch(detailUrlTemplate.replace('__EMPLOYEE_ID__', employeeId), {
-                        headers: { 'Accept': 'application/json' }
+                        headers: { Accept: 'application/json' }
                     });
 
                     if (!response.ok) {
@@ -293,7 +288,7 @@
 
                         const payload = {
                             TenNV: employeeNameInput.value.trim(),
-                            MaTK: employeeAccountInput.value
+                            MaTK: employeeAccountInput.value ? employeeAccountInput.value : null
                         };
 
                         const requestUrl = isEdit
@@ -310,7 +305,7 @@
                             const response = await fetch(requestUrl, {
                                 method: requestMethod,
                                 headers: {
-                                    'Accept': 'application/json',
+                                    Accept: 'application/json',
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify(payload)

@@ -258,7 +258,7 @@ class PhongController extends Controller
                         'Mua' => $bg->Mua,
                         'GiaPhong' => $bg->GiaPhong,
                     ])->values(),
-                    // ✅ Giá thấp nhất
+                    // ✅ Giá thấp nhất (nếu có, nếu không có thì trả về 0)
                     'giaThapNhat' => $loaiPhong->bangGias->min('GiaPhong') ?? 0,
                     // ✅ Tiện nghi
                     'tien_nghis' => $loaiPhong->tienNghis->map(fn($tn) => [

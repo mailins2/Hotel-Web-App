@@ -36,7 +36,15 @@
                         throw new Error('Không thể tải chi tiết khuyến mãi.');
                     }
 
-                    const promotion = await response.json();
+                    const payload = await response.json().catch(function () {
+                        return {};
+                    });
+
+                    if (!response.ok || payload.success === false) {
+                        throw new Error(payload.message || 'Không thể tải chi tiết khuyến mãi.');
+                    }
+
+                    const promotion = payload.data || {};
 
                     document.getElementById('promotion-id').textContent = promotion.MaKM || '--';
                     document.getElementById('promotion-name').textContent = promotion.TenKM || '--';

@@ -2,10 +2,23 @@
     title="Quản lý loại phòng"
     subtitle="Danh sách quản lý các loại phòng tại khách sạn"
     :create-route="route('hotel.room-types.create')"
+    :trash-route="route('hotel.room-types.trash')"
 >
     <style>
+        .hm-room-type-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .hm-room-type-table th:nth-child(3),
+        .hm-room-type-table td:nth-child(3) {
+            width: 42%;
+        }
+
         .hm-truncate-cell {
-            max-width: 360px;
+            display: block;
+            width: 100%;
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -23,7 +36,7 @@
         </div>
     </x-slot:filters>
 
-    <table class="table table-striped align-middle">
+    <table class="table table-striped align-middle hm-room-type-table">
         <thead>
             <tr>
                 <th>Mã loại</th>
@@ -45,6 +58,7 @@
         id="room-type-index-config"
         data-show-url-template="{{ route('hotel.room-types.show', ['recordId' => '__ROOM_TYPE_ID__']) }}"
         data-edit-url-template="{{ route('hotel.room-types.edit', ['recordId' => '__ROOM_TYPE_ID__']) }}"
+        data-delete-url-template="{{ url('/api/loai-phong/__ROOM_TYPE_ID__') }}"
         hidden
     ></div>
 
@@ -59,6 +73,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
+                const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
                 let roomTypes = [];
 
@@ -76,12 +91,16 @@
                 };
 
                 const escapeHtml = function (value) {
-                    return String(value || '')
+                    return String(value ?? '')
                         .replace(/&/g, '&amp;')
                         .replace(/</g, '&lt;')
                         .replace(/>/g, '&gt;')
                         .replace(/"/g, '&quot;')
                         .replace(/'/g, '&#39;');
+                };
+
+                const buildDeleteUrl = function (roomTypeId) {
+                    return String(deleteUrlTemplate || '').replace('__ROOM_TYPE_ID__', encodeURIComponent(roomTypeId || ''));
                 };
 
                 const renderRows = function (rows) {
@@ -93,6 +112,9 @@
                     tableBody.innerHTML = rows.map(function (roomType) {
                         const showUrl = showUrlTemplate.replace('__ROOM_TYPE_ID__', roomType.MaLoaiPhong);
                         const editUrl = editUrlTemplate.replace('__ROOM_TYPE_ID__', roomType.MaLoaiPhong);
+                        const childrenValue = roomType && roomType.TreEm !== undefined && roomType.TreEm !== null && String(roomType.TreEm).trim() !== ''
+                            ? roomType.TreEm
+                            : 0;
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
@@ -104,7 +126,7 @@
                                     </div>
                                 </td>
                                 <td>${escapeHtml(roomType.NguoiLon || '--')}</td>
-                                <td>${escapeHtml(roomType.TreEm !== undefined && roomType.TreEm !== null ? roomType.TreEm : '--')}</td>
+                                <td>${escapeHtml(childrenValue)}</td>
                                 <td>
                                     <div class="hm-action-group">
                                         <a href="${editUrl}" class="btn btn-sm btn-warning btn-icon" title="Chỉnh sửa">
@@ -115,7 +137,12 @@
                                                 </svg>
                                             </span>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger btn-icon" title="Xóa" onclick="window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-danger btn-icon"
+                                            title="Xóa"
+                                            data-delete-room-type-id="${escapeHtml(roomType.MaLoaiPhong)}"
+                                        >
                                             <span class="btn-inner">
                                                 <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -202,6 +229,49 @@
                         applyFilters();
                     });
                 }
+
+                document.addEventListener('click', async function (event) {
+                    const deleteButton = event.target && event.target.closest
+                        ? event.target.closest('[data-delete-room-type-id]')
+                        : null;
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const roomTypeId = deleteButton.getAttribute('data-delete-room-type-id') || '';
+
+                    if (!roomTypeId || !window.confirm(`Xóa loại phòng ${roomTypeId}?`)) {
+                        return;
+                    }
+
+                    const originalDisabledState = deleteButton.disabled;
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(buildDeleteUrl(roomTypeId), {
+                            method: 'DELETE',
+                            headers: { Accept: 'application/json' }
+                        });
+
+                        const payload = await response.json().catch(function () {
+                            return {};
+                        });
+
+                        if (!response.ok || payload.success === false) {
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể xóa loại phòng.');
+                        }
+
+                        await loadRoomTypes();
+                    } catch (error) {
+                        window.alert(error.message);
+                    } finally {
+                        deleteButton.disabled = originalDisabledState;
+                    }
+                });
 
                 loadRoomTypes();
             });

@@ -6,12 +6,37 @@
         .hm-image-input-row {
             display: flex;
             gap: 0.75rem;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 0.75rem;
+            padding: 0.9rem;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 0.75rem;
+            background: #fff;
         }
 
-        .hm-image-input-row .form-control {
+        .hm-image-input-body {
             flex: 1;
+            display: grid;
+            gap: 0.65rem;
+        }
+
+        .hm-image-preview {
+            width: 120px;
+            height: 88px;
+            border-radius: 0.65rem;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            object-fit: cover;
+            background: #f4f5f7;
+            display: block;
+        }
+
+        .hm-image-preview.is-hidden {
+            display: none;
+        }
+
+        .hm-image-meta {
+            font-size: 0.9rem;
+            color: #6c757d;
         }
 
         .hm-image-add-button {
@@ -96,11 +121,11 @@
                     <path d="M12 5V19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
                     <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
                 </svg>
-                Thêm ảnh
+                Thêm ô ảnh
             </button>
         </div>
         <div id="room-type-image-inputs"></div>
-        <div class="form-text" id="room-type-images-hint">Nhập tối đa 5 link ảnh phòng.</div>
+        <div class="form-text" id="room-type-images-hint">Tối đa 5 ảnh cho mỗi loại phòng.</div>
         <div class="invalid-feedback d-block" id="room-type-images-error"></div>
     </div>
 
@@ -141,7 +166,7 @@
                 const addImageButton = document.getElementById('room-type-add-image-button');
                 const imageHint = document.getElementById('room-type-images-hint');
 
-                let currentImages = [];
+                let removedExistingImageIds = [];
 
                 const setAlert = function (type, message) {
                     if (!alertBox) {
@@ -166,7 +191,7 @@
                         ['room-type-name', roomTypeNameInput],
                         ['room-type-description', roomTypeDescriptionInput],
                         ['room-type-adults', roomTypeAdultsInput],
-                        ['room-type-children', roomTypeChildrenInput]
+                        ['room-type-children', roomTypeChildrenInput],
                     ].forEach(function (item) {
                         const key = item[0];
                         const field = item[1];
@@ -193,7 +218,8 @@
                         Mota: 'room-type-description',
                         NguoiLon: 'room-type-adults',
                         TreEm: 'room-type-children',
-                        HinhAnh: 'room-type-images'
+                        HinhAnh: 'room-type-images',
+                        image: 'room-type-images',
                     };
 
                     const key = keyMap[fieldName];
@@ -235,36 +261,89 @@
                     }
 
                     if (imageHint) {
-                        imageHint.textContent = `Đang dùng ${imageCount}/5 ô nhập link ảnh.`;
+                        imageHint.textContent = `Đang sử dụng ${imageCount}/5 ô ảnh.`;
                     }
                 };
 
-                const createImageRow = function (value) {
+                const setRowPreview = function (preview, meta, src, metaText) {
+                    if (preview) {
+                        preview.src = src || '';
+                        preview.classList.toggle('is-hidden', !src);
+                    }
+
+                    if (meta) {
+                        meta.textContent = metaText || '';
+                    }
+                };
+
+                const createImageRow = function (existingImage) {
                     const row = document.createElement('div');
                     row.className = 'hm-image-input-row';
                     row.setAttribute('data-room-type-image-row', '1');
 
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.className = 'form-control';
-                    input.placeholder = 'Nhập đường dẫn ảnh minh họa';
-                    input.value = value || '';
+                    if (existingImage && existingImage.Id) {
+                        row.dataset.imageId = String(existingImage.Id);
+                        row.dataset.rowType = 'existing';
+                    } else {
+                        row.dataset.rowType = 'new';
+                    }
+
+                    const body = document.createElement('div');
+                    body.className = 'hm-image-input-body';
+
+                    const preview = document.createElement('img');
+                    preview.className = 'hm-image-preview is-hidden';
+                    preview.alt = 'Xem trước';
+                    preview.setAttribute('data-room-type-image-preview', '1');
+
+                    const meta = document.createElement('div');
+                    meta.className = 'hm-image-meta';
+                    meta.setAttribute('data-room-type-image-meta', '1');
+
+                    body.appendChild(preview);
+                    body.appendChild(meta);
+
+                    if (existingImage && existingImage.Url) {
+                        setRowPreview(preview, meta, existingImage.Url, 'Ảnh hiện tại');
+                    } else {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.className = 'form-control';
+                        input.setAttribute('data-room-type-image-file', '1');
+
+                        input.addEventListener('change', function (event) {
+                            const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+                            if (!file) {
+                                setRowPreview(preview, meta, '', '');
+                                return;
+                            }
+
+                            setRowPreview(preview, meta, URL.createObjectURL(file), file.name);
+                        });
+
+                        body.appendChild(input);
+                    }
 
                     const removeButton = document.createElement('button');
                     removeButton.type = 'button';
                     removeButton.className = 'btn btn-sm btn-light text-danger';
-                    removeButton.setAttribute('data-room-type-remove-image', '1');
                     removeButton.title = 'Xóa ảnh';
                     removeButton.textContent = 'Xóa';
+                    removeButton.addEventListener('click', function () {
+                        if (row.dataset.imageId) {
+                            removedExistingImageIds.push(row.dataset.imageId);
+                        }
 
-                    if (removeButton) {
-                        removeButton.addEventListener('click', function () {
-                            row.remove();
-                            updateImageUiState();
-                        });
-                    }
+                        row.remove();
+                        updateImageUiState();
 
-                    row.appendChild(input);
+                        if (!imageInputsContainer.querySelector('[data-room-type-image-row]') && !isEdit) {
+                            createImageRow();
+                        }
+                    });
+
+                    row.appendChild(body);
                     row.appendChild(removeButton);
                     imageInputsContainer.appendChild(row);
                     updateImageUiState();
@@ -272,17 +351,25 @@
 
                 const ensureAtLeastOneImageRow = function () {
                     if (!imageInputsContainer.querySelector('[data-room-type-image-row]')) {
-                        createImageRow('');
+                        createImageRow();
                     }
                 };
 
-                const getImageInputValues = function () {
-                    return Array.from(imageInputsContainer.querySelectorAll('[data-room-type-image-row] input'))
-                        .map(function (input) {
-                            return input.value.trim();
+                const getSelectedFiles = function () {
+                    return Array.from(imageInputsContainer.querySelectorAll('[data-room-type-image-row]'))
+                        .filter(function (row) {
+                            return row.dataset.rowType === 'new';
                         })
-                        .filter(function (value) {
-                            return value !== '';
+                        .map(function (row) {
+                            const input = row.querySelector('[data-room-type-image-file]');
+                            const file = input && input.files && input.files[0] ? input.files[0] : null;
+                            return {
+                                row: row,
+                                file: file,
+                            };
+                        })
+                        .filter(function (item) {
+                            return !!item.file;
                         });
                 };
 
@@ -291,7 +378,7 @@
                     clearAlert();
 
                     let isValid = true;
-                    const imageValues = getImageInputValues();
+                    const totalRows = imageInputsContainer.querySelectorAll('[data-room-type-image-row]').length;
 
                     if (!roomTypeNameInput.value.trim()) {
                         setFieldError('TenLoaiPhong', 'Vui lòng nhập tên loại phòng.');
@@ -308,8 +395,8 @@
                         isValid = false;
                     }
 
-                    if (imageValues.length > 5) {
-                        setFieldError('HinhAnh', 'Chỉ được nhập tối đa 5 ảnh.');
+                    if (totalRows > 5) {
+                        setFieldError('HinhAnh', 'Chỉ được chọn tối đa 5 ảnh.');
                         isValid = false;
                     }
 
@@ -327,14 +414,6 @@
                         : (isEdit ? 'Lưu thay đổi' : 'Tạo mới');
                 };
 
-                const getImageUrl = function (image) {
-                    if (!image) {
-                        return '';
-                    }
-
-                    return image.Url || image.url || image.DuongDan || image.duong_dan || '';
-                };
-
                 const populateForm = function (roomType) {
                     roomTypeIdInput.value = roomType && roomType.MaLoaiPhong ? roomType.MaLoaiPhong : '--';
                     roomTypeNameInput.value = roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : '';
@@ -343,11 +422,11 @@
                     roomTypeChildrenInput.value = roomType && roomType.TreEm !== undefined && roomType.TreEm !== null ? roomType.TreEm : 0;
 
                     imageInputsContainer.innerHTML = '';
-                    currentImages = roomType && Array.isArray(roomType.hinhs) ? roomType.hinhs.slice(0, 5) : [];
+                    removedExistingImageIds = [];
 
-                    if (currentImages.length) {
-                        currentImages.forEach(function (image) {
-                            createImageRow(getImageUrl(image));
+                    if (roomType && Array.isArray(roomType.hinhs) && roomType.hinhs.length) {
+                        roomType.hinhs.slice(0, 5).forEach(function (image) {
+                            createImageRow(image);
                         });
                     } else {
                         ensureAtLeastOneImageRow();
@@ -355,65 +434,49 @@
                 };
 
                 const syncImages = async function (savedRoomTypeId) {
-                    const desiredUrls = getImageInputValues().slice(0, 5);
-                    const existingImages = Array.isArray(currentImages) ? currentImages.slice(0, 5) : [];
-                    const totalSteps = Math.max(existingImages.length, desiredUrls.length);
+                    const deleteQueue = Array.from(new Set(removedExistingImageIds));
+                    const selectedFiles = getSelectedFiles();
 
-                    for (let index = 0; index < totalSteps; index += 1) {
-                        const existingImage = existingImages[index] || null;
-                        const desiredUrl = desiredUrls[index] || '';
-
-                        if (existingImage && desiredUrl) {
-                            if (getImageUrl(existingImage) !== desiredUrl) {
-                                const updateResponse = await fetch(
-                                    imageDetailUrlTemplate.replace('__IMAGE_ID__', existingImage.Id),
-                                    {
-                                        method: 'PUT',
-                                        headers: {
-                                            'Accept': 'application/json',
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({
-                                            Url: desiredUrl,
-                                            MaLoaiPhong: savedRoomTypeId
-                                        })
-                                    }
-                                );
-
-                                if (!updateResponse.ok) {
-                                    throw new Error('Không thể cập nhật ảnh phòng.');
-                                }
-                            }
-                        } else if (existingImage && !desiredUrl) {
-                            const deleteResponse = await fetch(
-                                imageDetailUrlTemplate.replace('__IMAGE_ID__', existingImage.Id),
-                                {
-                                    method: 'DELETE',
-                                    headers: {
-                                        'Accept': 'application/json'
-                                    }
-                                }
-                            );
-
-                            if (!deleteResponse.ok) {
-                                throw new Error('Không thể xóa ảnh phòng.');
-                            }
-                        } else if (!existingImage && desiredUrl) {
-                            const createImageResponse = await fetch(imageCreateUrl, {
-                                method: 'POST',
+                    for (const imageId of deleteQueue) {
+                        const deleteResponse = await fetch(
+                            imageDetailUrlTemplate.replace('__IMAGE_ID__', imageId),
+                            {
+                                method: 'DELETE',
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
                                 },
-                                body: JSON.stringify({
-                                    Url: desiredUrl,
-                                    MaLoaiPhong: savedRoomTypeId
-                                })
-                            });
-
-                            if (!createImageResponse.ok) {
-                                throw new Error('Không thể lưu ảnh phòng.');
                             }
+                        );
+
+                        if (!deleteResponse.ok) {
+                            throw new Error('Không thể xóa ảnh phòng cũ.');
+                        }
+                    }
+
+                    for (const item of selectedFiles) {
+                        const formData = new FormData();
+                        formData.append('image', item.file);
+                        formData.append('MaLoaiPhong', savedRoomTypeId);
+
+                        const createImageResponse = await fetch(imageCreateUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                            body: formData,
+                        });
+
+                        const createImageData = await createImageResponse.json().catch(function () {
+                            return {};
+                        });
+
+                        if (createImageResponse.status === 422) {
+                            applyServerErrors(createImageData.errors || {});
+                            throw new Error('Không thể lưu ảnh phòng.');
+                        }
+
+                        if (!createImageResponse.ok) {
+                            throw new Error(createImageData.message || 'Không thể lưu ảnh phòng.');
                         }
                     }
                 };
@@ -425,7 +488,7 @@
                     }
 
                     const response = await fetch(detailUrlTemplate.replace('__ROOM_TYPE_ID__', roomTypeId), {
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 'Accept': 'application/json' },
                     });
 
                     if (!response.ok) {
@@ -452,7 +515,8 @@
                         if (currentCount >= 5) {
                             return;
                         }
-                        createImageRow('');
+
+                        createImageRow();
                     });
                 }
 
@@ -466,15 +530,14 @@
 
                         const payload = {
                             TenLoaiPhong: roomTypeNameInput.value.trim(),
-                            Mota: roomTypeDescriptionInput.value.trim(),
+                            Mota: roomTypeDescriptionInput.value,
                             NguoiLon: Number(roomTypeAdultsInput.value),
-                            TreEm: Number(roomTypeChildrenInput.value)
+                            TreEm: Number(roomTypeChildrenInput.value),
                         };
 
                         const requestUrl = isEdit
                             ? detailUrlTemplate.replace('__ROOM_TYPE_ID__', roomTypeId)
                             : createUrl;
-
                         const requestMethod = isEdit ? 'PUT' : 'POST';
 
                         try {
@@ -486,9 +549,9 @@
                                 method: requestMethod,
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify(payload)
+                                body: JSON.stringify(payload),
                             });
 
                             const responseData = await response.json().catch(function () {
@@ -527,7 +590,7 @@
                             }
 
                             if (imageErrorMessage) {
-                                setAlert('warning', `${isEdit ? 'Cập nhật' : 'Tạo'} loại phòng thành công, nhưng có lỗi khi lưu ảnh: ${imageErrorMessage}`);
+                                setAlert('warning', `${isEdit ? 'Cập nhật' : 'Tạo'} loại phòng thành công, nhưng xử lý ảnh gặp lỗi: ${imageErrorMessage}`);
                             } else {
                                 setAlert('success', isEdit ? 'Cập nhật loại phòng thành công.' : 'Tạo loại phòng thành công.');
                             }

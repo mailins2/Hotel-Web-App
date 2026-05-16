@@ -2,6 +2,30 @@
     :is-edit="request()->routeIs('hotel.services.edit')"
     :index-route="route('hotel.services.index')"
 >
+    <style>
+        .hm-service-image-preview {
+            width: 180px;
+            max-width: 100%;
+            height: 130px;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            object-fit: cover;
+            background: #f4f5f7;
+            display: block;
+            margin-top: 0.75rem;
+        }
+
+        .hm-service-image-preview.is-hidden {
+            display: none;
+        }
+
+        .hm-service-image-note {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+
     <div class="col-12">
         <div id="service-form-alert" class="alert d-none mb-4" role="alert"></div>
     </div>
@@ -56,13 +80,19 @@
     <div class="form-group col-md-12">
         <label class="form-label">Ảnh dịch vụ</label>
         <input
-            type="text"
+            type="file"
             class="form-control"
-            id="service-image-url"
-            placeholder="Nhập đường dẫn ảnh minh họa"
+            id="service-image-file"
+            accept="image/*"
         >
-        <!-- <div class="form-text">Có thể để trống nếu chưa có ảnh.</div> -->
-        <div class="invalid-feedback" id="service-image-url-error"></div>
+        <img
+            src=""
+            alt="Xem trước ảnh dịch vụ"
+            id="service-image-preview"
+            class="hm-service-image-preview is-hidden"
+        >
+        <div class="hm-service-image-note" id="service-image-note">Chọn 1 ảnh từ máy tính để upload lên Cloudinary.</div>
+        <div class="invalid-feedback d-block" id="service-image-file-error"></div>
     </div>
 
     <div
@@ -97,22 +127,25 @@
                 const nameInput = document.getElementById('service-name');
                 const priceInput = document.getElementById('service-price');
                 const typeInput = document.getElementById('service-type');
-                const imageUrlInput = document.getElementById('service-image-url');
+                const imageFileInput = document.getElementById('service-image-file');
+                const imagePreview = document.getElementById('service-image-preview');
+                const imageNote = document.getElementById('service-image-note');
 
                 let currentImageId = null;
+                let currentImageUrl = '';
 
                 const fieldMap = {
                     TenDV: nameInput,
                     GiaDV: priceInput,
                     LoaiDV: typeInput,
-                    Url: imageUrlInput,
+                    image: imageFileInput,
                 };
 
                 const errorKeyMap = {
                     TenDV: 'name',
                     GiaDV: 'price',
                     LoaiDV: 'type',
-                    Url: 'image-url',
+                    image: 'image-file',
                 };
 
                 const setAlert = function (type, message) {
@@ -174,6 +207,19 @@
                     });
                 };
 
+                const updatePreview = function (src, note) {
+                    if (!imagePreview) {
+                        return;
+                    }
+
+                    imagePreview.src = src || '';
+                    imagePreview.classList.toggle('is-hidden', !src);
+
+                    if (imageNote) {
+                        imageNote.textContent = note || 'Chọn 1 ảnh từ máy tính để upload lên Cloudinary.';
+                    }
+                };
+
                 const validateForm = function () {
                     clearFieldErrors();
                     clearAlert();
@@ -220,33 +266,44 @@
                     nameInput.value = service && service.TenDV ? service.TenDV : '';
                     priceInput.value = service && service.GiaDV !== undefined && service.GiaDV !== null ? service.GiaDV : '';
                     typeInput.value = service && service.LoaiDV !== undefined && service.LoaiDV !== null ? String(service.LoaiDV) : '';
-                    imageUrlInput.value = image && image.Url ? image.Url : '';
+
                     currentImageId = image && image.Id ? image.Id : null;
+                    currentImageUrl = image && image.Url ? image.Url : '';
+
+                    if (currentImageUrl) {
+                        updatePreview(currentImageUrl, 'Ảnh hiện tại. Chọn file mới nếu muốn thay thế.');
+                    } else {
+                        updatePreview('', 'Chọn 1 ảnh từ máy tính để upload lên Cloudinary.');
+                    }
                 };
 
                 const syncImage = async function (targetServiceId) {
-                    const imageUrl = imageUrlInput.value.trim();
+                    const file = imageFileInput && imageFileInput.files && imageFileInput.files[0]
+                        ? imageFileInput.files[0]
+                        : null;
 
-                    if (!imageUrl) {
+                    if (!file) {
                         return;
                     }
 
-                    const imagePayload = {
-                        Url: imageUrl,
-                        MaDV: targetServiceId,
-                    };
+                    const formData = new FormData();
+                    formData.append('image', file);
+                    formData.append('MaDV', targetServiceId);
+
+                    if (isEdit && currentImageId) {
+                        formData.append('_method', 'PUT');
+                    }
 
                     const imageResponse = await fetch(
                         isEdit && currentImageId
                             ? imageDetailUrlTemplate.replace('__IMAGE_ID__', currentImageId)
                             : imageIndexUrl,
                         {
-                            method: isEdit && currentImageId ? 'PUT' : 'POST',
+                            method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
-                                'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify(imagePayload)
+                            body: formData,
                         }
                     );
 
@@ -266,6 +323,7 @@
                     const savedImage = imageData && imageData.data ? imageData.data : null;
                     if (savedImage && savedImage.Id) {
                         currentImageId = savedImage.Id;
+                        currentImageUrl = savedImage.Url || currentImageUrl;
                     }
                 };
 
@@ -277,11 +335,11 @@
                     try {
                         const [serviceResponse, imageResponse] = await Promise.all([
                             fetch(updateUrlTemplate.replace('__SERVICE_ID__', serviceId), {
-                                headers: { 'Accept': 'application/json' }
+                                headers: { 'Accept': 'application/json' },
                             }),
                             fetch(imageIndexUrl, {
-                                headers: { 'Accept': 'application/json' }
-                            })
+                                headers: { 'Accept': 'application/json' },
+                            }),
                         ]);
 
                         if (!serviceResponse.ok) {
@@ -308,6 +366,21 @@
 
                 if (serviceIdGroup) {
                     serviceIdGroup.style.display = isEdit ? '' : 'none';
+                }
+
+                if (imageFileInput) {
+                    imageFileInput.addEventListener('change', function (event) {
+                        const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
+
+                        if (!file) {
+                            updatePreview(currentImageUrl, currentImageUrl
+                                ? 'Ảnh hiện tại. Chọn file mới nếu muốn thay thế.'
+                                : 'Chọn 1 ảnh từ máy tính để upload lên Cloudinary.');
+                            return;
+                        }
+
+                        updatePreview(URL.createObjectURL(file), file.name);
+                    });
                 }
 
                 if (form) {
@@ -338,9 +411,9 @@
                                 method: requestMethod,
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
                                 },
-                                body: JSON.stringify(payload)
+                                body: JSON.stringify(payload),
                             });
 
                             const responseData = await response.json().catch(function () {
@@ -361,7 +434,7 @@
                             const savedServiceId = savedService && savedService.MaDV ? savedService.MaDV : serviceId;
                             let imageErrorMessage = '';
 
-                            if (savedServiceId && imageUrlInput.value.trim()) {
+                            if (savedServiceId) {
                                 try {
                                     await syncImage(savedServiceId);
                                 } catch (imageError) {
@@ -372,7 +445,7 @@
                             serviceIdInput.value = savedServiceId || '--';
 
                             if (imageErrorMessage) {
-                                setAlert('warning', `${isEdit ? 'Cập nhật' : 'Tạo'} dịch vụ thành công, nhưng lưu ảnh chưa thành công.`);
+                                setAlert('warning', `${isEdit ? 'Cập nhật' : 'Tạo'} dịch vụ thành công, nhưng xử lý ảnh gặp lỗi.`);
                             } else {
                                 setAlert('success', isEdit ? 'Cập nhật dịch vụ thành công.' : 'Tạo dịch vụ thành công.');
                             }

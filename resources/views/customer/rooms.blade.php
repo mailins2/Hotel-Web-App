@@ -270,9 +270,9 @@
         }).join('');
 
         roomPagination.innerHTML = `
-          <button type="button" class="room-list-page" data-room-page-prev ${currentRoomPage === 1 ? 'disabled' : ''}>Trước</button>
+          <button type="button" class="room-list-page" data-room-page-prev ${currentRoomPage === 1 ? 'disabled' : ''}><<</button>
           ${pageButtons}
-          <button type="button" class="room-list-page" data-room-page-next ${currentRoomPage === pageCount ? 'disabled' : ''}>Sau</button>
+          <button type="button" class="room-list-page" data-room-page-next ${currentRoomPage === pageCount ? 'disabled' : ''}>>></button>
         `;
 
         roomPagination.querySelector('[data-room-page-prev]')?.addEventListener('click', () => renderRoomsPage(currentRoomPage - 1, true));

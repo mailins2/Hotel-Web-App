@@ -89,6 +89,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
                         'label' => $roomNumbers
                             ? "#{$booking->MaDatPhong} - {$roomNumbers}"
                             : "#{$booking->MaDatPhong}",
+                        'checkIn' => \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString(),
+                        'checkOut' => \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString(),
                     ];
                 })
                 ->values();
@@ -308,6 +310,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 Route::prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::view('/room-amenities', 'hotel-management.room-amenities.index')->name('room-amenities.index');
+    Route::view('/room-amenities/trash', 'hotel-management.room-amenities.trash')->name('room-amenities.trash');
+    Route::view('/room-amenities/create', 'hotel-management.room-amenities.form')->name('room-amenities.create');
+    Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
+    Route::view('/room-amenities/{recordId}/assign', 'hotel-management.room-amenities.assign')->name('room-amenities.assign');
+    Route::view('/room-amenities/{recordId}', 'hotel-management.room-amenities.show')->name('room-amenities.show');
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::post('/', [AccountManagementController::class, 'store'])->name('store');
         Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
@@ -341,6 +349,7 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
     foreach ($hotelManagementViews as $module => $viewBase) {
         Route::prefix($module)->name($module . '.')->group(function () use ($viewBase, $module) {
             Route::view('/', $viewBase . '.index')->name('index');
+            Route::view('/trash', $viewBase . '.trash')->name('trash');
             Route::view('/create', $viewBase . '.form')->name('create');
             Route::view('/{recordId}/edit', $viewBase . '.form')->name('edit');
             if ($module === 'services') {

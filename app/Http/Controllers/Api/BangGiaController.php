@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\BangGia;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class BangGiaController extends Controller
 {
@@ -12,7 +13,11 @@ class BangGiaController extends Controller
     public function index()
     {
         return response()->json(
-            BangGia::with('loaiPhong')->get()
+            BangGia::with('loaiPhong')
+                ->whereHas('loaiPhong', function ($query) {
+                    $query->whereNull('LoaiPhong.deleted_at');
+                })
+                ->get()
         );
     }
 
@@ -20,7 +25,10 @@ class BangGiaController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+            ],
             'Mua' => 'required|integer',
             'GiaPhong' => 'required|numeric'
         ]);
@@ -40,6 +48,9 @@ class BangGiaController extends Controller
 
         return response()->json(
             BangGia::with('loaiPhong')
+                ->whereHas('loaiPhong', function ($query) {
+                    $query->whereNull('LoaiPhong.deleted_at');
+                })
                 ->where('MaLoaiPhong', $data['MaLoaiPhong'])
                 ->where('Mua', $data['Mua'])
                 ->first(),
@@ -52,6 +63,9 @@ class BangGiaController extends Controller
     {
         return response()->json(
             BangGia::with('loaiPhong')
+                ->whereHas('loaiPhong', function ($query) {
+                    $query->whereNull('LoaiPhong.deleted_at');
+                })
                 ->where('MaLoaiPhong', $maLoaiPhong)
                 ->where('Mua', $mua)
                 ->firstOrFail()

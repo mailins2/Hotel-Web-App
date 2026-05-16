@@ -3,6 +3,7 @@
     'subtitle',
     'createRoute' => null,
     'showCreateButton' => true,
+    'trashRoute' => null,
 ])
 
 <x-app-layout :assets="['animation']">
@@ -29,6 +30,25 @@
         }
 
         .hm-create-button svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .hm-icon-button {
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 42px;
+            padding: 0 0.9rem;
+            border-radius: 5px;
+            white-space: nowrap;
+            font-weight: 700;
+        }
+
+        .hm-icon-button svg {
             width: 18px;
             height: 18px;
             flex-shrink: 0;
@@ -121,17 +141,34 @@
                         <p class="mb-0 text-muted">{{ $subtitle }}</p>
                     </div>
 
-                    @if($showCreateButton && $createRoute)
-                        <a href="{{ $createRoute }}" class="btn btn-primary btn-sm hm-create-button" style="padding: 10px;">
-                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11 13.5C13.4853 13.5 15.5 11.4853 15.5 9C15.5 6.51472 13.4853 4.5 11 4.5C8.51472 4.5 6.5 6.51472 6.5 9C6.5 11.4853 8.51472 13.5 11 13.5Z" fill="currentColor" opacity="0.92"/>
-                                <path d="M3.5 19.5C3.5 16.7386 6.18629 14.5 9.5 14.5H12.5C14.163 14.5 15.6681 15.063 16.7518 15.9721C15.6497 16.5803 14.9048 17.7537 14.9048 19.0952V19.5H3.5Z" fill="currentColor" opacity="0.92"/>
-                                <path d="M18.5 14.5V22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                <path d="M14.5 18.5H22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                            Thêm mới
-                        </a>
-                    @endif
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @isset($headerActions)
+                            {{ $headerActions }}
+                        @endisset
+
+                        @if($trashRoute)
+                            <a href="{{ $trashRoute }}" class="btn btn-light btn-sm hm-icon-button" title="Lịch sử xóa" aria-label="Lịch sử xóa">
+                                <svg width="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C15.0481 3 17.7421 4.51684 19.3696 6.83739" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M21 4V8H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                                Lịch sử xóa
+                            </a>
+                        @endif
+
+                        @if($showCreateButton && $createRoute)
+                            <a href="{{ $createRoute }}" class="btn btn-primary btn-sm hm-create-button" style="padding: 10px;">
+                                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M11 13.5C13.4853 13.5 15.5 11.4853 15.5 9C15.5 6.51472 13.4853 4.5 11 4.5C8.51472 4.5 6.5 6.51472 6.5 9C6.5 11.4853 8.51472 13.5 11 13.5Z" fill="currentColor" opacity="0.92"/>
+                                    <path d="M3.5 19.5C3.5 16.7386 6.18629 14.5 9.5 14.5H12.5C14.163 14.5 15.6681 15.063 16.7518 15.9721C15.6497 16.5803 14.9048 17.7537 14.9048 19.0952V19.5H3.5Z" fill="currentColor" opacity="0.92"/>
+                                    <path d="M18.5 14.5V22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M14.5 18.5H22.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                                Thêm mới
+                            </a>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="card-body">

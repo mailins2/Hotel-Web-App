@@ -36,8 +36,8 @@ class HoaDon extends Model
     {
         return $this->belongsTo(NhanVien::class, 'MaNV');
     }
-      public function khuyenMai()
+    public function khuyenMai()
     {
-        return $this->belongsTo(KhuyenMai::class, 'MaKM');
+        return $this->belongsTo(KhuyenMai::class, 'MaKM')->withTrashed();
     }
 }
