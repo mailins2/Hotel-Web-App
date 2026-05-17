@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         $redirectTo = $request->input('redirect');
 
-        if ((int) $taiKhoan->LoaiTaiKhoan === 0 && is_string($redirectTo) && str_starts_with($redirectTo, url('/customer'))) {
+        if ($this->canRedirectToIntended($redirectTo, (int) $taiKhoan->LoaiTaiKhoan)) {
             return redirect()->to($redirectTo);
         }
 
@@ -74,6 +74,31 @@ class AuthController extends Controller
         return redirect()
             ->route('login')
             ->with('success', 'Đăng xuất thành công.');
+    }
+
+    private function canRedirectToIntended(mixed $redirectTo, int $accountType): bool
+    {
+        if (!is_string($redirectTo) || trim($redirectTo) === '') {
+            return false;
+        }
+
+        $appUrl = rtrim(url('/'), '/');
+        $targetUrl = str_starts_with($redirectTo, '/')
+            ? $appUrl . '/' . ltrim($redirectTo, '/')
+            : $redirectTo;
+
+        if ($targetUrl !== $appUrl && !str_starts_with($targetUrl, $appUrl . '/')) {
+            return false;
+        }
+
+        $path = '/' . ltrim(parse_url($targetUrl, PHP_URL_PATH) ?: '', '/');
+
+        return match ($accountType) {
+            0 => str_starts_with($path, '/customer'),
+            1 => str_starts_with($path, '/reception'),
+            2 => str_starts_with($path, '/admin') || str_starts_with($path, '/hotel'),
+            default => false,
+        };
     }
 
     public function registerStepOne(Request $request)
@@ -224,33 +249,10 @@ class AuthController extends Controller
         ]);
         $request->session()->put('registration', $registration);
 
-        $storeTaiKhoanRequest = new Request([
-            'Email' => $registration['email'] ?? null,
-            'MatKhau' => $registration['password'] ?? null,
-            'LoaiTaiKhoan' => 0,
-            'TrangThai' => 1,
-        ]);
-
         try {
             DB::beginTransaction();
 
-            $storeTaiKhoanResponse = app(TaiKhoanController::class)->store($storeTaiKhoanRequest);
-
-            if ($storeTaiKhoanResponse->getStatusCode() !== 201) {
-                DB::rollBack();
-                $request->session()->forget('registration');
-
-                return redirect()
-                    ->route('auth.signup')
-                    ->withErrors(['register' => 'Không thể tạo tài khoản. Email có thể đã được sử dụng.'])
-                    ->withInput(['email' => $registration['email'] ?? null]);
-            }
-
-            $taiKhoanPayload = $storeTaiKhoanResponse->getData(true);
-            $maTaiKhoan = $taiKhoanPayload['data']['MaTK'] ?? null;
-
             $storeKhachHangRequest = new Request([
-                'MaTK' => $maTaiKhoan,
                 'TenKH' => $registration['full_name'],
                 'SoDienThoai' => $registration['phone'],
                 'CCCD' => $registration['cccd'],
@@ -268,6 +270,29 @@ class AuthController extends Controller
                 return redirect()
                     ->route('auth.signup')
                     ->withErrors(['register' => 'Không thể tạo thông tin khách hàng. Số điện thoại hoặc CCCD có thể đã được sử dụng.'])
+                    ->withInput(['email' => $registration['email'] ?? null]);
+            }
+
+            $khachHangPayload = $storeKhachHangResponse->getData(true);
+            $maKhachHang = $khachHangPayload['data']['MaKH'] ?? null;
+
+            $storeTaiKhoanRequest = new Request([
+                'Email' => $registration['email'] ?? null,
+                'MatKhau' => $registration['password'] ?? null,
+                'LoaiTaiKhoan' => 0,
+                'TrangThai' => 1,
+                'MaKH' => $maKhachHang,
+            ]);
+
+            $storeTaiKhoanResponse = app(TaiKhoanController::class)->store($storeTaiKhoanRequest);
+
+            if ($storeTaiKhoanResponse->getStatusCode() !== 201) {
+                DB::rollBack();
+                $request->session()->forget('registration');
+
+                return redirect()
+                    ->route('auth.signup')
+                    ->withErrors(['register' => 'Không thể tạo tài khoản. Email có thể đã được sử dụng.'])
                     ->withInput(['email' => $registration['email'] ?? null]);
             }
 

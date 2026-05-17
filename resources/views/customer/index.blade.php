@@ -135,7 +135,7 @@
 	        			</div>
 	        			<div class="col-md d-flex">
 	        				<div class="form-group d-flex align-self-stretch">
-			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary py-5 py-md-3 px-4 align-self-stretch d-block" data-home-booking-search-submit><span class="booking-submit-content"><i class="ion-ios-search"></i>Tìm kiếm</span></a>
+			              <a href="{{ route('customer.rooms-booking') }}" class="btn btn-primary px-4" data-home-booking-search-submit><span class="booking-submit-content"><i class="ion-ios-search"></i><span data-submit-label>Tìm kiếm</span></span></a>
 			            </div>
 	        			</div>
 	        		</div>
@@ -817,6 +817,11 @@
             return;
           }
 
+          const setSubmitLoading = () => {
+            submit.classList.add('is-loading');
+            submit.setAttribute('aria-busy', 'true');
+          };
+
           submit.addEventListener('click', (event) => {
             event.preventDefault();
 
@@ -839,6 +844,7 @@
             url.searchParams.set('NguoiLon', String(Math.max(Number.parseInt(adults, 10) || 1, 1)));
             url.searchParams.set('TreEm', String(Math.max(Number.parseInt(children, 10) || 0, 0)));
             url.searchParams.set('SoPhong', String(Math.max(Number.parseInt(rooms, 10) || 1, 1)));
+            setSubmitLoading();
             window.location.href = url.toString();
           });
         };
@@ -974,7 +980,7 @@
         <div class="customer-booking-detail-summary">
           <div><span>Ngày nhận phòng</span><strong data-guest-payment-checkin>--</strong></div>
           <div><span>Ngày trả phòng</span><strong data-guest-payment-checkout>--</strong></div>
-          <div><span>Tổng số khách ở</span><strong data-guest-payment-guests>0 khách</strong></div>
+          <div><span>Số khách tối đa</span><strong data-guest-payment-guests>0 khách</strong></div>
           <div><span>Tổng tiền thanh toán</span><strong data-guest-payment-total>0 VND</strong></div>
           <div><span>Tiền đặt cọc</span><strong data-guest-payment-deposit>0 VND</strong></div>
         </div>
@@ -1199,10 +1205,21 @@
           localStorage.setItem(shownKey, '1');
           sessionStorage.setItem(shownKey, '1');
         };
+        const clearGuestPaymentStorage = () => {
+          localStorage.removeItem('peachBookingPayment');
+          localStorage.removeItem('peachBookingHolds');
+          localStorage.removeItem('peachBookingSelection');
+        };
+        const isRecentPayment = (payment) => {
+          const createdAt = new Date(payment?.createdAt || 0).getTime();
+          const maxAgeMs = 30 * 60 * 1000;
+          return Number.isFinite(createdAt) && Date.now() - createdAt <= maxAgeMs;
+        };
 
         const initGuestPaymentModal = async () => {
           const query = new URLSearchParams(window.location.search);
           const vnpayStatus = query.get('vnpay');
+          const txnRef = query.get('txn_ref');
           let payment = null;
           try {
             payment = JSON.parse(localStorage.getItem('peachBookingPayment') || 'null');
@@ -1210,9 +1227,22 @@
             payment = null;
           }
 
+          const hasValidVnPayReturn = Boolean(vnpayStatus && txnRef && String(payment?.appTransId || '') === String(txnRef));
+          const hasValidZaloPayReturn = !vnpayStatus
+            && payment?.provider === 'ZALOPAY'
+            && isRecentPayment(payment);
+
+          if (!hasValidVnPayReturn && !hasValidZaloPayReturn) {
+            if (payment && !isRecentPayment(payment)) {
+              clearGuestPaymentStorage();
+            }
+            return;
+          }
+
           const bookingId = Array.isArray(payment?.datPhongIds) ? payment.datPhongIds[0] : null;
-          const modalKey = `${payment?.appTransId || query.get('txn_ref') || bookingId}:${vnpayStatus || 'payment'}`;
+          const modalKey = `${payment?.appTransId || txnRef || bookingId}:${vnpayStatus || payment?.provider || 'payment'}`;
           if (!bookingId || wasPaymentModalShown(modalKey)) {
+            clearGuestPaymentStorage();
             return;
           }
 
@@ -1227,6 +1257,7 @@
             }
             rememberPaymentModalShown(modalKey);
             renderModal(booking, message || undefined);
+            clearGuestPaymentStorage();
 
             if (vnpayStatus) {
               query.delete('vnpay');
