@@ -317,7 +317,11 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
     Route::view('/room-amenities/create', 'hotel-management.room-amenities.form')->name('room-amenities.create');
     Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
     Route::view('/room-amenities/{recordId}/assign', 'hotel-management.room-amenities.assign')->name('room-amenities.assign');
-    Route::view('/room-amenities/{recordId}', 'hotel-management.room-amenities.show')->name('room-amenities.show');
+    Route::get('/room-amenities/{recordId}', function ($recordId) {
+        return view('hotel-management.room-amenities.show', [
+            'amenity' => TienNghi::findOrFail($recordId),
+        ]);
+    })->name('room-amenities.show');
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::post('/', [AccountManagementController::class, 'store'])->name('store');
         Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
@@ -332,7 +336,18 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                 'bookings' => $bookings,
             ]);
         })->name('index');
-        Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
+        Route::get('/{recordId}', function ($recordId) {
+            $booking = DatPhong::with([
+                'khachHang.taiKhoan',
+                'chiTietDatPhong.phong.loaiPhong.bangGias',
+                'hoaDon.thanhToans',
+                'hoaDon.khuyenMai',
+            ])->findOrFail($recordId);
+
+            return view('hotel-management.bookings.show', [
+                'booking' => $booking,
+            ]);
+        })->name('show');
     });
     Route::prefix('customers')->name('customers.')->group(function () {
         Route::get('/', function () {
@@ -348,7 +363,11 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         Route::post('/', [CustomerManagementController::class, 'store'])->name('store');
         Route::get('/{recordId}/edit', [CustomerManagementController::class, 'edit'])->name('edit');
         Route::put('/{recordId}', [CustomerManagementController::class, 'update'])->name('update');
-        Route::view('/{recordId}', 'hotel-management.customers.show')->name('show');
+        Route::get('/{recordId}', function ($recordId) {
+            return view('hotel-management.customers.show', [
+                'customer' => KhachHang::findOrFail($recordId),
+            ]);
+        })->name('show');
     });
 
     $hotelManagementViews = [
@@ -432,7 +451,65 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                     ]);
                 })->name('entertainment');
             }
-            Route::view('/{recordId}', $viewBase . '.show')->name('show');
+            Route::get('/{recordId}', function ($recordId) use ($viewBase, $module) {
+                $viewData = match ($module) {
+                    'accounts' => [
+                        'account' => TaiKhoan::with(['khachHang', 'nhanVien'])->findOrFail($recordId),
+                    ],
+                    'employees' => [
+                        'employee' => NhanVien::with('taiKhoan')->findOrFail($recordId),
+                    ],
+                    'room-types' => [
+                        'roomType' => LoaiPhong::with(['tienNghis', 'hinhs'])->findOrFail($recordId),
+                    ],
+                    'rooms' => [
+                        'room' => Phong::with([
+                            'loaiPhong',
+                            'chiTietDatPhong.datPhong' => function ($query) {
+                                $today = Carbon::today()->toDateString();
+
+                                $query->where('NgayNhanPhong', '<=', $today)
+                                    ->where('NgayTraPhong', '>=', $today)
+                                    ->whereIn('TinhTrang', [
+                                        DatPhong::HOLD,
+                                        DatPhong::CONFIRMED,
+                                        DatPhong::CHECKED_IN,
+                                    ]);
+                            },
+                        ])->findOrFail($recordId),
+                    ],
+                    'services' => [
+                        'service' => DichVu::with('hinhs')->findOrFail($recordId),
+                    ],
+                    'promotions' => [
+                        'promotion' => KhuyenMai::findOrFail($recordId),
+                    ],
+                    'invoices' => [
+                        'invoice' => HoaDon::with([
+                            'nhanVien',
+                            'datPhong.khachHang',
+                            'datPhong.chiTietDatPhong.phong.loaiPhong',
+                            'khuyenMai',
+                            'thanhToans',
+                            'chiTietHoaDons.loaiPhong',
+                            'chiTietHoaDons.suDung.dichVu',
+                            'chiTietHoaDons.denBu',
+                        ])->findOrFail($recordId),
+                    ],
+                    'payments' => [
+                        'payment' => ThanhToan::with('hoaDon.datPhong.khachHang')->findOrFail($recordId),
+                    ],
+                    'reviews' => [
+                        'review' => DanhGia::with([
+                            'datPhong.khachHang',
+                            'datPhong.chiTietDatPhong.phong.loaiPhong',
+                        ])->findOrFail($recordId),
+                    ],
+                    default => [],
+                };
+
+                return view($viewBase . '.show', $viewData);
+            })->name('show');
         });
     }
 });
