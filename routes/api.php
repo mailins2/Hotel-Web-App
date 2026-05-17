@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\KhachHangController;
 use App\Http\Controllers\Api\LoaiPhongController;
 use App\Http\Controllers\Api\PhongController;
 use App\Http\Controllers\Api\TienNghiController;
-use App\Http\Controllers\Api\BangGiaController;
 use App\Http\Controllers\Api\DatPhongController;
 use App\Http\Controllers\Api\DichVuController;
 use App\Http\Controllers\Api\SuDungDichVuController;
@@ -22,12 +21,6 @@ use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
-
-Route::get('/bang-gia', [BangGiaController::class, 'index']);
-Route::post('/bang-gia', [BangGiaController::class, 'store']);
-Route::get('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'show']);
-Route::put('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'update']);
-Route::delete('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'destroy']);
 
 Route::get('tien-nghi/trash', [TienNghiController::class, 'trash']);
 Route::post('tien-nghi/{id}/restore', [TienNghiController::class, 'restore']);

@@ -266,12 +266,12 @@
           return uniqueImages.length ? uniqueImages : [fallbackImage];
         };
         const getPriceForSeason = (room, season) => {
-          const priceRows = room.bangGias || room.bang_gias || [];
-          const rows = Array.isArray(priceRows) ? priceRows : [priceRows];
-          const priceRow = rows.find((item) => Number(item?.Mua ?? item?.mua) === season) || rows[0];
-          const rawPrice = priceRow?.GiaPhong || priceRow?.gia_phong || priceRow?.Gia || priceRow?.gia;
-          const numericPrice = Number(rawPrice);
-          return Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : 0;
+          const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+          if (Number.isFinite(directPrice) && directPrice > 0) {
+            return directPrice;
+          }
+
+          return 0;
         };
 
         const getNightlyPrice = (room) => getPriceForSeason(room, 1);

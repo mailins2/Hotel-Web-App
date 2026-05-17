@@ -511,7 +511,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/booking-details/{bookingId}', function ($bookingId) {
         $booking = DatPhong::with([
             'khachHang.taiKhoan',
-            'chiTietDatPhong.phong.loaiPhong.bangGias',
+            'chiTietDatPhong.phong.loaiPhong',
             'hoaDon.khuyenMai',
             'hoaDon.thanhToans',
             'hoaDon.chiTietHoaDons.loaiPhong',

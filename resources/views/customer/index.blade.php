@@ -331,15 +331,12 @@
           return images[0] || fallbackImage;
         };
         const getNightlyPrice = (room) => {
-          const priceRows = room?.bangGias || room?.bang_gias || [];
-          const rows = Array.isArray(priceRows) ? priceRows : [priceRows];
-          const priceRow = rows.find((item) => Number(item?.Mua ?? item?.mua) === 1) || rows[0];
-          const rawPrice = priceRow?.GiaPhong || priceRow?.gia_phong || priceRow?.Gia || priceRow?.gia;
-          const numericPrice = Number(rawPrice);
+          const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+          if (Number.isFinite(directPrice) && directPrice > 0) {
+            return directPrice.toLocaleString('vi-VN');
+          }
 
-          return Number.isFinite(numericPrice) && numericPrice > 0
-            ? numericPrice.toLocaleString('vi-VN')
-            : 'Liên hệ';
+          return 'Liên hệ';
         };
 
         const getRoomTypes = async () => {

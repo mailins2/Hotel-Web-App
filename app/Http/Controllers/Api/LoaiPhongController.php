@@ -18,7 +18,7 @@ class LoaiPhongController extends Controller
 
     private function fullData(): array
     {
-        return ['phongs', 'tienNghis', 'bangGias', 'hinhs'];
+        return ['phongs', 'tienNghis', 'khuyenMai', 'hinhs'];
     }
 
     private function success($data = null, string $message = 'Success', int $code = 200)
@@ -59,6 +59,13 @@ class LoaiPhongController extends Controller
             'Mota' => 'nullable|string',
             'NguoiLon' => 'required|integer|min:1',
             'TreEm' => 'required|integer|min:0',
+            'GiaPhong' => 'required|numeric|min:0',
+            'MaKM' => [
+                'nullable',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
         ]);
 
         $loaiPhong = LoaiPhong::create($data);
@@ -93,6 +100,13 @@ class LoaiPhongController extends Controller
             'Mota' => 'nullable|string',
             'NguoiLon' => 'required|integer|min:1',
             'TreEm' => 'required|integer|min:0',
+            'GiaPhong' => 'required|numeric|min:0',
+            'MaKM' => [
+                'nullable',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
         ]);
 
         $loaiPhong->update($data);

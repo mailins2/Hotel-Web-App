@@ -120,12 +120,12 @@
       }[char]));
       const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
       const getRoomPrice = (room) => {
-        const priceRows = room.bangGias || room.bang_gias || [];
-        const firstPrice = Array.isArray(priceRows) ? priceRows[0] : priceRows;
-        const rawPrice = firstPrice?.GiaPhong || firstPrice?.gia_phong || firstPrice?.Gia || firstPrice?.gia;
-        const numericPrice = Number(rawPrice);
+        const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+        if (Number.isFinite(directPrice) && directPrice > 0) {
+          return directPrice;
+        }
 
-        return Number.isFinite(numericPrice) && numericPrice > 0 ? numericPrice : 0;
+        return 0;
       };
       const formatRoomPrice = (room) => {
         const numericPrice = getRoomPrice(room);
