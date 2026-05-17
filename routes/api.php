@@ -6,7 +6,6 @@ use App\Http\Controllers\Api\KhachHangController;
 use App\Http\Controllers\Api\LoaiPhongController;
 use App\Http\Controllers\Api\PhongController;
 use App\Http\Controllers\Api\TienNghiController;
-use App\Http\Controllers\Api\BangGiaController;
 use App\Http\Controllers\Api\DatPhongController;
 use App\Http\Controllers\Api\DichVuController;
 use App\Http\Controllers\Api\SuDungDichVuController;
@@ -24,22 +23,14 @@ use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 use App\Http\Controllers\Api\AuthMobileController;
 
-Route::get('/bang-gia', [BangGiaController::class, 'index']);
-Route::post('/bang-gia', [BangGiaController::class, 'store']);
-Route::get('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'show']);
-Route::put('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'update']);
-Route::delete('/bang-gia/{maLoaiPhong}/{mua}', [BangGiaController::class, 'destroy']);
-
 Route::get('tien-nghi/trash', [TienNghiController::class, 'trash']);
 Route::post('tien-nghi/{id}/restore', [TienNghiController::class, 'restore']);
-Route::delete('tien-nghi/{id}/force-delete', [TienNghiController::class, 'forceDelete']);
 Route::apiResource('tien-nghi', TienNghiController::class);
 
 Route::apiResource('khachhangs', KhachHangController::class);
 
 Route::get('loai-phong/trash', [LoaiPhongController::class, 'trash']);
 Route::post('loai-phong/{id}/restore', [LoaiPhongController::class, 'restore']);
-Route::delete('loai-phong/{id}/force-delete', [LoaiPhongController::class, 'forceDelete']);
 Route::apiResource('loai-phong', LoaiPhongController::class);
 
 Route::post('/loai-phong/{id}/tien-nghi', [LoaiPhongController::class, 'updateTienNghi']);
@@ -51,7 +42,6 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
 Route::get('phong/trash', [PhongController::class, 'trash']);
 Route::post('phong/{id}/restore', [PhongController::class, 'restore']);
-Route::delete('phong/{id}/force-delete', [PhongController::class, 'forceDelete']);
 Route::apiResource('phong', PhongController::class);
 
 // Lịch sử đặt phòng của khách hàng
@@ -66,7 +56,6 @@ Route::apiResource('dat-phong', DatPhongController::class);
 
 Route::get('dich-vu/trash', [\App\Http\Controllers\Api\DichVuController::class, 'trash']);
 Route::post('dich-vu/{id}/restore', [\App\Http\Controllers\Api\DichVuController::class, 'restore']);
-Route::delete('dich-vu/{id}/force-delete', [\App\Http\Controllers\Api\DichVuController::class, 'forceDelete']);
 Route::apiResource('dich-vu', \App\Http\Controllers\Api\DichVuController::class);
 
 Route::get(
@@ -85,7 +74,6 @@ Route::apiResource('den-bu', DenBuHuHongController::class);
 
 Route::get('khuyen-mai/trash', [KhuyenMaiController::class, 'trash']);
 Route::post('khuyen-mai/{id}/restore', [KhuyenMaiController::class, 'restore']);
-Route::delete('khuyen-mai/{id}/force-delete', [KhuyenMaiController::class, 'forceDelete']);
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
 Route::get('kho-khuyen-mai/khach-hang/{maKH}', [KhoKhuyenMaiController::class, 'showByKhachHang']);

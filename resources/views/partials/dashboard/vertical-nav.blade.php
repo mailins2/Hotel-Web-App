@@ -102,7 +102,7 @@
     </li>
 
     
-     <li class="nav-item">
+     <!-- <li class="nav-item">
         <a class="nav-link {{ request()->is('hotel/price-lists*') ? 'active' : '' }}" href="{{ route('hotel.price-lists.index') }}">
             <i class="icon">
                 <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -115,7 +115,7 @@
             </i>
             <span class="item-name">Bảng giá</span>
         </a>
-    </li>
+    </li> -->
 
     <li class="nav-item">
         <a class="nav-link {{ request()->is('hotel/rooms*') ? 'active' : '' }}" href="{{ route('hotel.rooms.index') }}">

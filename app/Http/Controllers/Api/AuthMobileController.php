@@ -261,6 +261,7 @@ class AuthMobileController extends Controller
         }
     }
     // ========== LẤY THÔNG TIN USER HIỆN TẠI ==========
+// ========== LẤY THÔNG TIN USER HIỆN TẠI ==========
 public function getUserProfile(Request $request)
 {
     $user = $request->user();
@@ -283,8 +284,12 @@ public function getUserProfile(Request $request)
             'MaKH' => $user->khachHang?->MaKH,
             'MaNV' => $user->nhanVien?->MaNV,
             'Ten' => $user->khachHang?->TenKH ?? $user->nhanVien?->TenNV,
-            'DiemTichLuy' => $user->khachHang?->DiemTichLuy ?? 0,
+            'DiemTichLuy' => $user->khachHang?->DIEM ?? 0,  // 🔥 SỬA: DIEM (viết hoa)
             'SoDienThoai' => $user->khachHang?->SoDienThoai ?? $user->nhanVien?->SoDienThoai,
+            'DiaChi' => $user->khachHang?->DiaChi ?? '',      // 🔥 THÊM
+            'CCCD' => $user->khachHang?->CCCD ?? '',           // 🔥 THÊM
+            'NgaySinh' => $user->khachHang?->NgaySinh ?? '',   // 🔥 THÊM
+            'GioiTinh' => $user->khachHang?->GioiTinh ?? 2,    // 🔥 THÊM
         ]
     ]);
 }

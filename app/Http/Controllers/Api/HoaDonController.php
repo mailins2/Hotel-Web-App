@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\HoaDon;
 use App\Models\DatPhong;
 use App\Models\ChiTietHoaDon;
-use App\Models\BangGia;
 use App\Models\SuDungDichVu;
 use App\Models\DichVu;
 use App\Models\DenBuHuHong;
@@ -62,7 +61,7 @@ class HoaDonController extends Controller
             ]);
 
             // 🔥 lấy đặt phòng
-            $datPhong = DatPhong::with('chiTietDatPhong.phong')
+            $datPhong = DatPhong::with('chiTietDatPhong.phong.loaiPhong.khuyenMai')
                 ->find($request->MaDatPhong);
 
             // =====================
@@ -70,9 +69,9 @@ class HoaDonController extends Controller
             // =====================
             foreach ($datPhong->chiTietDatPhong as $ct) {
 
-                $bangGia = BangGia::where('MaLoaiPhong', $ct->phong->MaLoaiPhong)->first();
+                $giaPhong = (float) ($ct->phong?->loaiPhong?->giaSauKhuyenMai($datPhong->NgayNhanPhong) ?? 0);
 
-                if (!$bangGia) {
+                if ($giaPhong <= 0) {
                     throw new \Exception('Không tìm thấy giá phòng');
                 }
 
@@ -80,7 +79,7 @@ class HoaDonController extends Controller
                     'MaHD' => $hoaDon->MaHD,
                     'MaLoaiPhong' => $ct->phong->MaLoaiPhong,
                     'SoLuong' => 1,
-                    'DonGia' => $bangGia->GiaPhong
+                    'DonGia' => $giaPhong
                 ]);
             }
 
@@ -158,7 +157,7 @@ class HoaDonController extends Controller
             'datPhong.chiTietDatPhong.phong',
             'nhanVien',
             'khuyenMai',
-            'chiTietHoaDons.loaiPhong',
+            'chiTietHoaDons.loaiPhong.khuyenMai',
             'chiTietHoaDons.suDung.dichVu',
             'chiTietHoaDons.denBu',
             'thanhToans'

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -14,7 +12,14 @@ services:
       - /var/www/node_modules
       - /var/www/public/build
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 5s
+      timeout: 3s
+      retries: 60
+      start_period: 10s
     networks:
       - laravel
 
@@ -27,7 +32,8 @@ services:
       - ./:/var/www
       - ./docker/nginx:/etc/nginx/conf.d
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     networks:
       - laravel
 
@@ -38,12 +44,18 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: QLKS
-      MYSQL_USER: laravel          # 👈 thêm
-      MYSQL_PASSWORD: laravel      # 👈 thêm
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: laravel
     ports:
       - "3306:3306"
     volumes:
-      - dbdata:/var/lib/mysql      # 👈 thêm (giữ data)
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     networks:
       - laravel
 
@@ -55,7 +67,8 @@ services:
     environment:
       PMA_HOST: db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - laravel
 
@@ -63,4 +76,4 @@ networks:
   laravel:
 
 volumes:
-  dbdata:   # 👈 thêm
+  dbdata:

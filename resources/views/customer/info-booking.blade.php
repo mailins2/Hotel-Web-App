@@ -1,5 +1,7 @@
 @php
   $bookingAccount = $bookingAccount ?? session('auth_account', []);
+  $isCustomerAccount = (int) ($bookingAccount['LoaiTaiKhoan'] ?? -1) === 0;
+  $bookingAccount = $isCustomerAccount ? $bookingAccount : [];
   $bookingCustomer = $bookingCustomer ?? null;
   $bookingCustomerName = old('fullName', $bookingCustomer?->TenKH ?? ($bookingAccount['Ten'] ?? ''));
   $bookingCustomerPhone = old('phone', $bookingCustomer?->SoDienThoai ?? '');

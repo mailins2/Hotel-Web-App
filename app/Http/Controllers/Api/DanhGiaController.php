@@ -50,7 +50,10 @@ class DanhGiaController extends Controller
     // 3. Xem chi tiết một đánh giá
     public function show($id)
     {
-        $danhGia = DanhGia::with('datPhong')->find($id);
+        $danhGia = DanhGia::with([
+            'datPhong.khachHang',
+            'datPhong.chiTietDatPhong.phong.loaiPhong',
+        ])->find($id);
         if (!$danhGia) {
             return response()->json(['message' => 'Không tìm thấy đánh giá'], 404);
         }

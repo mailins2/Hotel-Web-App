@@ -113,6 +113,31 @@
         <div class="invalid-feedback" id="room-type-children-error"></div>
     </div>
 
+    <div class="form-group col-md-6">
+        <label class="form-label">GiÃ¡ phÃ²ng</label>
+        <input
+            type="number"
+            class="form-control"
+            id="room-type-price"
+            min="0"
+            step="1000"
+            value="0"
+        >
+        <div class="invalid-feedback" id="room-type-price-error"></div>
+    </div>
+
+    <div class="form-group col-md-6">
+        <label class="form-label">MÃ£ khuyáº¿n mÃ£i</label>
+        <input
+            type="text"
+            class="form-control"
+            id="room-type-promotion"
+            maxlength="10"
+            placeholder="Bá» trá»‘ng náº¿u khÃ´ng Ã¡p dá»¥ng"
+        >
+        <div class="invalid-feedback" id="room-type-promotion-error"></div>
+    </div>
+
     <div class="form-group col-md-12">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
             <label class="form-label mb-0">Ảnh phòng</label>
@@ -162,6 +187,8 @@
                 const roomTypeDescriptionInput = document.getElementById('room-type-description');
                 const roomTypeAdultsInput = document.getElementById('room-type-adults');
                 const roomTypeChildrenInput = document.getElementById('room-type-children');
+                const roomTypePriceInput = document.getElementById('room-type-price');
+                const roomTypePromotionInput = document.getElementById('room-type-promotion');
                 const imageInputsContainer = document.getElementById('room-type-image-inputs');
                 const addImageButton = document.getElementById('room-type-add-image-button');
                 const imageHint = document.getElementById('room-type-images-hint');
@@ -192,6 +219,8 @@
                         ['room-type-description', roomTypeDescriptionInput],
                         ['room-type-adults', roomTypeAdultsInput],
                         ['room-type-children', roomTypeChildrenInput],
+                        ['room-type-price', roomTypePriceInput],
+                        ['room-type-promotion', roomTypePromotionInput],
                     ].forEach(function (item) {
                         const key = item[0];
                         const field = item[1];
@@ -218,6 +247,8 @@
                         Mota: 'room-type-description',
                         NguoiLon: 'room-type-adults',
                         TreEm: 'room-type-children',
+                        GiaPhong: 'room-type-price',
+                        MaKM: 'room-type-promotion',
                         HinhAnh: 'room-type-images',
                         image: 'room-type-images',
                     };
@@ -395,6 +426,11 @@
                         isValid = false;
                     }
 
+                    if (roomTypePriceInput.value === '' || Number(roomTypePriceInput.value) < 0) {
+                        setFieldError('GiaPhong', 'GiÃ¡ phÃ²ng pháº£i lá»›n hÆ¡n hoáº·c báº±ng 0.');
+                        isValid = false;
+                    }
+
                     if (totalRows > 5) {
                         setFieldError('HinhAnh', 'Chỉ được chọn tối đa 5 ảnh.');
                         isValid = false;
@@ -420,6 +456,8 @@
                     roomTypeDescriptionInput.value = roomType && roomType.Mota ? roomType.Mota : '';
                     roomTypeAdultsInput.value = roomType && roomType.NguoiLon !== undefined && roomType.NguoiLon !== null ? roomType.NguoiLon : 1;
                     roomTypeChildrenInput.value = roomType && roomType.TreEm !== undefined && roomType.TreEm !== null ? roomType.TreEm : 0;
+                    roomTypePriceInput.value = roomType && roomType.GiaPhong !== undefined && roomType.GiaPhong !== null ? roomType.GiaPhong : 0;
+                    roomTypePromotionInput.value = roomType && roomType.MaKM ? roomType.MaKM : '';
 
                     imageInputsContainer.innerHTML = '';
                     removedExistingImageIds = [];
@@ -533,6 +571,8 @@
                             Mota: roomTypeDescriptionInput.value,
                             NguoiLon: Number(roomTypeAdultsInput.value),
                             TreEm: Number(roomTypeChildrenInput.value),
+                            GiaPhong: Number(roomTypePriceInput.value),
+                            MaKM: roomTypePromotionInput.value.trim() || null,
                         };
 
                         const requestUrl = isEdit

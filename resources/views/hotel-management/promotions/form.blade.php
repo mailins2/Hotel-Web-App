@@ -85,6 +85,15 @@
         <div class="invalid-feedback" id="promotion-discount-error"></div>
     </div>
 
+    <div class="form-group col-md-6">
+        <label class="form-label">Loáº¡i khuyáº¿n mÃ£i</label>
+        <select class="form-select" id="promotion-type">
+            <option value="0">Chung</option>
+            <option value="1">Há»™i viÃªn</option>
+        </select>
+        <div class="invalid-feedback" id="promotion-type-error"></div>
+    </div>
+
     <div
         id="promotion-form-config"
         data-is-edit="{{ request()->routeIs('hotel.promotions.edit') ? '1' : '0' }}"
@@ -116,6 +125,7 @@
                 const promotionStartInput = document.getElementById('promotion-start');
                 const promotionEndInput = document.getElementById('promotion-end');
                 const promotionDiscountInput = document.getElementById('promotion-discount');
+                const promotionTypeInput = document.getElementById('promotion-type');
 
                 const setAlert = function (type, message) {
                     if (!alertBox) {
@@ -142,7 +152,8 @@
                         ['promotion-points', promotionPointsInput],
                         ['promotion-start', promotionStartInput],
                         ['promotion-end', promotionEndInput],
-                        ['promotion-discount', promotionDiscountInput]
+                        ['promotion-discount', promotionDiscountInput],
+                        ['promotion-type', promotionTypeInput]
                     ].forEach(function (item) {
                         const key = item[0];
                         const field = item[1];
@@ -165,7 +176,8 @@
                         Diem: 'promotion-points',
                         NgayBatDau: 'promotion-start',
                         NgayKetThuc: 'promotion-end',
-                        PhanTramGiamGia: 'promotion-discount'
+                        PhanTramGiamGia: 'promotion-discount',
+                        LoaiKM: 'promotion-type'
                     };
 
                     const key = keyMap[fieldName];
@@ -261,6 +273,9 @@
                     promotionDiscountInput.value = promotion && promotion.PhanTramGiamGia !== undefined && promotion.PhanTramGiamGia !== null
                         ? promotion.PhanTramGiamGia
                         : 0;
+                    promotionTypeInput.value = promotion && promotion.LoaiKM !== undefined && promotion.LoaiKM !== null
+                        ? String(promotion.LoaiKM)
+                        : '0';
                 };
 
                 const loadPromotion = async function () {
@@ -305,7 +320,8 @@
                             Diem: Number(promotionPointsInput.value),
                             NgayBatDau: promotionStartInput.value,
                             NgayKetThuc: promotionEndInput.value,
-                            PhanTramGiamGia: Number(promotionDiscountInput.value)
+                            PhanTramGiamGia: Number(promotionDiscountInput.value),
+                            LoaiKM: Number(promotionTypeInput.value)
                         };
 
                         const requestUrl = isEdit

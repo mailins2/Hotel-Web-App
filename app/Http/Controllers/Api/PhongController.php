@@ -14,8 +14,13 @@ class PhongController extends Controller
         return response()->json([
             'success' => true,
             'message' => $message,
+<<<<<<< HEAD
             'data' => $data
         ], $code);
+=======
+            'data' => $data,
+        ], $code)->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+>>>>>>> 30842b8e36cd2b49b8229635044cc99eae2cf000
     }
 
     private function error($message = 'Error', $code = 400)
@@ -32,7 +37,7 @@ class PhongController extends Controller
         $today = Carbon::today()->toDateString();
 
         $query = Phong::with([
-            'loaiPhong',
+            'loaiPhong.khuyenMai',
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -66,6 +71,16 @@ class PhongController extends Controller
         return $this->success($data, 'Lấy danh sách phòng thành công');
     }
 
+<<<<<<< HEAD
+=======
+    public function trash()
+    {
+        $data = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->get();
+
+        return $this->success($data, 'Lấy danh sách phòng trong thùng rác thành công');
+    }
+
+>>>>>>> 30842b8e36cd2b49b8229635044cc99eae2cf000
     private function resolveTinhTrangHienTai(Phong $phong): int
     {
         if (in_array((int) $phong->TinhTrang, [2, 3], true)) {
@@ -121,7 +136,7 @@ class PhongController extends Controller
         $today = Carbon::today()->toDateString();
 
         $phong = Phong::with([
-            'loaiPhong',
+            'loaiPhong.khuyenMai',
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -176,7 +191,42 @@ class PhongController extends Controller
 
         $phong->delete();
 
+<<<<<<< HEAD
         return $this->success(null, 'Xóa phòng thành công');
+=======
+        return $this->success(null, 'Đã chuyển phòng vào thùng rác');
+    }
+
+    public function restore($id)
+    {
+        $phong = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->find($id);
+
+        if (!$phong) {
+            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
+        }
+
+        $phong->restore();
+
+        return $this->success($phong->fresh(['loaiPhong.khuyenMai']), 'Khôi phục phòng thành công');
+    }
+
+    public function forceDelete($id)
+    {
+        $phong = Phong::onlyTrashed()->find($id);
+
+        if (!$phong) {
+            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
+        }
+
+        $decision = $this->guard->canForceDelete($phong);
+        if (!$decision['allowed']) {
+            return $this->error($decision['message'], 409);
+        }
+
+        $phong->forceDelete();
+
+        return $this->success(null, 'Xóa vĩnh viễn phòng thành công');
+>>>>>>> 30842b8e36cd2b49b8229635044cc99eae2cf000
     }
     //=============================================================================
     // kiểm tra phòng trống và số lượng người ở 
@@ -203,9 +253,13 @@ class PhongController extends Controller
 
         // ✅ Load đầy đủ: hinhs, bangGias, tienNghis
         $phongs = Phong::with([
+<<<<<<< HEAD
                 'loaiPhong.hinhs',
                 'loaiPhong.bangGias',
                 'loaiPhong.tienNghis',
+=======
+                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm,GiaPhong,MaKM'
+>>>>>>> 30842b8e36cd2b49b8229635044cc99eae2cf000
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
             ->where('TinhTrang', '!=', 2)

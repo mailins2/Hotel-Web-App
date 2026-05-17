@@ -12,7 +12,6 @@ use App\Models\KhachHang;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
-use App\Models\BangGia;
 use Illuminate\Validation\Rule;
 
 class DatPhongController extends Controller
@@ -84,7 +83,7 @@ class DatPhongController extends Controller
 
                 return $this->success([
                     'datPhong' => $datPhong->fresh('chiTietDatPhong.phong'),
-                    'hoaDon' => $hoaDon->fresh('chiTietHoaDons.loaiPhong'),
+                    'hoaDon' => $hoaDon->fresh('chiTietHoaDons.loaiPhong.khuyenMai'),
                     'hold_expires_at' => now()->addMinutes(15)->format('Y-m-d H:i:s'), // THÊM
                     'hold_remaining_seconds' => 900 // THÊM
                 ], 'Đặt phòng thành công . Vui lòng thanh toán đặt cọc trong vòng 15 phút !');
@@ -355,27 +354,21 @@ class DatPhongController extends Controller
     {
         $start = Carbon::parse($datPhong->NgayNhanPhong);
         $end = Carbon::parse($datPhong->NgayTraPhong);
+        $soDem = max(1, $start->diffInDays($end));
         $tongTien = 0;
 
+        $datPhong->loadMissing('chiTietDatPhong.phong.loaiPhong.khuyenMai');
         $roomTypeGroups = $datPhong->chiTietDatPhong->groupBy(fn ($ct) => $ct->phong->MaLoaiPhong);
 
         foreach ($roomTypeGroups as $maLoaiPhong => $items) {
-            $currentDate = $start->copy();
-            $donGia = 0;
+            $roomType = $items->first()?->phong?->loaiPhong;
+            $giaPhong = (float) ($roomType?->giaSauKhuyenMai($start) ?? 0);
 
-            while ($currentDate < $end) {
-                $mua = $this->getMua($currentDate);
-                $bangGia = BangGia::where('MaLoaiPhong', $maLoaiPhong)
-                    ->where('Mua', $mua)
-                    ->first();
-
-                if (!$bangGia) {
-                    throw new \Exception('Không có giá cho ngày ' . $currentDate->toDateString());
-                }
-
-                $donGia += $bangGia->GiaPhong;
-                $currentDate->addDay();
+            if ($giaPhong <= 0) {
+                throw new \Exception('Không tìm thấy giá phòng');
             }
+
+            $donGia = $giaPhong * $soDem;
 
             $soLuong = $items->count();
 
@@ -399,9 +392,9 @@ class DatPhongController extends Controller
     {
         $data = DatPhong::with([
             'khachHang.taiKhoan',
-            'hoaDon.chiTietHoaDons.loaiPhong',
+            'hoaDon.chiTietHoaDons.loaiPhong.khuyenMai',
             'hoaDon.thanhToans',
-            'chiTietDatPhong.phong.loaiPhong',
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai',
         ])->find($id);
         if (!$data) {
             return $this->error('Không tìm thấy', 404);

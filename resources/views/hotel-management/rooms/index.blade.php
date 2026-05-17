@@ -62,7 +62,7 @@
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
                 const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
-                let rooms = [];
+                let rooms = @json($rooms ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -180,27 +180,11 @@
                     renderRows(filtered);
                 };
 
-                const loadRooms = async function () {
-                    try {
-                        const response = await fetch('/api/phong', {
-                            cache: 'no-store',
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách phòng.');
-                        }
-
-                        const payload = await response.json();
-                        rooms = Array.isArray(payload.data)
-                            ? payload.data.slice().sort(function (left, right) {
-                                return compareRecordIdDesc(left, right, 'MaPhong');
-                            })
-                            : [];
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadRooms = function () {
+                    rooms = (Array.isArray(rooms) ? rooms : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaPhong');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {
@@ -254,7 +238,10 @@
                             throw new Error(payload && payload.message ? payload.message : 'Không thể xóa phòng.');
                         }
 
-                        await loadRooms();
+                        rooms = rooms.filter(function (room) {
+                            return String(room.MaPhong || '') !== String(roomId);
+                        });
+                        loadRooms();
                     } catch (error) {
                         window.alert(error.message);
                     } finally {
@@ -263,11 +250,6 @@
                 });
 
                 loadRooms();
-                setInterval(function () {
-                    if (!document.hidden) {
-                        loadRooms();
-                    }
-                }, 15000);
             });
         </script>
     @endpush

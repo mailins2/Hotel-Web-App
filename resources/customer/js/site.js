@@ -30,65 +30,39 @@ const hideLoader = () => {
     document.getElementById("ftco-loader")?.classList.remove("show");
 };
 
-const ROOM_TYPES_CACHE_KEY = "peachvalley:room-types:v2";
-const ROOM_DETAIL_CACHE_PREFIX = "peachvalley:room-detail:v2:";
-const ROOM_CACHE_TTL_MS = 10 * 60 * 1000;
+const ROOM_TYPES_CACHE_KEYS = [
+    "peachvalley:room-types:v3",
+    "peachvalley:room-types:v2",
+];
+const ROOM_DETAIL_CACHE_PREFIXES = [
+    "peachvalley:room-detail:v3:",
+    "peachvalley:room-detail:v2:",
+];
 const roomApiRequests = new Map();
 
-const getRoomCacheStorage = () => window.localStorage || window.sessionStorage;
-
-const readJsonCache = (key, { allowExpired = false } = {}) => {
+const clearRoomCaches = () => {
     try {
-        const storage = getRoomCacheStorage();
-        const rawValue = storage?.getItem(key);
-
-        if (!rawValue) {
-            return null;
-        }
-
-        const cached = JSON.parse(rawValue);
-
-        if (!allowExpired && (!cached?.expiresAt || cached.expiresAt <= Date.now())) {
-            storage?.removeItem(key);
-            return null;
-        }
-
-        return cached.data ?? null;
+        ROOM_TYPES_CACHE_KEYS.forEach((key) => {
+            window.localStorage?.removeItem(key);
+            window.sessionStorage?.removeItem(key);
+        });
+        [window.localStorage, window.sessionStorage].forEach((storage) => {
+            Object.keys(storage || {})
+                .filter((key) => ROOM_DETAIL_CACHE_PREFIXES.some((prefix) => key.startsWith(prefix)))
+                .forEach((key) => storage.removeItem(key));
+        });
     } catch (error) {
-        getRoomCacheStorage()?.removeItem(key);
-        return null;
+        // Ignore: storage can be disabled; direct API fetch still works.
     }
 };
-
-const isJsonCacheFresh = (key) => {
-    try {
-        const rawValue = getRoomCacheStorage()?.getItem(key);
-        const cached = rawValue ? JSON.parse(rawValue) : null;
-        return Boolean(cached?.expiresAt && cached.expiresAt > Date.now());
-    } catch (error) {
-        return false;
-    }
-};
-
-const writeJsonCache = (key, data, ttl = ROOM_CACHE_TTL_MS) => {
-    try {
-        getRoomCacheStorage()?.setItem(
-            key,
-            JSON.stringify({
-                data,
-                expiresAt: Date.now() + ttl,
-            }),
-        );
-    } catch (error) {
-        // Ignore: storage can be disabled or full, API fallback still works.
-    }
-};
-
-const getRoomTypeId = (room) =>
-    room?.MaLoaiPhong ?? room?.ma_loai_phong ?? room?.id ?? null;
 
 const fetchApiData = async (url) => {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+        cache: "no-store",
+        headers: {
+            Accept: "application/json",
+        },
+    });
     const result = await response.json();
 
     if (!result.success) {
@@ -98,43 +72,19 @@ const fetchApiData = async (url) => {
     return result.data;
 };
 
-const rememberRoomDetails = (rooms) => {
-    if (!Array.isArray(rooms)) {
-        return;
-    }
-
-    rooms.forEach((room) => {
-        const roomId = getRoomTypeId(room);
-
-        if (roomId !== null && roomId !== undefined) {
-            writeJsonCache(`${ROOM_DETAIL_CACHE_PREFIX}${roomId}`, room);
-        }
-    });
-};
-
-const loadCachedRoomTypes = async ({ force = false } = {}) => {
-    if (!force) {
-        const cachedRooms = readJsonCache(ROOM_TYPES_CACHE_KEY);
-
-        if (Array.isArray(cachedRooms)) {
-            rememberRoomDetails(cachedRooms);
-            return cachedRooms;
-        }
-    }
-
+const loadRoomTypes = async () => {
     const requestKey = "room-types";
 
     if (!roomApiRequests.has(requestKey)) {
         roomApiRequests.set(
             requestKey,
-            fetchApiData("/api/loai-phong")
+            fetchApiData(`/api/loai-phong?_=${Date.now()}`)
                 .then((rooms) => {
                     if (!Array.isArray(rooms)) {
                         throw new Error("Du lieu phong khong hop le");
                     }
 
-                    writeJsonCache(ROOM_TYPES_CACHE_KEY, rooms);
-                    rememberRoomDetails(rooms);
+                    clearRoomCaches();
                     return rooms;
                 })
                 .finally(() => roomApiRequests.delete(requestKey)),
@@ -144,42 +94,11 @@ const loadCachedRoomTypes = async ({ force = false } = {}) => {
     return roomApiRequests.get(requestKey);
 };
 
-const getStoredRoomTypes = ({ allowExpired = true } = {}) => {
-    const rooms = readJsonCache(ROOM_TYPES_CACHE_KEY, { allowExpired });
-
-    if (Array.isArray(rooms)) {
-        rememberRoomDetails(rooms);
-        return rooms;
-    }
-
-    return null;
-};
-
-const loadCachedRoomDetail = async (roomId, { force = false } = {}) => {
+const loadRoomDetail = async (roomId) => {
     const normalizedRoomId = String(roomId || "").trim();
 
     if (!normalizedRoomId) {
         return null;
-    }
-
-    const detailCacheKey = `${ROOM_DETAIL_CACHE_PREFIX}${normalizedRoomId}`;
-
-    if (!force) {
-        const cachedDetail = readJsonCache(detailCacheKey);
-
-        if (cachedDetail) {
-            return cachedDetail;
-        }
-
-        const cachedRooms = readJsonCache(ROOM_TYPES_CACHE_KEY);
-        const roomFromList = Array.isArray(cachedRooms)
-            ? cachedRooms.find((room) => String(getRoomTypeId(room)) === normalizedRoomId)
-            : null;
-
-        if (roomFromList) {
-            writeJsonCache(detailCacheKey, roomFromList);
-            return roomFromList;
-        }
     }
 
     const requestKey = `room-detail:${normalizedRoomId}`;
@@ -187,14 +106,8 @@ const loadCachedRoomDetail = async (roomId, { force = false } = {}) => {
     if (!roomApiRequests.has(requestKey)) {
         roomApiRequests.set(
             requestKey,
-            fetchApiData(`/api/loai-phong/${encodeURIComponent(normalizedRoomId)}`)
-                .then((room) => {
-                    if (room) {
-                        writeJsonCache(detailCacheKey, room);
-                    }
-
-                    return room;
-                })
+            fetchApiData(`/api/loai-phong/${encodeURIComponent(normalizedRoomId)}?_=${Date.now()}`)
+                .then((room) => room)
                 .finally(() => roomApiRequests.delete(requestKey)),
         );
     }
@@ -203,17 +116,11 @@ const loadCachedRoomDetail = async (roomId, { force = false } = {}) => {
 };
 
 window.CustomerRoomApi = {
-    getRoomTypes: loadCachedRoomTypes,
-    getRoomDetail: loadCachedRoomDetail,
-    getStoredRoomTypes,
-    isRoomTypesCacheFresh: () => isJsonCacheFresh(ROOM_TYPES_CACHE_KEY),
-    clearCache: () => {
-        const storage = getRoomCacheStorage();
-        storage?.removeItem(ROOM_TYPES_CACHE_KEY);
-        Object.keys(storage || {})
-            .filter((key) => key.startsWith(ROOM_DETAIL_CACHE_PREFIX))
-            .forEach((key) => storage.removeItem(key));
-    },
+    getRoomTypes: loadRoomTypes,
+    getRoomDetail: loadRoomDetail,
+    getStoredRoomTypes: () => null,
+    isRoomTypesCacheFresh: () => false,
+    clearCache: clearRoomCaches,
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
