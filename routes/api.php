@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NhanVienController;
 use App\Http\Controllers\Api\DenBuHuHongController;
 use App\Http\Controllers\Api\KhuyenMaiController;
 use App\Http\Controllers\Api\KhoKhuyenMaiController;
+use App\Http\Controllers\Api\LuuTruController;
 use App\Http\Controllers\Api\HoaDonController;
 use App\Http\Controllers\Api\ChiTietHoaDonController;
 use App\Http\Controllers\Api\ThanhToanController;
@@ -69,6 +70,8 @@ Route::apiResource('nhan-vien', NhanVienController::class);
 Route::apiResource('khach-hang', KhachHangController::class);
 
 Route::apiResource('den-bu', DenBuHuHongController::class);
+
+Route::apiResource('luu-tru', LuuTruController::class);
 
 Route::get('khuyen-mai/trash', [KhuyenMaiController::class, 'trash']);
 Route::post('khuyen-mai/{id}/restore', [KhuyenMaiController::class, 'restore']);

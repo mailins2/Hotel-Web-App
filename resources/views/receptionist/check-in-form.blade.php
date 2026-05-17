@@ -1,4 +1,4 @@
-@php
+﻿@php
     $checkInBookings = $checkInBookings ?? collect();
     $checkInStats = $checkInStats ?? ['waiting' => 0, 'arrivalsToday' => 0, 'checkedIn' => 0];
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y') : '--';
@@ -655,7 +655,7 @@
                                 $roomTarget = 'room-' . $booking->MaDatPhong . '-' . ($room?->MaPhong ?? $detail->MaCTDP);
                                 $customer = $booking->khachHang;
                             @endphp
-                            <div id="{{ $roomTarget }}" class="ci-room-form" data-room-form>
+                            <div id="{{ $roomTarget }}" class="ci-room-form" data-room-form data-booking-id="{{ $booking->MaDatPhong }}" data-room-id="{{ $room?->MaPhong }}">
                                 <div class="ci-guest-grid">
                                     @for($i = 1; $i <= $adults; $i++)
                                         <div class="ci-guest-card" data-guest-role="adult">
@@ -663,7 +663,7 @@
                                             <div class="ci-form-grid">
                                                 <div class="ci-form-field">
                                                     <label>Họ và tên</label>
-                                                    <input type="text" placeholder="Nhập họ và tên">
+                                                    <input type="text" placeholder="Nhập họ và tên" data-guest-name>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Ngày sinh</label>
@@ -671,11 +671,11 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
-                                                    <input type="text" placeholder="Nhập số CCCD">
+                                                    <input type="text" placeholder="Nhập số CCCD" data-guest-cccd>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Số điện thoại</label>
-                                                    <input type="tel" placeholder="Nhập số điện thoại">
+                                                    <input type="tel" placeholder="Nhập số điện thoại" data-guest-phone>
                                                 </div>
                                             </div>
                                         </div>
@@ -687,7 +687,7 @@
                                             <div class="ci-form-grid">
                                                 <div class="ci-form-field">
                                                     <label>Họ và tên</label>
-                                                    <input type="text" placeholder="Nhập họ và tên">
+                                                    <input type="text" placeholder="Nhập họ và tên" data-guest-name>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Ngày sinh</label>
@@ -695,11 +695,11 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
-                                                    <input type="text" placeholder="Nhập số CCCD">
+                                                    <input type="text" placeholder="Nhập số CCCD" data-guest-cccd>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Số điện thoại</label>
-                                                    <input type="tel" placeholder="Nhập số điện thoại">
+                                                    <input type="tel" placeholder="Nhập số điện thoại" data-guest-phone>
                                                 </div>
                                             </div>
                                         </div>
@@ -920,7 +920,17 @@
             clearFormErrors(visibleForm);
 
             const birthDateInputs = Array.from(visibleForm.querySelectorAll('[data-birthdate]'));
+            const requiredInputs = Array.from(visibleForm.querySelectorAll('[data-guest-name], [data-guest-cccd]'));
             let firstInvalidInput = null;
+
+            requiredInputs.forEach((input) => {
+                if (!String(input.value || '').trim()) {
+                    setFieldError(input, input.matches('[data-guest-name]')
+                        ? 'Vui lòng nhập họ và tên.'
+                        : 'Vui lòng nhập số CCCD.');
+                    firstInvalidInput ??= input;
+                }
+            });
 
             birthDateInputs.forEach((input) => {
                 if (!validateBirthDateInput(input, { requireValue: true })) {
@@ -939,6 +949,25 @@
             }
 
             return true;
+        }
+
+        function collectVisibleGuestPayload() {
+            const visibleForm = document.querySelector('[data-room-form].is-visible');
+            if (!visibleForm) {
+                return null;
+            }
+
+            const guests = Array.from(visibleForm.querySelectorAll('.ci-guest-card')).map((card) => ({
+                TenKhach: String(card.querySelector('[data-guest-name]')?.value || '').trim(),
+                NgaySinh: String(card.querySelector('[data-birthdate]')?.value || '').trim(),
+                CCCD: String(card.querySelector('[data-guest-cccd]')?.value || '').trim(),
+                SoDienThoai: String(card.querySelector('[data-guest-phone]')?.value || '').trim() || null,
+            }));
+
+            return {
+                MaPhong: Number(visibleForm.dataset.roomId || selectedRoomButton?.dataset.roomId || 0),
+                KhachLuuTru: guests,
+            };
         }
 
         function bindRealtimeBirthDateValidation(root = document) {
@@ -1096,11 +1125,23 @@
                 confirmCheckinDialogButton.textContent = 'Đang xác nhận...';
 
                 try {
+                    // Collect the payload with room and guest data
+                    const payload = collectVisibleGuestPayload();
+                    if (!payload) {
+                        throw new Error('Không thể thu thập thông tin khách.');
+                    }
+
+                    // Get CSRF token from meta tag
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
                     const response = await fetch(`/api/dat-phong/${encodeURIComponent(bookingId)}/check-in`, {
                         method: 'POST',
                         headers: {
-                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            ...(csrfToken && { 'X-CSRF-TOKEN': csrfToken }),
                         },
+                        body: JSON.stringify(payload),
                     });
                     const result = await response.json();
 

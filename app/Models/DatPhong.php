@@ -50,4 +50,9 @@ class DatPhong extends Model
         return $this->hasMany(ChiTietDatPhong::class, 'MaDatPhong');
     }
 
+    public function luuTrus()
+    {
+        return $this->hasMany(LuuTru::class, 'MaDatPhong');
+    }
+
 }

@@ -330,13 +330,36 @@
           const images = Array.isArray(room?.hinhs) ? room.hinhs.map(getImageUrl).filter(Boolean) : [];
           return images[0] || fallbackImage;
         };
-        const getNightlyPrice = (room) => {
-          const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
-          if (Number.isFinite(directPrice) && directPrice > 0) {
-            return directPrice.toLocaleString('vi-VN');
+        const getOriginalRoomPrice = (room) => {
+          const originalPrice = Number(room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+          return Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : 0;
+        };
+        const getRoomSalePrice = (room) => {
+          const salePrice = Number(room?.GiaGiam ?? room?.gia_giam);
+          if (Number.isFinite(salePrice) && salePrice > 0) return salePrice;
+          return getOriginalRoomPrice(room);
+        };
+        const getRoomDiscountPercent = (room) => {
+          const originalPrice = getOriginalRoomPrice(room);
+          const salePrice = getRoomSalePrice(room);
+          if (originalPrice <= 0 || salePrice <= 0 || salePrice >= originalPrice) return 0;
+          return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+        };
+        const renderNightlyPrice = (room) => {
+          const originalPrice = getOriginalRoomPrice(room);
+          const salePrice = getRoomSalePrice(room);
+          if (salePrice <= 0) return 'Liên hệ';
+          const discountPercent = getRoomDiscountPercent(room);
+          if (discountPercent <= 0) {
+            return `<span class="customer-room-price"><span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span></span>`;
           }
-
-          return 'Liên hệ';
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')}</span>
+              <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span>
+              <span class="customer-room-discount-tag">-${discountPercent}%</span>
+            </span>
+          `;
         };
 
         const getRoomTypes = async () => {
@@ -389,7 +412,7 @@
                   <div class="text p-4 text-center">
                     <h3 class="mb-3"><a href="${detailUrl}">${escapeHtml(roomName)}</a></h3>
                     <p class="room-description mb-3">${escapeHtml(description)}</p>
-                    <p class="mb-0"><span class="price mr-1">${getNightlyPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
+                    <p class="mb-0"><span class="price mr-1">${renderNightlyPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
                     <p class="pt-1"><a href="${detailUrl}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
                   </div>
                 </div>
@@ -1288,6 +1311,17 @@
 
   <!-- loader -->
   <div id="ftco-loader" class="show fullscreen"><svg class="circular" width="48px" height="48px"><circle class="path-bg" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke="#eeeeee"/><circle class="path" cx="24" cy="24" r="22" fill="none" stroke-width="4" stroke-miterlimit="10" stroke="#F96D00"/></svg></div>
+  <script>
+    (() => {
+      const hideCustomerLoader = () => document.getElementById('ftco-loader')?.classList.remove('show');
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', hideCustomerLoader, { once: true });
+      } else {
+        hideCustomerLoader();
+      }
+      window.setTimeout(hideCustomerLoader, 1500);
+    })();
+  </script>
 
   </body>
 </html>
