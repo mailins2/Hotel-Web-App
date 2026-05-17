@@ -556,7 +556,30 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
 
     Route::view('/services', 'receptionist.services.index')->name('services.index');
     Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
-    Route::view('/check-ins/create', 'receptionist.check-in-form')->name('check-ins.create');
+    Route::get('/check-ins/create', function () {
+        $today = Carbon::today();
+
+        $checkInBookings = DatPhong::with([
+            'khachHang',
+            'chiTietDatPhong.phong.loaiPhong',
+        ])
+            ->where('TinhTrang', DatPhong::CONFIRMED)
+            ->whereDate('NgayNhanPhong', $today->toDateString())
+            ->orderBy('NgayNhanPhong')
+            ->orderBy('MaDatPhong')
+            ->get();
+
+        return view('receptionist.check-in-form', [
+            'checkInBookings' => $checkInBookings,
+            'checkInStats' => [
+                'waiting' => $checkInBookings->count(),
+                'arrivalsToday' => $checkInBookings
+                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayNhanPhong)->isSameDay($today))
+                    ->count(),
+                'checkedIn' => DatPhong::where('TinhTrang', DatPhong::CHECKED_IN)->count(),
+            ],
+        ]);
+    })->name('check-ins.create');
     Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
     Route::get('/payments', function () {
         $payments = ThanhToan::with([
