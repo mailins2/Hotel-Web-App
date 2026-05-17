@@ -923,10 +923,14 @@ a:focus,
 }
 
 .room-result-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 16px;
+}
+
+.room-result-price {
+    min-width: 0;
 }
 
 .room-result-actions {
@@ -996,10 +1000,7 @@ a:focus,
 }
 
 .room-result-price-line {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 6px;
-    white-space: nowrap;
+    display: block;
 }
 
 .room-result-price .value {
@@ -1014,30 +1015,49 @@ a:focus,
 }
 
 .customer-room-price {
-    display: inline-flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: center;
-    gap: 6px 8px;
+    display: inline-grid;
+    grid-template-columns: minmax(0, max-content) auto;
+    align-items: center;
+    justify-content: start;
+    justify-items: start;
+    gap: 6px 10px;
+    max-width: 100%;
 }
 
 .room-result-price .customer-room-price {
-    display: grid;
-    justify-content: start;
-    justify-items: start;
-    gap: 6px;
+    width: 100%;
 }
 
 .customer-room-price-original {
+    grid-column: 1 / -1;
     color: #9ca3af;
     font-size: 0.9em;
     font-weight: 600;
+    line-height: 1.15;
     text-decoration: line-through;
+    white-space: nowrap;
+}
+
+.customer-room-price-current {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
 }
 
 .customer-room-price-sale {
     color: var(--customer-accent);
     font-weight: 800;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.customer-room-price-per {
+    color: #6b7280;
+    font-size: 0.55em;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
 }
 
 .room-result-price .customer-room-price-sale {
@@ -1053,11 +1073,6 @@ a:focus,
 .room-result-price .customer-room-discount-tag {
     align-self: center;
     margin-left: 4px;
-}
-
-.room-result-price .customer-room-price-sale + .customer-room-discount-tag {
-    grid-column: 2;
-    grid-row: 2;
 }
 
 .customer-room-discount-tag {
@@ -1076,6 +1091,19 @@ a:focus,
 
 .booking-item-price .customer-room-price {
     justify-content: flex-start;
+}
+
+.room-list-price .customer-room-price {
+    justify-content: center;
+    justify-items: center;
+}
+
+.room-list-price .customer-room-price-original {
+    font-size: 16px;
+}
+
+.room-list-price .customer-room-price-sale {
+    font-size: 24px;
 }
 
 .search-summary-card {
@@ -1154,16 +1182,29 @@ a:focus,
 }
 
 .booking-item-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 12px;
 }
 
 .booking-item-price {
     font-weight: 700;
     color: #111827;
-    white-space: nowrap;
+}
+
+.booking-item-price .customer-room-price-sale {
+    font-size: 16px;
+}
+
+.booking-item-price .customer-room-price-original {
+    font-size: 13px;
+}
+
+.booking-item-price .customer-room-discount-tag {
+    min-height: 20px;
+    padding: 2px 7px;
+    font-size: 11px;
 }
 
 .booking-item-cancel {
@@ -1550,6 +1591,44 @@ a:focus,
     color: #111827;
 }
 
+.booking-summary-room-unit-price {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 4px 8px;
+}
+
+.booking-summary-room-unit-label {
+    padding-top: 1px;
+}
+
+.booking-summary-room-unit-value {
+    min-width: 0;
+}
+
+.booking-summary-room-unit-value .customer-room-price {
+    width: 100%;
+}
+
+.booking-summary-room-unit-value .customer-room-price-sale {
+    font-size: 16px;
+}
+
+.booking-summary-room-unit-value .customer-room-price-original {
+    font-size: 14px;
+}
+
+.booking-summary-room-unit-value .customer-room-discount-tag {
+    min-height: 20px;
+    padding: 2px 7px;
+    font-size: 11px;
+}
+
+.booking-summary-room-unit-meta {
+    grid-column: 2;
+    color: #4b5563;
+}
+
 .booking-promo {
     padding: 8px 0 14px;
     border-bottom: 1px dashed rgba(140, 74, 52, 0.2);
@@ -1874,6 +1953,15 @@ body.modal-open {
 
     .room-result-card {
         grid-template-columns: 1fr;
+    }
+
+    .room-result-footer {
+        grid-template-columns: 1fr;
+    }
+
+    .room-result-actions,
+    .room-result-qty-stepper {
+        width: 100%;
     }
 
     .room-amenities-modal-main {

@@ -671,7 +671,7 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
-                                                    <input type="text" placeholder="Nhập số CCCD" data-guest-cccd>
+                                                    <input type="text" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Nhập số CCCD" data-guest-cccd>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Số điện thoại</label>
@@ -695,7 +695,7 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
-                                                    <input type="text" placeholder="Nhập số CCCD" data-guest-cccd>
+                                                    <input type="text" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Nhập số CCCD" data-guest-cccd>
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Số điện thoại</label>
@@ -823,6 +823,11 @@
             errorElement.textContent = message;
         }
 
+        function clearFieldError(input) {
+            input.classList.remove('is-invalid');
+            input.closest('.ci-form-field')?.querySelector('.ci-field-error')?.remove();
+        }
+
         function clearFormErrors(form) {
             if (!form) {
                 return;
@@ -830,6 +835,37 @@
 
             form.querySelectorAll('.is-invalid').forEach((input) => input.classList.remove('is-invalid'));
             form.querySelectorAll('.ci-field-error').forEach((errorElement) => errorElement.remove());
+        }
+
+        function validateCccdInput(input, { requireValue = false } = {}) {
+            if (!input) {
+                return true;
+            }
+
+            const rawValue = String(input.value || '');
+            const digits = rawValue.replace(/\D/g, '');
+
+            if (digits !== rawValue) {
+                input.value = digits;
+            }
+
+            if (!digits) {
+                if (requireValue) {
+                    setFieldError(input, 'Vui lòng nhập số CCCD.');
+                    return false;
+                }
+
+                clearFieldError(input);
+                return true;
+            }
+
+            if (!/^\d{12}$/.test(digits)) {
+                setFieldError(input, 'CCCD phải gồm đúng 12 chữ số.');
+                return false;
+            }
+
+            clearFieldError(input);
+            return true;
         }
 
         function validateBirthDateInput(input, { requireValue = false } = {}) {
@@ -920,14 +956,19 @@
             clearFormErrors(visibleForm);
 
             const birthDateInputs = Array.from(visibleForm.querySelectorAll('[data-birthdate]'));
-            const requiredInputs = Array.from(visibleForm.querySelectorAll('[data-guest-name], [data-guest-cccd]'));
+            const nameInputs = Array.from(visibleForm.querySelectorAll('[data-guest-name]'));
+            const cccdInputs = Array.from(visibleForm.querySelectorAll('[data-guest-cccd]'));
             let firstInvalidInput = null;
 
-            requiredInputs.forEach((input) => {
+            nameInputs.forEach((input) => {
                 if (!String(input.value || '').trim()) {
-                    setFieldError(input, input.matches('[data-guest-name]')
-                        ? 'Vui lòng nhập họ và tên.'
-                        : 'Vui lòng nhập số CCCD.');
+                    setFieldError(input, 'Vui lòng nhập họ và tên.');
+                    firstInvalidInput ??= input;
+                }
+            });
+
+            cccdInputs.forEach((input) => {
+                if (!validateCccdInput(input, { requireValue: true })) {
                     firstInvalidInput ??= input;
                 }
             });
@@ -978,6 +1019,26 @@
                     validateBirthDateInput(input, { requireValue: true });
                     validateAdultPresence(input.closest('[data-room-form]'));
                 });
+            });
+        }
+
+        function bindRealtimeGuestFieldValidation(root = document) {
+            root.querySelectorAll('[data-guest-name]').forEach((input) => {
+                input.addEventListener('input', () => {
+                    if (String(input.value || '').trim()) {
+                        clearFieldError(input);
+                    }
+                });
+                input.addEventListener('blur', () => {
+                    if (!String(input.value || '').trim()) {
+                        setFieldError(input, 'Vui lòng nhập họ và tên.');
+                    }
+                });
+            });
+
+            root.querySelectorAll('[data-guest-cccd]').forEach((input) => {
+                input.addEventListener('input', () => validateCccdInput(input));
+                input.addEventListener('blur', () => validateCccdInput(input, { requireValue: true }));
             });
         }
 
@@ -1174,5 +1235,6 @@
         }
 
         bindRealtimeBirthDateValidation();
+        bindRealtimeGuestFieldValidation();
     </script>
 </x-app-layout>

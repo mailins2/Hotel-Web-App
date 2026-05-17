@@ -114,7 +114,7 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">GiÃ¡ phÃ²ng</label>
+        <label class="form-label">Giá phòng</label>
         <input
             type="number"
             class="form-control"
@@ -127,13 +127,13 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">MÃ£ khuyáº¿n mÃ£i</label>
+        <label class="form-label">Mã khuyến mãi</label>
         <input
             type="text"
             class="form-control"
             id="room-type-promotion"
             maxlength="10"
-            placeholder="Bá» trá»‘ng náº¿u khÃ´ng Ã¡p dá»¥ng"
+            placeholder="Bỏ trống nếu không áp dụng"
         >
         <div class="invalid-feedback" id="room-type-promotion-error"></div>
     </div>
@@ -427,7 +427,7 @@
                     }
 
                     if (roomTypePriceInput.value === '' || Number(roomTypePriceInput.value) < 0) {
-                        setFieldError('GiaPhong', 'GiÃ¡ phÃ²ng pháº£i lá»›n hÆ¡n hoáº·c báº±ng 0.');
+                        setFieldError('GiaPhong', 'Giá phòng phải lớn hơn hoặc bằng 0.');
                         isValid = false;
                     }
 

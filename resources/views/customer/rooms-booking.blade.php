@@ -286,19 +286,54 @@
           if (salePrice <= 0) return 'Liên hệ';
           const discountPercent = Number(room.discountPercent ?? getRoomDiscountPercent(room));
           if (discountPercent <= 0 || originalPrice <= salePrice) {
-            return `<span class="customer-room-price"><span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span></span>`;
+            return `
+              <span class="customer-room-price">
+                <span class="customer-room-price-current">
+                  <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                  <span class="customer-room-price-per">/ đêm</span>
+                </span>
+              </span>
+            `;
           }
           return `
             <span class="customer-room-price">
               <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VND</span>
-              <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                <span class="customer-room-price-per">/ đêm</span>
+              </span>
               <span class="customer-room-discount-tag">-${discountPercent}%</span>
             </span>
           `;
         };
         const renderSummaryRoomPrice = (item) => {
           const salePrice = Number(item.price || 0);
-          return salePrice > 0 ? `${salePrice.toLocaleString('vi-VN')} VND` : 'Liên hệ';
+          const originalPrice = Number(item.originalPrice || 0);
+          const discountPercent = Number(item.discountPercent || 0);
+
+          if (salePrice <= 0) return 'Liên hệ';
+
+          if (discountPercent <= 0 || originalPrice <= salePrice) {
+            return `
+              <span class="customer-room-price">
+                <span class="customer-room-price-current">
+                  <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                  <span class="customer-room-price-per">/ đêm</span>
+                </span>
+              </span>
+            `;
+          }
+
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VND</span>
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                <span class="customer-room-price-per">/ đêm</span>
+              </span>
+              <span class="customer-room-discount-tag">-${discountPercent}%</span>
+            </span>
+          `;
         };
         const getRoomCount = (room) => {
           const phongs = room.phongs || [];
@@ -504,7 +539,7 @@
             row.innerHTML = `
               <div class="booking-item-title">Phòng: ${item.quantity} ${escapeHtml(item.name)}</div>
               <div class="booking-item-footer">
-                <div class="booking-item-price">${renderSummaryRoomPrice(item)} / đêm</div>
+                <div class="booking-item-price">${renderSummaryRoomPrice(item)}</div>
                 <button type="button" class="booking-item-cancel" data-room-cancel="${escapeAttr(key)}">
                   <span class="icon ion-ios-close"></span> Hủy
                 </button>
@@ -864,7 +899,6 @@
                     <div class="room-result-price">
                       <div class="room-result-price-line">
                         <span class="value">${renderRoomPrice(room)}</span>
-                        <span class="per">/ đêm</span>
                       </div>
                     </div>
                     <div class="room-result-actions">
