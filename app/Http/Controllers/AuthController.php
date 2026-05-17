@@ -49,6 +49,7 @@ class AuthController extends Controller
             'LoaiTaiKhoan' => $taiKhoan->LoaiTaiKhoan,
             'MaKH' => $taiKhoan->khachHang?->MaKH,
             'MaNV' => $taiKhoan->nhanVien?->MaNV,
+            'ChucVu' => $taiKhoan->nhanVien?->ChucVu,
             'Ten' => $taiKhoan->khachHang?->TenKH ?? $taiKhoan->nhanVien?->TenNV,
         ]);
 

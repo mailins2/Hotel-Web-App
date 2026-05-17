@@ -69,9 +69,10 @@ Route::prefix('customer')->name('customer.')->group(function () {
             ],
         ];
         $authAccount = session('auth_account', []);
-        $customerId = $authAccount['MaKH'] ?? null;
+        $isCustomerAccount = (int) ($authAccount['LoaiTaiKhoan'] ?? -1) === 0;
+        $customerId = $isCustomerAccount ? ($authAccount['MaKH'] ?? null) : null;
 
-        if (!$customerId && !empty($authAccount['MaTK'])) {
+        if ($isCustomerAccount && !$customerId && !empty($authAccount['MaTK'])) {
             $customerId = \App\Models\KhachHang::where('MaTK', $authAccount['MaTK'])->value('MaKH');
         }
 
@@ -120,11 +121,12 @@ Route::prefix('customer')->name('customer.')->group(function () {
     Route::view('/rooms-booking', 'customer.rooms-booking')->name('rooms-booking');
     Route::get('/info-booking', function () {
         $authAccount = session('auth_account', []);
+        $isCustomerAccount = (int) ($authAccount['LoaiTaiKhoan'] ?? -1) === 0;
         $bookingCustomer = null;
 
-        if (!empty($authAccount['MaKH'])) {
+        if ($isCustomerAccount && !empty($authAccount['MaKH'])) {
             $bookingCustomer = \App\Models\KhachHang::with('taiKhoan')->find($authAccount['MaKH']);
-        } elseif (!empty($authAccount['MaTK'])) {
+        } elseif ($isCustomerAccount && !empty($authAccount['MaTK'])) {
             $bookingCustomer = \App\Models\KhachHang::with('taiKhoan')
                 ->where('MaTK', $authAccount['MaTK'])
                 ->first();
@@ -136,12 +138,6 @@ Route::prefix('customer')->name('customer.')->group(function () {
         ]);
     })->name('info-booking');
     Route::get('/profile', function () {
-        if (!session()->has('auth_account')) {
-            return redirect()->route('login', [
-                'redirect' => route('customer.profile'),
-            ]);
-        }
-
         $authAccount = session('auth_account', []);
         $profileCustomer = null;
 
@@ -157,14 +153,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'profileAccount' => $authAccount,
             'profileCustomer' => $profileCustomer,
         ]);
-    })->name('profile');
+    })->middleware('account.role:0')->name('profile');
     Route::get('/my-bookings', function () {
-        if (!session()->has('auth_account')) {
-            return redirect()->route('login', [
-                'redirect' => route('customer.my-bookings'),
-            ]);
-        }
-
         $authAccount = session('auth_account', []);
         $customerId = $authAccount['MaKH'] ?? null;
 
@@ -205,7 +195,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
         return view('customer.my-bookings', [
             'customerBookings' => $customerBookings,
         ]);
-    })->name('my-bookings');
+    })->middleware('account.role:0')->name('my-bookings');
     Route::post('/my-bookings/{booking}/cancel', function ($booking) {
         if (!session()->has('auth_account')) {
             return response()->json([
@@ -257,8 +247,8 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'success' => true,
             'message' => 'Đã hủy đặt phòng thành công.',
         ]);
-    })->name('my-bookings.cancel');
-    Route::view('/promotion-wallet', 'customer.promotion-wallet')->name('promotion-wallet');
+    })->middleware('account.role:0')->name('my-bookings.cancel');
+    Route::view('/promotion-wallet', 'customer.promotion-wallet')->middleware('account.role:0')->name('promotion-wallet');
 
     Route::redirect('/room-single.html', '/customer/rooms-single');
     Route::redirect('/about', '/customer/promotion');
@@ -521,7 +511,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/booking-details/{bookingId}', function ($bookingId) {
         $booking = DatPhong::with([
             'khachHang.taiKhoan',
-            'chiTietDatPhong.phong.loaiPhong.bangGias',
+            'chiTietDatPhong.phong.loaiPhong',
             'hoaDon.khuyenMai',
             'hoaDon.thanhToans',
             'hoaDon.chiTietHoaDons.loaiPhong',
@@ -566,7 +556,30 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
 
     Route::view('/services', 'receptionist.services.index')->name('services.index');
     Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
-    Route::view('/check-ins/create', 'receptionist.check-in-form')->name('check-ins.create');
+    Route::get('/check-ins/create', function () {
+        $today = Carbon::today();
+
+        $checkInBookings = DatPhong::with([
+            'khachHang',
+            'chiTietDatPhong.phong.loaiPhong',
+        ])
+            ->where('TinhTrang', DatPhong::CONFIRMED)
+            ->whereDate('NgayNhanPhong', $today->toDateString())
+            ->orderBy('NgayNhanPhong')
+            ->orderBy('MaDatPhong')
+            ->get();
+
+        return view('receptionist.check-in-form', [
+            'checkInBookings' => $checkInBookings,
+            'checkInStats' => [
+                'waiting' => $checkInBookings->count(),
+                'arrivalsToday' => $checkInBookings
+                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayNhanPhong)->isSameDay($today))
+                    ->count(),
+                'checkedIn' => DatPhong::where('TinhTrang', DatPhong::CHECKED_IN)->count(),
+            ],
+        ]);
+    })->name('check-ins.create');
     Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
     Route::get('/payments', function () {
         $payments = ThanhToan::with([

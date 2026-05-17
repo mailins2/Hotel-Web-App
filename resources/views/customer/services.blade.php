@@ -18,7 +18,8 @@
       $serviceGroups = $serviceGroups ?? [];
       $serviceOptions = collect($serviceOptions ?? []);
       $serviceBookingOptions = collect($serviceBookingOptions ?? []);
-      $isCustomerLoggedIn = session()->has('auth_account');
+      $authAccount = session('auth_account', []);
+      $isCustomerLoggedIn = (int) ($authAccount['LoaiTaiKhoan'] ?? -1) === 0;
 
       $serviceImageUrl = function ($service, string $fallback) {
           $url = $service->hinhs->first()->Url ?? $fallback;

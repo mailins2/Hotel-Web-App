@@ -22,7 +22,7 @@ class PhongController extends Controller
             'success' => true,
             'message' => $message,
             'data' => $data,
-        ], $code);
+        ], $code)->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     private function error(string $message = 'Error', int $code = 400)
@@ -38,7 +38,7 @@ class PhongController extends Controller
         $today = Carbon::today()->toDateString();
 
         $query = Phong::with([
-            'loaiPhong',
+            'loaiPhong.khuyenMai',
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -76,7 +76,7 @@ class PhongController extends Controller
 
     public function trash()
     {
-        $data = Phong::onlyTrashed()->with('loaiPhong')->get();
+        $data = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->get();
 
         return $this->success($data, 'Lấy danh sách phòng trong thùng rác thành công');
     }
@@ -137,7 +137,7 @@ class PhongController extends Controller
         $today = Carbon::today()->toDateString();
 
         $phong = Phong::with([
-            'loaiPhong',
+            'loaiPhong.khuyenMai',
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -203,7 +203,7 @@ class PhongController extends Controller
 
     public function restore($id)
     {
-        $phong = Phong::onlyTrashed()->with('loaiPhong')->find($id);
+        $phong = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->find($id);
 
         if (!$phong) {
             return $this->error('Không tìm thấy phòng trong thùng rác', 404);
@@ -211,7 +211,7 @@ class PhongController extends Controller
 
         $phong->restore();
 
-        return $this->success($phong->fresh(['loaiPhong']), 'Khôi phục phòng thành công');
+        return $this->success($phong->fresh(['loaiPhong.khuyenMai']), 'Khôi phục phòng thành công');
     }
 
     public function forceDelete($id)
@@ -251,7 +251,7 @@ class PhongController extends Controller
         $tongKhach = $nguoiLon + $treEm;
 
         $phongs = Phong::with([
-                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm'
+                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm,GiaPhong,MaKM'
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
             ->where('TinhTrang', '!=', 2)

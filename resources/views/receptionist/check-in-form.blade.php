@@ -1,3 +1,16 @@
+@php
+    $checkInBookings = $checkInBookings ?? collect();
+    $checkInStats = $checkInStats ?? ['waiting' => 0, 'arrivalsToday' => 0, 'checkedIn' => 0];
+    $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y') : '--';
+    $getNights = function ($booking) {
+        if (!$booking?->NgayNhanPhong || !$booking?->NgayTraPhong) {
+            return 0;
+        }
+
+        return max(1, \Carbon\Carbon::parse($booking->NgayNhanPhong)->diffInDays(\Carbon\Carbon::parse($booking->NgayTraPhong)));
+    };
+@endphp
+
 <x-app-layout :assets="['animation']">
     <style>
         .ci-shell {
@@ -21,6 +34,14 @@
         .ci-card {
             padding: 1.4rem;
             height: 100%;
+        }
+
+        .ci-list-card {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            max-height: none;
+            min-height: 980px;
         }
 
         .ci-section-title {
@@ -59,9 +80,30 @@
             display: flex;
             flex-direction: column;
             gap: 0.95rem;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0 0.35rem 0.2rem 0;
+        }
+
+        .ci-booking-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ci-booking-list::-webkit-scrollbar-track {
+            background: rgba(166, 98, 43, 0.08);
+            border-radius: 999px;
+        }
+
+        .ci-booking-list::-webkit-scrollbar-thumb {
+            background: rgba(166, 98, 43, 0.35);
+            border-radius: 999px;
         }
 
         .ci-booking-item {
+            flex: 0 0 auto;
             border: 1px solid rgba(166, 98, 43, 0.12);
             border-radius: 24px;
             background: #fff;
@@ -80,6 +122,7 @@
             padding: 1.15rem 1.15rem 1rem;
             background: transparent;
             text-align: left;
+            display: block;
         }
 
         .ci-booking-summary:hover {
@@ -100,6 +143,7 @@
             font-weight: 700;
             letter-spacing: 0.04em;
             text-transform: uppercase;
+            overflow-wrap: anywhere;
         }
 
         .ci-stay-chip,
@@ -127,6 +171,7 @@
             font-size: 1.35rem;
             font-weight: 600;
             line-height: 1.3;
+            overflow-wrap: anywhere;
         }
 
         .ci-booking-meta {
@@ -145,10 +190,27 @@
         .ci-room-list {
             display: none;
             padding: 0 1.15rem 1.15rem;
+            max-height: 320px;
+            overflow-y: auto;
+            overscroll-behavior: contain;
         }
 
         .ci-booking-item.is-active .ci-room-list {
             display: block;
+        }
+
+        .ci-room-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .ci-room-list::-webkit-scrollbar-track {
+            background: rgba(15, 118, 110, 0.08);
+            border-radius: 999px;
+        }
+
+        .ci-room-list::-webkit-scrollbar-thumb {
+            background: rgba(15, 118, 110, 0.28);
+            border-radius: 999px;
         }
 
         .ci-room-list-label {
@@ -164,9 +226,12 @@
             display: flex;
             flex-direction: column;
             gap: 0.75rem;
+            min-height: 0;
+            padding-bottom: 0.2rem;
         }
 
         .ci-room-option {
+            flex: 0 0 auto;
             width: 100%;
             padding: 0.95rem 1rem;
             border: 1px solid rgba(15, 118, 110, 0.16);
@@ -188,18 +253,25 @@
             align-items: center;
             justify-content: space-between;
             gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .ci-room-option-top > div {
+            min-width: 0;
         }
 
         .ci-room-option-code {
             color: #0f766e;
             font-size: 1rem;
             font-weight: 700;
+            overflow-wrap: anywhere;
         }
 
         .ci-room-option-type {
             margin-top: 0.2rem;
             color: #6f1d01;
             font-weight: 600;
+            overflow-wrap: anywhere;
         }
 
         .ci-detail-header {
@@ -284,6 +356,18 @@
             outline: none;
             border-color: rgba(15, 118, 110, 0.35);
             box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08);
+        }
+
+        .ci-form-field input.is-invalid {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.08);
+        }
+
+        .ci-field-error {
+            margin-top: 0.35rem;
+            color: #dc3545;
+            font-size: 0.8rem;
+            font-weight: 600;
         }
 
         .ci-detail-actions {
@@ -391,6 +475,11 @@
         }
 
         @media (max-width: 991.98px) {
+            .ci-list-card {
+                min-height: 720px;
+                max-height: 70vh;
+            }
+
             .ci-form-grid,
             .ci-dialog-grid {
                 grid-template-columns: 1fr;
@@ -402,6 +491,14 @@
         }
 
         @media (max-width: 767.98px) {
+            .ci-booking-list {
+                max-height: 58vh;
+            }
+
+            .ci-room-list {
+                max-height: 260px;
+            }
+
             .ci-booking-head,
             .ci-room-option-top {
                 flex-direction: column;
@@ -432,26 +529,26 @@
             <div class="col-md-4">
                 <div class="ci-card text-center">
                     <div class="small text-uppercase text-muted fw-bold">Đặt phòng chờ nhận</div>
-                    <div class="h4 mb-0 mt-2">5</div>
+                    <div class="h4 mb-0 mt-2">{{ $checkInStats['waiting'] ?? 0 }}</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="ci-card text-center">
                     <div class="small text-uppercase text-muted fw-bold">Khách đến hôm nay</div>
-                    <div class="h4 mb-0 mt-2">2</div>
+                    <div class="h4 mb-0 mt-2">{{ $checkInStats['arrivalsToday'] ?? 0 }}</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="ci-card text-center">
                     <div class="small text-uppercase text-muted fw-bold">Đặt phòng nhận rồi</div>
-                    <div class="h4 mb-0 mt-2">4</div>
+                    <div class="h4 mb-0 mt-2">{{ $checkInStats['checkedIn'] ?? 0 }}</div>
                 </div>
             </div>
         </div>
 
         <div class="row g-4">
             <div class="col-xl-5">
-                <div class="ci-card">
+                <div class="ci-card ci-list-card">
                     <h5 class="ci-section-title">Danh sách nhận phòng hôm nay</h5>
 
                     <div class="ci-search-box">
@@ -461,105 +558,78 @@
                         <input
                             type="text"
                             class="ci-search-input"
+                            data-checkin-search
                             placeholder="Tìm theo mã đặt phòng, tên khách hàng hoặc số phòng"
                         >
                     </div>
 
                     <div class="ci-booking-list">
-                        <div class="ci-booking-item is-active" data-booking-item>
-                            <button type="button" class="ci-booking-summary" data-booking-toggle aria-expanded="true">
-                                <div class="ci-booking-head">
-                                    <div class="ci-booking-code">Đặt phòng #9001</div>
-                                    <span class="ci-stay-chip">2 đêm</span>
-                                </div>
-                                <div class="ci-booking-name">Nguyễn Minh An</div>
-                                <div class="ci-booking-meta">
-                                    <span class="ci-meta-chip">2 phòng</span>
-                                    <span class="ci-meta-chip">08/04/2026 đến 10/04/2026</span>
-                                </div>
-                            </button>
+                        @forelse($checkInBookings as $booking)
+                            @php
+                                $nights = $getNights($booking);
+                                $stayPeriod = $formatDate($booking->NgayNhanPhong) . ' đến ' . $formatDate($booking->NgayTraPhong);
+                                $customer = $booking->khachHang;
+                                $customerName = $customer?->TenKH ?? 'Khách chưa có tên';
+                                $roomNumbers = $booking->chiTietDatPhong
+                                    ->map(fn ($detail) => $detail->phong?->SoPhong)
+                                    ->filter()
+                                    ->implode(' ');
+                                $searchText = trim("#{$booking->MaDatPhong} {$customerName} {$roomNumbers}");
+                            @endphp
+                            <div class="ci-booking-item {{ $loop->first ? 'is-active' : '' }}" data-booking-item data-search-text="{{ \Illuminate\Support\Str::lower($searchText) }}">
+                                <button type="button" class="ci-booking-summary" data-booking-toggle aria-expanded="{{ $loop->first ? 'true' : 'false' }}">
+                                    <div class="ci-booking-head">
+                                        <div class="ci-booking-code">Đặt phòng #{{ $booking->MaDatPhong }}</div>
+                                        <span class="ci-stay-chip">{{ $nights }} đêm</span>
+                                    </div>
+                                    <div class="ci-booking-name">{{ $customerName }}</div>
+                                    <div class="ci-booking-meta">
+                                        <span class="ci-meta-chip">{{ $booking->chiTietDatPhong->count() }} phòng</span>
+                                        <span class="ci-meta-chip">{{ $stayPeriod }}</span>
+                                    </div>
+                                </button>
 
-                            <div class="ci-room-list">
-                                <p class="ci-room-list-label mb-0">Danh sách phòng đã đặt</p>
-                                <div class="ci-room-list-stack mt-3">
-                                    <button
-                                        type="button"
-                                        class="ci-room-option"
-                                        data-room-target="room-d201"
-                                        data-room-badge="2 đêm"
-                                        data-booking-id="9001"
-                                        data-room-number="201"
-                                        data-guest-summary="2 người lớn • 1 trẻ em"
-                                        data-stay-period="08/04/2026 đến 10/04/2026"
-                                    >
-                                        <div class="ci-room-option-top">
-                                            <div>
-                                                <div class="ci-room-option-code">Phòng 201</div>
-                                                <div class="ci-room-option-type">Deluxe</div>
-                                            </div>
-                                            <span class="ci-meta-chip">2 người lớn • 1 trẻ em</span>
-                                        </div>
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        class="ci-room-option"
-                                        data-room-target="room-d203"
-                                        data-room-badge="2 đêm"
-                                        data-booking-id="9001"
-                                        data-room-number="203"
-                                        data-guest-summary="2 người lớn"
-                                        data-stay-period="08/04/2026 đến 10/04/2026"
-                                    >
-                                        <div class="ci-room-option-top">
-                                            <div>
-                                                <div class="ci-room-option-code">Phòng 203</div>
-                                                <div class="ci-room-option-type">Deluxe Twin</div>
-                                            </div>
-                                            <span class="ci-meta-chip">2 người lớn</span>
-                                        </div>
-                                    </button>
+                                <div class="ci-room-list">
+                                    <p class="ci-room-list-label mb-0">Danh sách phòng đã đặt</p>
+                                    <div class="ci-room-list-stack mt-3">
+                                        @foreach($booking->chiTietDatPhong as $detail)
+                                            @php
+                                                $room = $detail->phong;
+                                                $roomType = $room?->loaiPhong;
+                                                $adults = max(0, (int) ($roomType?->NguoiLon ?? 1));
+                                                $children = max(0, (int) ($roomType?->TreEm ?? 0));
+                                                $guestParts = collect([
+                                                    $adults > 0 ? "{$adults} người lớn" : null,
+                                                    $children > 0 ? "{$children} trẻ em" : null,
+                                                ])->filter();
+                                                $guestSummary = $guestParts->isNotEmpty() ? $guestParts->implode(' • ') : 'Chưa có thông tin sức chứa';
+                                                $roomTarget = 'room-' . $booking->MaDatPhong . '-' . ($room?->MaPhong ?? $detail->MaCTDP);
+                                            @endphp
+                                            <button
+                                                type="button"
+                                                class="ci-room-option"
+                                                data-room-target="{{ $roomTarget }}"
+                                                data-room-badge="{{ $nights }} đêm"
+                                                data-booking-id="{{ $booking->MaDatPhong }}"
+                                                data-room-number="{{ $room?->SoPhong ?? '--' }}"
+                                                data-guest-summary="{{ $guestSummary }}"
+                                                data-stay-period="{{ $stayPeriod }}"
+                                            >
+                                                <div class="ci-room-option-top">
+                                                    <div>
+                                                        <div class="ci-room-option-code">Phòng {{ $room?->SoPhong ?? '--' }}</div>
+                                                        <div class="ci-room-option-type">{{ $roomType?->TenLoaiPhong ?? 'Chưa có loại phòng' }}</div>
+                                                    </div>
+                                                    <span class="ci-meta-chip">{{ $guestSummary }}</span>
+                                                </div>
+                                            </button>
+                                        @endforeach
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="ci-booking-item" data-booking-item>
-                            <button type="button" class="ci-booking-summary" data-booking-toggle aria-expanded="false">
-                                <div class="ci-booking-head">
-                                    <div class="ci-booking-code">Đặt phòng #9004</div>
-                                    <span class="ci-stay-chip">3 đêm</span>
-                                </div>
-                                <div class="ci-booking-name">Phạm Khánh Vy</div>
-                                <div class="ci-booking-meta">
-                                    <span class="ci-meta-chip">1 phòng</span>
-                                    <span class="ci-meta-chip">08/04/2026 đến 11/04/2026</span>
-                                </div>
-                            </button>
-
-                            <div class="ci-room-list">
-                                <p class="ci-room-list-label mb-0">Danh sách phòng trong đơn đặt phòng</p>
-                                <div class="ci-room-list-stack mt-3">
-                                    <button
-                                        type="button"
-                                        class="ci-room-option"
-                                        data-room-target="room-f402"
-                                        data-room-badge="3 đêm"
-                                        data-booking-id="9004"
-                                        data-room-number="402"
-                                        data-guest-summary="3 người lớn • 2 trẻ em"
-                                        data-stay-period="08/04/2026 đến 11/04/2026"
-                                    >
-                                        <div class="ci-room-option-top">
-                                            <div>
-                                                <div class="ci-room-option-code">Phòng 402</div>
-                                                <div class="ci-room-option-type">Family</div>
-                                            </div>
-                                            <span class="ci-meta-chip">3 người lớn • 2 trẻ em</span>
-                                        </div>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        @empty
+                            <div class="ci-detail-empty mb-0">Không có đặt phòng nào đang chờ nhận phòng.</div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -575,240 +645,72 @@
                         Chọn phòng muốn cho nhận phòng
                     </div>
 
-                    <div id="room-d201" class="ci-room-form" data-room-form>
-                        <div class="ci-guest-grid">
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 1</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
+                    @foreach($checkInBookings as $booking)
+                        @foreach($booking->chiTietDatPhong as $detail)
+                            @php
+                                $room = $detail->phong;
+                                $roomType = $room?->loaiPhong;
+                                $adults = max(1, (int) ($roomType?->NguoiLon ?? 1));
+                                $children = max(0, (int) ($roomType?->TreEm ?? 0));
+                                $roomTarget = 'room-' . $booking->MaDatPhong . '-' . ($room?->MaPhong ?? $detail->MaCTDP);
+                                $customer = $booking->khachHang;
+                            @endphp
+                            <div id="{{ $roomTarget }}" class="ci-room-form" data-room-form>
+                                <div class="ci-guest-grid">
+                                    @for($i = 1; $i <= $adults; $i++)
+                                        <div class="ci-guest-card" data-guest-role="adult">
+                                            <span class="ci-guest-label">Người lớn {{ $i }}</span>
+                                            <div class="ci-form-grid">
+                                                <div class="ci-form-field">
+                                                    <label>Họ và tên</label>
+                                                    <input type="text" placeholder="Nhập họ và tên">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>Ngày sinh</label>
+                                                    <input type="date" data-birthdate data-guest-role="adult">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>CCCD</label>
+                                                    <input type="text" placeholder="Nhập số CCCD">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>Số điện thoại</label>
+                                                    <input type="tel" placeholder="Nhập số điện thoại">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endfor
 
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 2</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
+                                    @for($i = 1; $i <= $children; $i++)
+                                        <div class="ci-guest-card" data-guest-role="child">
+                                            <span class="ci-guest-label">Trẻ em {{ $i }}</span>
+                                            <div class="ci-form-grid">
+                                                <div class="ci-form-field">
+                                                    <label>Họ và tên</label>
+                                                    <input type="text" placeholder="Nhập họ và tên">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>Ngày sinh</label>
+                                                    <input type="date" data-birthdate data-guest-role="child">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>CCCD</label>
+                                                    <input type="text" placeholder="Nhập số CCCD">
+                                                </div>
+                                                <div class="ci-form-field">
+                                                    <label>Số điện thoại</label>
+                                                    <input type="tel" placeholder="Nhập số điện thoại">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endfor
                                 </div>
                             </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Trẻ em 1</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="room-d203" class="ci-room-form" data-room-form>
-                        <div class="ci-guest-grid">
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 1</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 2</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="room-f402" class="ci-room-form" data-room-form>
-                        <div class="ci-guest-grid">
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 1</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 2</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Người lớn 3</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Trẻ em 1</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="ci-guest-card">
-                                <span class="ci-guest-label">Trẻ em 2</span>
-                                <div class="ci-form-grid">
-                                    <div class="ci-form-field">
-                                        <label>Họ và tên</label>
-                                        <input type="text" placeholder="Nhập họ và tên">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Ngày sinh</label>
-                                        <input type="date">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>CCCD</label>
-                                        <input type="text" placeholder="Nhập số CCCD">
-                                    </div>
-                                    <div class="ci-form-field">
-                                        <label>Số điện thoại</label>
-                                        <input type="tel" placeholder="Nhập số điện thoại">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        @endforeach
+                    @endforeach
 
                     <div class="ci-detail-actions">
-                        <button id="openCheckinConfirmDialogButton" type="button" class="btn btn-primary">Nhận phòng</button>
+                        <button id="openCheckinConfirmDialogButton" type="button" class="btn btn-primary" @disabled($checkInBookings->isEmpty())>Nhận phòng</button>
                     </div>
                 </div>
             </div>
@@ -819,7 +721,7 @@
         <div class="ci-dialog-body">
             <div class="ci-dialog-head">
                 <h3 class="ci-dialog-title">Xác nhận nhận phòng</h3>
-                <button type="button" class="ci-time-button">14:25</button>
+                <button type="button" class="ci-time-button">{{ now()->format('H:i') }}</button>
             </div>
             <p class="ci-dialog-text">Vui lòng kiểm tra lại thông tin phòng trước khi xác nhận nhận phòng.</p>
 
@@ -864,7 +766,191 @@
         const dialogRoomNumber = document.getElementById('dialogRoomNumber');
         const dialogGuestSummary = document.getElementById('dialogGuestSummary');
         const dialogStayPeriod = document.getElementById('dialogStayPeriod');
+        const checkinSearchInput = document.querySelector('[data-checkin-search]');
         let selectedRoomButton = null;
+
+        function parseInputDate(value) {
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+            if (!match) {
+                return null;
+            }
+
+            const [, year, month, day] = match;
+            const date = new Date(Number(year), Number(month) - 1, Number(day));
+
+            if (
+                date.getFullYear() !== Number(year)
+                || date.getMonth() !== Number(month) - 1
+                || date.getDate() !== Number(day)
+            ) {
+                return null;
+            }
+
+            date.setHours(0, 0, 0, 0);
+            return date;
+        }
+
+        function calculateAge(birthDate) {
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age -= 1;
+            }
+
+            return age;
+        }
+
+        function setFieldError(input, message) {
+            const field = input.closest('.ci-form-field');
+
+            input.classList.add('is-invalid');
+
+            if (!field) {
+                return;
+            }
+
+            let errorElement = field.querySelector('.ci-field-error');
+
+            if (!errorElement) {
+                errorElement = document.createElement('div');
+                errorElement.className = 'ci-field-error';
+                field.appendChild(errorElement);
+            }
+
+            errorElement.textContent = message;
+        }
+
+        function clearFormErrors(form) {
+            if (!form) {
+                return;
+            }
+
+            form.querySelectorAll('.is-invalid').forEach((input) => input.classList.remove('is-invalid'));
+            form.querySelectorAll('.ci-field-error').forEach((errorElement) => errorElement.remove());
+        }
+
+        function validateBirthDateInput(input, { requireValue = false } = {}) {
+            if (!input) {
+                return true;
+            }
+
+            const role = input.dataset.guestRole || 'adult';
+            const birthDate = parseInputDate(input.value);
+
+            input.classList.remove('is-invalid');
+            input.closest('.ci-form-field')?.querySelector('.ci-field-error')?.remove();
+
+            if (!input.value) {
+                if (requireValue) {
+                    setFieldError(input, 'Vui lòng nhập ngày sinh.');
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (!birthDate) {
+                setFieldError(input, 'Ngày sinh không hợp lệ.');
+                return false;
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (birthDate > today) {
+                setFieldError(input, 'Ngày sinh không được lớn hơn hôm nay.');
+                return false;
+            }
+
+            const age = calculateAge(birthDate);
+
+            if (role === 'child' && age >= 12) {
+                setFieldError(input, 'Khách từ 12 tuổi trở lên được tính là người lớn.');
+                return false;
+            }
+
+            if (role === 'adult' && age < 12) {
+                setFieldError(input, 'Khách nhỏ hơn 12 tuổi được tính là trẻ em.');
+                return false;
+            }
+
+            validateAdultPresence(input.closest('[data-room-form]'), { showError: false });
+            return true;
+        }
+
+        function validateAdultPresence(form, { showError = true } = {}) {
+            if (!form) {
+                return false;
+            }
+
+            const birthDateInputs = Array.from(form.querySelectorAll('[data-birthdate]'));
+            const ages = birthDateInputs
+                .map((input) => parseInputDate(input.value))
+                .filter(Boolean)
+                .map(calculateAge);
+            const hasAdult = ages.some((age) => age >= 18);
+
+            if (hasAdult || ages.length === 0) {
+                return true;
+            }
+
+            if (showError) {
+                const firstInput = birthDateInputs.find((input) => input.value) || birthDateInputs[0] || null;
+
+                if (firstInput) {
+                    setFieldError(firstInput, birthDateInputs.length === 1
+                        ? 'Không cho phép chỉ một người dưới 18 tuổi check-in.'
+                        : 'Cần có ít nhất một người đủ 18 tuổi trở lên để check-in.');
+                }
+            }
+
+            return false;
+        }
+
+        function validateVisibleGuestForm({ scrollToError = true } = {}) {
+            const visibleForm = document.querySelector('[data-room-form].is-visible');
+
+            if (!visibleForm) {
+                return false;
+            }
+
+            clearFormErrors(visibleForm);
+
+            const birthDateInputs = Array.from(visibleForm.querySelectorAll('[data-birthdate]'));
+            let firstInvalidInput = null;
+
+            birthDateInputs.forEach((input) => {
+                if (!validateBirthDateInput(input, { requireValue: true })) {
+                    firstInvalidInput ??= input;
+                }
+            });
+
+            if (!firstInvalidInput && !validateAdultPresence(visibleForm)) {
+                firstInvalidInput = birthDateInputs[0] || null;
+            }
+
+            if (firstInvalidInput && scrollToError) {
+                firstInvalidInput.focus({ preventScroll: true });
+                firstInvalidInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return false;
+            }
+
+            return true;
+        }
+
+        function bindRealtimeBirthDateValidation(root = document) {
+            root.querySelectorAll('[data-birthdate]').forEach((input) => {
+                input.addEventListener('input', () => validateBirthDateInput(input));
+                input.addEventListener('change', () => validateBirthDateInput(input));
+                input.addEventListener('blur', () => {
+                    validateBirthDateInput(input, { requireValue: true });
+                    validateAdultPresence(input.closest('[data-room-form]'));
+                });
+            });
+        }
 
         function resetSelectedRoomState() {
             roomOptions.forEach((button) => {
@@ -912,6 +998,7 @@
 
             if (targetForm) {
                 targetForm.classList.add('is-visible');
+                clearFormErrors(targetForm);
             }
 
             selectedRoomButton = activeRoomButton;
@@ -927,6 +1014,14 @@
 
         function openCheckinConfirmDialog() {
             const activeRoom = selectedRoomButton || document.querySelector('.ci-room-option.is-active');
+
+            if (!activeRoom) {
+                return;
+            }
+
+            if (!validateVisibleGuestForm()) {
+                return;
+            }
 
             if (dialogBookingId) {
                 dialogBookingId.textContent = activeRoom?.dataset.bookingId || '--';
@@ -985,11 +1080,58 @@
         }
 
         if (confirmCheckinDialogButton) {
-            confirmCheckinDialogButton.addEventListener('click', () => {
-                if (checkinConfirmDialog) {
-                    checkinConfirmDialog.close();
+            confirmCheckinDialogButton.addEventListener('click', async () => {
+                const activeRoom = selectedRoomButton || document.querySelector('.ci-room-option.is-active');
+                const bookingId = activeRoom?.dataset.bookingId;
+
+                if (!bookingId) {
+                    return;
+                }
+
+                if (!validateVisibleGuestForm()) {
+                    return;
+                }
+
+                confirmCheckinDialogButton.disabled = true;
+                confirmCheckinDialogButton.textContent = 'Đang xác nhận...';
+
+                try {
+                    const response = await fetch(`/api/dat-phong/${encodeURIComponent(bookingId)}/check-in`, {
+                        method: 'POST',
+                        headers: {
+                            Accept: 'application/json',
+                        },
+                    });
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || 'Không thể nhận phòng.');
+                    }
+
+                    if (checkinConfirmDialog) {
+                        checkinConfirmDialog.close();
+                    }
+
+                    window.location.reload();
+                } catch (error) {
+                    alert(error.message || 'Không thể nhận phòng.');
+                    confirmCheckinDialogButton.disabled = false;
+                    confirmCheckinDialogButton.textContent = 'Xác nhận';
                 }
             });
         }
+
+        if (checkinSearchInput) {
+            checkinSearchInput.addEventListener('input', () => {
+                const keyword = checkinSearchInput.value.trim().toLowerCase();
+
+                bookingItems.forEach((item) => {
+                    const searchText = item.dataset.searchText || '';
+                    item.hidden = keyword !== '' && !searchText.includes(keyword);
+                });
+            });
+        }
+
+        bindRealtimeBirthDateValidation();
     </script>
 </x-app-layout>

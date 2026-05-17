@@ -202,7 +202,13 @@
             return window.CustomerRoomApi.getRoomDetail(id);
           }
 
-          const response = await fetch(`/api/loai-phong/${encodeURIComponent(id)}`);
+          const response = await fetch(`/api/loai-phong/${encodeURIComponent(id)}?_=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              Accept: 'application/json',
+              'Cache-Control': 'no-cache',
+            },
+          });
           const result = await response.json();
           if (!result.success || !result.data) {
             throw new Error(result.message || 'Failed to load room detail');

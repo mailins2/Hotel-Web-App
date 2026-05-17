@@ -183,7 +183,7 @@
                                 @php
                                     $room = $detail->phong;
                                     $roomType = $room?->loaiPhong;
-                                    $price = $roomType?->bangGias?->first()?->GiaPhong;
+                                    $price = $roomType?->GiaGiam ?? $roomType?->GiaPhong;
                                 @endphp
                                 <div class="bd-list-item">
                                     <div class="bd-list-line">

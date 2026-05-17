@@ -1,6 +1,7 @@
 @php
   $authAccount = session('auth_account');
-  $isLoggedIn = $isLoggedIn ?? filled($authAccount);
+  $isCustomerAccount = filled($authAccount) && (int) ($authAccount['LoaiTaiKhoan'] ?? -1) === 0;
+  $isLoggedIn = ($isLoggedIn ?? $isCustomerAccount) && $isCustomerAccount;
   $customerName = $authAccount['Ten'] ?? null;
 
   if ($isLoggedIn && blank($customerName) && !empty($authAccount['MaTK'])) {
