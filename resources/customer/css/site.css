@@ -1013,6 +1013,71 @@ a:focus,
     font-size: 13px;
 }
 
+.customer-room-price {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: 6px 8px;
+}
+
+.room-result-price .customer-room-price {
+    display: grid;
+    justify-content: start;
+    justify-items: start;
+    gap: 6px;
+}
+
+.customer-room-price-original {
+    color: #9ca3af;
+    font-size: 0.9em;
+    font-weight: 600;
+    text-decoration: line-through;
+}
+
+.customer-room-price-sale {
+    color: var(--customer-accent);
+    font-weight: 800;
+}
+
+.room-result-price .customer-room-price-sale {
+    font-size: 24px;
+    line-height: 1.1;
+}
+
+.room-result-price .customer-room-price-original {
+    font-size: 18px;
+    line-height: 1.1;
+}
+
+.room-result-price .customer-room-discount-tag {
+    align-self: center;
+    margin-left: 4px;
+}
+
+.room-result-price .customer-room-price-sale + .customer-room-discount-tag {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.customer-room-discount-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 22px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #fff1e8;
+    border: 1px solid rgba(140, 74, 52, 0.22);
+    color: #8c4a34;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.booking-item-price .customer-room-price {
+    justify-content: flex-start;
+}
+
 .search-summary-card {
     padding: 20px;
     border-radius: 18px;

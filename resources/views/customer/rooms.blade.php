@@ -119,22 +119,39 @@
         "'": '&#039;',
       }[char]));
       const escapeAttr = (value) => escapeHtml(value).replace(/`/g, '&#096;');
-      const getRoomPrice = (room) => {
-        const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
-        if (Number.isFinite(directPrice) && directPrice > 0) {
-          return directPrice;
-        }
-
-        return 0;
+      const getOriginalRoomPrice = (room) => {
+        const originalPrice = Number(room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+        return Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : 0;
       };
-      const formatRoomPrice = (room) => {
-        const numericPrice = getRoomPrice(room);
+      const getRoomPrice = (room) => {
+        const salePrice = Number(room?.GiaGiam ?? room?.gia_giam);
+        if (Number.isFinite(salePrice) && salePrice > 0) return salePrice;
+        return getOriginalRoomPrice(room);
+      };
+      const getRoomDiscountPercent = (room) => {
+        const originalPrice = getOriginalRoomPrice(room);
+        const salePrice = getRoomPrice(room);
+        if (originalPrice <= 0 || salePrice <= 0 || salePrice >= originalPrice) return 0;
+        return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+      };
+      const renderRoomPrice = (room) => {
+        const originalPrice = getOriginalRoomPrice(room);
+        const salePrice = getRoomPrice(room);
 
-        if (numericPrice <= 0) {
-          return 'Liên hệ';
+        if (salePrice <= 0) return 'Liên hệ';
+
+        const discountPercent = getRoomDiscountPercent(room);
+        if (discountPercent <= 0) {
+          return `<span class="customer-room-price"><span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span></span>`;
         }
 
-        return numericPrice.toLocaleString('vi-VN');
+        return `
+          <span class="customer-room-price">
+            <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')}</span>
+            <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span>
+            <span class="customer-room-discount-tag">-${discountPercent}%</span>
+          </span>
+        `;
       };
 
       function getRoomAmenities(room) {
@@ -310,7 +327,7 @@
                   <div class="text p-4 text-center">
                     <h3 class="mb-3"><a href="${detailUrl}">${escapeHtml(room.TenLoaiPhong || 'Phòng Peach Valley')}</a></h3>
                     <p class="room-description mb-3">${escapeHtml(room.Mota || 'Phòng thoải mái và hiện đại')}</p>
-                    <p class="mb-0"><span class="price mr-1">${formatRoomPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
+                    <p class="mb-0"><span class="price mr-1">${renderRoomPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
                     <p class="pt-1"><a href="${detailUrl}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
                   </div>
                 </div>

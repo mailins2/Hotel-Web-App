@@ -562,12 +562,30 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $checkInBookings = DatPhong::with([
             'khachHang',
             'chiTietDatPhong.phong.loaiPhong',
+            'luuTrus',
         ])
             ->where('TinhTrang', DatPhong::CONFIRMED)
             ->whereDate('NgayNhanPhong', $today->toDateString())
             ->orderBy('NgayNhanPhong')
             ->orderBy('MaDatPhong')
-            ->get();
+            ->get()
+            ->map(function (DatPhong $booking) {
+                $checkedRoomIds = $booking->luuTrus
+                    ->pluck('MaPhong')
+                    ->map(fn ($value) => (int) $value)
+                    ->unique();
+
+                $booking->setRelation(
+                    'chiTietDatPhong',
+                    $booking->chiTietDatPhong
+                        ->reject(fn ($detail) => $checkedRoomIds->contains((int) $detail->MaPhong))
+                        ->values()
+                );
+
+                return $booking;
+            })
+            ->filter(fn (DatPhong $booking) => $booking->chiTietDatPhong->isNotEmpty())
+            ->values();
 
         return view('receptionist.check-in-form', [
             'checkInBookings' => $checkInBookings,
