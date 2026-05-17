@@ -260,4 +260,32 @@ class AuthMobileController extends Controller
             return ['provinces' => [], 'communes' => []];
         }
     }
+    // ========== LẤY THÔNG TIN USER HIỆN TẠI ==========
+public function getUserProfile(Request $request)
+{
+    $user = $request->user();
+    
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Không tìm thấy người dùng'
+        ], 401);
+    }
+    
+    $user->load(['khachHang', 'nhanVien']);
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'MaTK' => $user->MaTK,
+            'Email' => $user->Email,
+            'LoaiTaiKhoan' => $user->LoaiTaiKhoan,
+            'MaKH' => $user->khachHang?->MaKH,
+            'MaNV' => $user->nhanVien?->MaNV,
+            'Ten' => $user->khachHang?->TenKH ?? $user->nhanVien?->TenNV,
+            'DiemTichLuy' => $user->khachHang?->DiemTichLuy ?? 0,
+            'SoDienThoai' => $user->khachHang?->SoDienThoai ?? $user->nhanVien?->SoDienThoai,
+        ]
+    ]);
+}
 }
