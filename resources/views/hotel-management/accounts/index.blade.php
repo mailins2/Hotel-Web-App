@@ -58,7 +58,7 @@
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
 
-                let accounts = [];
+                let accounts = @json($accounts ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -173,48 +173,11 @@
                     renderRows(filtered);
                 };
 
-                const loadAccounts = async function () {
-                    try {
-                        const response = await fetch('/api/tai-khoan', {
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách tài khoản.');
-                        }
-
-                        const payload = await response.json();
-                        const baseAccounts = Array.isArray(payload.data) ? payload.data : [];
-
-                        const detailAccounts = await Promise.all(
-                            baseAccounts.map(async function (account) {
-                                try {
-                                    const detailResponse = await fetch(`/api/tai-khoan/${account.MaTK}`, {
-                                        headers: {
-                                            'Accept': 'application/json'
-                                        }
-                                    });
-
-                                    if (!detailResponse.ok) {
-                                        return account;
-                                    }
-
-                                    return await detailResponse.json();
-                                } catch (error) {
-                                    return account;
-                                }
-                            })
-                        );
-
-                        accounts = detailAccounts.slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaTK');
-                        });
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadAccounts = function () {
+                    accounts = (Array.isArray(accounts) ? accounts : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaTK');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

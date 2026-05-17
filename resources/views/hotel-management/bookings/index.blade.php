@@ -61,9 +61,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
 
-                let bookings = [];
-
-                const customerMap = {};
+                let bookings = @json($bookings ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -117,8 +115,16 @@
                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
                 };
 
-                const getCustomerName = function (maKH) {
-                    const customer = customerMap[maKH];
+                const getRelation = function (record, camelName, snakeName) {
+                    if (!record) {
+                        return null;
+                    }
+
+                    return record[camelName] || record[snakeName] || null;
+                };
+
+                const getCustomerName = function (booking) {
+                    const customer = getRelation(booking, 'khachHang', 'khach_hang');
                     return customer && customer.TenKH ? customer.TenKH : '--';
                 };
 
@@ -135,7 +141,7 @@
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${booking.MaDatPhong || '--'}</td>
-                                <td>${getCustomerName(booking.MaKH)}</td>
+                                <td>${getCustomerName(booking)}</td>
                                 <td>${formatDateTime(booking.NgayDat)}</td>
                                 <td>${formatDate(booking.NgayNhanPhong)}</td>
                                 <td>${formatDate(booking.NgayTraPhong)}</td>
@@ -159,7 +165,7 @@
                     const statusValue = (statusSelect ? statusSelect.value : '') || '';
 
                     const filtered = bookings.filter(function (booking) {
-                        const customerName = getCustomerName(booking.MaKH);
+                        const customerName = getCustomerName(booking);
                         const matchesKeyword = !keyword
                             || String(booking && booking.MaDatPhong ? booking.MaDatPhong : '').toLowerCase().includes(keyword)
                             || String(booking && booking.MaKH ? booking.MaKH : '').toLowerCase().includes(keyword)
@@ -179,38 +185,11 @@
                     renderRows(filtered);
                 };
 
-                const loadBookings = async function () {
-                    try {
-                        const [bookingResponse, customerResponse] = await Promise.all([
-                            fetch('/api/dat-phong', { headers: { 'Accept': 'application/json' } }),
-                            fetch('/api/khach-hang', { headers: { 'Accept': 'application/json' } })
-                        ]);
-
-                        if (!bookingResponse.ok) {
-                            throw new Error('Không thể tải danh sách đặt phòng.');
-                        }
-
-                        if (!customerResponse.ok) {
-                            throw new Error('Không thể tải thông tin khách hàng.');
-                        }
-
-                        const bookingPayload = await bookingResponse.json();
-                        const customers = await customerResponse.json();
-
-                        bookings = bookingPayload && Array.isArray(bookingPayload.data)
-                            ? bookingPayload.data.slice().sort(function (left, right) {
-                                return compareRecordIdDesc(left, right, 'MaDatPhong');
-                            })
-                            : [];
-
-                        (Array.isArray(customers) ? customers : []).forEach(function (customer) {
-                            customerMap[customer.MaKH] = customer;
-                        });
-
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadBookings = function () {
+                    bookings = (Array.isArray(bookings) ? bookings : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaDatPhong');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

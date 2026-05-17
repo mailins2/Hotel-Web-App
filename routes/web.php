@@ -4,11 +4,17 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountManagementController;
 use App\Http\Controllers\CustomerManagementController;
 use App\Models\DatPhong;
+use App\Models\DanhGia;
 use App\Models\DichVu;
 use App\Models\HoaDon;
 use App\Models\KhachHang;
+use App\Models\KhuyenMai;
+use App\Models\LoaiPhong;
+use App\Models\NhanVien;
 use App\Models\Phong;
+use App\Models\TaiKhoan;
 use App\Models\ThanhToan;
+use App\Models\TienNghi;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Route;
 
@@ -310,7 +316,13 @@ Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(func
 
 Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
-    Route::view('/room-amenities', 'hotel-management.room-amenities.index')->name('room-amenities.index');
+    Route::get('/room-amenities', function () {
+        $amenities = TienNghi::orderByDesc('MaTienNghi')->get();
+
+        return view('hotel-management.room-amenities.index', [
+            'amenities' => $amenities,
+        ]);
+    })->name('room-amenities.index');
     Route::view('/room-amenities/trash', 'hotel-management.room-amenities.trash')->name('room-amenities.trash');
     Route::view('/room-amenities/create', 'hotel-management.room-amenities.form')->name('room-amenities.create');
     Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
@@ -321,11 +333,27 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
     });
     Route::prefix('bookings')->name('bookings.')->group(function () {
-        Route::view('/', 'hotel-management.bookings.index')->name('index');
+        Route::get('/', function () {
+            $bookings = DatPhong::with('khachHang')
+                ->orderByDesc('MaDatPhong')
+                ->get();
+
+            return view('hotel-management.bookings.index', [
+                'bookings' => $bookings,
+            ]);
+        })->name('index');
         Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
     });
     Route::prefix('customers')->name('customers.')->group(function () {
-        Route::view('/', 'hotel-management.customers.index')->name('index');
+        Route::get('/', function () {
+            $customers = KhachHang::with('taiKhoan')
+                ->orderByDesc('MaKH')
+                ->get();
+
+            return view('hotel-management.customers.index', [
+                'customers' => $customers,
+            ]);
+        })->name('index');
         Route::get('/create', [CustomerManagementController::class, 'create'])->name('create');
         Route::post('/', [CustomerManagementController::class, 'store'])->name('store');
         Route::get('/{recordId}/edit', [CustomerManagementController::class, 'edit'])->name('edit');
@@ -348,14 +376,71 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
 
     foreach ($hotelManagementViews as $module => $viewBase) {
         Route::prefix($module)->name($module . '.')->group(function () use ($viewBase, $module) {
-            Route::view('/', $viewBase . '.index')->name('index');
+            Route::get('/', function () use ($viewBase, $module) {
+                $viewData = match ($module) {
+                    'accounts' => [
+                        'accounts' => TaiKhoan::with(['khachHang', 'nhanVien'])
+                            ->orderByDesc('MaTK')
+                            ->get(),
+                    ],
+                    'employees' => [
+                        'employees' => NhanVien::with('taiKhoan')
+                            ->orderByDesc('MaNV')
+                            ->get(),
+                    ],
+                    'room-types' => [
+                        'roomTypes' => LoaiPhong::orderByDesc('MaLoaiPhong')->get(),
+                    ],
+                    'rooms' => [
+                        'rooms' => Phong::with('loaiPhong')
+                            ->orderByDesc('MaPhong')
+                            ->get(),
+                    ],
+                    'services' => [
+                        'services' => DichVu::with('hinhs')
+                            ->orderByDesc('MaDV')
+                            ->get(),
+                    ],
+                    'promotions' => [
+                        'promotions' => KhuyenMai::orderByDesc('MaKM')->get(),
+                    ],
+                    'invoices' => [
+                        'invoices' => HoaDon::with('nhanVien')
+                            ->orderByDesc('MaHD')
+                            ->get(),
+                    ],
+                    'payments' => [
+                        'payments' => ThanhToan::with('hoaDon.datPhong.khachHang')
+                            ->orderByDesc('MaTT')
+                            ->get(),
+                    ],
+                    'reviews' => [
+                        'reviews' => DanhGia::orderByDesc('MaDG')->get(),
+                    ],
+                    default => [],
+                };
+
+                return view($viewBase . '.index', $viewData);
+            })->name('index');
             Route::view('/trash', $viewBase . '.trash')->name('trash');
             Route::view('/create', $viewBase . '.form')->name('create');
             Route::view('/{recordId}/edit', $viewBase . '.form')->name('edit');
             if ($module === 'services') {
-                Route::view('/food-and-beverage', $viewBase . '.food-and-beverage')->name('food-and-beverage');
-                Route::view('/room-service', $viewBase . '.room-service')->name('room-service');
-                Route::view('/entertainment', $viewBase . '.entertainment')->name('entertainment');
+                Route::get('/food-and-beverage', function () use ($viewBase) {
+                    return view($viewBase . '.food-and-beverage', [
+                        'services' => DichVu::with('hinhs')->orderByDesc('MaDV')->get(),
+                    ]);
+                })->name('food-and-beverage');
+                Route::get('/room-service', function () use ($viewBase) {
+                    return view($viewBase . '.room-service', [
+                        'services' => DichVu::with('hinhs')->orderByDesc('MaDV')->get(),
+                    ]);
+                })->name('room-service');
+                Route::get('/entertainment', function () use ($viewBase) {
+                    return view($viewBase . '.entertainment', [
+                        'services' => DichVu::with('hinhs')->orderByDesc('MaDV')->get(),
+                    ]);
+                })->name('entertainment');
             }
             Route::view('/{recordId}', $viewBase . '.show')->name('show');
         });

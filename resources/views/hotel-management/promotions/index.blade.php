@@ -56,7 +56,7 @@
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
                 const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
-                let promotions = [];
+                let promotions = @json($promotions ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -163,25 +163,11 @@
                     renderRows(filtered);
                 };
 
-                const loadPromotions = async function () {
-                    try {
-                        const response = await fetch('/api/khuyen-mai', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách khuyến mãi.');
-                        }
-
-                        const payload = await response.json();
-                        const items = Array.isArray(payload && payload.data) ? payload.data : [];
-                        promotions = items.slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaKM');
-                        });
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadPromotions = function () {
+                    promotions = (Array.isArray(promotions) ? promotions : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaKM');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {
@@ -235,7 +221,10 @@
                             throw new Error(payload && payload.message ? payload.message : 'Không thể xóa khuyến mãi.');
                         }
 
-                        await loadPromotions();
+                        promotions = promotions.filter(function (promotion) {
+                            return String(promotion.MaKM || '') !== String(promotionId);
+                        });
+                        loadPromotions();
                     } catch (error) {
                         window.alert(error.message);
                     } finally {

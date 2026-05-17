@@ -48,7 +48,7 @@
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
 
-                let customers = [];
+                let customers = @json($customers ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -85,6 +85,11 @@
                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
                 };
 
+                const getAccountId = function (customer) {
+                    const account = customer && (customer.taiKhoan || customer.tai_khoan) ? (customer.taiKhoan || customer.tai_khoan) : null;
+                    return customer && customer.MaTK ? customer.MaTK : (account && account.MaTK ? account.MaTK : '');
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không có khách hàng phù hợp.</td></tr>';
@@ -98,7 +103,7 @@
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${customer.MaKH || '--'}</td>
-                                <td>${customer.MaTK || '--'}</td>
+                                <td>${getAccountId(customer) || '--'}</td>
                                 <td>${customer.TenKH || '--'}</td>
                                 <td>${formatDate(customer.NgaySinh)}</td>
                                 <td>${mapGender(customer.GioiTinh)}</td>
@@ -134,7 +139,7 @@
                     const filtered = customers.filter(function (customer) {
                         const matchesKeyword = !keyword
                             || String(customer && customer.MaKH ? customer.MaKH : '').toLowerCase().includes(keyword)
-                            || String(customer && customer.MaTK ? customer.MaTK : '').toLowerCase().includes(keyword)
+                            || String(getAccountId(customer)).toLowerCase().includes(keyword)
                             || String(customer && customer.TenKH ? customer.TenKH : '').toLowerCase().includes(keyword)
                             || String(customer && customer.SoDienThoai ? customer.SoDienThoai : '').toLowerCase().includes(keyword);
                         return matchesKeyword;
@@ -148,24 +153,11 @@
                     renderRows(filtered);
                 };
 
-                const loadCustomers = async function () {
-                    try {
-                        const response = await fetch('/api/khach-hang', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách khách hàng.');
-                        }
-
-                        const payload = await response.json();
-                        customers = (Array.isArray(payload) ? payload : []).slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaKH');
-                        });
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadCustomers = function () {
+                    customers = (Array.isArray(customers) ? customers : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaKH');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

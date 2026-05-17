@@ -75,7 +75,7 @@
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
                 const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
-                let roomTypes = [];
+                let roomTypes = @json($roomTypes ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -194,27 +194,12 @@
                     renderRows(filtered);
                 };
 
-                const loadRoomTypes = async function () {
-                    try {
-                        const response = await fetch('/api/loai-phong', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách loại phòng.');
-                        }
-
-                        const payload = await response.json();
-                        roomTypes = Array.isArray(payload.data)
-                            ? payload.data.slice().sort(function (left, right) {
-                                return compareRecordIdDesc(left, right, 'MaLoaiPhong');
-                            })
-                            : [];
-                        populateFilterOptions();
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
-                    }
+                const loadRoomTypes = function () {
+                    roomTypes = (Array.isArray(roomTypes) ? roomTypes : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaLoaiPhong');
+                    });
+                    populateFilterOptions();
+                    applyFilters();
                 };
 
                 if (applyButton) {
@@ -265,7 +250,10 @@
                             throw new Error(payload && payload.message ? payload.message : 'Không thể xóa loại phòng.');
                         }
 
-                        await loadRoomTypes();
+                        roomTypes = roomTypes.filter(function (roomType) {
+                            return String(roomType.MaLoaiPhong || '') !== String(roomTypeId);
+                        });
+                        loadRoomTypes();
                     } catch (error) {
                         window.alert(error.message);
                     } finally {

@@ -1,6 +1,6 @@
 <x-hotel-management.trash-page
     title="Thùng rác loại phòng"
-    subtitle="Danh sách loại phòng đã xóa mềm"
+    subtitle="Danh sách loại phòng đã xóa"
     :index-route="route('hotel.room-types.index')"
 >
     <style>
@@ -47,7 +47,6 @@
         id="room-type-trash-config"
         data-trash-url="{{ url('/api/loai-phong/trash') }}"
         data-restore-url-template="{{ url('/api/loai-phong/__ROOM_TYPE_ID__/restore') }}"
-        data-force-delete-url-template="{{ url('/api/loai-phong/__ROOM_TYPE_ID__/force-delete') }}"
         hidden
     ></div>
 
@@ -58,7 +57,6 @@
                 const config = document.getElementById('room-type-trash-config');
                 const trashUrl = config ? config.dataset.trashUrl : '';
                 const restoreUrlTemplate = config ? config.dataset.restoreUrlTemplate : '';
-                const forceDeleteUrlTemplate = config ? config.dataset.forceDeleteUrlTemplate : '';
                 let roomTypes = [];
 
                 const escapeHtml = function (value) {
@@ -101,7 +99,6 @@
                                 <td>
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="button" class="btn btn-sm btn-success" data-restore-id="${escapeHtml(roomType.MaLoaiPhong)}">Khôi phục</button>
-                                        <button type="button" class="btn btn-sm btn-danger" data-force-delete-id="${escapeHtml(roomType.MaLoaiPhong)}">Xóa vĩnh viễn</button>
                                     </div>
                                 </td>
                             </tr>
@@ -129,34 +126,26 @@
 
                 document.addEventListener('click', async function (event) {
                     const restoreButton = event.target.closest('[data-restore-id]');
-                    const forceDeleteButton = event.target.closest('[data-force-delete-id]');
-                    const targetButton = restoreButton || forceDeleteButton;
 
-                    if (!targetButton) {
+                    if (!restoreButton) {
                         return;
                     }
 
                     event.preventDefault();
 
-                    const recordId = targetButton.getAttribute(restoreButton ? 'data-restore-id' : 'data-force-delete-id') || '';
-                    const confirmed = window.confirm(
-                        restoreButton
-                            ? `Khôi phục loại phòng ${recordId}?`
-                            : `Xóa vĩnh viễn loại phòng ${recordId}?`
-                    );
+                    const recordId = restoreButton.getAttribute('data-restore-id') || '';
+                    const confirmed = window.confirm(`Khôi phục loại phòng ${recordId}?`);
 
                     if (!confirmed) {
                         return;
                     }
 
-                    targetButton.disabled = true;
+                    restoreButton.disabled = true;
 
                     try {
-                        const url = restoreButton
-                            ? restoreUrlTemplate.replace('__ROOM_TYPE_ID__', encodeURIComponent(recordId))
-                            : forceDeleteUrlTemplate.replace('__ROOM_TYPE_ID__', encodeURIComponent(recordId));
+                        const url = restoreUrlTemplate.replace('__ROOM_TYPE_ID__', encodeURIComponent(recordId));
                         const response = await fetch(url, {
-                            method: restoreButton ? 'POST' : 'DELETE',
+                            method: 'POST',
                             headers: { Accept: 'application/json' }
                         });
                         const payload = await response.json().catch(function () { return {}; });
@@ -169,7 +158,7 @@
                     } catch (error) {
                         window.alert(error.message);
                     } finally {
-                        targetButton.disabled = false;
+                        restoreButton.disabled = false;
                     }
                 });
 

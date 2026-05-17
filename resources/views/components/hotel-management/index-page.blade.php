@@ -45,7 +45,7 @@
             padding: 0 0.9rem;
             border-radius: 5px;
             white-space: nowrap;
-            font-weight: 700;
+            font-weight: 500;
         }
 
         .hm-icon-button svg {

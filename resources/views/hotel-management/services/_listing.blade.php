@@ -111,7 +111,7 @@
                     { key: '3', title: 'Dịch vụ giải trí' }
                 ];
 
-                let services = [];
+                let services = @json($services ?? []);
                 let images = [];
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
@@ -149,6 +149,14 @@
                 };
 
                 const getImageUrl = function (serviceId) {
+                    const matchedService = services.find(function (service) {
+                        return String(service.MaDV || '') === String(serviceId || '');
+                    });
+                    const serviceImages = matchedService && Array.isArray(matchedService.hinhs) ? matchedService.hinhs : [];
+                    if (serviceImages.length && serviceImages[0].Url) {
+                        return serviceImages[0].Url;
+                    }
+
                     const matchedImage = images.find(function (image) {
                         return String(image.MaDV || '') === String(serviceId || '');
                     });
@@ -257,35 +265,11 @@
                     renderTable(filtered);
                 };
 
-                const loadData = async function () {
-                    try {
-                        const responses = await Promise.all([
-                            fetch('/api/dich-vu', { headers: { 'Accept': 'application/json' } }),
-                            fetch('/api/hinh-anh', { headers: { 'Accept': 'application/json' } })
-                        ]);
-
-                        if (!responses[0].ok) {
-                            throw new Error('Không thể tải danh sách dịch vụ.');
-                        }
-
-                        if (!responses[1].ok) {
-                            throw new Error('Không thể tải danh sách ảnh dịch vụ.');
-                        }
-
-                        const servicePayload = await responses[0].json();
-                        const imagePayload = await responses[1].json();
-
-                        services = Array.isArray(servicePayload && servicePayload.data)
-                            ? servicePayload.data.slice().sort(function (left, right) {
-                                return compareRecordIdDesc(left, right, 'MaDV');
-                            })
-                            : [];
-                        images = Array.isArray(imagePayload) ? imagePayload : [];
-
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${escapeHtml(error.message)}</td></tr>`;
-                    }
+                const loadData = function () {
+                    services = (Array.isArray(services) ? services : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaDV');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {
@@ -336,7 +320,10 @@
                             throw new Error(payload && payload.message ? payload.message : 'Không thể xóa dịch vụ.');
                         }
 
-                        await loadData();
+                        services = services.filter(function (service) {
+                            return String(service.MaDV || '') !== String(serviceId);
+                        });
+                        loadData();
                     } catch (error) {
                         window.alert(error.message);
                     } finally {
