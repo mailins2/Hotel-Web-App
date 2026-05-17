@@ -311,22 +311,69 @@ a:focus,
 }
 
 .home-booking-section .booking-form[data-home-booking-search] .btn {
-    min-height: 100%;
+    width: 100%;
+    min-height: 64px !important;
+    height: 64px !important;
+    align-self: center !important;
     border-radius: 12px !important;
     background: var(--customer-accent) !important;
+    border-color: var(--customer-accent) !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        opacity 0.2s ease;
+}
+
+.home-booking-section .booking-form[data-home-booking-search] .btn.is-loading {
+    pointer-events: none;
+    opacity: 0.88;
+}
+
+.home-booking-section .booking-form[data-home-booking-search] .btn.is-loading::after {
+    content: "";
+    width: 22px;
+    height: 22px;
+    display: block;
+    border: 3px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: booking-submit-spin 0.7s linear infinite;
+}
+
+.home-booking-section .booking-form[data-home-booking-search] .btn.is-loading .booking-submit-content {
+    display: none;
 }
 
 .home-booking-section .booking-form[data-home-booking-search] .btn span {
-    position: static;
-    transform: none;
+    position: static !important;
+    transform: none !important;
 }
 
 .home-booking-section .booking-form[data-home-booking-search] .booking-submit-content {
-    min-height: 92px;
+    min-height: 0;
     color: #fff;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.04em;
+}
+
+.home-booking-section .booking-form[data-home-booking-search] .booking-submit-spinner {
+    width: 18px;
+    height: 18px;
+    display: inline-block;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: booking-submit-spin 0.7s linear infinite;
+}
+
+@keyframes booking-submit-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .room-amenities {
@@ -1740,7 +1787,7 @@ body.modal-open {
     }
 
     .home-booking-section .booking-form[data-home-booking-search] .booking-submit-content {
-        min-height: 54px;
+        min-height: 0;
     }
 
     .search-summary-bar {

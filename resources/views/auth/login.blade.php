@@ -66,7 +66,7 @@
                            <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                         </a>
                         <h2 class="mb-2 text-center">Đăng nhập</h2>
-                        <form action="{{ route('login.store') }}" method="POST" data-login-form data-toggle="validator" novalidate>
+                        <form action="{{ route('login.store') }}" method="POST" accept-charset="UTF-8" data-login-form data-toggle="validator" novalidate>
                            @csrf
                            @if (request()->filled('redirect'))
                               <input type="hidden" name="redirect" value="{{ request('redirect') }}">

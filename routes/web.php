@@ -298,7 +298,7 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('admin')->name('admin.')->group(function () {
+Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(function () {
     Route::view('/dashboard', 'hotel-management.report')->name('dashboard');
 });
 
@@ -308,7 +308,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('hotel')->name('hotel.')->group(function () {
+Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () {
     Route::view('/reports', 'hotel-management.report')->name('reports.index');
     Route::view('/room-amenities', 'hotel-management.room-amenities.index')->name('room-amenities.index');
     Route::view('/room-amenities/trash', 'hotel-management.room-amenities.trash')->name('room-amenities.trash');
@@ -368,7 +368,7 @@ Route::prefix('hotel')->name('hotel.')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('reception')->name('reception.')->group(function () {
+Route::middleware('account.role:1')->prefix('reception')->name('reception.')->group(function () {
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 

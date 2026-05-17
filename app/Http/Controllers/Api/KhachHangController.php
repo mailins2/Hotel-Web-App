@@ -2,51 +2,60 @@
 
 namespace App\Http\Controllers\Api;
 
-# 
-
 use App\Http\Controllers\Controller;
 use App\Models\KhachHang;
+use App\Models\TaiKhoan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class KhachHangController extends Controller
 {
-    // 1. Lấy danh sách khách hàng
-    //get /api/khach-hang
     public function index()
     {
-        $khachHangs = KhachHang::with('taiKhoan')->get();
-        return response()->json($khachHangs, 200);
+        return response()->json(KhachHang::with('taiKhoan')->get(), 200);
     }
 
-    // 2. Thêm mới khách hàng
-    //post /api/khach-hang
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            // Đổi từ required thành nullable
-            'MaTK'         => 'nullable|exists:TaiKhoan,MaTK|unique:KhachHang,MaTK',
-            'TenKH'        => 'required|string|max:100',
-            'SoDienThoai'  => 'required|unique:KhachHang,SoDienThoai',
-            'CCCD'         => 'nullable|unique:KhachHang,CCCD',
-            'NgaySinh'     => 'required|date',
-            'GioiTinh'     => 'required|in:0,1,2',
-            'DiaChi'       => 'nullable'
+            'MaTK' => 'nullable|exists:TaiKhoan,MaTK',
+            'TenKH' => 'required|string|max:100',
+            'SoDienThoai' => 'required|string|max:15|unique:KhachHang,SoDienThoai',
+            'CCCD' => 'nullable|string|max:20|unique:KhachHang,CCCD',
+            'NgaySinh' => 'required|date',
+            'GioiTinh' => 'required|in:0,1,2',
+            'DiaChi' => 'nullable|string|max:200',
+            'DIEM' => 'sometimes|integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $khachHang = KhachHang::create($request->all());
+        $data = $validator->validated();
+        $accountId = $data['MaTK'] ?? null;
+        unset($data['MaTK']);
+
+        $khachHang = DB::transaction(function () use ($data, $accountId) {
+            $khachHang = KhachHang::create($data);
+
+            if ($accountId) {
+                TaiKhoan::where('MaTK', $accountId)->update([
+                    'MaKH' => $khachHang->MaKH,
+                    'MaNV' => null,
+                ]);
+            }
+
+            return $khachHang->load('taiKhoan');
+        });
+
         return response()->json([
             'message' => 'Thêm khách hàng thành công',
-            'data' => $khachHang
+            'data' => $khachHang,
         ], 201);
     }
 
-    // 3. Xem chi tiết 1 khách hàng
-    // get /api/khach-hang/id
     public function show($id)
     {
         $khachHang = KhachHang::with(['taiKhoan', 'datPhongs'])->find($id);
@@ -58,29 +67,65 @@ class KhachHangController extends Controller
         return response()->json($khachHang, 200);
     }
 
-    // 4. Cập nhật thông tin
-    // put /api/khach-hang
     public function update(Request $request, $id)
     {
         $khachHang = KhachHang::find($id);
+
         if (!$khachHang) {
             return response()->json(['message' => 'Không tìm thấy khách hàng'], 404);
         }
 
-        $khachHang->update($request->all());
-        return response()->json(['message' => 'Cập nhật thành công', 'data' => $khachHang], 200);
+        $validator = Validator::make($request->all(), [
+            'MaTK' => 'sometimes|nullable|exists:TaiKhoan,MaTK',
+            'TenKH' => 'sometimes|string|max:100',
+            'SoDienThoai' => 'sometimes|string|max:15|unique:KhachHang,SoDienThoai,' . $id . ',MaKH',
+            'CCCD' => 'sometimes|nullable|string|max:20|unique:KhachHang,CCCD,' . $id . ',MaKH',
+            'NgaySinh' => 'sometimes|date',
+            'GioiTinh' => 'sometimes|in:0,1,2',
+            'DiaChi' => 'sometimes|nullable|string|max:200',
+            'DIEM' => 'sometimes|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $data = $validator->validated();
+        $hasAccountInput = array_key_exists('MaTK', $data);
+        $accountId = $data['MaTK'] ?? null;
+        unset($data['MaTK']);
+
+        DB::transaction(function () use ($khachHang, $data, $hasAccountInput, $accountId) {
+            $khachHang->update($data);
+
+            if ($hasAccountInput) {
+                TaiKhoan::where('MaKH', $khachHang->MaKH)->update(['MaKH' => null]);
+
+                if ($accountId) {
+                    TaiKhoan::where('MaTK', $accountId)->update([
+                        'MaKH' => $khachHang->MaKH,
+                        'MaNV' => null,
+                    ]);
+                }
+            }
+        });
+
+        return response()->json([
+            'message' => 'Cập nhật thành công',
+            'data' => $khachHang->fresh('taiKhoan'),
+        ], 200);
     }
 
-    // 5. Xóa khách hàng
-    //delete /api/khach-hang/{id}
     public function destroy($id)
     {
         $khachHang = KhachHang::find($id);
+
         if (!$khachHang) {
             return response()->json(['message' => 'Không tìm thấy khách hàng'], 404);
         }
 
         $khachHang->delete();
+
         return response()->json(['message' => 'Đã xóa khách hàng'], 200);
     }
 }

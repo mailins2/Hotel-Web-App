@@ -519,9 +519,6 @@ class DatPhongController extends Controller
             // Cập nhật booking
             $datPhong->update(['TinhTrang' => 4]); // Cancelled
 
-            // Xóa chi tiết đặt phòng
-            ChiTietDatPhong::where('MaDatPhong', $id)->delete();
-
             // Cập nhật hóa đơn
             HoaDon::where('MaDatPhong', $id)
                 ->update(['TrangThai' => 3]); // Cancelled

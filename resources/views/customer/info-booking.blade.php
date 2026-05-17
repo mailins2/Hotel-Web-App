@@ -31,7 +31,7 @@
           <div class="col-lg-8">
             <div class="booking-card">
               <h3>Thông tin người đặt phòng</h3>
-              <form id="bookingForm" class="booking-form-grid">
+              <form id="bookingForm" class="booking-form-grid" accept-charset="UTF-8">
                 <div class="booking-field">
                   <label for="fullName">Họ tên *</label>
                   <input 
@@ -225,7 +225,7 @@
 
         // Validation functions
         function validateName(value) {
-          return /^[a-zA-ZÀ-ỿ\s]+$/.test(value.trim());
+          return /^[\p{L}\s]+$/u.test(value.trim());
         }
 
         function validatePhone(value) {
@@ -534,6 +534,7 @@
             appTransId: result.app_trans_id,
             datPhongIds,
             amount,
+            provider: 'ZALOPAY',
             createdAt: new Date().toISOString(),
           }));
 
@@ -601,14 +602,37 @@
         }
 
         // Real-time validation for name (letters only)
+        let isComposingName = false;
+
         fullNameInput.addEventListener('input', function(e) {
+          if (isComposingName) {
+            return;
+          }
+
           const value = e.target.value;
           // Remove non-letter characters
-          const sanitized = value.replace(/[^a-zA-ZÀ-ỿ\s]/g, '');
+          const sanitized = value.replace(/[^\p{L}\s]/gu, '');
           if (sanitized !== value) {
             e.target.value = sanitized;
           }
           // Clear error message on valid input
+          if (validateName(sanitized)) {
+            document.getElementById('fullName-error').textContent = '';
+          }
+        });
+
+        fullNameInput.addEventListener('compositionstart', function() {
+          isComposingName = true;
+        });
+
+        fullNameInput.addEventListener('compositionend', function(e) {
+          isComposingName = false;
+          const sanitized = e.target.value.replace(/[^\p{L}\s]/gu, '');
+
+          if (sanitized !== e.target.value) {
+            e.target.value = sanitized;
+          }
+
           if (validateName(sanitized)) {
             document.getElementById('fullName-error').textContent = '';
           }
