@@ -15,11 +15,11 @@ class TaiKhoan extends Model
 
     public function khachHang()
     {
-        return $this->hasOne(KhachHang::class, 'MaTK');
+        return $this->belongsTo(KhachHang::class, 'MaKH', 'MaKH');
     }
 
     public function nhanVien()
     {
-        return $this->hasOne(NhanVien::class, 'MaTK');
+        return $this->belongsTo(NhanVien::class, 'MaNV', 'MaNV');
     }
 }

@@ -499,7 +499,7 @@ const enhanceBookingForm = () => {
     const searchAction = searchColumn.querySelector(".btn");
 
     if (searchAction) {
-        searchAction.innerHTML = `<span class="booking-submit-content"><i class="ion-ios-search"></i>Tìm kiếm</span>`;
+        searchAction.innerHTML = `<span class="booking-submit-content"><i class="ion-ios-search"></i><span data-submit-label>Tìm kiếm</span></span>`;
     }
 };
 
@@ -517,6 +517,11 @@ const initHomeBookingSearchSync = () => {
     if (!(searchAction instanceof HTMLAnchorElement)) {
         return;
     }
+
+    const setSearchLoading = () => {
+        searchAction.classList.add("is-loading");
+        searchAction.setAttribute("aria-busy", "true");
+    };
 
     searchAction.addEventListener("click", (event) => {
         event.preventDefault();
@@ -552,6 +557,7 @@ const initHomeBookingSearchSync = () => {
             String(Math.max(Number.parseInt(rooms, 10) || 1, 1)),
         );
 
+        setSearchLoading();
         window.location.href = targetUrl.toString();
     });
 };

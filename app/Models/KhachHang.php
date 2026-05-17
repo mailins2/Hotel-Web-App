@@ -10,18 +10,18 @@ class KhachHang extends Model
     protected $primaryKey = 'MaKH';
     public $timestamps = false;
     protected $fillable = [
-        'MaTK',
         'TenKH',
         'SoDienThoai',
         'CCCD',
         'NgaySinh',
         'GioiTinh',
-        'DiaChi'
+        'DiaChi',
+        'DIEM',
     ];
 
     public function taiKhoan()
     {
-        return $this->belongsTo(TaiKhoan::class, 'MaTK');
+        return $this->hasOne(TaiKhoan::class, 'MaKH', 'MaKH');
     }
 
     public function datPhongs()
