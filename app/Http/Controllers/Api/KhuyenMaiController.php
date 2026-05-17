@@ -59,10 +59,11 @@ class KhuyenMaiController extends Controller
             'MaKM'             => 'sometimes|required|string|max:10|unique:KhuyenMai,MaKM',
             'TenKM'            => 'required|string|max:100',
             'MoTa'             => 'nullable|string|max:200',
-            'Diem'             => 'required|integer|min:0', // Điểm cần để đổi hoặc điểm tặng
+            'Diem'             => 'nullable|integer|min:0',
             'NgayBatDau'       => 'required|date',
             'NgayKetThuc'      => 'required|date|after_or_equal:NgayBatDau',
             'PhanTramGiamGia'  => 'required|numeric|between:0,100',
+            'LoaiKM'           => 'sometimes|integer|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -72,6 +73,7 @@ class KhuyenMaiController extends Controller
         $payload = $validator->validated();
         $khuyenMai = DB::transaction(function () use ($payload) {
             $payload['MaKM'] = $payload['MaKM'] ?? $this->generatePromotionId();
+            $payload['LoaiKM'] = $payload['LoaiKM'] ?? 0;
 
             return KhuyenMai::create($payload);
         });
@@ -113,6 +115,7 @@ class KhuyenMaiController extends Controller
                 'NgayBatDau' => 'sometimes|date',
                 'NgayKetThuc' => 'sometimes|date|after_or_equal:NgayBatDau',
                 'PhanTramGiamGia' => 'sometimes|numeric|between:0,100',
+                'LoaiKM' => 'sometimes|integer|in:0,1',
             ]);
 
             if ($validator->fails()) {
@@ -128,7 +131,8 @@ class KhuyenMaiController extends Controller
                 'Diem',
                 'NgayBatDau',
                 'NgayKetThuc',
-                'PhanTramGiamGia'
+                'PhanTramGiamGia',
+                'LoaiKM'
             ]));
 
             return response()->json([

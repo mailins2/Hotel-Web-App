@@ -1,6 +1,24 @@
 @php
-  $dashboardRoute = route('admin.dashboard');
-  $portalLabel = 'Admin';
+  $authAccount = session('auth_account', []);
+  $isReceptionPortal = request()->routeIs('reception.*');
+  $dashboardRoute = $isReceptionPortal ? route('reception.dashboard') : route('admin.dashboard');
+  $employee = null;
+
+  if (!empty($authAccount['MaNV'])) {
+    $employee = \App\Models\NhanVien::find($authAccount['MaNV']);
+  }
+
+  $employeeName = $employee?->TenNV ?? ($authAccount['Ten'] ?? null);
+  $positionValue = $employee?->ChucVu ?? ($authAccount['ChucVu'] ?? null);
+  $positionLabel = match ((int) $positionValue) {
+    0 => 'Quản lý',
+    1 => 'Nhân viên',
+    default => $isReceptionPortal ? 'Nhân viên' : 'Admin',
+  };
+  $portalName = $isReceptionPortal
+    ? ($employeeName ?: 'Nhân viên')
+    : 'Admin';
+  $portalLabel = $isReceptionPortal ? $positionLabel : 'Admin';
 @endphp
 
 <nav class="nav navbar navbar-expand-lg navbar-light iq-navbar navs-color">
@@ -35,7 +53,8 @@
               </svg>
             </span>
             <div class="caption d-none d-md-block">
-              <h6 class="mb-0 caption-title">{{ $portalLabel }}</h6>
+              <h6 class="mb-0 caption-title">{{ $portalName }}</h6>
+              <small class="d-block text-white-50 caption-subtitle">{{ $portalLabel }}</small>
             </div>
           </a>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
