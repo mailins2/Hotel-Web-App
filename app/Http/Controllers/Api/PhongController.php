@@ -22,7 +22,7 @@ class PhongController extends Controller
             'success' => true,
             'message' => $message,
             'data' => $data,
-        ], $code);
+        ], $code)->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
     private function error(string $message = 'Error', int $code = 400)

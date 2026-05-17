@@ -347,8 +347,12 @@
             return window.CustomerRoomApi.getRoomTypes();
           }
 
-          const response = await fetch('/api/loai-phong', {
-            headers: { Accept: 'application/json' },
+          const response = await fetch(`/api/loai-phong?_=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              Accept: 'application/json',
+              'Cache-Control': 'no-cache',
+            },
           });
           const result = await response.json();
 
@@ -989,7 +993,7 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        const isCustomerLoggedIn = @json(filled(session('auth_account')));
+        const isCustomerLoggedIn = @json(filled(session('auth_account')) && (int) (session('auth_account.LoaiTaiKhoan') ?? -1) === 0);
         const modal = document.querySelector('[data-guest-payment-modal]');
         const roomsEl = document.querySelector('[data-guest-payment-rooms]');
         const personEl = document.querySelector('[data-guest-payment-person]');

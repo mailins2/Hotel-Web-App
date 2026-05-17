@@ -288,8 +288,6 @@
             }
           });
         };
-        const roomTypesCacheKey = 'peachvalley:room-types:v2';
-        const roomCacheTtlMs = 10 * 60 * 1000;
         const jsonHeaders = {
           Accept: 'application/json',
         };
@@ -361,53 +359,31 @@
           return response.json();
         }
 
-        const readStoredRoomTypes = () => {
-          if (window.CustomerRoomApi?.getStoredRoomTypes) {
-            return window.CustomerRoomApi.getStoredRoomTypes({ allowExpired: true });
-          }
-
+        const clearOldRoomCaches = () => {
           try {
-            const rawValue = window.localStorage?.getItem(roomTypesCacheKey);
-            const cached = rawValue ? JSON.parse(rawValue) : null;
-            return Array.isArray(cached?.data) ? cached.data : null;
+            ['peachvalley:room-types:v3', 'peachvalley:room-types:v2'].forEach((key) => {
+              window.localStorage?.removeItem(key);
+              window.sessionStorage?.removeItem(key);
+            });
           } catch (error) {
-            return null;
+            // Storage can be unavailable; direct API fetch still works.
           }
         };
-        const isRoomTypesCacheFresh = () => {
-          if (window.CustomerRoomApi?.isRoomTypesCacheFresh) {
-            return window.CustomerRoomApi.isRoomTypesCacheFresh();
-          }
-
-          try {
-            const rawValue = window.localStorage?.getItem(roomTypesCacheKey);
-            const cached = rawValue ? JSON.parse(rawValue) : null;
-            return Boolean(cached?.expiresAt && cached.expiresAt > Date.now());
-          } catch (error) {
-            return false;
-          }
-        };
-        const storeRoomTypes = (rooms) => {
-          try {
-            window.localStorage?.setItem(roomTypesCacheKey, JSON.stringify({
-              data: rooms,
-              expiresAt: Date.now() + roomCacheTtlMs,
-            }));
-          } catch (error) {
-            // Storage can be unavailable; the API response still renders.
-          }
-        };
-        const getRoomTypes = async (options = {}) => {
+        const getRoomTypes = async () => {
           if (window.CustomerRoomApi?.getRoomTypes) {
-            return window.CustomerRoomApi.getRoomTypes(options);
+            return window.CustomerRoomApi.getRoomTypes();
           }
 
-          const response = await fetch('/api/loai-phong', {
-            headers: jsonHeaders,
+          const response = await fetch(`/api/loai-phong?_=${Date.now()}`, {
+            cache: 'no-store',
+            headers: {
+              ...jsonHeaders,
+              'Cache-Control': 'no-cache',
+            },
           });
           const result = await readApiJson(response, 'Không thể tải danh sách phòng');
           if (!result.success || !Array.isArray(result.data)) throw new Error(result.message || 'Không thể tải danh sách phòng');
-          storeRoomTypes(result.data);
+          clearOldRoomCaches();
           return result.data;
         };
 
@@ -893,29 +869,16 @@
 
         async function loadRooms() {
           if (!resultsContainer) return;
-          const storedRooms = readStoredRoomTypes();
-          let renderedFromCache = false;
-
-          if (Array.isArray(storedRooms) && storedRooms.length > 0) {
-            allRoomTypes = storedRooms;
-            await searchAvailableRooms(false);
-            renderedFromCache = true;
-          }
-
-          if (renderedFromCache && isRoomTypesCacheFresh()) {
-            return;
-          }
+          resultsContainer.innerHTML = '<div class="room-results-loading">Đang kiểm tra dữ liệu phòng mới nhất...</div>';
 
           try {
-            const rooms = await getRoomTypes({ force: renderedFromCache });
+            const rooms = await getRoomTypes();
             if (!Array.isArray(rooms)) throw new Error('Không thể tải danh sách phòng');
             allRoomTypes = rooms;
             await searchAvailableRooms(false);
           } catch (error) {
             console.error('Error loading room types:', error);
-            if (!renderedFromCache) {
-              resultsContainer.innerHTML = '<div class="room-results-loading">Không thể tải danh sách phòng.</div>';
-            }
+            resultsContainer.innerHTML = '<div class="room-results-loading">Không thể tải danh sách phòng.</div>';
           }
         }
 

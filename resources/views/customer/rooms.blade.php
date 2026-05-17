@@ -225,8 +225,12 @@
           return window.CustomerRoomApi.getRoomTypes();
         }
 
-        const response = await fetch('/api/loai-phong', {
-          headers: { Accept: 'application/json' },
+        const response = await fetch(`/api/loai-phong?_=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            Accept: 'application/json',
+            'Cache-Control': 'no-cache',
+          },
         });
         const result = await response.json();
 
