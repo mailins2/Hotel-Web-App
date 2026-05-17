@@ -46,7 +46,7 @@
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
 
-                let employees = [];
+                let employees = @json($employees ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -88,7 +88,8 @@
                         const showUrl = showUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
                         const editUrl = editUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
                         const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const hasAccountId = employee && employee.MaTK !== undefined && employee.MaTK !== null && String(employee.MaTK).trim() !== '';
+                        const accountId = employee && employee.MaTK ? employee.MaTK : (account && account.MaTK ? account.MaTK : '');
+                        const hasAccountId = String(accountId).trim() !== '';
                         const accountType = hasAccountId
                             ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null)
                             : '--';
@@ -97,7 +98,7 @@
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${employee.MaNV || '--'}</td>
                                 <td>${employee.TenNV || '--'}</td>
-                                <td>${employee.MaTK || '--'}</td>
+                                <td>${accountId || '--'}</td>
                                 <td>${accountType}</td>
                                 <td>
                                     <div class="hm-action-group">
@@ -129,7 +130,8 @@
 
                     const filtered = employees.filter(function (employee) {
                         const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const hasAccountId = employee && employee.MaTK !== undefined && employee.MaTK !== null && String(employee.MaTK).trim() !== '';
+                        const accountId = employee && employee.MaTK ? employee.MaTK : (account && account.MaTK ? account.MaTK : '');
+                        const hasAccountId = String(accountId).trim() !== '';
                         const accountType = hasAccountId
                             ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null).toLowerCase()
                             : '';
@@ -137,7 +139,7 @@
                         return !keyword
                             || String(employee && employee.MaNV ? employee.MaNV : '').toLowerCase().includes(keyword)
                             || String(employee && employee.TenNV ? employee.TenNV : '').toLowerCase().includes(keyword)
-                            || String(employee && employee.MaTK ? employee.MaTK : '').toLowerCase().includes(keyword)
+                            || String(accountId).toLowerCase().includes(keyword)
                             || accountType.includes(keyword);
                     });
 
@@ -149,24 +151,11 @@
                     renderRows(filtered);
                 };
 
-                const loadEmployees = async function () {
-                    try {
-                        const response = await fetch('/api/nhan-vien', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách nhân viên.');
-                        }
-
-                        const payload = await response.json();
-                        employees = (Array.isArray(payload) ? payload : []).slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaNV');
-                        });
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadEmployees = function () {
+                    employees = (Array.isArray(employees) ? employees : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaNV');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

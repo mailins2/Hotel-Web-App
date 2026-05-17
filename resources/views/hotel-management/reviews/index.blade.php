@@ -64,7 +64,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
 
-                let reviews = [];
+                let reviews = @json($reviews ?? []);
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -137,24 +137,11 @@
                     renderRows(filtered);
                 };
 
-                const loadReviews = async function () {
-                    try {
-                        const response = await fetch('/api/danh-gia', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách đánh giá.');
-                        }
-
-                        const payload = await response.json();
-                        reviews = (Array.isArray(payload) ? payload : []).slice().sort(function (left, right) {
-                            return compareRecordIdDesc(left, right, 'MaDG');
-                        });
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadReviews = function () {
+                    reviews = (Array.isArray(reviews) ? reviews : []).slice().sort(function (left, right) {
+                        return compareRecordIdDesc(left, right, 'MaDG');
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

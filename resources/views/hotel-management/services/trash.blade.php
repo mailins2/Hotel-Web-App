@@ -1,6 +1,6 @@
 <x-hotel-management.trash-page
     title="Thùng rác dịch vụ"
-    subtitle="Danh sách dịch vụ đã xóa mềm"
+    subtitle="Danh sách dịch vụ đã xóa"
     :index-route="route('hotel.services.index')"
 >
     <table class="table table-striped align-middle">
@@ -25,7 +25,6 @@
         id="service-trash-config"
         data-trash-url="{{ url('/api/dich-vu/trash') }}"
         data-restore-url-template="{{ url('/api/dich-vu/__SERVICE_ID__/restore') }}"
-        data-force-delete-url-template="{{ url('/api/dich-vu/__SERVICE_ID__/force-delete') }}"
         hidden
     ></div>
 
@@ -36,7 +35,6 @@
                 const config = document.getElementById('service-trash-config');
                 const trashUrl = config ? config.dataset.trashUrl : '';
                 const restoreUrlTemplate = config ? config.dataset.restoreUrlTemplate : '';
-                const forceDeleteUrlTemplate = config ? config.dataset.forceDeleteUrlTemplate : '';
                 let services = [];
 
                 const serviceTypes = {
@@ -84,7 +82,6 @@
                                 <td>
                                     <div class="d-flex flex-wrap gap-2">
                                         <button type="button" class="btn btn-sm btn-success" data-restore-id="${escapeHtml(service.MaDV)}">Khôi phục</button>
-                                        <button type="button" class="btn btn-sm btn-danger" data-force-delete-id="${escapeHtml(service.MaDV)}">Xóa vĩnh viễn</button>
                                     </div>
                                 </td>
                             </tr>
@@ -112,34 +109,26 @@
 
                 document.addEventListener('click', async function (event) {
                     const restoreButton = event.target.closest('[data-restore-id]');
-                    const forceDeleteButton = event.target.closest('[data-force-delete-id]');
-                    const targetButton = restoreButton || forceDeleteButton;
 
-                    if (!targetButton) {
+                    if (!restoreButton) {
                         return;
                     }
 
                     event.preventDefault();
 
-                    const recordId = targetButton.getAttribute(restoreButton ? 'data-restore-id' : 'data-force-delete-id') || '';
-                    const confirmed = window.confirm(
-                        restoreButton
-                            ? `Khôi phục dịch vụ ${recordId}?`
-                            : `Xóa vĩnh viễn dịch vụ ${recordId}?`
-                    );
+                    const recordId = restoreButton.getAttribute('data-restore-id') || '';
+                    const confirmed = window.confirm(`Khôi phục dịch vụ ${recordId}?`);
 
                     if (!confirmed) {
                         return;
                     }
 
-                    targetButton.disabled = true;
+                    restoreButton.disabled = true;
 
                     try {
-                        const url = restoreButton
-                            ? restoreUrlTemplate.replace('__SERVICE_ID__', encodeURIComponent(recordId))
-                            : forceDeleteUrlTemplate.replace('__SERVICE_ID__', encodeURIComponent(recordId));
+                        const url = restoreUrlTemplate.replace('__SERVICE_ID__', encodeURIComponent(recordId));
                         const response = await fetch(url, {
-                            method: restoreButton ? 'POST' : 'DELETE',
+                            method: 'POST',
                             headers: { Accept: 'application/json' }
                         });
                         const payload = await response.json().catch(function () { return {}; });
@@ -152,7 +141,7 @@
                     } catch (error) {
                         window.alert(error.message);
                     } finally {
-                        targetButton.disabled = false;
+                        restoreButton.disabled = false;
                     }
                 });
 

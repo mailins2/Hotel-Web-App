@@ -298,7 +298,7 @@
         }
 
         .ci-dialog {
-            width: min(520px, calc(100vw - 2rem));
+            width: min(680px, calc(100vw - 2rem));
             border: none;
             border-radius: 24px;
             padding: 0;
@@ -356,7 +356,7 @@
 
         .ci-dialog-info {
             border: 1px solid rgba(166, 98, 43, 0.12);
-            border-radius: 18px;
+            border-radius: 15px;
             padding: 0.95rem 1rem;
             background: #fff;
         }
@@ -375,6 +375,10 @@
             font-weight: 500;
         }
 
+        #dialogStayPeriod {
+            white-space: nowrap;
+        }
+
         .ci-dialog-actions {
             display: flex;
             flex-wrap: wrap;
@@ -390,6 +394,10 @@
             .ci-form-grid,
             .ci-dialog-grid {
                 grid-template-columns: 1fr;
+            }
+
+            #dialogStayPeriod {
+                white-space: normal;
             }
         }
 

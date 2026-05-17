@@ -58,7 +58,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
 
-                let invoices = [];
+                let invoices = @json($invoices ?? []);
 
                 const formatDate = function (value) {
                     if (!value) {
@@ -98,7 +98,8 @@
                     tableBody.innerHTML = rows.map(function (invoice) {
                         const status = mapStatus(invoice.TrangThai);
                         const showUrl = showUrlTemplate.replace('__INVOICE_ID__', invoice.MaHD);
-                        const employeeName = invoice && invoice.nhan_vien && invoice.nhan_vien.TenNV ? invoice.nhan_vien.TenNV : '--';
+                        const employee = invoice && (invoice.nhanVien || invoice.nhan_vien) ? (invoice.nhanVien || invoice.nhan_vien) : null;
+                        const employeeName = employee && employee.TenNV ? employee.TenNV : '--';
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
@@ -141,21 +142,11 @@
                     renderRows(filtered);
                 };
 
-                const loadInvoices = async function () {
-                    try {
-                        const response = await fetch('/api/hoa-don', {
-                            headers: { 'Accept': 'application/json' }
-                        });
-
-                        if (!response.ok) {
-                            throw new Error('Không thể tải danh sách hóa đơn.');
-                        }
-
-                        invoices = await response.json();
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadInvoices = function () {
+                    invoices = (Array.isArray(invoices) ? invoices : []).slice().sort(function (left, right) {
+                        return Number(right.MaHD || 0) - Number(left.MaHD || 0);
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {

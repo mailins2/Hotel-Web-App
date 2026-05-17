@@ -34,7 +34,7 @@
         </thead>
         <tbody id="payment-table-body">
             <tr>
-                <td colspan="8" class="text-center text-muted py-4">Đang tải dữ liệu thanh toán...</td>
+                <td colspan="9" class="text-center text-muted py-4">Đang tải dữ liệu thanh toán...</td>
             </tr>
         </tbody>
     </table>
@@ -56,9 +56,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
 
-                let payments = [];
-
-                const customerMap = {};
+                let payments = @json($payments ?? []);
 
                 const formatDateTime = function (value) {
                     if (!value) {
@@ -103,25 +101,54 @@
                     }
                 };
 
+                const mapPaymentMethod = function (value) {
+                    switch (Number(value)) {
+                        case 1:
+                            return 'Thẻ';
+                        case 2:
+                            return 'QR Code';
+                        default:
+                            return '--';
+                    }
+                };
+
+                const mapTransactionStatus = function (value) {
+                    switch (Number(value)) {
+                        case 0:
+                            return { label: 'Thất bại', badgeClass: 'danger' };
+                        case 1:
+                            return { label: 'Thành công', badgeClass: 'success' };
+                        case 2:
+                            return { label: 'Đang xử lý', badgeClass: 'warning' };
+                        default:
+                            return { label: '--', badgeClass: 'muted' };
+                    }
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
-                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có thanh toán phù hợp.</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Không có thanh toán phù hợp.</td></tr>';
                         return;
                     }
 
                     tableBody.innerHTML = rows.map(function (payment) {
-                        const invoiceStatus = mapInvoiceStatus(payment.invoiceStatus);
+                        const invoice = payment && (payment.hoaDon || payment.hoa_don) ? (payment.hoaDon || payment.hoa_don) : null;
+                        const booking = invoice && (invoice.datPhong || invoice.dat_phong) ? (invoice.datPhong || invoice.dat_phong) : null;
+                        const customer = booking && (booking.khachHang || booking.khach_hang) ? (booking.khachHang || booking.khach_hang) : null;
+                        const transactionStatus = mapTransactionStatus(payment.TrangThaiGiaoDich);
                         const showUrl = showUrlTemplate.replace('__PAYMENT_ID__', payment.MaTT);
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${payment.MaTT || '--'}</td>
-                                <td>${payment.MaDatPhong || '--'}</td>
-                                <td>${payment.customerName || '--'}</td>
+                                <td>${booking && booking.MaDatPhong ? booking.MaDatPhong : '--'}</td>
+                                <td>${customer && customer.TenKH ? customer.TenKH : (payment.DinhDanhNguoiThanhToan || '--')}</td>
                                 <td>${formatCurrency(payment.SoTien)}</td>
+                                <td>${mapPaymentMethod(payment.PhuongThuc)}</td>
                                 <td>${mapPaymentType(payment.LoaiThanhToan)}</td>
                                 <td>${formatDateTime(payment.NgayThanhToan)}</td>
-                                <td><span class="hm-badge hm-badge--${invoiceStatus.badgeClass}">${invoiceStatus.label}</span></td>
+                                <td>${payment.NhaCungCap || '--'}</td>
+                                <td><span class="hm-badge hm-badge--${transactionStatus.badgeClass}">${transactionStatus.label}</span></td>
                             </tr>
                         `;
                     }).join('');
@@ -139,7 +166,8 @@
                     const statusValue = (statusSelect ? statusSelect.value : '') || '';
 
                     const filtered = payments.filter(function (payment) {
-                        return statusValue === '' || String(payment.invoiceStatus) === statusValue;
+                        const invoice = payment && (payment.hoaDon || payment.hoa_don) ? (payment.hoaDon || payment.hoa_don) : null;
+                        return statusValue === '' || String(invoice && invoice.TrangThai !== undefined ? invoice.TrangThai : '') === statusValue;
                     });
 
                     if (pagination) {
@@ -150,74 +178,11 @@
                     renderRows(filtered);
                 };
 
-                const loadPayments = async function () {
-                    try {
-                        const [invoiceResponse, customerResponse] = await Promise.all([
-                            fetch('/api/hoa-don', { headers: { 'Accept': 'application/json' } }),
-                            fetch('/api/khach-hang', { headers: { 'Accept': 'application/json' } })
-                        ]);
-
-                        if (!invoiceResponse.ok) {
-                            throw new Error('Không thể tải danh sách hóa đơn để tổng hợp thanh toán.');
-                        }
-
-                        if (!customerResponse.ok) {
-                            throw new Error('Không thể tải thông tin khách hàng.');
-                        }
-
-                        const invoices = await invoiceResponse.json();
-                        const customers = await customerResponse.json();
-
-                        (Array.isArray(customers) ? customers : []).forEach(function (customer) {
-                            customerMap[customer.MaKH] = customer;
-                        });
-
-                        const detailResults = await Promise.allSettled((Array.isArray(invoices) ? invoices : []).map(function (invoice) {
-                            return fetch(`/api/hoa-don/${invoice.MaHD}`, {
-                                headers: { 'Accept': 'application/json' }
-                            }).then(function (response) {
-                                if (!response.ok) {
-                                    throw new Error('Invoice detail failed');
-                                }
-                                return response.json();
-                            });
-                        }));
-
-                        payments = detailResults.reduce(function (rows, result) {
-                            if (result.status !== 'fulfilled') {
-                                return rows;
-                            }
-
-                            const detail = result.value;
-                            const invoice = detail && detail.hoaDon ? detail.hoaDon : null;
-                            const booking = invoice && invoice.dat_phong ? invoice.dat_phong : null;
-                            const customer = booking ? customerMap[booking.MaKH] : null;
-                            const paymentRows = invoice && Array.isArray(invoice.thanh_toans) ? invoice.thanh_toans : [];
-
-                            paymentRows.forEach(function (payment) {
-                                rows.push({
-                                    MaTT: payment.MaTT,
-                                    MaHD: payment.MaHD,
-                                    MaDatPhong: booking && booking.MaDatPhong ? booking.MaDatPhong : '--',
-                                    customerName: customer && customer.TenKH ? customer.TenKH : '--',
-                                    SoTien: payment.SoTien,
-                                    LoaiThanhToan: payment.LoaiThanhToan,
-                                    NgayThanhToan: payment.NgayThanhToan,
-                                    invoiceStatus: invoice ? invoice.TrangThai : null
-                                });
-                            });
-
-                            return rows;
-                        }, []);
-
-                        payments.sort(function (a, b) {
-                            return Number(b.MaTT || 0) - Number(a.MaTT || 0);
-                        });
-
-                        applyFilters();
-                    } catch (error) {
-                        tableBody.innerHTML = `<tr><td colspan="8" class="text-center text-danger py-4">${error.message}</td></tr>`;
-                    }
+                const loadPayments = function () {
+                    payments = (Array.isArray(payments) ? payments : []).slice().sort(function (a, b) {
+                        return Number(b.MaTT || 0) - Number(a.MaTT || 0);
+                    });
+                    applyFilters();
                 };
 
                 if (applyButton) {
