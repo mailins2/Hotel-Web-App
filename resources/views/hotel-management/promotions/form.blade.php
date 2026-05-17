@@ -86,10 +86,10 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Loáº¡i khuyáº¿n mÃ£i</label>
+        <label class="form-label">Loại khuyến mãi</label>
         <select class="form-select" id="promotion-type">
             <option value="0">Chung</option>
-            <option value="1">Há»™i viÃªn</option>
+            <option value="1">Hội viên</option>
         </select>
         <div class="invalid-feedback" id="promotion-type-error"></div>
     </div>

@@ -1,4 +1,4 @@
-﻿@php
+@php
   $bookingAccount = $bookingAccount ?? session('auth_account', []);
   $isCustomerAccount = (int) ($bookingAccount['LoaiTaiKhoan'] ?? -1) === 0;
   $bookingAccount = $isCustomerAccount ? $bookingAccount : [];
@@ -24,30 +24,30 @@
         <div class="booking-header">
           <a href="{{ route('customer.rooms-booking') }}" class="booking-back">
             <span class="icon ion-ios-arrow-back"></span>
-            Quay láº¡i
+            Quay lại
           </a>
-          <h2>THÃ”NG TIN Äáº¶T PHÃ’NG</h2>
+          <h2>THÔNG TIN ĐẶT PHÒNG</h2>
         </div>
 
         <div class="row">
           <div class="col-lg-8">
             <div class="booking-card">
-              <h3>ThÃ´ng tin ngÆ°á»i Ä‘áº·t phÃ²ng</h3>
+              <h3>Thông tin người đặt phòng</h3>
               <form id="bookingForm" class="booking-form-grid" accept-charset="UTF-8">
                 <div class="booking-field">
-                  <label for="fullName">Há» tÃªn *</label>
+                  <label for="fullName">Họ tên *</label>
                   <input 
                     type="text" 
                     id="fullName"
                     name="fullName"
                     value="{{ $bookingCustomerName }}"
-                    placeholder="Nháº­p há» tÃªn"
+                    placeholder="Nhập họ tên"
                     data-validation="name"
                     required>
                   <small class="error-message" id="fullName-error"></small>
                 </div>
                 <div class="booking-field">
-                  <label for="phone">Sá»‘ Ä‘iá»‡n thoáº¡i *</label>
+                  <label for="phone">Số điện thoại *</label>
                   <input 
                     type="tel" 
                     id="phone"
@@ -64,42 +64,42 @@
             </div>
 
             <div class="booking-card">
-              <h3>ChÃ­nh sÃ¡ch Ä‘áº·t phÃ²ng</h3>
+              <h3>Chính sách đặt phòng</h3>
               <div class="booking-policy">
                 <ul>
-                  <li>KhÃ´ng thá»ƒ chá»‰nh sá»­a sau khi Ä‘áº·t phÃ²ng.</li>
-                  <li>Thanh toÃ¡n Ä‘áº·t cá»c trÆ°á»›c.</li>
-                  <li>KhÃ¡ch hÃ ng cÃ³ thá»ƒ Ä‘Æ°á»£c yÃªu cáº§u thanh toÃ¡n trÆ°á»›c tá»« 30% Ä‘áº¿n 100% tá»•ng giÃ¡ trá»‹ Ä‘áº·t phÃ²ng, tÃ¹y theo háº¡ng phÃ²ng, thá»i gian lÆ°u trÃº, thá»i Ä‘iá»ƒm Ä‘áº·t phÃ²ng vÃ  cÃ¡c chÆ°Æ¡ng trÃ¬nh Æ°u Ä‘Ã£i/khuyáº¿n mÃ£i Ä‘ang Ã¡p dá»¥ng.</li>
+                  <li>Không thể chỉnh sửa sau khi đặt phòng.</li>
+                  <li>Thanh toán đặt cọc trước.</li>
+                  <li>Khách hàng có thể được yêu cầu thanh toán trước từ 30% đến 100% tổng giá trị đặt phòng, tùy theo hạng phòng, thời gian lưu trú, thời điểm đặt phòng và các chương trình ưu đãi/khuyến mãi đang áp dụng.</li>
                 </ul>
               </div>
             </div>
 
             <div class="booking-card">
-              <h3>ChÃ­nh sÃ¡ch há»§y phÃ²ng</h3>
+              <h3>Chính sách hủy phòng</h3>
               <div class="booking-policy">
                 <ul>
-                  <li>Há»§y trÆ°á»›c 10â€“15 ngÃ y: CÃ³ thá»ƒ Ä‘Æ°á»£c miá»…n phÃ­ há»§y phÃ²ng.</li>
-                  <li>Há»§y trÆ°á»›c 5â€“10 ngÃ y: CÃ³ thá»ƒ chá»‹u 30%â€“70% phÃ­ Ä‘áº·t phÃ²ng.</li>
-                  <li>Há»§y trÆ°á»›c 1â€“5 ngÃ y: CÃ³ thá»ƒ chá»‹u 100% phÃ­ Ä‘áº·t phÃ²ng.</li>
+                  <li>Hủy trước 10–15 ngày: Có thể được miễn phí hủy phòng.</li>
+                  <li>Hủy trước 5–10 ngày: Có thể chịu 30%–70% phí đặt phòng.</li>
+                  <li>Hủy trước 1–5 ngày: Có thể chịu 100% phí đặt phòng.</li>
                 </ul>
               </div>
             </div>
 
             <div class="booking-card">
-              <h3>PhÆ°Æ¡ng thá»©c thanh toÃ¡n</h3>
+              <h3>Phương thức thanh toán</h3>
               <div class="booking-payment-group">
                 <label class="booking-payment-option">
                   <input type="radio" name="payment" data-payment-option="zalopay" disabled>
-                  <span class="booking-payment-title">Thanh toÃ¡n vá»›i mÃ£ QR <span class="booking-payment-note">(Ä‘ang báº£o trÃ¬)</span></span>
+                  <span class="booking-payment-title">Thanh toán với mã QR <span class="booking-payment-note">(đang bảo trì)</span></span>
                   <img src="{{ asset('customers/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
                 </label>
                 <label class="booking-payment-option is-selected">
                   <input type="radio" name="payment" data-payment-option="card-domestic" data-vnpay-bank-code="VNBANK" checked>
-                  <span class="booking-payment-title">Thanh toÃ¡n báº±ng tháº» ná»™i Ä‘á»‹a</span>
+                  <span class="booking-payment-title">Thanh toán bằng thẻ nội địa</span>
                 </label>
                 <label class="booking-payment-option">
                   <input type="radio" name="payment" data-payment-option="card-international" data-vnpay-bank-code="INTCARD">
-                  <span class="booking-payment-title">Thanh toÃ¡n báº±ng tháº» quá»‘c táº¿</span>
+                  <span class="booking-payment-title">Thanh toán bằng thẻ quốc tế</span>
                 </label>
               </div>
             </div>
@@ -107,85 +107,85 @@
 
           <div class="col-lg-4">
             <div class="booking-summary">
-              <h4>YÃªu cáº§u Ä‘áº·t phÃ²ng cá»§a báº¡n</h4>
+              <h4>Yêu cầu đặt phòng của bạn</h4>
               <div class="booking-summary-block">
-                <p><strong>KhÃ¡ch sáº¡n Peach Valley</strong></p>
+                <p><strong>Khách sạn Peach Valley</strong></p>
               </div>
               <div class="booking-summary-dates">
                 <div class="booking-date-block">
-                  <span>Nháº­n phÃ²ng</span>
-                  <strong>Thá»© Báº£y, 18 thÃ¡ng 04 2026</strong>
-                  <small>Tá»« 14:00</small>
+                  <span>Nhận phòng</span>
+                  <strong>Thứ Bảy, 18 tháng 04 2026</strong>
+                  <small>Từ 14:00</small>
                 </div>
                 <div class="booking-date-divider">
-                  <span>3 Ä‘Ãªm</span>
+                  <span>3 đêm</span>
                   <span class="icon ion-ios-arrow-forward"></span>
                 </div>
                 <div class="booking-date-block">
-                  <span>Tráº£ phÃ²ng</span>
-                  <strong>Thá»© Ba, 21 thÃ¡ng 04 2026</strong>
-                  <small>TrÆ°á»›c 12:00</small>
+                  <span>Trả phòng</span>
+                  <strong>Thứ Ba, 21 tháng 04 2026</strong>
+                  <small>Trước 12:00</small>
                 </div>
               </div>
               <div class="booking-summary-block booking-summary-rooms-block">
                 <div class="booking-summary-title">
-                  <span>ThÃ´ng tin phÃ²ng</span>
+                  <span>Thông tin phòng</span>
                 </div>
                 <div class="booking-summary-rooms-scroll" data-booking-rooms>
                   <div class="booking-summary-room">
-                    <p><strong>PhÃ²ng 1:</strong> Deluxe Twin</p>
-                    <p>Sá»‘ ngÆ°á»i: 1 ngÆ°á»i lá»›n</p>
-                    <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: 577.500 vnd/ Ä‘Ãªm x 3 Ä‘Ãªm</p>
+                    <p><strong>Phòng 1:</strong> Deluxe Twin</p>
+                    <p>Số người: 1 người lớn</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 577.500 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
-                    <p><strong>PhÃ²ng 2:</strong> Superior King</p>
-                    <p>Sá»‘ ngÆ°á»i: 2 ngÆ°á»i lá»›n</p>
-                    <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: 483.333 vnd/ Ä‘Ãªm x 3 Ä‘Ãªm</p>
+                    <p><strong>Phòng 2:</strong> Superior King</p>
+                    <p>Số người: 2 người lớn</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 483.333 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
-                    <p><strong>PhÃ²ng 3:</strong> Suite Junior</p>
-                    <p>Sá»‘ ngÆ°á»i: 2 ngÆ°á»i lá»›n, 1 tráº» em</p>
-                    <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: 700.000 vnd/ Ä‘Ãªm x 3 Ä‘Ãªm</p>
+                    <p><strong>Phòng 3:</strong> Suite Junior</p>
+                    <p>Số người: 2 người lớn, 1 trẻ em</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 700.000 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
-                    <p><strong>PhÃ²ng 4:</strong> Standard Garden</p>
-                    <p>Sá»‘ ngÆ°á»i: 1 ngÆ°á»i lá»›n</p>
-                    <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: 300.000 vnd/ Ä‘Ãªm x 3 Ä‘Ãªm</p>
+                    <p><strong>Phòng 4:</strong> Standard Garden</p>
+                    <p>Số người: 1 người lớn</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 300.000 vnd/ đêm x 3 đêm</p>
                   </div>
                   <div class="booking-summary-room">
-                    <p><strong>PhÃ²ng 5:</strong> Deluxe Family</p>
-                    <p>Sá»‘ ngÆ°á»i: 3 ngÆ°á»i lá»›n</p>
-                    <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: 416.667 vnd/ Ä‘Ãªm x 3 Ä‘Ãªm</p>
+                    <p><strong>Phòng 5:</strong> Deluxe Family</p>
+                    <p>Số người: 3 người lớn</p>
+                    <p class="booking-summary-room-unit-price">Đơn giá: 416.667 vnd/ đêm x 3 đêm</p>
                   </div>
                 </div>
               </div>
               <div class="booking-promo">
-                <label for="promoCode">Nháº­p mÃ£ khuyáº¿n máº¡i/ mÃ£ voucher</label>
+                <label for="promoCode">Nhập mã khuyến mại/ mã voucher</label>
                 <div class="booking-promo-control">
                   <input type="text" id="promoCode" name="promoCode" value="" autocomplete="off">
-                  <button type="button" id="applyPromoBtn">ÃP Dá»¤NG</button>
+                  <button type="button" id="applyPromoBtn">ÁP DỤNG</button>
                 </div>
                 <div class="booking-promo-status" data-promo-status hidden></div>
               </div>
               <div class="booking-discount-summary" data-booking-discount>
                 <div class="booking-price-row">
-                  <span>GiÃ¡ gá»‘c:</span>
+                  <span>Giá gốc:</span>
                   <strong data-booking-original>7,432,500 VND</strong>
                 </div>
                 <div class="booking-price-row booking-price-discount">
-                  <span>GiÃ¡ giáº£m:</span>
+                  <span>Giá giảm:</span>
                   <strong data-booking-discount-amount>-743,250 VND</strong>
                 </div>
               </div>
               <div class="booking-summary-total">
-                <span>Tá»•ng giÃ¡:</span>
+                <span>Tổng giá:</span>
                 <strong data-booking-total>6,689,250 VND</strong>
               </div>
               <div class="booking-summary-deposit">
-                <span>Tiá»n Ä‘áº·t cá»c:</span>
+                <span>Tiền đặt cọc:</span>
                 <strong data-booking-deposit>6,689,250 VND</strong>
               </div>
-              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toÃ¡n vá»›i VNPAY</button>
+              <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với VNPAY</button>
               <div class="booking-promo-status" data-payment-status hidden></div>
             </div>
           </div>
@@ -244,22 +244,16 @@
 
         function renderUnitPrice(room) {
           const salePrice = Number(room.price || 0);
-          const originalPrice = Number(room.originalPrice || room.price || 0);
-          const discountPercent = Number(room.discountPercent || 0);
 
           if (salePrice <= 0) {
             return formatUnitPrice(0);
           }
 
-          if (discountPercent <= 0 || originalPrice <= salePrice) {
-            return `<span class="customer-room-price"><span class="customer-room-price-sale">${formatUnitPrice(salePrice)}</span></span>`;
-          }
-
           return `
             <span class="customer-room-price">
-              <span class="customer-room-price-original">${formatUnitPrice(originalPrice)}</span>
-              <span class="customer-room-price-sale">${formatUnitPrice(salePrice)}</span>
-              <span class="customer-room-discount-tag">-${discountPercent}%</span>
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${formatUnitPrice(salePrice)}</span>
+              </span>
             </span>
           `;
         }
@@ -305,7 +299,7 @@
           if (!booking || !booking.rooms.length) {
             bookingOriginalTotal = 0;
             if (bookingRooms) {
-              bookingRooms.innerHTML = '<div class="booking-summary-room"><p>ChÆ°a cÃ³ thÃ´ng tin phÃ²ng. Vui lÃ²ng quay láº¡i chá»n phÃ²ng.</p></div>';
+              bookingRooms.innerHTML = '<div class="booking-summary-room"><p>Chưa có thông tin phòng. Vui lòng quay lại chọn phòng.</p></div>';
             }
             return;
           }
@@ -321,7 +315,7 @@
           }
 
           if (bookingNights) {
-            bookingNights.textContent = `${Number(booking.nights || 1)} Ä‘Ãªm`;
+            bookingNights.textContent = `${Number(booking.nights || 1)} đêm`;
           }
 
           if (bookingRooms) {
@@ -334,9 +328,9 @@
               const adults = adultsPerRoom;
               const children = childrenPerRoom;
               const guestText = [
-                adults > 0 ? `${adults} ngÆ°á»i lá»›n` : '',
-                children > 0 ? `${children} tráº» em` : '',
-              ].filter(Boolean).join(', ') || 'Theo tiÃªu chÃ­ Ä‘Ã£ chá»n';
+                adults > 0 ? `${adults} người lớn` : '',
+                children > 0 ? `${children} trẻ em` : '',
+              ].filter(Boolean).join(', ') || 'Theo tiêu chí đã chọn';
               const nights = Number(booking.nights || 1);
 
               return Array.from({ length: quantity }, () => {
@@ -344,9 +338,13 @@
 
                 return `
                 <div class="booking-summary-room">
-                  <p><strong>PhÃ²ng ${roomDisplayIndex}:</strong> ${escapeHtml(room.name)}</p>
-                  <p>Sá»‘ ngÆ°á»i: ${escapeHtml(guestText)}</p>
-                  <p class="booking-summary-room-unit-price">ÄÆ¡n giÃ¡: ${renderUnitPrice(room)}/ Ä‘Ãªm x ${nights} Ä‘Ãªm</p>
+                  <p><strong>Phòng ${roomDisplayIndex}:</strong> ${escapeHtml(room.name)}</p>
+                  <p>Số người: ${escapeHtml(guestText)}</p>
+                  <p class="booking-summary-room-unit-price">
+                    <span class="booking-summary-room-unit-label">Đơn giá:</span>
+                    <span class="booking-summary-room-unit-value">${renderUnitPrice(room)}</span>
+                    <span class="booking-summary-room-unit-meta">/ đêm x ${nights} đêm</span>
+                  </p>
                 </div>
               `;
               });
@@ -370,13 +368,13 @@
           });
 
           if (value === 'zalopay') {
-            paymentBtn.textContent = 'Thanh toÃ¡n vá»›i QR';
+            paymentBtn.textContent = 'Thanh toán với QR';
             paymentBtn.disabled = false;
           } else if (value.startsWith('card-')) {
-            paymentBtn.textContent = 'Thanh toÃ¡n vá»›i VNPAY';
+            paymentBtn.textContent = 'Thanh toán với VNPAY';
             paymentBtn.disabled = false;
           } else {
-            paymentBtn.textContent = 'Chá»n phÆ°Æ¡ng thá»©c thanh toÃ¡n';
+            paymentBtn.textContent = 'Chọn phương thức thanh toán';
             paymentBtn.disabled = true;
           }
         }
@@ -490,7 +488,7 @@
 
           if (promoStatus) {
             promoStatus.hidden = !hasPromo;
-            promoStatus.textContent = hasPromo ? `ÄÃ£ Ã¡p dá»¥ng mÃ£ ${promoCode}: giáº£m 10%` : '';
+            promoStatus.textContent = hasPromo ? `Đã áp dụng mã ${promoCode}: giảm 10%` : '';
           }
 
           if (originalTotal) {
@@ -514,13 +512,13 @@
           const booking = getStoredBooking();
 
           if (!booking || !booking.rooms.length) {
-            throw new Error('Vui lÃ²ng quay láº¡i chá»n Ã­t nháº¥t 1 phÃ²ng trÆ°á»›c khi thanh toÃ¡n.');
+            throw new Error('Vui lòng quay lại chọn ít nhất 1 phòng trước khi thanh toán.');
           }
 
           let amount = Math.max(Math.round(Number(bookingFinalTotal || 0)), 0);
 
           if (amount <= 0) {
-            throw new Error('Tá»•ng tiá»n thanh toÃ¡n khÃ´ng há»£p lá»‡.');
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
           }
 
           setPaymentStatus('Dang giu phong trong 15 phut...');
@@ -541,7 +539,7 @@
             body: JSON.stringify({
               amount,
               app_user: customerCode || phoneInput.value.replace(/\D+/g, '') || 'guest',
-              description: `Peach Valley - thanh toÃ¡n Ä‘áº·t phÃ²ng ${booking.checkIn} Ä‘áº¿n ${booking.checkOut}`,
+              description: `Peach Valley - thanh toán đặt phòng ${booking.checkIn} đến ${booking.checkOut}`,
               redirect_url: paymentRedirectUrl,
               dat_phong_ids: datPhongIds,
             }),
@@ -550,7 +548,7 @@
           const result = await response.json().catch(() => null);
 
           if (!response.ok || result?.status !== 'success' || !result?.order_url) {
-            throw new Error(result?.sub_message || result?.message || 'KhÃ´ng thá»ƒ táº¡o thanh toÃ¡n ZaloPay.');
+            throw new Error(result?.sub_message || result?.message || 'Không thể tạo thanh toán ZaloPay.');
           }
 
           localStorage.setItem('peachBookingPayment', JSON.stringify({
@@ -568,29 +566,29 @@
           const booking = getStoredBooking();
 
           if (!['VNBANK', 'INTCARD'].includes(bankCode)) {
-            throw new Error('Vui lÃ²ng chá»n tháº» ná»™i Ä‘á»‹a hoáº·c tháº» quá»‘c táº¿.');
+            throw new Error('Vui lòng chọn thẻ nội địa hoặc thẻ quốc tế.');
           }
 
           if (!booking || !booking.rooms.length) {
-            throw new Error('Vui lÃ²ng quay láº¡i chá»n Ã­t nháº¥t 1 phÃ²ng trÆ°á»›c khi thanh toÃ¡n.');
+            throw new Error('Vui lòng quay lại chọn ít nhất 1 phòng trước khi thanh toán.');
           }
 
           let amount = Math.max(Math.round(Number(bookingFinalTotal || 0)), 0);
 
           if (amount <= 0) {
-            throw new Error('Tá»•ng tiá»n thanh toÃ¡n khÃ´ng há»£p lá»‡.');
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
           }
 
-          setPaymentStatus('Äang giá»¯ phÃ²ng trong 15 phÃºt...');
+          setPaymentStatus('Đang giữ phòng trong 15 phút...');
           const holdData = await createBookingHolds(booking);
           const datPhongIds = holdData.datPhongIds;
           amount = Math.max(Math.round(Number(holdData.total || bookingFinalTotal || 0)), 0);
 
           if (amount <= 0) {
-            throw new Error('Tá»•ng tiá»n thanh toÃ¡n khÃ´ng há»£p lá»‡.');
+            throw new Error('Tổng tiền thanh toán không hợp lệ.');
           }
 
-          setPaymentStatus('Äang táº¡o liÃªn káº¿t thanh toÃ¡n VNPAY...');
+          setPaymentStatus('Đang tạo liên kết thanh toán VNPAY...');
 
           const response = await fetch(vnPayPaymentUrl, {
             method: 'POST',
@@ -610,7 +608,7 @@
           const result = await response.json().catch(() => null);
 
           if (!response.ok || result?.status !== 'success' || !result?.payment_url) {
-            throw new Error(result?.message || 'KhÃ´ng thá»ƒ táº¡o thanh toÃ¡n VNPAY.');
+            throw new Error(result?.message || 'Không thể tạo thanh toán VNPAY.');
           }
 
           localStorage.setItem('peachBookingPayment', JSON.stringify({
@@ -723,23 +721,23 @@
           let hasError = false;
 
           if (!fullName) {
-            document.getElementById('fullName-error').textContent = 'Vui lÃ²ng nháº­p há» tÃªn';
+            document.getElementById('fullName-error').textContent = 'Vui lòng nhập họ tên';
             hasError = true;
           } else if (!validateName(fullName)) {
-            document.getElementById('fullName-error').textContent = 'Há» tÃªn chá»‰ chá»©a chá»¯ cÃ¡i';
+            document.getElementById('fullName-error').textContent = 'Họ tên chỉ chứa chữ cái';
             hasError = true;
           }
 
           if (!phone) {
-            document.getElementById('phone-error').textContent = 'Vui lÃ²ng nháº­p sá»‘ Ä‘iá»‡n thoáº¡i';
+            document.getElementById('phone-error').textContent = 'Vui lòng nhập số điện thoại';
             hasError = true;
           } else if (!validatePhone(phone)) {
-            document.getElementById('phone-error').textContent = 'Sá»‘ Ä‘iá»‡n thoáº¡i khÃ´ng há»£p lá»‡ (tá»‘i thiá»ƒu 10 chá»¯ sá»‘)';
+            document.getElementById('phone-error').textContent = 'Số điện thoại không hợp lệ (tối thiểu 10 chữ số)';
             hasError = true;
           }
 
           if (hasError) {
-            setPaymentStatus('Vui lÃ²ng kiá»ƒm tra láº¡i thÃ´ng tin ngÆ°á»i Ä‘áº·t phÃ²ng.', true);
+            setPaymentStatus('Vui lòng kiểm tra lại thông tin người đặt phòng.', true);
             focusFirstInvalidField();
             return;
           }
@@ -756,29 +754,29 @@
             if (selectedPayment.startsWith('card-')) {
               const bankCode = selectedPaymentInput?.dataset.vnpayBankCode || '';
               paymentBtn.disabled = true;
-              setPaymentStatus('Äang táº¡o liÃªn káº¿t thanh toÃ¡n VNPAY...');
+              setPaymentStatus('Đang tạo liên kết thanh toán VNPAY...');
 
               createVnPayPayment(bankCode)
                 .catch((error) => {
                   console.error('VNPAY payment error:', error);
-                  setPaymentStatus(error.message || 'KhÃ´ng thá»ƒ táº¡o thanh toÃ¡n VNPAY.', true);
+                  setPaymentStatus(error.message || 'Không thể tạo thanh toán VNPAY.', true);
                   paymentBtn.disabled = false;
                 });
               return;
             }
 
             if (selectedPayment !== 'zalopay') {
-              setPaymentStatus('Vui lÃ²ng chá»n phÆ°Æ¡ng thá»©c thanh toÃ¡n há»£p lá»‡.', true);
+              setPaymentStatus('Vui lòng chọn phương thức thanh toán hợp lệ.', true);
               return;
             }
 
             paymentBtn.disabled = true;
-            setPaymentStatus('Äang táº¡o mÃ£ QR thanh toÃ¡n ZaloPay...');
+            setPaymentStatus('Đang tạo mã QR thanh toán ZaloPay...');
 
             createZaloPayPayment()
               .catch((error) => {
                 console.error('ZaloPay payment error:', error);
-                setPaymentStatus(error.message || 'KhÃ´ng thá»ƒ táº¡o thanh toÃ¡n ZaloPay.', true);
+                setPaymentStatus(error.message || 'Không thể tạo thanh toán ZaloPay.', true);
                 paymentBtn.disabled = false;
               });
           }
@@ -805,4 +803,3 @@
     </script>
   </body>
 </html>
-

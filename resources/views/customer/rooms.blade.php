@@ -142,13 +142,23 @@
 
         const discountPercent = getRoomDiscountPercent(room);
         if (discountPercent <= 0) {
-          return `<span class="customer-room-price"><span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span></span>`;
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                <span class="customer-room-price-per">/ đêm</span>
+              </span>
+            </span>
+          `;
         }
 
         return `
           <span class="customer-room-price">
-            <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')}</span>
-            <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span>
+            <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VND</span>
+            <span class="customer-room-price-current">
+              <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+              <span class="customer-room-price-per">/ đêm</span>
+            </span>
             <span class="customer-room-discount-tag">-${discountPercent}%</span>
           </span>
         `;
@@ -327,7 +337,7 @@
                   <div class="text p-4 text-center">
                     <h3 class="mb-3"><a href="${detailUrl}">${escapeHtml(room.TenLoaiPhong || 'Phòng Peach Valley')}</a></h3>
                     <p class="room-description mb-3">${escapeHtml(room.Mota || 'Phòng thoải mái và hiện đại')}</p>
-                    <p class="mb-0"><span class="price mr-1">${renderRoomPrice(room)}</span> <span class="per">VNĐ/Đêm</span></p>
+                    <p class="mb-0 room-list-price"><span class="price mr-1">${renderRoomPrice(room)}</span></p>
                     <p class="pt-1"><a href="${detailUrl}" class="btn-custom px-3 py-2 rounded">Chi Tiết <span class="icon-long-arrow-right"></span></a></p>
                   </div>
                 </div>

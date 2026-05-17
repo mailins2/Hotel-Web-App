@@ -440,13 +440,13 @@
     <div class="service-booking-warning-modal service-booking-success-modal" data-service-booking-success-modal hidden>
       <div class="service-booking-warning-backdrop" data-service-booking-success-close></div>
       <div class="service-booking-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="service_booking_success_title">
-        <button class="service-booking-warning-close" type="button" aria-label="ÄÃ³ng thÃ´ng bÃ¡o" data-service-booking-success-close>&times;</button>
+        <button class="service-booking-warning-close" type="button" aria-label="Đóng thông báo" data-service-booking-success-close>&times;</button>
         <div class="service-booking-warning-icon">
           <span class="ion-ios-checkmark-circle"></span>
         </div>
-        <h2 id="service_booking_success_title">Äáº·t dá»‹ch vá»¥ thÃ nh cÃ´ng</h2>
-        <p>YÃªu cáº§u dá»‹ch vá»¥ Ä‘Ã£ Ä‘Æ°á»£c ghi nháº­n vÃ  cáº­p nháº­t vÃ o hÃ³a Ä‘Æ¡n cá»§a báº¡n.</p>
-        <button class="service-booking-warning-action" type="button" data-service-booking-success-close>ÄÃ£ hiá»ƒu</button>
+        <h2 id="service_booking_success_title">Đặt dịch vụ thành công</h2>
+        <p>Yêu cầu dịch vụ đã được ghi nhận và cập nhật vào hóa đơn của bạn.</p>
+        <button class="service-booking-warning-action" type="button" data-service-booking-success-close>Đã hiểu</button>
       </div>
     </div>
     @endif
