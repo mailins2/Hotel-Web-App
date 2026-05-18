@@ -10,17 +10,26 @@ class KhoKhuyenMai extends Model
     public $timestamps = false;
     protected $guarded = [];
     
-    // Thêm dòng này vì bảng không có cột 'id' tăng tự động
-    public $incrementing = false; 
-    protected $keyType = 'string';
-    protected $primaryKey = ['MaKM', 'MaKH'];
+    public $incrementing = false;
+    
+    // 🔥 SỬA: Không dùng array cho primaryKey
+    // protected $primaryKey = ['MaKM', 'MaKH']; // 👈 XÓA DÒNG NÀY
+    
+    // 🔥 THÊM: Override cho composite key
+    protected function setKeysForSaveQuery($query)
+    {
+        $query->where('MaKM', $this->MaKM)
+              ->where('MaKH', $this->MaKH);
+        return $query;
+    }
     
     public function khachHang()
     {
-        return $this->belongsTo(KhachHang::class, 'MaKH');
+        return $this->belongsTo(KhachHang::class, 'MaKH', 'MaKH');
     }
+    
     public function khuyenMai()
     {
-        return $this->belongsTo(KhuyenMai::class, 'MaKM')->withTrashed();
+        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM')->withTrashed();
     }
 }

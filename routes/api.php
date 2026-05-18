@@ -76,6 +76,17 @@ Route::get('khuyen-mai/trash', [KhuyenMaiController::class, 'trash']);
 Route::post('khuyen-mai/{id}/restore', [KhuyenMaiController::class, 'restore']);
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
+
+
+// 🔥 Đổi mã bằng điểm (mobile app)
+Route::post('kho-khuyen-mai/doi-bang-diem', [KhoKhuyenMaiController::class, 'doiBangDiem']);
+
+// 🔥 Sử dụng mã khi thanh toán (mobile app)
+Route::post('kho-khuyen-mai/su-dung', [KhoKhuyenMaiController::class, 'suDung']);
+
+// 🔥 Kiểm tra điểm trước khi đổi
+Route::get('kho-khuyen-mai/kiem-tra-diem/{maKH}/{maKM}', [KhoKhuyenMaiController::class, 'kiemTraDiem']);
+
 Route::get('kho-khuyen-mai/khach-hang/{maKH}', [KhoKhuyenMaiController::class, 'showByKhachHang']);
 Route::put('kho-khuyen-mai/update-status', [KhoKhuyenMaiController::class, 'updateStatus']);
 Route::apiResource('kho-khuyen-mai', KhoKhuyenMaiController::class);

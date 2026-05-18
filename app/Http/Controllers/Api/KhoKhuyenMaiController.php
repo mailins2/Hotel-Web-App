@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use App\Models\KhoKhuyenMai;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+    use App\Http\Controllers\Controller;
+    use App\Models\KhoKhuyenMai;
+    use App\Models\KhuyenMai;      // 👈 Thêm
+    use App\Models\KhachHang;      // 👈 Thêm
+    use Carbon\Carbon;             // 👈 Thêm
+    use Illuminate\Http\Request;
+    use Illuminate\Support\Facades\DB;  // 👈 Thêm
+    use Illuminate\Support\Facades\Validator;
+    use Illuminate\Validation\Rule;
 
 class KhoKhuyenMaiController extends Controller
 {
@@ -91,4 +95,241 @@ class KhoKhuyenMaiController extends Controller
         $item->update(['TrangThai' => $request->TrangThai]);
         return response()->json(['message' => 'Cập nhật trạng thái thành công'], 200);
     }
+/**
+     * POST /api/kho-khuyen-mai/doi-bang-diem
+     * Đổi mã khuyến mãi bằng điểm (dành cho mobile app)
+     */
+    public function doiBangDiem(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'MaKM' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
+            'MaKH' => 'required|exists:KhachHang,MaKH',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $khuyenMai = KhuyenMai::find($request->MaKM);
+        $khachHang = KhachHang::find($request->MaKH);
+
+        if (!$khachHang) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy khách hàng'
+            ], 404);
+        }
+
+        // 🔥 Kiểm tra mã có yêu cầu điểm không
+        if (!$khuyenMai->Diem || $khuyenMai->Diem <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã này không cần đổi bằng điểm, bạn có thể lưu trực tiếp'
+            ], 400);
+        }
+
+        // 🔥 Kiểm tra đủ điểm không
+        if ((int) $khachHang->DIEM < (int) $khuyenMai->Diem) {
+            return response()->json([
+                'success' => false,
+                'message' => "Bạn cần {$khuyenMai->Diem} điểm để đổi mã này. Hiện bạn có {$khachHang->DIEM} điểm",
+                'data' => [
+                    'diemHienTai' => (int) $khachHang->DIEM,
+                    'diemCan' => (int) $khuyenMai->Diem,
+                    'diemThieu' => (int) ($khuyenMai->Diem - $khachHang->DIEM)
+                ]
+            ], 400);
+        }
+
+        // 🔥 Kiểm tra khuyến mãi còn hạn không
+        $now = Carbon::now();
+        if ($khuyenMai->NgayBatDau && $now->lt(Carbon::parse($khuyenMai->NgayBatDau))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã khuyến mãi chưa có hiệu lực'
+            ], 400);
+        }
+
+        if ($khuyenMai->NgayKetThuc && $now->gt(Carbon::parse($khuyenMai->NgayKetThuc))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã khuyến mãi đã hết hạn'
+            ], 400);
+        }
+
+        // 🔥 Kiểm tra đã có mã này chưa
+        $exists = KhoKhuyenMai::where('MaKM', $request->MaKM)
+            ->where('MaKH', $request->MaKH)
+            ->first();
+
+        if ($exists) {
+            $message = match((int) $exists->TrangThai) {
+                0 => 'Bạn đã có mã này trong kho rồi (chưa sử dụng)',
+                1 => 'Bạn đã sử dụng mã này rồi',
+                2 => 'Mã này đã hết hạn',
+                default => 'Bạn đã đổi mã này rồi'
+            };
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 400);
+        }
+
+        // 🔥 Thực hiện đổi mã trong transaction
+        try {
+            DB::beginTransaction();
+
+            // Trừ điểm khách hàng
+            $khachHang->DIEM = (int) $khachHang->DIEM - (int) $khuyenMai->Diem;
+            $khachHang->save();
+
+            // Lưu vào kho
+            $khoKM = KhoKhuyenMai::create([
+                'MaKM' => $request->MaKM,
+                'MaKH' => $request->MaKH,
+                'TrangThai' => 0 // Chưa sử dụng
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Đổi mã khuyến mãi thành công! Bạn đã dùng {$khuyenMai->Diem} điểm",
+                'data' => [
+                    'kho_khuyen_mai' => $khoKM,
+                    'maKM' => $khuyenMai->MaKM,
+                    'tenKM' => $khuyenMai->TenKM,
+                    'phanTramGiamGia' => $khuyenMai->PhanTramGiamGia,
+                    'diemDaDung' => (int) $khuyenMai->Diem,
+                    'diemConLai' => (int) $khachHang->DIEM,
+                    'ngayHetHan' => $khuyenMai->NgayKetThuc,
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi khi đổi mã: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/kho-khuyen-mai/su-dung
+     * Sử dụng mã khuyến mãi khi thanh toán (dành cho mobile app)
+     */
+    public function suDung(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'MaKM' => [
+                'required',
+                'string',
+                'max:10',
+                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+            ],
+            'MaKH' => 'required|exists:KhachHang,MaKH',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $khoKM = KhoKhuyenMai::where('MaKM', $request->MaKM)
+            ->where('MaKH', $request->MaKH)
+            ->first();
+
+        if (!$khoKM) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn chưa có mã khuyến mãi này trong kho'
+            ], 400);
+        }
+
+        // Kiểm tra trạng thái
+        if ((int) $khoKM->TrangThai === 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã khuyến mãi đã được sử dụng'
+            ], 400);
+        }
+
+        if ((int) $khoKM->TrangThai === 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã khuyến mãi đã hết hạn'
+            ], 400);
+        }
+
+        // Kiểm tra hạn sử dụng
+        $khuyenMai = KhuyenMai::find($request->MaKM);
+        $now = Carbon::now();
+
+        if ($khuyenMai->NgayKetThuc && $now->gt(Carbon::parse($khuyenMai->NgayKetThuc))) {
+            // Tự động cập nhật hết hạn
+            $khoKM->TrangThai = 2;
+            $khoKM->save();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Mã khuyến mãi đã hết hạn'
+            ], 400);
+        }
+
+        // Đánh dấu đã sử dụng
+        $khoKM->TrangThai = 1;
+        $khoKM->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Áp dụng mã khuyến mãi thành công',
+            'data' => [
+                'MaKM' => $khuyenMai->MaKM,
+                'TenKM' => $khuyenMai->TenKM,
+                'PhanTramGiamGia' => $khuyenMai->PhanTramGiamGia,
+            ]
+        ], 200);
+    }
+
+    /**
+     * GET /api/kho-khuyen-mai/kiem-tra-diem/{maKH}/{maKM}
+     * Kiểm tra điểm trước khi đổi
+     */
+    public function kiemTraDiem($maKH, $maKM)
+    {
+        $khachHang = KhachHang::find($maKH);
+        $khuyenMai = KhuyenMai::find($maKM);
+
+        if (!$khachHang || !$khuyenMai) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy thông tin'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'diemHienTai' => (int) $khachHang->DIEM,
+                'diemCan' => (int) $khuyenMai->Diem,
+                'duDiem' => (int) $khachHang->DIEM >= (int) $khuyenMai->Diem,
+                'diemThieu' => max(0, (int) $khuyenMai->Diem - (int) $khachHang->DIEM),
+            ]
+        ], 200);
+    }
+
+
 }

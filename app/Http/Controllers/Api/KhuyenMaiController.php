@@ -220,4 +220,6 @@ class KhuyenMaiController extends Controller
 
         return $candidate;
     }
+
+    
 }
