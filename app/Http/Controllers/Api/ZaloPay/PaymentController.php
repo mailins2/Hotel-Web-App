@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\ZaloPay;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
 use App\Models\ThanhToan;
@@ -290,6 +291,8 @@ class PaymentController extends Controller
 
                     if ((int) $datPhong->TinhTrang === DatPhong::HOLD) {
                         $datPhong->update(['TinhTrang' => DatPhong::CONFIRMED]);
+                        ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                            ->update(['TrangThai' => ChiTietDatPhong::BOOKED]);
                     }
                 }
             });

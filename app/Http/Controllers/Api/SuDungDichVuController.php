@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChiTietHoaDon;
+use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\DichVu;
 use App\Models\HoaDon;
@@ -93,7 +94,13 @@ class SuDungDichVuController extends Controller
                 $datPhong = DatPhong::select('MaDatPhong', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang')
                     ->find($data['MaDatPhong']);
 
-                if (!$datPhong || (int) $datPhong->TinhTrang !== DatPhong::CHECKED_IN) {
+                $hasCheckedInRoom = $datPhong
+                    ? ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                        ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+                        ->exists()
+                    : false;
+
+                if (!$datPhong || !$hasCheckedInRoom) {
                     throw new \RuntimeException('Chi co the dat dich vu sau khi check-in.');
                 }
 

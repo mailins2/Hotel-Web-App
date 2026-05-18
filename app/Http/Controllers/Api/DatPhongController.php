@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 namespace App\Http\Controllers\Api;
 
@@ -35,6 +35,11 @@ class DatPhongController extends Controller
             'success' => false,
             'message' => $message
         ], $code);
+    }
+
+    private function updateBookingDetailsStatus(int $bookingId, int $status): void
+    {
+        ChiTietDatPhong::where('MaDatPhong', $bookingId)->update(['TrangThai' => $status]);
     }
 
     // =========================
@@ -138,6 +143,7 @@ class DatPhongController extends Controller
                             ->from('ChiTietDatPhong as ctdp')
                             ->join('DatPhong as dp', 'dp.MaDatPhong', '=', 'ctdp.MaDatPhong')
                             ->whereColumn('ctdp.MaPhong', 'p.MaPhong')
+                            ->where('ctdp.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
                             ->where('dp.NgayNhanPhong', '<', $ngayTra)
                             ->where('dp.NgayTraPhong', '>', $ngayNhan)
                             ->where(function ($q) {
@@ -161,7 +167,8 @@ class DatPhongController extends Controller
                     try {
                         ChiTietDatPhong::create([
                             'MaDatPhong' => $datPhong->MaDatPhong,
-                            'MaPhong' => $room->MaPhong
+                            'MaPhong' => $room->MaPhong,
+                            'TrangThai' => ChiTietDatPhong::BOOKED,
                         ]);
                         $assignedRooms[] = $room->MaPhong;
                     } catch (\Illuminate\Database\QueryException $e) {
@@ -189,6 +196,7 @@ class DatPhongController extends Controller
                     ->from('ChiTietDatPhong as ctdp')
                     ->join('DatPhong as dp', 'dp.MaDatPhong', '=', 'ctdp.MaDatPhong')
                     ->whereColumn('ctdp.MaPhong', 'p.MaPhong')
+                    ->where('ctdp.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
                     ->where('dp.NgayNhanPhong', '<', $ngayTra)
                     ->where('dp.NgayTraPhong', '>', $ngayNhan)
                     ->where(function ($q) {
@@ -212,7 +220,8 @@ class DatPhongController extends Controller
             try {
                 ChiTietDatPhong::create([
                     'MaDatPhong' => $datPhong->MaDatPhong,
-                    'MaPhong' => $room->MaPhong
+                    'MaPhong' => $room->MaPhong,
+                    'TrangThai' => ChiTietDatPhong::BOOKED,
                 ]);
                 $assignedRooms[] = $room->MaPhong;
             } catch (\Illuminate\Database\QueryException $e) {
@@ -420,6 +429,7 @@ class DatPhongController extends Controller
         DB::beginTransaction();
         try {
             $datPhong->update(['TinhTrang' => 1]);
+            $this->updateBookingDetailsStatus((int) $id, ChiTietDatPhong::BOOKED);
             HoaDon::where('MaDatPhong', $id)->update(['TrangThai' => 1]);
             DB::commit();
             return $this->success(null, 'XÃ¡c nháº­n thÃ nh cÃ´ng');
@@ -440,11 +450,51 @@ class DatPhongController extends Controller
                 Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
             ],
             'KhachLuuTru' => ['required', 'array', 'min:1'],
-            'KhachLuuTru.*.TenKhach' => ['required', 'string', 'max:100'],
-            'KhachLuuTru.*.NgaySinh' => ['required', 'date'],
-            'KhachLuuTru.*.CCCD' => ['required', 'string', 'max:20'],
-            'KhachLuuTru.*.SoDienThoai' => ['nullable', 'string', 'max:15'],
+            'KhachLuuTru.*.TenKhach' => ['nullable', 'string', 'max:100'],
+            'KhachLuuTru.*.NgaySinh' => ['nullable', 'date', 'before_or_equal:today'],
+            'KhachLuuTru.*.CCCD' => ['nullable', 'string', 'regex:/^\d{12}$/'],
+            'KhachLuuTru.*.SoDienThoai' => ['nullable', 'string', 'regex:/^0\d{9}$/'],
+            'KhachLuuTru.*.VaiTro' => ['nullable', Rule::in(['adult', 'child'])],
         ]);
+
+        $guests = collect($data['KhachLuuTru'])
+            ->filter(function ($guest) {
+                return collect($guest)->contains(function ($value) {
+                    return $value !== null && trim((string) $value) !== '';
+                });
+            })
+            ->values();
+
+        foreach ($guests as $index => $guest) {
+            $guestNumber = $index + 1;
+
+            if (
+                empty(trim((string) ($guest['TenKhach'] ?? '')))
+                || empty($guest['NgaySinh'])
+                || empty(trim((string) ($guest['CCCD'] ?? '')))
+            ) {
+                return $this->error("Vui lòng nhập đầy đủ họ tên, ngày sinh và CCCD cho khách {$guestNumber}.", 422);
+            }
+
+            if (Carbon::parse($guest['NgaySinh'])->age >= 18 && empty(trim((string) ($guest['SoDienThoai'] ?? '')))) {
+                return $this->error("Vui lòng nhập số điện thoại cho khách người lớn {$guestNumber}.", 422);
+            }
+            if (($guest['VaiTro'] ?? 'adult') === 'child' && Carbon::parse($guest['NgaySinh'])->age >= 12) {
+                return $this->error("Trẻ em phải dưới 12 tuổi cho khách {$guestNumber}.", 422);
+            }
+        }
+
+        $hasAdultGuest = $guests->contains(function ($guest) {
+            if (empty($guest['NgaySinh'])) {
+                return false;
+            }
+
+            return Carbon::parse($guest['NgaySinh'])->age >= 18;
+        });
+
+        if (!$hasAdultGuest) {
+            return $this->error('Cần có ít nhất một khách đủ 18 tuổi trở lên để check-in.', 422);
+        }
 
         $datPhong = DatPhong::with('chiTietDatPhong')->find($id);
         if (!$datPhong) {
@@ -455,13 +505,15 @@ class DatPhongController extends Controller
             return $this->error('Đặt phòng chưa được xác nhận hoặc đã nhận phòng', 400);
         }
 
-        $bookedRoomIds = $datPhong->chiTietDatPhong
-            ->pluck('MaPhong')
-            ->map(fn ($value) => (int) $value)
-            ->values();
+        $roomDetail = $datPhong->chiTietDatPhong
+            ->first(fn ($detail) => (int) $detail->MaPhong === (int) $data['MaPhong']);
 
-        if (!$bookedRoomIds->contains((int) $data['MaPhong'])) {
+        if (!$roomDetail) {
             return $this->error('Phòng không thuộc đặt phòng này', 422);
+        }
+
+        if ((int) $roomDetail->TrangThai !== ChiTietDatPhong::BOOKED) {
+            return $this->error('Phòng này không còn ở trạng thái chờ nhận', 422);
         }
 
         if (LuuTru::where('MaDatPhong', $datPhong->MaDatPhong)->where('MaPhong', $data['MaPhong'])->exists()) {
@@ -470,23 +522,27 @@ class DatPhongController extends Controller
 
         DB::beginTransaction();
         try {
-            foreach ($data['KhachLuuTru'] as $guest) {
+            foreach ($guests as $guest) {
                 LuuTru::create([
-                    'TenKhach' => $guest['TenKhach'],
+                    'TenKhach' => trim((string) ($guest['TenKhach'] ?? '')) ?: 'Khách lưu trú',
                     'NgaySinh' => $guest['NgaySinh'],
-                    'CCCD' => $guest['CCCD'],
+                    'CCCD' => trim((string) $guest['CCCD']),
                     'SoDienThoai' => $guest['SoDienThoai'] ?? null,
                     'MaPhong' => $data['MaPhong'],
                     'MaDatPhong' => $datPhong->MaDatPhong,
                 ]);
             }
 
+            $roomDetail->update(['TrangThai' => ChiTietDatPhong::CHECKED_IN]);
+
             Phong::where('MaPhong', $data['MaPhong'])->update(['TinhTrang' => 2]);
 
-            $checkedInRoomCount = LuuTru::where('MaDatPhong', $datPhong->MaDatPhong)
-                ->distinct('MaPhong')
-                ->count('MaPhong');
-            $totalRoomCount = $bookedRoomIds->unique()->count();
+            $checkedInRoomCount = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+                ->count();
+            $totalRoomCount = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
+                ->count();
 
             if ($checkedInRoomCount >= $totalRoomCount) {
                 $datPhong->update(['TinhTrang' => DatPhong::CHECKED_IN]);
@@ -530,6 +586,7 @@ class DatPhongController extends Controller
             $datPhong->update(['TinhTrang' => 3]);
             
             foreach ($datPhong->chiTietDatPhong as $ct) {
+                $ct->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
                 Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 0]);
             }
 
@@ -556,10 +613,17 @@ class DatPhongController extends Controller
             return $this->error('KhÃ´ng thá»ƒ há»§y booking nÃ y', 400);
         }
 
+        if (ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->exists()) {
+            return $this->error('Khong the huy booking da co phong nhan.', 400);
+        }
+
         DB::beginTransaction();
         try {
             // Cáº­p nháº­t booking
             $datPhong->update(['TinhTrang' => 4]); // Cancelled
+            $this->updateBookingDetailsStatus((int) $id, ChiTietDatPhong::CANCELLED);
 
             // Cáº­p nháº­t hÃ³a Ä‘Æ¡n
             HoaDon::where('MaDatPhong', $id)
@@ -608,6 +672,7 @@ class DatPhongController extends Controller
         $isBusy = DB::table('ChiTietDatPhong')
             ->join('DatPhong', 'DatPhong.MaDatPhong', '=', 'ChiTietDatPhong.MaDatPhong')
             ->where('ChiTietDatPhong.MaPhong', $request->newPhong)
+            ->where('ChiTietDatPhong.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
             ->where(function ($q) use ($datPhong) {
                 $q->where('NgayNhanPhong', '<', $datPhong->NgayTraPhong)
                   ->where('NgayTraPhong', '>', $datPhong->NgayNhanPhong);
@@ -668,6 +733,7 @@ class DatPhongController extends Controller
         $isBusy = DB::table('ChiTietDatPhong')
             ->join('DatPhong', 'DatPhong.MaDatPhong', '=', 'ChiTietDatPhong.MaDatPhong')
             ->where('ChiTietDatPhong.MaPhong', $request->MaPhong)
+            ->where('ChiTietDatPhong.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
             ->where(function ($q) use ($datPhong) {
                 $q->where('NgayNhanPhong', '<', $datPhong->NgayTraPhong)
                   ->where('NgayTraPhong', '>', $datPhong->NgayNhanPhong);
@@ -682,7 +748,8 @@ class DatPhongController extends Controller
         DB::transaction(function () use ($request, $id, $datPhong) {
             ChiTietDatPhong::create([
                 'MaDatPhong' => $id,
-                'MaPhong' => $request->MaPhong
+                'MaPhong' => $request->MaPhong,
+                'TrangThai' => ChiTietDatPhong::CHECKED_IN,
             ]);
             $datPhong->increment('SoLuong');
             Phong::where('MaPhong', $request->MaPhong)->update(['TinhTrang' => 2]);

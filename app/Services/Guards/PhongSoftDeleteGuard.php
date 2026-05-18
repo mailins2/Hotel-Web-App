@@ -3,6 +3,7 @@
 namespace App\Services\Guards;
 
 use App\Models\DatPhong;
+use App\Models\ChiTietDatPhong;
 use App\Models\Phong;
 
 class PhongSoftDeleteGuard extends AbstractSoftDeleteGuard
@@ -10,6 +11,7 @@ class PhongSoftDeleteGuard extends AbstractSoftDeleteGuard
     public function canSoftDelete(Phong $phong): array
     {
         $activeBookingCount = $phong->chiTietDatPhong()
+            ->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
             ->whereHas('datPhong', function ($query) {
                 $query->whereIn('TinhTrang', [
                     DatPhong::HOLD,
