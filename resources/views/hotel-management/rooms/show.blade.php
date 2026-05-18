@@ -1,19 +1,23 @@
 @php
-    $activeBooking = $room->chiTietDatPhong
-        ->pluck('datPhong')
-        ->filter()
-        ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
-            \App\Models\DatPhong::CHECKED_IN => 3,
-            \App\Models\DatPhong::CONFIRMED => 2,
-            \App\Models\DatPhong::HOLD => 1,
+    $activeDetails = $room->chiTietDatPhong
+        ->filter(fn ($detail) => $detail->datPhong)
+        ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+            \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+            \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                \App\Models\DatPhong::CONFIRMED => 2,
+                \App\Models\DatPhong::HOLD => 1,
+                default => 0,
+            },
             default => 0,
         })
-        ->first();
+        ->values();
+    $activeBooking = $activeDetails->first()?->datPhong;
 
     $statusValue = match (true) {
         (int) $room->TinhTrang === 3 => 3,
-        $activeBooking && (int) $activeBooking->TinhTrang === \App\Models\DatPhong::CHECKED_IN => 2,
-        $activeBooking && in_array((int) $activeBooking->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true) => 1,
+        $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 2,
+        $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
+            && in_array((int) $detail->datPhong->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true)) => 1,
         default => (int) $room->TinhTrang,
     };
 

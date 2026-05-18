@@ -248,6 +248,35 @@
             box-shadow: 0 16px 30px rgba(15, 118, 110, 0.08);
         }
 
+        .ci-room-option.is-checked-in,
+        .ci-room-option:disabled {
+            cursor: not-allowed;
+            color: #7d8790;
+            background: #eef1f4;
+            border-color: rgba(108, 117, 125, 0.2);
+            box-shadow: none;
+            transform: none;
+            opacity: 0.88;
+        }
+
+        .ci-room-option.is-checked-in:hover,
+        .ci-room-option:disabled:hover {
+            transform: none;
+            border-color: rgba(108, 117, 125, 0.2);
+            box-shadow: none;
+        }
+
+        .ci-room-option.is-checked-in .ci-room-option-code,
+        .ci-room-option.is-checked-in .ci-room-option-type {
+            color: #6c757d;
+        }
+
+        .ci-room-option.is-checked-in .ci-meta-chip {
+            color: #6c757d;
+            background: #e1e6ea;
+            border-color: rgba(108, 117, 125, 0.2);
+        }
+
         .ci-room-option-top {
             display: flex;
             align-items: center;
@@ -603,24 +632,27 @@
                                                     $children > 0 ? "{$children} trẻ em" : null,
                                                 ])->filter();
                                                 $guestSummary = $guestParts->isNotEmpty() ? $guestParts->implode(' • ') : 'Chưa có thông tin sức chứa';
+                                                $isCheckedIn = (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN;
                                                 $roomTarget = 'room-' . $booking->MaDatPhong . '-' . ($room?->MaPhong ?? $detail->MaCTDP);
                                             @endphp
                                             <button
                                                 type="button"
-                                                class="ci-room-option"
+                                                class="ci-room-option {{ $isCheckedIn ? 'is-checked-in' : '' }}"
                                                 data-room-target="{{ $roomTarget }}"
                                                 data-room-badge="{{ $nights }} đêm"
                                                 data-booking-id="{{ $booking->MaDatPhong }}"
                                                 data-room-number="{{ $room?->SoPhong ?? '--' }}"
                                                 data-guest-summary="{{ $guestSummary }}"
+                                                data-room-status="{{ $isCheckedIn ? 'checked-in' : 'booked' }}"
                                                 data-stay-period="{{ $stayPeriod }}"
+                                                @disabled($isCheckedIn)
                                             >
                                                 <div class="ci-room-option-top">
                                                     <div>
                                                         <div class="ci-room-option-code">Phòng {{ $room?->SoPhong ?? '--' }}</div>
                                                         <div class="ci-room-option-type">{{ $roomType?->TenLoaiPhong ?? 'Chưa có loại phòng' }}</div>
                                                     </div>
-                                                    <span class="ci-meta-chip">{{ $guestSummary }}</span>
+                                                    <span class="ci-meta-chip">{{ $isCheckedIn ? 'Đã nhận phòng' : $guestSummary }}</span>
                                                 </div>
                                             </button>
                                         @endforeach
@@ -647,6 +679,7 @@
 
                     @foreach($checkInBookings as $booking)
                         @foreach($booking->chiTietDatPhong as $detail)
+                            @continue((int) $detail->TrangThai !== \App\Models\ChiTietDatPhong::BOOKED)
                             @php
                                 $room = $detail->phong;
                                 $roomType = $room?->loaiPhong;
@@ -667,7 +700,7 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Ngày sinh</label>
-                                                    <input type="date" data-birthdate data-guest-role="adult">
+                                                    <input type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" data-birthdate data-guest-role="adult">
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
@@ -691,15 +724,11 @@
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>Ngày sinh</label>
-                                                    <input type="date" data-birthdate data-guest-role="child">
+                                                    <input type="text" inputmode="numeric" maxlength="10" placeholder="dd/mm/yyyy" pattern="\d{2}/\d{2}/\d{4}" data-birthdate data-guest-role="child">
                                                 </div>
                                                 <div class="ci-form-field">
                                                     <label>CCCD</label>
                                                     <input type="text" inputmode="numeric" maxlength="12" pattern="[0-9]{12}" placeholder="Nhập số CCCD" data-guest-cccd>
-                                                </div>
-                                                <div class="ci-form-field">
-                                                    <label>Số điện thoại</label>
-                                                    <input type="tel" placeholder="Nhập số điện thoại" data-guest-phone>
                                                 </div>
                                             </div>
                                         </div>
@@ -770,13 +799,19 @@
         let selectedRoomButton = null;
 
         function parseInputDate(value) {
-            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            const rawValue = String(value || '').trim();
+            const displayMatch = rawValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            const isoMatch = rawValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            const match = displayMatch || isoMatch;
 
             if (!match) {
                 return null;
             }
 
-            const [, year, month, day] = match;
+            const [, first, second, third] = match;
+            const [year, month, day] = displayMatch
+                ? [third, second, first]
+                : [first, second, third];
             const date = new Date(Number(year), Number(month) - 1, Number(day));
 
             if (
@@ -789,6 +824,31 @@
 
             date.setHours(0, 0, 0, 0);
             return date;
+        }
+
+        function formatBirthDateInput(input) {
+            const digits = String(input.value || '').replace(/\D/g, '').slice(0, 8);
+            const parts = [
+                digits.slice(0, 2),
+                digits.slice(2, 4),
+                digits.slice(4, 8),
+            ].filter(Boolean);
+
+            input.value = parts.join('/');
+        }
+
+        function formatInputDateForApi(value) {
+            const date = parseInputDate(value);
+
+            if (!date) {
+                return String(value || '').trim();
+            }
+
+            const year = String(date.getFullYear());
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+
+            return `${year}-${month}-${day}`;
         }
 
         function calculateAge(birthDate) {
@@ -868,12 +928,43 @@
             return true;
         }
 
+        function validatePhoneInput(input, { requireValue = false } = {}) {
+            if (!input) {
+                return true;
+            }
+
+            const rawValue = String(input.value || '');
+            const digits = rawValue.replace(/\D/g, '');
+
+            if (digits !== rawValue) {
+                input.value = digits;
+            }
+
+            if (!digits) {
+                if (requireValue) {
+                    setFieldError(input, 'Vui lòng nhập số điện thoại.');
+                    return false;
+                }
+
+                clearFieldError(input);
+                return true;
+            }
+
+            if (!/^0\d{9}$/.test(digits)) {
+                setFieldError(input, 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
+                return false;
+            }
+
+            clearFieldError(input);
+            return true;
+        }
+
         function validateBirthDateInput(input, { requireValue = false } = {}) {
             if (!input) {
                 return true;
             }
 
-            const role = input.dataset.guestRole || 'adult';
+            const role = input.dataset.guestRole || input.closest('.ci-guest-card')?.dataset.guestRole || 'adult';
             const birthDate = parseInputDate(input.value);
 
             input.classList.remove('is-invalid');
@@ -889,7 +980,7 @@
             }
 
             if (!birthDate) {
-                setFieldError(input, 'Ngày sinh không hợp lệ.');
+                setFieldError(input, 'Ngày sinh phải có định dạng dd/mm/yyyy.');
                 return false;
             }
 
@@ -904,12 +995,7 @@
             const age = calculateAge(birthDate);
 
             if (role === 'child' && age >= 12) {
-                setFieldError(input, 'Khách từ 12 tuổi trở lên được tính là người lớn.');
-                return false;
-            }
-
-            if (role === 'adult' && age < 12) {
-                setFieldError(input, 'Khách nhỏ hơn 12 tuổi được tính là trẻ em.');
+                setFieldError(input, 'Trẻ em phải dưới 12 tuổi.');
                 return false;
             }
 
@@ -929,7 +1015,7 @@
                 .map(calculateAge);
             const hasAdult = ages.some((age) => age >= 18);
 
-            if (hasAdult || ages.length === 0) {
+            if (hasAdult) {
                 return true;
             }
 
@@ -937,13 +1023,65 @@
                 const firstInput = birthDateInputs.find((input) => input.value) || birthDateInputs[0] || null;
 
                 if (firstInput) {
-                    setFieldError(firstInput, birthDateInputs.length === 1
-                        ? 'Không cho phép chỉ một người dưới 18 tuổi check-in.'
-                        : 'Cần có ít nhất một người đủ 18 tuổi trở lên để check-in.');
+                    setFieldError(firstInput, 'Cần nhập ngày sinh của ít nhất một khách đủ 18 tuổi trở lên để check-in.');
                 }
             }
 
             return false;
+        }
+
+        function getGuestCardInputs(card) {
+            return [
+                card?.querySelector('[data-guest-name]') || null,
+                card?.querySelector('[data-birthdate]') || null,
+                card?.querySelector('[data-guest-cccd]') || null,
+                card?.querySelector('[data-guest-phone]') || null,
+            ].filter(Boolean);
+        }
+
+        function isGuestCardStarted(card) {
+            return getGuestCardInputs(card).some((input) => String(input.value || '').trim() !== '');
+        }
+
+        function validateGuestCard(card) {
+            if (!card) {
+                return { isValid: true, firstInvalidInput: null };
+            }
+
+            const inputs = getGuestCardInputs(card);
+
+            if (!isGuestCardStarted(card)) {
+                inputs.forEach(clearFieldError);
+                return { isValid: true, firstInvalidInput: null };
+            }
+
+            let firstInvalidInput = null;
+            const nameInput = card.querySelector('[data-guest-name]');
+            const birthDateInput = card.querySelector('[data-birthdate]');
+            const cccdInput = card.querySelector('[data-guest-cccd]');
+            const phoneInput = card.querySelector('[data-guest-phone]');
+
+            if (nameInput && !String(nameInput.value || '').trim()) {
+                setFieldError(nameInput, 'Vui lòng nhập họ và tên.');
+                firstInvalidInput ??= nameInput;
+            }
+
+            if (birthDateInput && !validateBirthDateInput(birthDateInput, { requireValue: true })) {
+                firstInvalidInput ??= birthDateInput;
+            }
+
+            if (cccdInput && !validateCccdInput(cccdInput, { requireValue: true })) {
+                firstInvalidInput ??= cccdInput;
+            }
+
+            if (phoneInput && !validatePhoneInput(phoneInput, { requireValue: true })) {
+                firstInvalidInput ??= phoneInput;
+            }
+
+            return {
+                isValid: firstInvalidInput === null,
+                firstInvalidInput,
+            };
         }
 
         function validateVisibleGuestForm({ scrollToError = true } = {}) {
@@ -956,26 +1094,13 @@
             clearFormErrors(visibleForm);
 
             const birthDateInputs = Array.from(visibleForm.querySelectorAll('[data-birthdate]'));
-            const nameInputs = Array.from(visibleForm.querySelectorAll('[data-guest-name]'));
-            const cccdInputs = Array.from(visibleForm.querySelectorAll('[data-guest-cccd]'));
+            const guestCards = Array.from(visibleForm.querySelectorAll('.ci-guest-card'));
             let firstInvalidInput = null;
 
-            nameInputs.forEach((input) => {
-                if (!String(input.value || '').trim()) {
-                    setFieldError(input, 'Vui lòng nhập họ và tên.');
-                    firstInvalidInput ??= input;
-                }
-            });
-
-            cccdInputs.forEach((input) => {
-                if (!validateCccdInput(input, { requireValue: true })) {
-                    firstInvalidInput ??= input;
-                }
-            });
-
-            birthDateInputs.forEach((input) => {
-                if (!validateBirthDateInput(input, { requireValue: true })) {
-                    firstInvalidInput ??= input;
+            guestCards.forEach((card) => {
+                const result = validateGuestCard(card);
+                if (!result.isValid) {
+                    firstInvalidInput ??= result.firstInvalidInput;
                 }
             });
 
@@ -998,12 +1123,16 @@
                 return null;
             }
 
-            const guests = Array.from(visibleForm.querySelectorAll('.ci-guest-card')).map((card) => ({
-                TenKhach: String(card.querySelector('[data-guest-name]')?.value || '').trim(),
-                NgaySinh: String(card.querySelector('[data-birthdate]')?.value || '').trim(),
-                CCCD: String(card.querySelector('[data-guest-cccd]')?.value || '').trim(),
-                SoDienThoai: String(card.querySelector('[data-guest-phone]')?.value || '').trim() || null,
-            }));
+            const guests = Array.from(visibleForm.querySelectorAll('.ci-guest-card'))
+                .map((card) => ({
+                    TenKhach: String(card.querySelector('[data-guest-name]')?.value || '').trim(),
+                    NgaySinh: formatInputDateForApi(card.querySelector('[data-birthdate]')?.value || ''),
+                    CCCD: String(card.querySelector('[data-guest-cccd]')?.value || '').trim(),
+                    SoDienThoai: String(card.querySelector('[data-guest-phone]')?.value || '').trim() || null,
+                    VaiTro: card.dataset.guestRole || 'adult',
+                }))
+                .filter((guest) => ['TenKhach', 'NgaySinh', 'CCCD', 'SoDienThoai']
+                    .some((field) => guest[field] !== null && String(guest[field]).trim() !== ''));
 
             return {
                 MaPhong: Number(visibleForm.dataset.roomId || selectedRoomButton?.dataset.roomId || 0),
@@ -1011,12 +1140,40 @@
             };
         }
 
+        function formatGuestSummaryFromGuests(guests) {
+            const summary = (guests || []).reduce((result, guest) => {
+                if (guest.VaiTro === 'child') {
+                    result.children += 1;
+                } else if (guest.VaiTro === 'adult') {
+                    result.adults += 1;
+                }
+
+                return result;
+            }, { adults: 0, children: 0 });
+
+            const parts = [
+                summary.adults > 0 ? `${summary.adults} người lớn` : null,
+                summary.children > 0 ? `${summary.children} trẻ em` : null,
+            ].filter(Boolean);
+
+            return parts.length ? parts.join(' • ') : '--';
+        }
+
         function bindRealtimeBirthDateValidation(root = document) {
             root.querySelectorAll('[data-birthdate]').forEach((input) => {
-                input.addEventListener('input', () => validateBirthDateInput(input));
+                input.addEventListener('input', () => {
+                    formatBirthDateInput(input);
+
+                    if (!input.value || input.value.length < 10) {
+                        clearFieldError(input);
+                        return;
+                    }
+
+                    validateBirthDateInput(input);
+                });
                 input.addEventListener('change', () => validateBirthDateInput(input));
                 input.addEventListener('blur', () => {
-                    validateBirthDateInput(input, { requireValue: true });
+                    validateGuestCard(input.closest('.ci-guest-card'));
                     validateAdultPresence(input.closest('[data-room-form]'));
                 });
             });
@@ -1029,16 +1186,17 @@
                         clearFieldError(input);
                     }
                 });
-                input.addEventListener('blur', () => {
-                    if (!String(input.value || '').trim()) {
-                        setFieldError(input, 'Vui lòng nhập họ và tên.');
-                    }
-                });
+                input.addEventListener('blur', () => validateGuestCard(input.closest('.ci-guest-card')));
             });
 
             root.querySelectorAll('[data-guest-cccd]').forEach((input) => {
                 input.addEventListener('input', () => validateCccdInput(input));
-                input.addEventListener('blur', () => validateCccdInput(input, { requireValue: true }));
+                input.addEventListener('blur', () => validateGuestCard(input.closest('.ci-guest-card')));
+            });
+
+            root.querySelectorAll('[data-guest-phone]').forEach((input) => {
+                input.addEventListener('input', () => validatePhoneInput(input));
+                input.addEventListener('blur', () => validateGuestCard(input.closest('.ci-guest-card')));
             });
         }
 
@@ -1113,6 +1271,8 @@
                 return;
             }
 
+            const payload = collectVisibleGuestPayload();
+
             if (dialogBookingId) {
                 dialogBookingId.textContent = activeRoom?.dataset.bookingId || '--';
             }
@@ -1122,7 +1282,7 @@
             }
 
             if (dialogGuestSummary) {
-                dialogGuestSummary.textContent = activeRoom?.dataset.guestSummary || '--';
+                dialogGuestSummary.textContent = formatGuestSummaryFromGuests(payload?.KhachLuuTru || []);
             }
 
             if (dialogStayPeriod) {

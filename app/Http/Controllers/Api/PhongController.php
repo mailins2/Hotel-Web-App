@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChiTietDatPhong;
 use App\Models\Phong;
 use App\Services\Guards\PhongSoftDeleteGuard;
 use Carbon\Carbon;
@@ -39,6 +40,9 @@ class PhongController extends Controller
 
         $query = Phong::with([
             'loaiPhong.khuyenMai',
+            'chiTietDatPhong' => function ($q) {
+                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -83,19 +87,19 @@ class PhongController extends Controller
 
     private function resolveTinhTrangHienTai(Phong $phong): int
     {
-        if (in_array((int) $phong->TinhTrang, [2, 3], true)) {
+        if ((int) $phong->TinhTrang === 3) {
             return (int) $phong->TinhTrang;
         }
 
-        $bookingsToday = $phong->chiTietDatPhong
-            ->pluck('datPhong')
-            ->filter();
+        $detailsToday = $phong->chiTietDatPhong
+            ->filter(fn ($detail) => $detail->datPhong);
 
-        if ($bookingsToday->contains(fn ($booking) => (int) $booking->TinhTrang === 2)) {
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN)) {
             return 2;
         }
 
-        if ($bookingsToday->contains(fn ($booking) => in_array((int) $booking->TinhTrang, [0, 1], true))) {
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED
+            && in_array((int) $detail->datPhong->TinhTrang, [0, 1], true))) {
             return 1;
         }
 
@@ -105,15 +109,18 @@ class PhongController extends Controller
     private function resolveDatPhongHienTai(Phong $phong)
     {
         return $phong->chiTietDatPhong
-            ->pluck('datPhong')
-            ->filter()
-            ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
-                2 => 3,
-                1 => 2,
-                0 => 1,
+            ->filter(fn ($detail) => $detail->datPhong)
+            ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+                ChiTietDatPhong::CHECKED_IN => 3,
+                ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                    1 => 2,
+                    0 => 1,
+                    default => 0,
+                },
                 default => 0,
             })
-            ->first();
+            ->first()
+            ?->datPhong;
     }
 
     public function store(Request $request)
@@ -138,6 +145,9 @@ class PhongController extends Controller
 
         $phong = Phong::with([
             'loaiPhong.khuyenMai',
+            'chiTietDatPhong' => function ($q) {
+                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -258,10 +268,13 @@ class PhongController extends Controller
             ->whereHas('loaiPhong', function ($q) {
                 $q->whereNull('LoaiPhong.deleted_at');
             })
-            ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
-                $q->whereIn('TinhTrang', [0, 1, 2])
-                    ->where('NgayNhanPhong', '<', $checkOut)
-                    ->where('NgayTraPhong', '>', $checkIn);
+            ->whereDoesntHave('chiTietDatPhong', function ($q) use ($checkIn, $checkOut) {
+                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
+                    ->whereHas('datPhong', function ($bookingQuery) use ($checkIn, $checkOut) {
+                        $bookingQuery->whereIn('TinhTrang', [0, 1, 2])
+                            ->where('NgayNhanPhong', '<', $checkOut)
+                            ->where('NgayTraPhong', '>', $checkIn);
+                    });
             })
             ->get();
 
