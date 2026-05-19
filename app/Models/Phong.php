@@ -27,4 +27,9 @@ class Phong extends Model
         return $this->hasMany(ChiTietDatPhong::class, 'MaPhong');
     }
 
+    public function luuTrus()
+    {
+        return $this->hasMany(LuuTru::class, 'MaPhong');
+    }
+
 }

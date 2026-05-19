@@ -427,7 +427,7 @@
                     }
 
                     if (roomTypePriceInput.value === '' || Number(roomTypePriceInput.value) < 0) {
-                        setFieldError('GiaPhong', 'GiÃ¡ phÃ²ng pháº£i lá»›n hÆ¡n hoáº·c báº±ng 0.');
+                        setFieldError('GiaPhong', 'Giá phòng phải lớn hơn hoặc bằng 0.');
                         isValid = false;
                     }
 

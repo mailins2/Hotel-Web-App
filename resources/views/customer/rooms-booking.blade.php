@@ -1,4 +1,4 @@
-@php
+﻿@php
   $initialCheckIn = request('checkIn') ? \Illuminate\Support\Carbon::parse(request('checkIn')) : now();
   $initialCheckOut = request('checkOut') ? \Illuminate\Support\Carbon::parse(request('checkOut')) : now()->addDay();
 
@@ -265,16 +265,76 @@
           const uniqueImages = [...new Set(images)];
           return uniqueImages.length ? uniqueImages : [fallbackImage];
         };
-        const getPriceForSeason = (room, season) => {
-          const directPrice = Number(room?.GiaGiam ?? room?.gia_giam ?? room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
-          if (Number.isFinite(directPrice) && directPrice > 0) {
-            return directPrice;
+        const getOriginalRoomPrice = (room) => {
+          const originalPrice = Number(room?.GiaPhong ?? room?.gia_phong ?? room?.Gia ?? room?.gia);
+          return Number.isFinite(originalPrice) && originalPrice > 0 ? originalPrice : 0;
+        };
+        const getNightlyPrice = (room) => {
+          const salePrice = Number(room?.GiaGiam ?? room?.gia_giam);
+          if (Number.isFinite(salePrice) && salePrice > 0) return salePrice;
+          return getOriginalRoomPrice(room);
+        };
+        const getRoomDiscountPercent = (room) => {
+          const originalPrice = getOriginalRoomPrice(room);
+          const salePrice = getNightlyPrice(room);
+          if (originalPrice <= 0 || salePrice <= 0 || salePrice >= originalPrice) return 0;
+          return Math.round(((originalPrice - salePrice) / originalPrice) * 100);
+        };
+        const renderRoomPrice = (room) => {
+          const originalPrice = Number(room.originalPrice ?? getOriginalRoomPrice(room));
+          const salePrice = Number(room.price ?? getNightlyPrice(room));
+          if (salePrice <= 0) return 'Liên hệ';
+          const discountPercent = Number(room.discountPercent ?? getRoomDiscountPercent(room));
+          if (discountPercent <= 0 || originalPrice <= salePrice) {
+            return `
+              <span class="customer-room-price">
+                <span class="customer-room-price-current">
+                  <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                  <span class="customer-room-price-per">/ đêm</span>
+                </span>
+              </span>
+            `;
+          }
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VND</span>
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                <span class="customer-room-price-per">/ đêm</span>
+              </span>
+              <span class="customer-room-discount-tag">-${discountPercent}%</span>
+            </span>
+          `;
+        };
+        const renderSummaryRoomPrice = (item) => {
+          const salePrice = Number(item.price || 0);
+          const originalPrice = Number(item.originalPrice || 0);
+          const discountPercent = Number(item.discountPercent || 0);
+
+          if (salePrice <= 0) return 'Liên hệ';
+
+          if (discountPercent <= 0 || originalPrice <= salePrice) {
+            return `
+              <span class="customer-room-price">
+                <span class="customer-room-price-current">
+                  <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                  <span class="customer-room-price-per">/ đêm</span>
+                </span>
+              </span>
+            `;
           }
 
-          return 0;
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VND</span>
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')} VND</span>
+                <span class="customer-room-price-per">/ đêm</span>
+              </span>
+              <span class="customer-room-discount-tag">-${discountPercent}%</span>
+            </span>
+          `;
         };
-
-        const getNightlyPrice = (room) => getPriceForSeason(room, 1);
         const getRoomCount = (room) => {
           const phongs = room.phongs || [];
           const count = Number(room.soLuongPhong || room.so_luong_phong || (Array.isArray(phongs) ? phongs.length : 0));
@@ -479,7 +539,7 @@
             row.innerHTML = `
               <div class="booking-item-title">Phòng: ${item.quantity} ${escapeHtml(item.name)}</div>
               <div class="booking-item-footer">
-                <div class="booking-item-price">${item.price.toLocaleString('vi-VN')} VND / đêm</div>
+                <div class="booking-item-price">${renderSummaryRoomPrice(item)}</div>
                 <button type="button" class="booking-item-cancel" data-room-cancel="${escapeAttr(key)}">
                   <span class="icon ion-ios-close"></span> Hủy
                 </button>
@@ -516,6 +576,8 @@
               id: key,
               name: item.name,
               price: item.price,
+              originalPrice: item.originalPrice,
+              discountPercent: item.discountPercent,
               quantity: item.quantity,
               adults: Number(room.adults ?? item.adults ?? 0),
               children: Number(room.children ?? item.children ?? 0),
@@ -574,6 +636,8 @@
             selections.set(key, {
               name: input.dataset.roomName || 'Phòng',
               price: Number(input.dataset.roomPrice || '0'),
+              originalPrice: Number(input.dataset.roomOriginalPrice || input.dataset.roomPrice || '0'),
+              discountPercent: Number(input.dataset.roomDiscountPercent || '0'),
               quantity: normalizedValue,
               adults: Number(input.dataset.roomAdults || '0'),
               children: Number(input.dataset.roomChildren || '0'),
@@ -716,6 +780,8 @@
             children,
             capacity,
             price: getNightlyPrice(room),
+            originalPrice: getOriginalRoomPrice(room),
+            discountPercent: getRoomDiscountPercent(room),
             images: getImages(room),
             roomCount: getRoomCount(room),
             amenitiesNames,
@@ -831,10 +897,9 @@
                   </button>
                   <div class="room-result-footer">
                     <div class="room-result-price">
-                      <span class="room-result-price-line">
-                        <span class="value">${room.price > 0 ? `${room.price.toLocaleString('vi-VN')} VND` : 'Liên hệ'}</span>
-                        <span class="per">/ đêm</span>
-                      </span>
+                      <div class="room-result-price-line">
+                        <span class="value">${renderRoomPrice(room)}</span>
+                      </div>
                     </div>
                     <div class="room-result-actions">
                       <div class="room-result-qty-stepper" data-room-qty-stepper>
@@ -849,6 +914,8 @@
                           data-room-id="${escapeAttr(room.id)}"
                           data-room-name="${escapeAttr(room.name)}"
                           data-room-price="${room.price}"
+                          data-room-original-price="${room.originalPrice}"
+                          data-room-discount-percent="${room.discountPercent}"
                           data-room-adults="${Number.isFinite(room.adults) ? room.adults : 0}"
                           data-room-children="${Number.isFinite(room.children) ? room.children : 0}"
                         >

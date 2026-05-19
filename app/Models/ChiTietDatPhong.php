@@ -9,9 +9,20 @@ class ChiTietDatPhong extends Model
     protected $table = 'ChiTietDatPhong';
     protected $primaryKey = 'MaCTDP';
     public $timestamps = false;
-     protected $fillable = [
+
+    const BOOKED = 0;
+    const CHECKED_IN = 1;
+    const CHECKED_OUT = 2;
+    const CANCELLED = 3;
+
+    protected $fillable = [
         'MaDatPhong',
         'MaPhong',
+        'TrangThai',
+    ];
+
+    protected $casts = [
+        'TrangThai' => 'integer',
     ];
 
 
