@@ -29,12 +29,13 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Mã tài khoản</label>
-        <select class="form-select" id="employee-account-id">
-            <option value="">Không gắn tài khoản</option>
+        <label class="form-label">Chức vụ</label>
+        <select class="form-select" id="employee-position">
+            <option value="">Chọn chức vụ</option>
+            <option value="0">Quản lý</option>
+            <option value="1">Nhân viên</option>
         </select>
-        <div class="form-text" id="employee-account-hint">Có thể bỏ trống nếu chưa cần gắn tài khoản cho nhân viên.</div>
-        <div class="invalid-feedback" id="employee-account-id-error"></div>
+        <div class="invalid-feedback" id="employee-position-error"></div>
     </div>
 
     <div
@@ -44,8 +45,6 @@
         data-create-url="{{ url('/api/nhan-vien') }}"
         data-detail-url-template="{{ url('/api/nhan-vien/__EMPLOYEE_ID__') }}"
         data-index-url="{{ route('hotel.employees.index') }}"
-        data-accounts-url="{{ url('/api/tai-khoan') }}"
-        data-employees-url="{{ url('/api/nhan-vien') }}"
         hidden
     ></div>
 
@@ -60,36 +59,14 @@
                 const createUrl = config ? config.dataset.createUrl : '';
                 const detailUrlTemplate = config ? config.dataset.detailUrlTemplate : '';
                 const indexUrl = config ? config.dataset.indexUrl : '';
-                const accountsUrl = config ? config.dataset.accountsUrl : '';
-                const employeesUrl = config ? config.dataset.employeesUrl : '';
 
                 const alertBox = document.getElementById('employee-form-alert');
                 const employeeIdGroup = document.getElementById('employee-id-group');
                 const employeeIdInput = document.getElementById('employee-id');
                 const employeeNameInput = document.getElementById('employee-name');
-                const employeeAccountInput = document.getElementById('employee-account-id');
-                const accountHint = document.getElementById('employee-account-hint');
+                const employeePositionInput = document.getElementById('employee-position');
 
-                let accounts = [];
-                let employees = [];
                 let currentEmployee = null;
-
-                const mapAccountType = function (type) {
-                    switch (Number(type)) {
-                        case 0:
-                            return 'Khách hàng';
-                        case 1:
-                            return 'Nhân viên';
-                        case 2:
-                            return 'Quản lý';
-                        case 3:
-                            return 'Kế toán';
-                        case 4:
-                            return 'Nhân viên kinh doanh';
-                        default:
-                            return 'Không xác định';
-                    }
-                };
 
                 const setAlert = function (type, message) {
                     if (!alertBox) {
@@ -112,7 +89,7 @@
                 const clearFieldErrors = function () {
                     [
                         ['employee-name', employeeNameInput],
-                        ['employee-account-id', employeeAccountInput]
+                        ['employee-position', employeePositionInput]
                     ].forEach(function (item) {
                         const key = item[0];
                         const field = item[1];
@@ -131,7 +108,7 @@
                 const setFieldError = function (fieldName, message) {
                     const keyMap = {
                         TenNV: 'employee-name',
-                        MaTK: 'employee-account-id'
+                        ChucVu: 'employee-position'
                     };
 
                     const key = keyMap[fieldName];
@@ -189,72 +166,11 @@
                         : (isEdit ? 'Lưu thay đổi' : 'Tạo mới');
                 };
 
-                const renderAccountOptions = function () {
-                    const usedAccountIds = new Set(
-                        employees
-                            .filter(function (employee) {
-                                return !currentEmployee || String(employee.MaNV || '') !== String(currentEmployee.MaNV || '');
-                            })
-                            .map(function (employee) {
-                                return String(employee.MaTK || '');
-                            })
-                    );
-
-                    const currentAccountId = currentEmployee && currentEmployee.MaTK !== undefined && currentEmployee.MaTK !== null
-                        ? String(currentEmployee.MaTK)
-                        : '';
-
-                    const availableAccounts = accounts.filter(function (account) {
-                        const accountId = String(account.MaTK || '');
-                        const accountType = Number(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : -1);
-                        const isEmployeeAccount = accountType !== 0;
-
-                        return isEmployeeAccount && (accountId === currentAccountId || !usedAccountIds.has(accountId));
-                    });
-
-                    employeeAccountInput.innerHTML = '<option value="">Không gắn tài khoản</option>' + availableAccounts.map(function (account) {
-                        const accountId = account && account.MaTK ? account.MaTK : '--';
-                        const accountEmail = account && account.Email ? account.Email : '--';
-                        return `<option value="${accountId}">${accountId} - ${accountEmail} (${mapAccountType(account.LoaiTaiKhoan)})</option>`;
-                    }).join('');
-
-                    if (currentAccountId) {
-                        employeeAccountInput.value = currentAccountId;
-                    }
-
-                    if (accountHint) {
-                        accountHint.textContent = availableAccounts.length
-                            ? 'Có thể bỏ trống hoặc chọn một tài khoản chưa được gắn cho nhân viên khác.'
-                            : 'Hiện chưa có tài khoản trống. Bạn vẫn có thể lưu nhân viên mà không gắn tài khoản.';
-                    }
-                };
-
                 const populateForm = function (employee) {
                     currentEmployee = employee;
                     employeeIdInput.value = employee && employee.MaNV ? employee.MaNV : '--';
                     employeeNameInput.value = employee && employee.TenNV ? employee.TenNV : '';
-                    renderAccountOptions();
-                };
-
-                const loadDependencies = async function () {
-                    const responses = await Promise.all([
-                        fetch(accountsUrl, { headers: { Accept: 'application/json' } }),
-                        fetch(employeesUrl, { headers: { Accept: 'application/json' } })
-                    ]);
-
-                    if (!responses[0].ok) {
-                        throw new Error('Không thể tải danh sách tài khoản.');
-                    }
-
-                    if (!responses[1].ok) {
-                        throw new Error('Không thể tải danh sách nhân viên.');
-                    }
-
-                    const accountPayload = await responses[0].json();
-                    accounts = Array.isArray(accountPayload && accountPayload.data) ? accountPayload.data : [];
-                    employees = await responses[1].json();
-
-                    renderAccountOptions();
+                    employeePositionInput.value = employee && employee.ChucVu !== undefined && employee.ChucVu !== null ? String(employee.ChucVu) : '';
                 };
 
                 const loadEmployee = async function () {
@@ -288,7 +204,7 @@
 
                         const payload = {
                             TenNV: employeeNameInput.value.trim(),
-                            MaTK: employeeAccountInput.value ? employeeAccountInput.value : null
+                            ChucVu: employeePositionInput.value || null
                         };
 
                         const requestUrl = isEdit
@@ -344,7 +260,6 @@
 
                 (async function init() {
                     try {
-                        await loadDependencies();
                         await loadEmployee();
                     } catch (error) {
                         setAlert('danger', error.message);

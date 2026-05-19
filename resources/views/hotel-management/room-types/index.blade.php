@@ -2,7 +2,6 @@
     title="Quản lý loại phòng"
     subtitle="Danh sách quản lý các loại phòng tại khách sạn"
     :create-route="route('hotel.room-types.create')"
-    :trash-route="route('hotel.room-types.trash')"
 >
     <style>
         .hm-room-type-table {
@@ -10,9 +9,19 @@
             width: 100%;
         }
 
+        .hm-room-type-table th:nth-child(2),
+        .hm-room-type-table td:nth-child(2) {
+            width: 24%;
+        }
+
         .hm-room-type-table th:nth-child(3),
         .hm-room-type-table td:nth-child(3) {
-            width: 42%;
+            width: 34%;
+        }
+
+        .hm-room-type-table th:nth-child(6),
+        .hm-room-type-table td:nth-child(6) {
+            width: 180px;
         }
 
         .hm-truncate-cell {
@@ -119,7 +128,11 @@
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${escapeHtml(roomType.MaLoaiPhong || '--')}</td>
-                                <td>${escapeHtml(roomType.TenLoaiPhong || '--')}</td>
+                                <td>
+                                    <div class="hm-truncate-cell" title="${escapeHtml(roomType.TenLoaiPhong || '--')}">
+                                        ${escapeHtml(roomType.TenLoaiPhong || '--')}
+                                    </div>
+                                </td>
                                 <td>
                                     <div class="hm-truncate-cell" title="${escapeHtml(roomType.Mota || '--')}">
                                         ${escapeHtml(roomType.Mota || '--')}
@@ -229,7 +242,18 @@
 
                     const roomTypeId = deleteButton.getAttribute('data-delete-room-type-id') || '';
 
-                    if (!roomTypeId || !window.confirm(`Xóa loại phòng ${roomTypeId}?`)) {
+                    if (!roomTypeId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa loại phòng?',
+                        message: 'Bạn muốn xóa loại phòng này?',
+                        recordLabel: 'Mã loại phòng: ' + roomTypeId,
+                        note: 'Tiện nghi sẽ được gỡ liên kết. Loại phòng đã có đặt phòng/lưu trú sẽ không thể xóa.',
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
@@ -254,8 +278,17 @@
                             return String(roomType.MaLoaiPhong || '') !== String(roomTypeId);
                         });
                         loadRoomTypes();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa loại phòng thành công.',
+                        });
                     } catch (error) {
-                        window.alert(error.message);
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
                     } finally {
                         deleteButton.disabled = originalDisabledState;
                     }

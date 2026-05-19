@@ -2,8 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Models\KhachHang;
-use App\Models\NhanVien;
+use App\Models\TaiKhoan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -41,12 +40,11 @@ class ManagedAccountRequest extends FormRequest
                         return;
                     }
 
-                    $customer = KhachHang::find($value);
-                    if (!$customer) {
-                        return;
-                    }
+                    $linkedAccount = TaiKhoan::where('MaKH', $value)
+                        ->when($accountId, fn ($query) => $query->where('MaTK', '!=', $accountId))
+                        ->exists();
 
-                    if ($customer->MaTK !== null && (string) $customer->MaTK !== (string) $accountId) {
+                    if ($linkedAccount) {
                         $fail('Khách hàng này đã được gắn với tài khoản khác.');
                     }
                 },
@@ -61,12 +59,11 @@ class ManagedAccountRequest extends FormRequest
                         return;
                     }
 
-                    $employee = NhanVien::find($value);
-                    if (!$employee) {
-                        return;
-                    }
+                    $linkedAccount = TaiKhoan::where('MaNV', $value)
+                        ->when($accountId, fn ($query) => $query->where('MaTK', '!=', $accountId))
+                        ->exists();
 
-                    if ($employee->MaTK !== null && (string) $employee->MaTK !== (string) $accountId) {
+                    if ($linkedAccount) {
                         $fail('Nhân viên này đã được gắn với tài khoản khác.');
                     }
                 },

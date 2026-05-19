@@ -3,7 +3,6 @@
     'subtitle',
     'createRoute' => null,
     'showCreateButton' => true,
-    'trashRoute' => null,
 ])
 
 <x-app-layout :assets="['animation']">
@@ -130,6 +129,162 @@
         .hm-clickable-row:hover > td {
             background: #fff7ed;
         }
+
+        .hm-dialog-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 1080;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(2px);
+        }
+
+        .hm-dialog-backdrop.is-visible {
+            display: flex;
+        }
+
+        .hm-dialog {
+            width: min(460px, 100%);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 28px 90px -32px rgba(15, 23, 42, 0.72);
+            overflow: hidden;
+        }
+
+        .hm-dialog__body {
+            display: grid;
+            grid-template-columns: 46px 1fr;
+            gap: 0.95rem;
+            padding: 1.35rem 1.35rem 0.8rem;
+        }
+
+        .hm-dialog__icon {
+            width: 42px;
+            height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .hm-dialog__icon svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+        .hm-dialog__title {
+            margin: 0 0 0.35rem;
+            font-size: 1.08rem;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .hm-dialog__message {
+            margin: 0;
+            color: #334155;
+            font-size: 0.95rem;
+            line-height: 1.45;
+        }
+
+        .hm-dialog__record {
+            display: none;
+            width: fit-content;
+            max-width: 100%;
+            margin-top: 0.75rem;
+            padding: 0.35rem 0.65rem;
+            border-radius: 999px;
+            background: #f1f5f9;
+            color: #334155;
+            font-size: 0.85rem;
+            font-weight: 700;
+            word-break: break-word;
+        }
+
+        .hm-dialog__record:not(:empty) {
+            display: inline-flex;
+        }
+
+        .hm-dialog__note {
+            display: none;
+            margin: 0.75rem 0 0;
+            color: #64748b;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .hm-dialog__note:not(:empty) {
+            display: block;
+        }
+
+        .hm-dialog__actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.6rem;
+            padding: 0.9rem 1.35rem 1.25rem;
+            background: #f8fafc;
+        }
+
+        .hm-dialog__actions .btn {
+            min-width: 76px;
+            border-radius: 7px;
+            padding: 0.48rem 0.9rem;
+            font-weight: 700;
+        }
+
+        @media (max-width: 420px) {
+            .hm-dialog__body {
+                grid-template-columns: 1fr;
+            }
+
+            .hm-dialog__actions {
+                flex-direction: column-reverse;
+            }
+
+            .hm-dialog__actions .btn {
+                width: 100%;
+            }
+        }
+
+        .hm-toast-stack {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1090;
+            display: grid;
+            gap: 0.7rem;
+            width: min(390px, calc(100vw - 2rem));
+        }
+
+        .hm-toast {
+            border-left: 4px solid #2563eb;
+            border-radius: 8px;
+            padding: 0.9rem 1rem;
+            background: #fff;
+            box-shadow: 0 18px 48px -26px rgba(15, 23, 42, 0.55);
+        }
+
+        .hm-toast--success { border-left-color: #16a34a; }
+        .hm-toast--danger { border-left-color: #dc2626; }
+        .hm-toast--warning { border-left-color: #d97706; }
+
+        .hm-toast__title {
+            margin: 0 0 0.2rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .hm-toast__message {
+            margin: 0;
+            color: #4b5563;
+            line-height: 1.45;
+        }
     </style>
 
     <div class="row">
@@ -145,17 +300,6 @@
                         @isset($headerActions)
                             {{ $headerActions }}
                         @endisset
-
-                        @if($trashRoute)
-                            <a href="{{ $trashRoute }}" class="btn btn-light btn-sm hm-icon-button" title="Lịch sử xóa" aria-label="Lịch sử xóa">
-                                <svg width="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 8V12L14.5 14.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C15.0481 3 17.7421 4.51684 19.3696 6.83739" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M21 4V8H17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
-                                </svg>
-                                Lịch sử xóa
-                            </a>
-                        @endif
 
                         @if($showCreateButton && $createRoute)
                             <a href="{{ $createRoute }}" class="btn btn-primary btn-sm hm-create-button" style="padding: 10px;">
@@ -214,6 +358,32 @@
             </div>
         </div>
     </div>
+
+    <div class="hm-dialog-backdrop" data-hm-confirm-dialog aria-hidden="true">
+        <div class="hm-dialog" role="dialog" aria-modal="true" aria-labelledby="hm-confirm-title">
+            <div class="hm-dialog__body">
+                <div class="hm-dialog__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <path d="M12 9V13" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                        <path d="M12 17H12.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"></path>
+                        <path d="M10.29 4.86L2.82 18C2.06 19.33 3.02 21 4.55 21H19.45C20.98 21 21.94 19.33 21.18 18L13.71 4.86C12.95 3.52 11.05 3.52 10.29 4.86Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h5 class="hm-dialog__title" id="hm-confirm-title" data-hm-confirm-title>Xác nhận xóa</h5>
+                    <p class="hm-dialog__message" data-hm-confirm-message></p>
+                    <div class="hm-dialog__record" data-hm-confirm-record></div>
+                    <p class="hm-dialog__note" data-hm-confirm-note></p>
+                </div>
+            </div>
+            <div class="hm-dialog__actions">
+                <button type="button" class="btn btn-light btn-sm" data-hm-confirm-cancel>Hủy</button>
+                <button type="button" class="btn btn-danger btn-sm" data-hm-confirm-ok>Xóa</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="hm-toast-stack" data-hm-toast-stack></div>
 
     @push('scripts')
         <script>
@@ -366,6 +536,94 @@
                 };
             }
 
+            if (typeof window.hmShowToast !== 'function') {
+                window.hmShowToast = function (options) {
+                    const settings = options || {};
+                    const stack = document.querySelector('[data-hm-toast-stack]');
+
+                    if (!stack) {
+                        return;
+                    }
+
+                    const type = settings.type || 'success';
+                    const toast = document.createElement('div');
+                    const toastTitle = document.createElement('div');
+                    const toastMessage = document.createElement('p');
+                    toast.className = `hm-toast hm-toast--${type}`;
+                    toastTitle.className = 'hm-toast__title';
+                    toastMessage.className = 'hm-toast__message';
+                    toastTitle.textContent = settings.title || 'Thông báo';
+                    toastMessage.textContent = settings.message || '';
+                    toast.appendChild(toastTitle);
+                    toast.appendChild(toastMessage);
+
+                    stack.appendChild(toast);
+                    window.setTimeout(function () {
+                        toast.remove();
+                    }, Number(settings.duration || 4500));
+                };
+            }
+
+            if (typeof window.hmConfirmDeletion !== 'function') {
+                window.hmConfirmDeletion = function (options) {
+                    const settings = options || {};
+                    const dialog = document.querySelector('[data-hm-confirm-dialog]');
+                    const title = dialog ? dialog.querySelector('[data-hm-confirm-title]') : null;
+                    const message = dialog ? dialog.querySelector('[data-hm-confirm-message]') : null;
+                    const record = dialog ? dialog.querySelector('[data-hm-confirm-record]') : null;
+                    const note = dialog ? dialog.querySelector('[data-hm-confirm-note]') : null;
+                    const okButton = dialog ? dialog.querySelector('[data-hm-confirm-ok]') : null;
+                    const cancelButton = dialog ? dialog.querySelector('[data-hm-confirm-cancel]') : null;
+
+                    if (!dialog || !okButton || !cancelButton) {
+                        return Promise.resolve(false);
+                    }
+
+                    title.textContent = settings.title || 'Xác nhận xóa';
+                    message.textContent = settings.message || 'Bạn có chắc chắn muốn xóa mục này?';
+                    if (record) {
+                        record.textContent = settings.recordLabel || '';
+                    }
+                    if (note) {
+                        note.textContent = settings.note || '';
+                    }
+                    okButton.textContent = settings.confirmText || 'Xóa';
+                    dialog.classList.add('is-visible');
+                    dialog.setAttribute('aria-hidden', 'false');
+                    okButton.focus();
+
+                    return new Promise(function (resolve) {
+                        const close = function (result) {
+                            dialog.classList.remove('is-visible');
+                            dialog.setAttribute('aria-hidden', 'true');
+                            okButton.removeEventListener('click', onOk);
+                            cancelButton.removeEventListener('click', onCancel);
+                            dialog.removeEventListener('click', onBackdrop);
+                            document.removeEventListener('keydown', onKeydown);
+                            resolve(result);
+                        };
+
+                        const onOk = function () { close(true); };
+                        const onCancel = function () { close(false); };
+                        const onBackdrop = function (event) {
+                            if (event.target === dialog) {
+                                close(false);
+                            }
+                        };
+                        const onKeydown = function (event) {
+                            if (event.key === 'Escape') {
+                                close(false);
+                            }
+                        };
+
+                        okButton.addEventListener('click', onOk);
+                        cancelButton.addEventListener('click', onCancel);
+                        dialog.addEventListener('click', onBackdrop);
+                        document.addEventListener('keydown', onKeydown);
+                    });
+                };
+            }
+
             document.addEventListener('DOMContentLoaded', function () {
                 document.addEventListener('click', function (event) {
                     const row = event.target && event.target.closest ? event.target.closest('[data-hm-row-link]') : null;
@@ -403,14 +661,6 @@
                     }
                 });
 
-                document.addEventListener('submit', function (event) {
-                    if (!event.target || !event.target.matches('.js-confirm-delete')) {
-                        return;
-                    }
-
-                    event.preventDefault();
-                    window.confirm('Đây là giao diện tĩnh, chưa có thao tác xóa thật.');
-                });
             });
         </script>
     @endpush

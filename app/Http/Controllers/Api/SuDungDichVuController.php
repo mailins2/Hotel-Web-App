@@ -66,13 +66,13 @@ class SuDungDichVuController extends Controller
             'ThoiGian' => 'nullable|date',
             'MaDV' => [
                 'required_without:items',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+                Rule::exists('DichVu', 'MaDV'),
             ],
             'SoLuong' => 'required_without:items|integer|min:1',
             'items' => 'sometimes|array|min:1',
             'items.*.MaDV' => [
                 'required',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+                Rule::exists('DichVu', 'MaDV'),
             ],
             'items.*.SoLuong' => 'required|integer|min:1',
         ]);
@@ -167,7 +167,6 @@ class SuDungDichVuController extends Controller
                 if ($hoaDon->MaKM) {
                     $discountRate = (float) DB::table('KhuyenMai')
                         ->where('MaKM', $hoaDon->MaKM)
-                        ->whereNull('deleted_at')
                         ->value('PhanTramGiamGia');
                 }
 

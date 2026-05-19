@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\TaiKhoan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,12 +16,23 @@ class ManagedCustomerRequest extends FormRequest
     public function rules(): array
     {
         $recordId = $this->route('recordId');
+        $minimumBirthDate = now()->subYears(18)->toDateString();
 
         return [
             'account_id' => [
                 'nullable',
                 'exists:TaiKhoan,MaTK',
-                Rule::unique('KhachHang', 'MaTK')->ignore($recordId, 'MaKH'),
+                function ($attribute, $value, $fail) use ($recordId) {
+                    if (!$value) {
+                        return;
+                    }
+
+                    $account = TaiKhoan::find($value);
+
+                    if ($account && $account->MaKH && (string) $account->MaKH !== (string) $recordId) {
+                        $fail('Tài khoản này đã được gắn cho khách hàng khác.');
+                    }
+                },
             ],
             'full_name' => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL\s]+$/u'],
             'gender' => ['required', 'in:0,1,2'],
@@ -30,15 +42,15 @@ class ManagedCustomerRequest extends FormRequest
                 Rule::unique('KhachHang', 'SoDienThoai')->ignore($recordId, 'MaKH'),
             ],
             'cccd' => [
-                'required',
+                'nullable',
                 'regex:/^[0-9]{12}$/',
                 Rule::unique('KhachHang', 'CCCD')->ignore($recordId, 'MaKH'),
             ],
-            'birthday' => ['required', 'date', 'before_or_equal:today'],
+            'birthday' => ['required', 'date', 'before_or_equal:' . $minimumBirthDate],
             'province' => ['nullable', 'string'],
             'district' => ['nullable', 'string'],
             'address_line' => ['nullable', 'string', 'min:4', 'max:120', 'regex:/^[0-9\pL\s.\/,\-]+$/u'],
-            'address' => ['nullable', 'string', 'max:255'],
+            'address' => ['nullable', 'string', 'max:200'],
         ];
     }
 
@@ -61,11 +73,11 @@ class ManagedCustomerRequest extends FormRequest
             'cccd.unique' => 'CCCD đã được sử dụng.',
             'birthday.required' => 'Vui lòng chọn ngày sinh.',
             'birthday.date' => 'Ngày sinh không hợp lệ.',
-            'birthday.before_or_equal' => 'Ngày sinh không được lớn hơn ngày hiện tại.',
+            'birthday.before_or_equal' => 'Khách hàng phải đủ 18 tuổi.',
             'address_line.min' => 'Số nhà và tên đường phải có ít nhất 4 ký tự.',
             'address_line.max' => 'Số nhà và tên đường không được vượt quá 120 ký tự.',
             'address_line.regex' => 'Số nhà và tên đường chỉ được gồm chữ, số và ký tự . / , -',
-            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
+            'address.max' => 'Địa chỉ không được vượt quá 200 ký tự.',
         ];
     }
 }

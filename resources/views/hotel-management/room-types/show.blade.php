@@ -56,6 +56,7 @@
     <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold hm-room-type-description">{{ $roomType->Mota ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người lớn</div><div class="fw-semibold">{{ $roomType->NguoiLon ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trẻ em</div><div class="fw-semibold">{{ $roomType->TreEm ?? 0 }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã khuyến mãi</div><div class="fw-semibold">{{ $roomType->MaKM ?: 'chưa có khuyến mãi' }}</div></div></div>
     <div class="col-md-12 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-3">Tiện nghi phòng</div>

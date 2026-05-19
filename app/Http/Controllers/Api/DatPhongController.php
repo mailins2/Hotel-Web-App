@@ -137,7 +137,6 @@ class DatPhongController extends Controller
 
                 $availableRooms = DB::table('Phong as p')
                     ->where('p.MaLoaiPhong', $maLoaiPhong)
-                    ->whereNull('p.deleted_at')
                     ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                         $query->select(DB::raw(1))
                             ->from('ChiTietDatPhong as ctdp')
@@ -190,7 +189,6 @@ class DatPhongController extends Controller
         // Láº¥y phÃ²ng trá»‘ng vá»›i FOR UPDATE
         $availableRooms = DB::table('Phong as p')
             ->where('p.MaLoaiPhong', $maLoaiPhong)
-            ->whereNull('p.deleted_at')
             ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                 $query->select(DB::raw(1))
                     ->from('ChiTietDatPhong as ctdp')
@@ -255,7 +253,7 @@ class DatPhongController extends Controller
                 'LoaiPhongs' => 'required|array|min:1',
                 'LoaiPhongs.*.MaLoaiPhong' => [
                     'required',
-                    Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                    Rule::exists('LoaiPhong', 'MaLoaiPhong'),
                 ],
                 'LoaiPhongs.*.SoLuong' => 'required|integer|min:1',
             ], [
@@ -282,7 +280,7 @@ class DatPhongController extends Controller
             'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
             'MaLoaiPhong' => [
                 'required',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
             'SoLuong' => 'required|integer|min:1'
         ], [
@@ -447,7 +445,7 @@ class DatPhongController extends Controller
         $data = $request->validate([
             'MaPhong' => [
                 'required',
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
             'KhachLuuTru' => ['required', 'array', 'min:1'],
             'KhachLuuTru.*.TenKhach' => ['nullable', 'string', 'max:100'],
@@ -648,14 +646,12 @@ class DatPhongController extends Controller
             'oldPhong' => 'required|exists:Phong,MaPhong',
             'newPhong' => [
                 'required',
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
         ]);
 
         if (!Phong::where('MaPhong', $request->newPhong)
-            ->whereHas('loaiPhong', function ($query) {
-                $query->whereNull('LoaiPhong.deleted_at');
-            })
+            ->whereHas('loaiPhong')
             ->exists()) {
             return $this->error('PhÃƒÂ²ng mÃ¡Â»â€ºi khÃƒÂ´ng khÃ¡ÂºÂ£ dÃ¡Â»Â¥ng', 422);
         }
@@ -709,14 +705,12 @@ class DatPhongController extends Controller
         $request->validate([
             'MaPhong' => [
                 'required',
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
         ]);
 
         if (!Phong::where('MaPhong', $request->MaPhong)
-            ->whereHas('loaiPhong', function ($query) {
-                $query->whereNull('LoaiPhong.deleted_at');
-            })
+            ->whereHas('loaiPhong')
             ->exists()) {
             return $this->error('PhÃƒÂ²ng khÃƒÂ´ng khÃ¡ÂºÂ£ dÃ¡Â»Â¥ng', 422);
         }

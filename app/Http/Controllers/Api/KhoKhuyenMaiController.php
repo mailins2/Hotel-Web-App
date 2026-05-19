@@ -14,9 +14,7 @@ class KhoKhuyenMaiController extends Controller
     public function index()
     {
         $kho = KhoKhuyenMai::with(['khachHang', 'khuyenMai'])
-            ->whereHas('khuyenMai', function ($query) {
-                $query->whereNull('KhuyenMai.deleted_at');
-            })
+            ->whereHas('khuyenMai')
             ->get();
         return response()->json($kho, 200);
     }
@@ -29,7 +27,7 @@ class KhoKhuyenMaiController extends Controller
                 'required',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
             'MaKH' => 'required|exists:KhachHang,MaKH',
             'TrangThai' => 'nullable|integer|in:0,1' // 0: Chưa dùng, 1: Đã dùng
@@ -57,9 +55,7 @@ class KhoKhuyenMaiController extends Controller
     public function showByKhachHang($maKH)
     {
         $danhSach = KhoKhuyenMai::with('khuyenMai')
-            ->whereHas('khuyenMai', function ($query) {
-                $query->whereNull('KhuyenMai.deleted_at');
-            })
+            ->whereHas('khuyenMai')
             ->where('MaKH', $maKH)
             ->get();
 

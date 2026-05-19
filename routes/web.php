@@ -329,7 +329,6 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
             'amenities' => $amenities,
         ]);
     })->name('room-amenities.index');
-    Route::view('/room-amenities/trash', 'hotel-management.room-amenities.trash')->name('room-amenities.trash');
     Route::view('/room-amenities/create', 'hotel-management.room-amenities.form')->name('room-amenities.create');
     Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
     Route::view('/room-amenities/{recordId}/assign', 'hotel-management.room-amenities.assign')->name('room-amenities.assign');
@@ -355,7 +354,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         Route::get('/{recordId}', function ($recordId) {
             $booking = DatPhong::with([
                 'khachHang.taiKhoan',
-                'chiTietDatPhong.phong.loaiPhong.bangGias',
+                'chiTietDatPhong.phong.loaiPhong.khuyenMai',
                 'hoaDon.thanhToans',
                 'hoaDon.khuyenMai',
             ])->findOrFail($recordId);
@@ -447,7 +446,6 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
 
                 return view($viewBase . '.index', $viewData);
             })->name('index');
-            Route::view('/trash', $viewBase . '.trash')->name('trash');
             Route::view('/create', $viewBase . '.form')->name('create');
             Route::view('/{recordId}/edit', $viewBase . '.form')->name('edit');
             if ($module === 'services') {

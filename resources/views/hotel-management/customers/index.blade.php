@@ -33,6 +33,7 @@
         id="customer-index-config"
         data-show-url-template="{{ route('hotel.customers.show', ['recordId' => '__CUSTOMER_ID__']) }}"
         data-edit-url-template="{{ route('hotel.customers.edit', ['recordId' => '__CUSTOMER_ID__']) }}"
+        data-delete-url-template="{{ url('/api/khach-hang/__CUSTOMER_ID__') }}"
         hidden
     ></div>
 
@@ -47,6 +48,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
+                const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
                 let customers = @json($customers ?? []);
 
@@ -118,6 +120,17 @@
                                                 </svg>
                                             </span>
                                         </a>
+                                        <button type="button" class="btn btn-sm btn-danger btn-icon" title="Xóa" data-delete-customer-id="${customer.MaKH || ''}">
+                                            <span class="btn-inner">
+                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                    <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                    <path d="M9 7V4.8C9 4.35817 9.35817 4 9.8 4H14.2C14.6418 4 15 4.35817 15 4.8V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                    <path d="M10 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                    <path d="M14 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                </svg>
+                                            </span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -172,6 +185,68 @@
                         applyFilters();
                     });
                 }
+
+                document.addEventListener('click', async function (event) {
+                    const deleteButton = event.target && event.target.closest
+                        ? event.target.closest('[data-delete-customer-id]')
+                        : null;
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const customerId = deleteButton.getAttribute('data-delete-customer-id') || '';
+                    if (!customerId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa khách hàng?',
+                        message: 'Bạn muốn xóa khách hàng này?',
+                        recordLabel: 'Mã khách hàng: ' + customerId,
+                        note: 'Khách đã có đơn đặt phòng sẽ không thể xóa.',
+                    });
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(deleteUrlTemplate.replace('__CUSTOMER_ID__', encodeURIComponent(customerId)), {
+                            method: 'DELETE',
+                            headers: { Accept: 'application/json' }
+                        });
+                        const payload = await response.json().catch(function () { return {}; });
+
+                        if (!response.ok || payload.success === false) {
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể xóa khách hàng.');
+                        }
+
+                        customers = customers.filter(function (customer) {
+                            return String(customer.MaKH || '') !== String(customerId);
+                        });
+
+                        loadCustomers();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa khách hàng thành công.',
+                        });
+                    } catch (error) {
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
+                    } finally {
+                        deleteButton.disabled = false;
+                    }
+                });
 
                 loadCustomers();
             });

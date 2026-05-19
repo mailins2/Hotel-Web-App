@@ -5,12 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\NhanVien;
 use App\Models\TaiKhoan;
+use App\Services\Guards\NhanVienDeletionGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class NhanVienController extends Controller
 {
+    public function __construct(
+        private NhanVienDeletionGuard $guard
+    ) {
+    }
+
     public function index()
     {
         return response()->json(NhanVien::with('taiKhoan')->get(), 200);
@@ -64,7 +70,7 @@ class NhanVienController extends Controller
 
     public function update(Request $request, $id)
     {
-        $nhanVien = NhanVien::find($id);
+        $nhanVien = NhanVien::with('taiKhoan')->find($id);
 
         if (!$nhanVien) {
             return response()->json(['message' => 'Không tìm thấy nhân viên'], 404);
@@ -108,14 +114,31 @@ class NhanVienController extends Controller
 
     public function destroy($id)
     {
-        $nhanVien = NhanVien::find($id);
+        $nhanVien = NhanVien::with('taiKhoan')->find($id);
 
         if (!$nhanVien) {
             return response()->json(['message' => 'Không tìm thấy nhân viên'], 404);
         }
+        $decision = $this->guard->resolveAction($nhanVien);
 
-        $nhanVien->delete();
+        if (($decision['action'] ?? 'delete') === 'deactivate') {
+            TaiKhoan::where('MaNV', $nhanVien->MaNV)->update(['TrangThai' => 0]);
 
-        return response()->json(['message' => 'Đã xóa nhân viên'], 200);
+            return response()->json([
+                'message' => $decision['message'],
+                'action' => 'deactivated',
+                'data' => $nhanVien->fresh('taiKhoan'),
+            ], 200);
+        }
+
+        DB::transaction(function () use ($nhanVien) {
+            TaiKhoan::where('MaNV', $nhanVien->MaNV)->update(['MaNV' => null]);
+            $nhanVien->delete();
+        });
+
+        return response()->json([
+            'message' => 'Đã xóa nhân viên',
+            'action' => 'deleted',
+        ], 200);
     }
 }

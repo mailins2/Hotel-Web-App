@@ -10,11 +10,13 @@
         <label class="form-label">Mã khuyến mãi</label>
         <input
             type="text"
-            class="form-control hm-readonly-input"
+            class="form-control"
             id="promotion-id"
-            value="--"
-            readonly
+            maxlength="10"
+            placeholder="Nhập mã khuyến mãi"
+            required
         >
+        <div class="invalid-feedback" id="promotion-id-error"></div>
     </div>
 
     <div class="form-group col-md-6">
@@ -117,7 +119,6 @@
                 const indexUrl = config ? config.dataset.indexUrl : '';
 
                 const alertBox = document.getElementById('promotion-form-alert');
-                const promotionIdGroup = document.getElementById('promotion-id-group');
                 const promotionIdInput = document.getElementById('promotion-id');
                 const promotionNameInput = document.getElementById('promotion-name');
                 const promotionDescriptionInput = document.getElementById('promotion-description');
@@ -147,6 +148,7 @@
 
                 const clearFieldErrors = function () {
                     [
+                        ['promotion-id', promotionIdInput],
                         ['promotion-name', promotionNameInput],
                         ['promotion-description', promotionDescriptionInput],
                         ['promotion-points', promotionPointsInput],
@@ -171,6 +173,7 @@
 
                 const setFieldError = function (fieldName, message) {
                     const keyMap = {
+                        MaKM: 'promotion-id',
                         TenKM: 'promotion-name',
                         MoTa: 'promotion-description',
                         Diem: 'promotion-points',
@@ -218,6 +221,15 @@
                     const startValue = promotionStartInput.value;
                     const endValue = promotionEndInput.value;
                     const discountValue = Number(promotionDiscountInput.value);
+                    const promotionIdValue = promotionIdInput.value.trim();
+
+                    if (!isEdit && !promotionIdValue) {
+                        setFieldError('MaKM', 'Vui lòng nhập mã khuyến mãi.');
+                        isValid = false;
+                    } else if (!isEdit && promotionIdValue.length > 10) {
+                        setFieldError('MaKM', 'Mã khuyến mãi tối đa 10 ký tự.');
+                        isValid = false;
+                    }
 
                     if (!promotionNameInput.value.trim()) {
                         setFieldError('TenKM', 'Vui lòng nhập tên chương trình.');
@@ -264,7 +276,7 @@
                 };
 
                 const populateForm = function (promotion) {
-                    promotionIdInput.value = promotion && promotion.MaKM ? promotion.MaKM : '--';
+                    promotionIdInput.value = promotion && promotion.MaKM ? promotion.MaKM : '';
                     promotionNameInput.value = promotion && promotion.TenKM ? promotion.TenKM : '';
                     promotionDescriptionInput.value = promotion && promotion.MoTa ? promotion.MoTa : '';
                     promotionPointsInput.value = promotion && promotion.Diem !== undefined && promotion.Diem !== null ? promotion.Diem : 0;
@@ -302,8 +314,14 @@
                     populateForm(payload.data || null);
                 };
 
-                if (promotionIdGroup) {
-                    promotionIdGroup.style.display = isEdit ? '' : 'none';
+                if (promotionIdInput) {
+                    promotionIdInput.readOnly = isEdit;
+                    promotionIdInput.classList.toggle('hm-readonly-input', isEdit);
+                    if (isEdit) {
+                        promotionIdInput.placeholder = '';
+                    } else {
+                        promotionIdInput.placeholder = 'Nhập mã khuyến mãi';
+                    }
                 }
 
                 if (form) {
@@ -323,6 +341,10 @@
                             PhanTramGiamGia: Number(promotionDiscountInput.value),
                             LoaiKM: Number(promotionTypeInput.value)
                         };
+
+                        if (!isEdit) {
+                            payload.MaKM = promotionIdInput.value.trim();
+                        }
 
                         const requestUrl = isEdit
                             ? detailUrlTemplate.replace('__PROMOTION_ID__', promotionId)

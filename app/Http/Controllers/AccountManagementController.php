@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Api\TaiKhoanController;
 use App\Http\Requests\ManagedAccountRequest;
-use App\Models\KhachHang;
-use App\Models\NhanVien;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,12 +20,6 @@ class AccountManagementController extends Controller
             );
 
             $account = $this->extractAccountFromResponse($response);
-            $this->syncLinkedRecord(
-                (int) $account['MaTK'],
-                (int) $payload['LoaiTaiKhoan'],
-                $request->integer('customer_id'),
-                $request->integer('employee_id')
-            );
 
             return response()->json([
                 'message' => 'Tạo tài khoản thành công.',
@@ -46,12 +38,6 @@ class AccountManagementController extends Controller
             );
 
             $account = $this->extractAccountFromResponse($response);
-            $this->syncLinkedRecord(
-                (int) $recordId,
-                (int) $payload['LoaiTaiKhoan'],
-                $request->filled('customer_id') ? $request->integer('customer_id') : null,
-                $request->filled('employee_id') ? $request->integer('employee_id') : null
-            );
 
             return response()->json([
                 'message' => 'Cập nhật tài khoản thành công.',
@@ -66,6 +52,8 @@ class AccountManagementController extends Controller
             'Email' => $validated['Email'],
             'LoaiTaiKhoan' => $validated['LoaiTaiKhoan'],
             'TrangThai' => $validated['TrangThai'],
+            'MaKH' => (int) $validated['LoaiTaiKhoan'] === 0 ? ($validated['customer_id'] ?? null) : null,
+            'MaNV' => (int) $validated['LoaiTaiKhoan'] === 0 ? null : ($validated['employee_id'] ?? null),
         ];
 
         if (!$isEdit || !empty($validated['MatKhau'])) {
@@ -108,32 +96,6 @@ class AccountManagementController extends Controller
         }
 
         return $payload['data'] ?? [];
-    }
-
-    private function syncLinkedRecord(int $accountId, int $accountType, ?int $customerId, ?int $employeeId): void
-    {
-        KhachHang::query()->where('MaTK', $accountId)->update(['MaTK' => null]);
-        NhanVien::query()->where('MaTK', $accountId)->update(['MaTK' => null]);
-
-        if ($accountType === 0) {
-            if ($customerId === null) {
-                return;
-            }
-
-            KhachHang::query()
-                ->where('MaKH', $customerId)
-                ->update(['MaTK' => $accountId]);
-
-            return;
-        }
-
-        if ($employeeId === null) {
-            return;
-        }
-
-        NhanVien::query()
-            ->where('MaNV', $employeeId)
-            ->update(['MaTK' => $accountId]);
     }
 
     private function reloadAccount(int $accountId)
