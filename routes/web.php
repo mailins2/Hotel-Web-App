@@ -429,7 +429,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'promotions' => KhuyenMai::orderByDesc('MaKM')->get(),
                     ],
                     'invoices' => [
-                        'invoices' => HoaDon::with('nhanVien')
+                        'invoices' => HoaDon::with(['nhanVien', 'datPhong.khachHang'])
                             ->orderByDesc('MaHD')
                             ->get(),
                     ],

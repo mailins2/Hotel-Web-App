@@ -6,7 +6,7 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã, tên, số điện thoại" data-customer-search>
+            <input type="text" class="form-control" placeholder="Tìm theo tên, số điện thoại" data-customer-search>
         </div>
     </x-slot:filters>
 
@@ -151,8 +151,6 @@
 
                     const filtered = customers.filter(function (customer) {
                         const matchesKeyword = !keyword
-                            || String(customer && customer.MaKH ? customer.MaKH : '').toLowerCase().includes(keyword)
-                            || String(getAccountId(customer)).toLowerCase().includes(keyword)
                             || String(customer && customer.TenKH ? customer.TenKH : '').toLowerCase().includes(keyword)
                             || String(customer && customer.SoDienThoai ? customer.SoDienThoai : '').toLowerCase().includes(keyword);
                         return matchesKeyword;
@@ -174,7 +172,21 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
                 }
 
                 if (resetButton) {

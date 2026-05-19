@@ -5,8 +5,8 @@
 >
     <x-slot:filters>
         <div class="col-md-3">
-            <label class="form-label">Số phòng</label>
-            <input type="text" class="form-control" placeholder="Ví dụ: A101" data-room-search>
+            <label class="form-label">Tìm kiếm</label>
+            <input type="text" class="form-control" placeholder="Tìm theo số phòng, loại phòng" data-room-search>
         </div>
         <div class="col-md-3">
             <label class="form-label">Tình trạng</label>
@@ -162,7 +162,6 @@
                         const roomType = room && room.loai_phong ? room.loai_phong : null;
                         const matchesKeyword = !keyword
                             || String(room && room.SoPhong ? room.SoPhong : '').toLowerCase().includes(keyword)
-                            || String(room && room.MaPhong ? room.MaPhong : '').toLowerCase().includes(keyword)
                             || String(roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : '').toLowerCase().includes(keyword);
 
                         const matchesStatus = statusValue === ''
@@ -187,7 +186,25 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {

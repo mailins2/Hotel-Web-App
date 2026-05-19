@@ -6,7 +6,7 @@
     <x-slot:filters>
         <div class="col-lg-4">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã đặt, tên khách hàng" data-booking-search>
+            <input type="text" class="form-control" placeholder="Tìm theo mã đặt, tên khách hàng, SĐT" data-booking-search>
         </div>
         <div class="col-md-4 col-lg-3">
             <label class="form-label">Tình trạng</label>
@@ -128,6 +128,11 @@
                     return customer && customer.TenKH ? customer.TenKH : '--';
                 };
 
+                const getCustomerPhone = function (booking) {
+                    const customer = getRelation(booking, 'khachHang', 'khach_hang');
+                    return customer && customer.SoDienThoai ? customer.SoDienThoai : '';
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có đặt phòng phù hợp.</td></tr>';
@@ -168,8 +173,8 @@
                         const customerName = getCustomerName(booking);
                         const matchesKeyword = !keyword
                             || String(booking && booking.MaDatPhong ? booking.MaDatPhong : '').toLowerCase().includes(keyword)
-                            || String(booking && booking.MaKH ? booking.MaKH : '').toLowerCase().includes(keyword)
-                            || String(customerName).toLowerCase().includes(keyword);
+                            || String(customerName).toLowerCase().includes(keyword)
+                            || String(getCustomerPhone(booking)).toLowerCase().includes(keyword);
 
                         const matchesStatus = statusValue === ''
                             || String(booking && booking.TinhTrang !== undefined ? booking.TinhTrang : '') === statusValue;
@@ -193,7 +198,25 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
