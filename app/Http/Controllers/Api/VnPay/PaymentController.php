@@ -138,6 +138,58 @@ class PaymentController extends Controller
         ]);
     }
 
+    // public function return(Request $request)
+    // {
+    //     $data = $request->query();
+    //     $txnRef = $data['vnp_TxnRef'] ?? null;
+    //     $mapping = $txnRef ? Cache::get("vnpay:txn:{$txnRef}") : null;
+    //     $redirectUrl = $mapping['redirect_url'] ?? url('/customer');
+    //     $status = 'failed';
+
+    //     if (config('services.vnpay.hash_secret') && !$this->isValidSignature($data, config('services.vnpay.hash_secret'))) {
+    //         return redirect()->to($redirectUrl . (str_contains($redirectUrl, '?') ? '&' : '?') . 'vnpay=invalid');
+    //     }
+
+    //     $isSuccessful = ($data['vnp_ResponseCode'] ?? null) === '00'
+    //         && (!isset($data['vnp_TransactionStatus']) || $data['vnp_TransactionStatus'] === '00');
+
+    //     if ($isSuccessful) {
+    //         if (!$txnRef || !$mapping || empty($mapping['dat_phong_ids'])) {
+    //             $status = 'missing_order';
+    //         } elseif ((int) ($data['vnp_Amount'] ?? 0) !== (int) (($mapping['amount'] ?? 0) * 100)) {
+    //             $status = 'amount_mismatch';
+    //         } else {
+    //             try {
+    //                 if (empty($mapping['paid'])) {
+    //                     $this->confirmBookings($mapping, $data, $txnRef);
+
+    //                     Cache::put("vnpay:txn:{$txnRef}", array_merge($mapping, [
+    //                         'paid' => true,
+    //                         'paid_at' => now()->toDateTimeString(),
+    //                     ]), now()->addHours(2));
+    //                 }
+
+    //                 $status = 'success';
+    //             } catch (\Throwable $e) {
+    //                 Log::error('VNPAY return confirm booking failed', [
+    //                     'txn_ref' => $txnRef,
+    //                     'message' => $e->getMessage(),
+    //                 ]);
+
+    //                 $status = 'confirm_failed';
+    //             }
+    //         }
+    //     }
+
+    //     $separator = str_contains($redirectUrl, '?') ? '&' : '?';
+    //     $query = http_build_query([
+    //         'vnpay' => $status,
+    //         'txn_ref' => $txnRef,
+    //     ]);
+
+    //     return redirect()->to($redirectUrl . $separator . $query);
+    // }
+    //==================
     public function return(Request $request)
     {
         $data = $request->query();
@@ -181,13 +233,19 @@ class PaymentController extends Controller
             }
         }
 
-        $separator = str_contains($redirectUrl, '?') ? '&' : '?';
+        // ✅ Tạo query string
         $query = http_build_query([
             'vnpay' => $status,
             'txn_ref' => $txnRef,
         ]);
 
-        return redirect()->to($redirectUrl . $separator . $query);
+        // ✅ Trả về trang web có script tự mở app
+        return view('payment.vnpay-result', [
+            'status' => $status,
+            'txnRef' => $txnRef,
+            'redirectUrl' => $redirectUrl . '?' . $query,
+            'deepLink' => 'peachvalley://vnpay-result?status=' . $status . '&txn_ref=' . $txnRef,
+        ]);
     }
 
     private function confirmBookings(array $mapping, array $data, string $txnRef): void

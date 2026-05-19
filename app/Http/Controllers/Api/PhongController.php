@@ -8,7 +8,7 @@ use App\Models\Phong;
 use App\Services\Guards\PhongDeletionGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class PhongController extends Controller
 {
@@ -26,14 +26,15 @@ class PhongController extends Controller
         ], $code)->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
     }
 
-    private function error(string $message = 'Error', int $code = 400)
+    private function error($message = 'Error', $code = 400)
     {
         return response()->json([
             'success' => false,
-            'message' => $message,
+            'message' => $message
         ], $code);
     }
 
+    // GET /api/phong
     public function index(Request $request)
     {
         $today = Carbon::today()->toDateString();
@@ -114,6 +115,7 @@ class PhongController extends Controller
             ?->datPhong;
     }
 
+    // POST /api/phong
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -130,6 +132,7 @@ class PhongController extends Controller
         return $this->success($phong, 'Tạo phòng thành công', 201);
     }
 
+    // GET /api/phong/{id}
     public function show($id)
     {
         $today = Carbon::today()->toDateString();
@@ -162,6 +165,7 @@ class PhongController extends Controller
         return $this->success($phong, 'Lấy chi tiết phòng thành công');
     }
 
+    // PUT /api/phong/{id}
     public function update(Request $request, $id)
     {
         $phong = Phong::find($id);
@@ -184,6 +188,7 @@ class PhongController extends Controller
         return $this->success($phong, 'Cập nhật phòng thành công');
     }
 
+    // DELETE /api/phong/{id}
     public function destroy($id)
     {
         $phong = Phong::find($id);
@@ -201,61 +206,140 @@ class PhongController extends Controller
 
         return $this->success(null, 'Xóa phòng thành công');
     }
+    //=============================================================================
+    // kiểm tra phòng trống và số lượng người ở 
+    //GET /api/phong/tim-kiem?checkIn=2026-04-25&checkOut=2026-04-27&NguoiLon=2&TreEm=1
 
-    public function timKiemPhong(Request $request)
-    {
-        $data = $request->validate([
-            'checkIn' => 'required|date|after_or_equal:today',
-            'checkOut' => 'required|date|after:checkIn',
-            'soNguoi' => 'sometimes|integer|min:1',
-            'NguoiLon' => 'required_without:soNguoi|integer|min:1',
-            'TreEm' => 'sometimes|integer|min:0',
-            'SoPhong' => 'sometimes|integer|min:1',
-        ]);
+     public function timKiemPhong(Request $request)
+{
+    // Validate
+    $data = $request->validate([
+        'checkIn' => 'required|date|after_or_equal:today',
+        'checkOut' => 'required|date|after:checkIn',
+        'soNguoi' => 'sometimes|integer|min:1',
+        'NguoiLon' => 'required_without:soNguoi|integer|min:1',
+        'TreEm' => 'sometimes|integer|min:0',
+        'SoPhong' => 'sometimes|integer|min:1',
+    ]);
 
-        $checkIn = $data['checkIn'];
-        $checkOut = $data['checkOut'];
-        $nguoiLon = $data['NguoiLon'] ?? $data['soNguoi'];
-        $treEm = $data['TreEm'] ?? 0;
-        $soPhong = $data['SoPhong'] ?? 1;
-        $tongKhach = $nguoiLon + $treEm;
+    $checkIn = $data['checkIn'];
+    $checkOut = $data['checkOut'];
+    $nguoiLon = $data['NguoiLon'] ?? $data['soNguoi'];
+    $treEm = $data['TreEm'] ?? 0;
+    $soPhong = $data['SoPhong'] ?? 1;
+    $tongKhach = $nguoiLon + $treEm;
 
-        $phongs = Phong::with([
-                'loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm,GiaPhong,MaKM'
-            ])
-            ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
-            ->where('TinhTrang', '!=', 2)
-            ->whereHas('loaiPhong')
-            ->whereDoesntHave('chiTietDatPhong', function ($q) use ($checkIn, $checkOut) {
-                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
-                    ->whereHas('datPhong', function ($bookingQuery) use ($checkIn, $checkOut) {
-                        $bookingQuery->whereIn('TinhTrang', [0, 1, 2])
-                            ->where('NgayNhanPhong', '<', $checkOut)
-                            ->where('NgayTraPhong', '>', $checkIn);
-                    });
-            })
-            ->get();
+    // ✅ Load đầy đủ quan hệ (giống API loai-phong)
+    $phongs = Phong::with([
+            'loaiPhong' => function ($q) {
+                $q->with(['khuyenMai', 'hinhs', 'tienNghis']);
+            }
+        ])
+        ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
+        ->where('TinhTrang', '!=', 2)
+        ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
+            $q->whereIn('TinhTrang', [0, 1, 2])
+                ->where('NgayNhanPhong', '<', $checkOut)
+                ->where('NgayTraPhong', '>', $checkIn);
+        })
+        ->get();
 
-        $phongs = $phongs
-            ->groupBy('MaLoaiPhong')
-            ->filter(function ($rooms) use ($nguoiLon, $treEm, $soPhong, $tongKhach) {
-                $loaiPhong = $rooms->first()?->loaiPhong;
+    // ✅ Gom nhóm + trả về object đồng bộ với API loai-phong
+    $ketQua = $phongs
+        ->groupBy('MaLoaiPhong')
+        ->filter(function ($rooms) use ($nguoiLon, $treEm, $soPhong, $tongKhach) {
+            $loaiPhong = $rooms->first()?->loaiPhong;
 
-                if (!$loaiPhong || $rooms->count() < $soPhong) {
-                    return false;
-                }
+            if (!$loaiPhong || $rooms->count() < $soPhong) {
+                return false;
+            }
 
-                $sucChuaNguoiLon = max((int) $loaiPhong->NguoiLon, 0);
-                $sucChuaTreEm = max((int) $loaiPhong->TreEm, 0);
-                $sucChuaTong = max($sucChuaNguoiLon + $sucChuaTreEm, $sucChuaNguoiLon, 1);
+            $sucChuaNguoiLon = max((int) $loaiPhong->NguoiLon, 0);
+            $sucChuaTreEm = max((int) $loaiPhong->TreEm, 0);
+            $sucChuaTong = max($sucChuaNguoiLon + $sucChuaTreEm, 1);
 
-                return ($sucChuaNguoiLon * $soPhong) >= $nguoiLon
-                    && ($sucChuaTreEm * $soPhong) >= $treEm
-                    && ($sucChuaTong * $soPhong) >= $tongKhach;
-            })
-            ->flatten(1)
-            ->values();
+            return ($sucChuaNguoiLon * $soPhong) >= $nguoiLon
+                && ($sucChuaTreEm * $soPhong) >= $treEm
+                && ($sucChuaTong * $soPhong) >= $tongKhach;
+        })
+        ->map(function ($rooms) use ($soPhong) {
+            $loaiPhong = $rooms->first()->loaiPhong;
+            $soPhongTrong = $rooms->where('TinhTrang', 0)->count();
+            
+            // 🔥 Tính giá (đồng bộ với API loai-phong)
+            $giaPhong = (float) $loaiPhong->GiaPhong;
+            $khuyenMai = $loaiPhong->khuyenMai;
+            
+            // Tính giá sau giảm nếu có khuyến mãi hợp lệ
+            $giaGiam = null;
+            if ($khuyenMai && $this->isKhuyenMaiHopLe($khuyenMai)) {
+                $giaGiam = $giaPhong * (1 - $khuyenMai->PhanTramGiamGia / 100);
+            }
 
-        return $this->success($phongs, 'Tìm phòng thành công');
-    }
+            return [
+                // 🔥 Giống hệt API loai-phong
+                'MaLoaiPhong' => $loaiPhong->MaLoaiPhong,
+                'TenLoaiPhong' => $loaiPhong->TenLoaiPhong,
+                'Mota' => $loaiPhong->Mota ?? '',
+                'NguoiLon' => (int) $loaiPhong->NguoiLon,
+                'TreEm' => (int) $loaiPhong->TreEm,
+                'GiaPhong' => $giaPhong,
+                'GiaGiam' => $giaGiam ?? $giaPhong, // Nếu ko có KM thì = giá gốc
+                'MaKM' => $loaiPhong->MaKM,
+                
+                // 🔥 Khuyến mãi
+                'khuyen_mai' => $khuyenMai ? [
+                    'MaKM' => $khuyenMai->MaKM,
+                    'TenKM' => $khuyenMai->TenKM,
+                    'MoTa' => $khuyenMai->MoTa,
+                    'Diem' => $khuyenMai->Diem,
+                    'NgayBatDau' => $khuyenMai->NgayBatDau,
+                    'NgayKetThuc' => $khuyenMai->NgayKetThuc,
+                    'PhanTramGiamGia' => $khuyenMai->PhanTramGiamGia,
+                    'LoaiKM' => $khuyenMai->LoaiKM,
+                ] : null,
+                
+                // 🔥 Số phòng
+                'soPhongTrong' => $soPhongTrong,
+                'tongPhong' => $rooms->count(),
+                
+                // 🔥 Ảnh
+                'hinhs' => $loaiPhong->hinhs->map(fn($h) => [
+                    'Id' => $h->Id,
+                    'Url' => $h->Url,
+                ])->values(),
+                
+                // 🔥 Tiện nghi
+                'tien_nghis' => $loaiPhong->tienNghis->map(fn($tn) => [
+                    'MaTienNghi' => $tn->MaTienNghi,
+                    'TenTienNghi' => $tn->TenTienNghi,
+                ])->values(),
+                
+                // 🔥 Danh sách phòng
+                'phongs' => $rooms->map(fn($p) => [
+                    'MaPhong' => $p->MaPhong,
+                    'SoPhong' => $p->SoPhong,
+                    'TinhTrang' => $p->TinhTrang,
+                ])->values(),
+            ];
+        })
+        ->values();
+
+    return $this->success($ketQua, 'Tìm phòng thành công');
+}
+
+// 🔥 Helper: Kiểm tra khuyến mãi còn hạn
+private function isKhuyenMaiHopLe($khuyenMai)
+{
+    if (!$khuyenMai) return false;
+    
+    $today = Carbon::today();
+    $ngayBatDau = $khuyenMai->NgayBatDau ? Carbon::parse($khuyenMai->NgayBatDau) : null;
+    $ngayKetThuc = $khuyenMai->NgayKetThuc ? Carbon::parse($khuyenMai->NgayKetThuc) : null;
+    
+    if ($ngayBatDau && $today->lt($ngayBatDau)) return false;
+    if ($ngayKetThuc && $today->gt($ngayKetThuc)) return false;
+    
+    return true;
+}
 }
