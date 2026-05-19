@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ChiTietDatPhong;
 use App\Models\Phong;
-use App\Services\Guards\PhongSoftDeleteGuard;
+use App\Services\Guards\PhongDeletionGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -13,7 +13,7 @@ use Illuminate\Validation\Rule;
 class PhongController extends Controller
 {
     public function __construct(
-        private PhongSoftDeleteGuard $guard
+        private PhongDeletionGuard $guard
     ) {
     }
 
@@ -48,9 +48,7 @@ class PhongController extends Controller
                     ->where('NgayTraPhong', '>=', $today)
                     ->whereIn('TinhTrang', [0, 1, 2]);
             },
-        ])->whereHas('loaiPhong', function ($q) {
-            $q->whereNull('LoaiPhong.deleted_at');
-        });
+        ])->whereHas('loaiPhong');
 
         if ($request->MaLoaiPhong) {
             $query->where('MaLoaiPhong', $request->MaLoaiPhong);
@@ -76,13 +74,6 @@ class PhongController extends Controller
         }
 
         return $this->success($data, 'Lấy danh sách phòng thành công');
-    }
-
-    public function trash()
-    {
-        $data = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->get();
-
-        return $this->success($data, 'Lấy danh sách phòng trong thùng rác thành công');
     }
 
     private function resolveTinhTrangHienTai(Phong $phong): int
@@ -129,7 +120,7 @@ class PhongController extends Controller
             'SoPhong' => 'required|unique:Phong,SoPhong',
             'MaLoaiPhong' => [
                 'required',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
             'TinhTrang' => 'required|integer',
         ]);
@@ -183,7 +174,7 @@ class PhongController extends Controller
             'SoPhong' => 'required|unique:Phong,SoPhong,' . $id . ',MaPhong',
             'MaLoaiPhong' => [
                 'required',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
             'TinhTrang' => 'required|integer',
         ]);
@@ -201,45 +192,14 @@ class PhongController extends Controller
             return $this->error('Không tìm thấy phòng', 404);
         }
 
-        $decision = $this->guard->canSoftDelete($phong);
+        $decision = $this->guard->canDelete($phong);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
         $phong->delete();
 
-        return $this->success(null, 'Đã chuyển phòng vào thùng rác');
-    }
-
-    public function restore($id)
-    {
-        $phong = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->find($id);
-
-        if (!$phong) {
-            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
-        }
-
-        $phong->restore();
-
-        return $this->success($phong->fresh(['loaiPhong.khuyenMai']), 'Khôi phục phòng thành công');
-    }
-
-    public function forceDelete($id)
-    {
-        $phong = Phong::onlyTrashed()->find($id);
-
-        if (!$phong) {
-            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($phong);
-        if (!$decision['allowed']) {
-            return $this->error($decision['message'], 409);
-        }
-
-        $phong->forceDelete();
-
-        return $this->success(null, 'Xóa vĩnh viễn phòng thành công');
+        return $this->success(null, 'Xóa phòng thành công');
     }
 
     public function timKiemPhong(Request $request)
@@ -265,9 +225,7 @@ class PhongController extends Controller
             ])
             ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
             ->where('TinhTrang', '!=', 2)
-            ->whereHas('loaiPhong', function ($q) {
-                $q->whereNull('LoaiPhong.deleted_at');
-            })
+            ->whereHas('loaiPhong')
             ->whereDoesntHave('chiTietDatPhong', function ($q) use ($checkIn, $checkOut) {
                 $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
                     ->whereHas('datPhong', function ($bookingQuery) use ($checkIn, $checkOut) {

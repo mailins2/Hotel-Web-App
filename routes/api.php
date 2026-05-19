@@ -23,14 +23,10 @@ use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 
-Route::get('tien-nghi/trash', [TienNghiController::class, 'trash']);
-Route::post('tien-nghi/{id}/restore', [TienNghiController::class, 'restore']);
 Route::apiResource('tien-nghi', TienNghiController::class);
 
 Route::apiResource('khachhangs', KhachHangController::class);
 
-Route::get('loai-phong/trash', [LoaiPhongController::class, 'trash']);
-Route::post('loai-phong/{id}/restore', [LoaiPhongController::class, 'restore']);
 Route::apiResource('loai-phong', LoaiPhongController::class);
 
 Route::post('/loai-phong/{id}/tien-nghi', [LoaiPhongController::class, 'updateTienNghi']);
@@ -40,8 +36,6 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 
 
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
-Route::get('phong/trash', [PhongController::class, 'trash']);
-Route::post('phong/{id}/restore', [PhongController::class, 'restore']);
 Route::apiResource('phong', PhongController::class);
 
 
@@ -53,8 +47,6 @@ Route::post('dat-phong/{id}/check-in', [DatPhongController::class, 'checkIn']);
 Route::post('dat-phong/{id}/check-out', [DatPhongController::class, 'checkOut']);
 Route::apiResource('dat-phong', DatPhongController::class);
 
-Route::get('dich-vu/trash', [\App\Http\Controllers\Api\DichVuController::class, 'trash']);
-Route::post('dich-vu/{id}/restore', [\App\Http\Controllers\Api\DichVuController::class, 'restore']);
 Route::apiResource('dich-vu', \App\Http\Controllers\Api\DichVuController::class);
 
 Route::get(
@@ -73,8 +65,6 @@ Route::apiResource('den-bu', DenBuHuHongController::class);
 
 Route::apiResource('luu-tru', LuuTruController::class);
 
-Route::get('khuyen-mai/trash', [KhuyenMaiController::class, 'trash']);
-Route::post('khuyen-mai/{id}/restore', [KhuyenMaiController::class, 'restore']);
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
 Route::get('kho-khuyen-mai/khach-hang/{maKH}', [KhoKhuyenMaiController::class, 'showByKhachHang']);

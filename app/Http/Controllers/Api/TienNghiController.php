@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\TienNghi;
-use App\Services\Guards\TienNghiSoftDeleteGuard;
+use App\Services\Guards\TienNghiDeletionGuard;
 use Illuminate\Http\Request;
 
 class TienNghiController extends Controller
 {
     public function __construct(
-        private TienNghiSoftDeleteGuard $guard
+        private TienNghiDeletionGuard $guard
     ) {
     }
 
@@ -34,14 +34,6 @@ class TienNghiController extends Controller
     public function index()
     {
         return $this->success(TienNghi::all(), 'Lấy danh sách tiện nghi thành công');
-    }
-
-    public function trash()
-    {
-        return $this->success(
-            TienNghi::onlyTrashed()->get(),
-            'Lấy danh sách tiện nghi trong thùng rác thành công'
-        );
     }
 
     public function store(Request $request)
@@ -91,47 +83,14 @@ class TienNghiController extends Controller
             return $this->error('Không tìm thấy tiện nghi', 404);
         }
 
-        $decision = $this->guard->canSoftDelete($tienNghi);
+        $decision = $this->guard->canDelete($tienNghi);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
+        $tienNghi->loaiPhongs()->detach();
         $tienNghi->delete();
 
-        return $this->success(null, 'Đã chuyển tiện nghi vào thùng rác');
-    }
-
-    public function restore($id)
-    {
-        $tienNghi = TienNghi::onlyTrashed()->find($id);
-
-        if (!$tienNghi) {
-            return $this->error('Không tìm thấy tiện nghi trong thùng rác', 404);
-        }
-
-        $tienNghi->restore();
-
-        return $this->success(
-            TienNghi::with('loaiPhongs')->find($id),
-            'Khôi phục tiện nghi thành công'
-        );
-    }
-
-    public function forceDelete($id)
-    {
-        $tienNghi = TienNghi::onlyTrashed()->with('loaiPhongs')->find($id);
-
-        if (!$tienNghi) {
-            return $this->error('Không tìm thấy tiện nghi trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($tienNghi);
-        if (!$decision['allowed']) {
-            return $this->error($decision['message'], 409);
-        }
-
-        $tienNghi->forceDelete();
-
-        return $this->success(null, 'Xóa vĩnh viễn tiện nghi thành công');
+        return $this->success(null, 'Xóa tiện nghi thành công');
     }
 }

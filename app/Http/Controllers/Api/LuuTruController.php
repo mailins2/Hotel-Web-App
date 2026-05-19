@@ -111,7 +111,7 @@ class LuuTruController extends Controller
             'SoDienThoai' => ['nullable', 'string', 'max:15'],
             'MaPhong' => [
                 $required,
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
             'MaDatPhong' => [
                 $required,

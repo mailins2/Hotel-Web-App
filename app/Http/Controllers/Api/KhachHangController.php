@@ -5,12 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\KhachHang;
 use App\Models\TaiKhoan;
+use App\Services\Guards\KhachHangDeletionGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class KhachHangController extends Controller
 {
+    public function __construct(
+        private KhachHangDeletionGuard $guard
+    ) {
+    }
+
     public function index()
     {
         return response()->json(KhachHang::with('taiKhoan')->get(), 200);
@@ -123,9 +129,23 @@ class KhachHangController extends Controller
         if (!$khachHang) {
             return response()->json(['message' => 'Không tìm thấy khách hàng'], 404);
         }
+        $decision = $this->guard->canDelete($khachHang);
+        if (!$decision['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $decision['message'],
+            ], 409);
+        }
 
-        $khachHang->delete();
+        DB::transaction(function () use ($khachHang) {
+            TaiKhoan::where('MaKH', $khachHang->MaKH)->delete();
+            DB::table('KhoKhuyenMai')->where('MaKH', $khachHang->MaKH)->delete();
+            $khachHang->delete();
+        });
 
-        return response()->json(['message' => 'Đã xóa khách hàng'], 200);
+        return response()->json([
+            'message' => 'Đã xóa khách hàng',
+            'action' => 'deleted',
+        ], 200);
     }
 }

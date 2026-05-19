@@ -15,7 +15,6 @@
     :title="$pageTitle"
     :subtitle="$pageSubtitle"
     :create-route="route('hotel.services.create')"
-    :trash-route="route('hotel.services.trash')"
 >
     <x-slot:filters>
         <div class="col-md-4">
@@ -299,7 +298,18 @@
 
                     const serviceId = deleteButton.getAttribute('data-delete-service-id') || '';
 
-                    if (!serviceId || !window.confirm(`Xóa dịch vụ ${serviceId}?`)) {
+                    if (!serviceId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa dịch vụ?',
+                        message: 'Bạn muốn xóa dịch vụ này?',
+                        recordLabel: 'Mã dịch vụ: ' + serviceId,
+                        note: 'Dịch vụ đã phát sinh lượt sử dụng sẽ không thể xóa.',
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
@@ -324,8 +334,17 @@
                             return String(service.MaDV || '') !== String(serviceId);
                         });
                         loadData();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa dịch vụ thành công.',
+                        });
                     } catch (error) {
-                        window.alert(error.message);
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
                     } finally {
                         deleteButton.disabled = originalDisabledState;
                     }

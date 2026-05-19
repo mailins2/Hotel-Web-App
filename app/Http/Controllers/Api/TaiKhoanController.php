@@ -4,12 +4,18 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\TaiKhoan;
+use App\Services\Guards\TaiKhoanDeletionGuard;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class TaiKhoanController extends Controller
 {
+    public function __construct(
+        private TaiKhoanDeletionGuard $guard
+    ) {
+    }
+
     public function index()
     {
         return response()->json([
@@ -65,7 +71,7 @@ class TaiKhoanController extends Controller
 
     public function update(Request $request, $id)
     {
-        $taiKhoan = TaiKhoan::find($id);
+        $taiKhoan = TaiKhoan::with(['khachHang', 'nhanVien'])->find($id);
 
         if (!$taiKhoan) {
             return response()->json(['message' => 'Không tìm thấy'], 404);
@@ -108,15 +114,29 @@ class TaiKhoanController extends Controller
 
     public function destroy($id)
     {
-        $taiKhoan = TaiKhoan::find($id);
+        $taiKhoan = TaiKhoan::with(['khachHang', 'nhanVien'])->find($id);
 
         if (!$taiKhoan) {
             return response()->json(['message' => 'Không tìm thấy'], 404);
         }
+        $decision = $this->guard->resolveAction($taiKhoan);
+
+        if (($decision['action'] ?? 'delete') === 'deactivate') {
+            $taiKhoan->update(['TrangThai' => 0]);
+
+            return response()->json([
+                'message' => $decision['message'],
+                'action' => 'deactivated',
+                'data' => $taiKhoan->fresh(['khachHang', 'nhanVien']),
+            ], 200);
+        }
 
         $taiKhoan->delete();
 
-        return response()->json(['message' => 'Đã xóa tài khoản'], 200);
+        return response()->json([
+            'message' => 'Đã xóa tài khoản',
+            'action' => 'deleted',
+        ], 200);
     }
 
     private function validateOwnerByRole($validator, Request $request, ?TaiKhoan $taiKhoan = null): void

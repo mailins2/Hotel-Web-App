@@ -2,7 +2,6 @@
     title="Quản lý phòng"
     subtitle="Danh sách quản lý phòng tại khách sạn"
     :create-route="route('hotel.rooms.create')"
-    :trash-route="route('hotel.rooms.trash')"
 >
     <x-slot:filters>
         <div class="col-md-3">
@@ -217,7 +216,18 @@
 
                     const roomId = deleteButton.getAttribute('data-delete-room-id') || '';
 
-                    if (!roomId || !window.confirm(`Xóa phòng ${roomId}?`)) {
+                    if (!roomId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa phòng?',
+                        message: 'Bạn muốn xóa phòng này?',
+                        recordLabel: 'Mã phòng: ' + roomId,
+                        note: 'Phòng đã có đặt phòng hoặc lưu trú sẽ không thể xóa.',
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
@@ -242,8 +252,17 @@
                             return String(room.MaPhong || '') !== String(roomId);
                         });
                         loadRooms();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa phòng thành công.',
+                        });
                     } catch (error) {
-                        window.alert(error.message);
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
                     } finally {
                         deleteButton.disabled = originalDisabledState;
                     }

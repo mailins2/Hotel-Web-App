@@ -2,7 +2,7 @@
 
 namespace App\Services\Guards;
 
-abstract class AbstractSoftDeleteGuard
+abstract class AbstractDeletionGuard
 {
     protected function allow(): array
     {

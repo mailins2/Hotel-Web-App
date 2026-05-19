@@ -31,6 +31,7 @@
         id="employee-index-config"
         data-show-url-template="{{ route('hotel.employees.show', ['recordId' => '__EMPLOYEE_ID__']) }}"
         data-edit-url-template="{{ route('hotel.employees.edit', ['recordId' => '__EMPLOYEE_ID__']) }}"
+        data-delete-url-template="{{ url('/api/nhan-vien/__EMPLOYEE_ID__') }}"
         hidden
     ></div>
 
@@ -45,6 +46,7 @@
                 const resetButton = filterPanel ? filterPanel.querySelector('.btn.btn-light') : null;
                 const showUrlTemplate = config ? config.dataset.showUrlTemplate : '';
                 const editUrlTemplate = config ? config.dataset.editUrlTemplate : '';
+                const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
                 let employees = @json($employees ?? []);
 
@@ -110,6 +112,17 @@
                                                 </svg>
                                             </span>
                                         </a>
+                                        <button type="button" class="btn btn-sm btn-danger btn-icon" title="Xóa" data-delete-employee-id="${employee.MaNV || ''}">
+                                            <span class="btn-inner">
+                                                <svg width="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <path d="M19 7L18.132 18.142C18.0578 19.0948 17.2636 19.8333 16.308 19.8333H7.692C6.73635 19.8333 5.9422 19.0948 5.868 18.142L5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                    <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                    <path d="M9 7V4.8C9 4.35817 9.35817 4 9.8 4H14.2C14.6418 4 15 4.35817 15 4.8V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                                                    <path d="M10 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                    <path d="M14 11V16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                                                </svg>
+                                            </span>
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
@@ -163,6 +176,70 @@
                         applyFilters();
                     });
                 }
+
+                document.addEventListener('click', async function (event) {
+                    const deleteButton = event.target && event.target.closest
+                        ? event.target.closest('[data-delete-employee-id]')
+                        : null;
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const employeeId = deleteButton.getAttribute('data-delete-employee-id') || '';
+                    if (!employeeId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa nhân viên?',
+                        message: 'Bạn muốn xóa nhân viên này?',
+                        recordLabel: 'Mã nhân viên: ' + employeeId,
+                        note: 'Đã xử lý hóa đơn thì hệ thống sẽ khóa tài khoản liên quan.',
+                    });
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    deleteButton.disabled = true;
+
+                    try {
+                        const response = await fetch(deleteUrlTemplate.replace('__EMPLOYEE_ID__', encodeURIComponent(employeeId)), {
+                            method: 'DELETE',
+                            headers: { Accept: 'application/json' }
+                        });
+                        const payload = await response.json().catch(function () { return {}; });
+
+                        if (!response.ok || payload.success === false) {
+                            throw new Error(payload && payload.message ? payload.message : 'Không thể xóa nhân viên.');
+                        }
+
+                        if (payload.action !== 'deactivated') {
+                            employees = employees.filter(function (employee) {
+                                return String(employee.MaNV || '') !== String(employeeId);
+                            });
+                        }
+
+                        loadEmployees();
+                        window.hmShowToast({
+                            type: payload.action === 'deactivated' ? 'warning' : 'success',
+                            title: payload.action === 'deactivated' ? 'Đã khóa tài khoản' : 'Đã xóa',
+                            message: payload.message || 'Thao tác thành công.',
+                        });
+                    } catch (error) {
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
+                    } finally {
+                        deleteButton.disabled = false;
+                    }
+                });
 
                 loadEmployees();
             });
