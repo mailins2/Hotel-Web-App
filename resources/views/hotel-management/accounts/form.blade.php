@@ -146,6 +146,8 @@
                     TrangThai: statusInput,
                     customer_id: customerInput,
                     employee_id: employeeInput,
+                    MaKH: customerInput,
+                    MaNV: employeeInput,
                 };
 
                 let customers = [];
@@ -200,6 +202,8 @@
                             TrangThai: 'status',
                             customer_id: 'customer-id',
                             employee_id: 'employee-id',
+                            MaKH: 'customer-id',
+                            MaNV: 'employee-id',
                         };
                         const errorElement = document.getElementById(`account-${suffixMap[fieldName]}-error`);
 
@@ -222,6 +226,8 @@
                         TrangThai: 'status',
                         customer_id: 'customer-id',
                         employee_id: 'employee-id',
+                        MaKH: 'customer-id',
+                        MaNV: 'employee-id',
                     };
 
                     const field = fieldMap[fieldName];
@@ -270,7 +276,10 @@
 
                     const availableCustomers = customers.filter(function (customer) {
                         const customerId = String(customer.MaKH || '');
-                        const linkedAccountId = customer.MaTK !== undefined && customer.MaTK !== null ? String(customer.MaTK) : '';
+                        const linkedAccount = customer.taiKhoan || customer.tai_khoan || null;
+                        const linkedAccountId = linkedAccount && linkedAccount.MaTK !== undefined && linkedAccount.MaTK !== null
+                            ? String(linkedAccount.MaTK)
+                            : '';
 
                         return !linkedAccountId || linkedAccountId === String(accountId || '') || customerId === currentLinkedCustomerId;
                     });
@@ -299,7 +308,10 @@
 
                     const availableEmployees = employees.filter(function (employee) {
                         const employeeId = String(employee.MaNV || '');
-                        const linkedAccountId = employee.MaTK !== undefined && employee.MaTK !== null ? String(employee.MaTK) : '';
+                        const linkedAccount = employee.taiKhoan || employee.tai_khoan || null;
+                        const linkedAccountId = linkedAccount && linkedAccount.MaTK !== undefined && linkedAccount.MaTK !== null
+                            ? String(linkedAccount.MaTK)
+                            : '';
 
                         return !linkedAccountId || linkedAccountId === String(accountId || '') || employeeId === currentLinkedEmployeeId;
                     });

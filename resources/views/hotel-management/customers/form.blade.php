@@ -125,6 +125,38 @@
     ></div>
 
     @push('scripts')
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+        <style>
+            .ts-wrapper.customer-address-select .ts-control {
+                min-height: 47px;
+                padding: 0.625rem 0.875rem;
+                border-color: #e7d3cb;
+                border-radius: 0.375rem;
+                color: #4b5563;
+                box-shadow: none;
+            }
+
+            .ts-wrapper.customer-address-select.focus .ts-control {
+                border-color: #c97952;
+                box-shadow: 0 0 0 0.2rem rgba(201, 121, 82, 0.18);
+            }
+
+            .ts-wrapper.customer-address-select .ts-control input {
+                color: #4b5563;
+            }
+
+            .ts-wrapper.customer-address-select .ts-dropdown {
+                border-color: #e7d3cb;
+                box-shadow: 0 14px 32px rgba(74, 52, 40, 0.12);
+            }
+
+            .ts-wrapper.customer-address-select .option.active,
+            .ts-wrapper.customer-address-select .option:hover {
+                background: rgba(201, 121, 82, 0.12);
+                color: #7c3f28;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const config = document.getElementById('customer-form-config');
@@ -160,6 +192,8 @@
                 let customers = [];
                 let currentCustomer = null;
                 let selectedDistrict = '';
+                let provinceSelect = null;
+                let districtSelect = null;
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -217,12 +251,18 @@
                 const setFieldError = function (fieldName, message) {
                     const keyMap = {
                         full_name: 'customer-name',
+                        TenKH: 'customer-name',
                         birthday: 'customer-birthday',
+                        NgaySinh: 'customer-birthday',
                         gender: 'customer-gender',
+                        GioiTinh: 'customer-gender',
                         phone: 'customer-phone',
+                        SoDienThoai: 'customer-phone',
                         cccd: 'customer-cccd',
+                        CCCD: 'customer-cccd',
                         address_line: 'customer-address-line',
                         address: 'customer-address-line',
+                        DiaChi: 'customer-address-line',
                     };
 
                     const key = keyMap[fieldName];
@@ -279,6 +319,88 @@
                     return age;
                 };
 
+                const createAddressSelects = function () {
+                    if (!window.TomSelect) {
+                        return;
+                    }
+
+                    const baseOptions = {
+                        create: false,
+                        allowEmptyOption: true,
+                        maxItems: 1,
+                        sortField: {
+                            field: '$order',
+                            direction: 'asc'
+                        },
+                        searchField: ['text'],
+                        render: {
+                            no_results: function () {
+                                return '<div class="no-results px-3 py-2">Không tìm thấy kết quả</div>';
+                            }
+                        }
+                    };
+
+                    provinceSelect = new TomSelect(customerProvinceInput, {
+                        ...baseOptions,
+                        placeholder: 'Chọn tỉnh/thành phố'
+                    });
+
+                    districtSelect = new TomSelect(customerDistrictInput, {
+                        ...baseOptions,
+                        placeholder: 'Chọn phường/xã'
+                    });
+
+                    provinceSelect.wrapper.classList.add('customer-address-select');
+                    districtSelect.wrapper.classList.add('customer-address-select');
+
+                    if (customerDistrictInput.disabled) {
+                        districtSelect.disable();
+                    }
+                };
+
+                const refreshDistrictSelect = function () {
+                    if (!districtSelect) {
+                        return;
+                    }
+
+                    const currentValue = customerDistrictInput.value || '';
+                    const disabled = customerDistrictInput.disabled;
+
+                    districtSelect.clear(true);
+                    districtSelect.clearOptions();
+
+                    Array.from(customerDistrictInput.options).forEach(function (option) {
+                        if (!option.value) {
+                            return;
+                        }
+
+                        districtSelect.addOption({
+                            value: option.value,
+                            text: option.textContent
+                        });
+                    });
+
+                    if (disabled) {
+                        districtSelect.disable();
+                    } else {
+                        districtSelect.enable();
+                    }
+
+                    if (currentValue) {
+                        districtSelect.setValue(currentValue, true);
+                    }
+
+                    districtSelect.refreshOptions(false);
+                };
+
+                const setSelectValue = function (select, instance, value) {
+                    select.value = value || '';
+
+                    if (instance) {
+                        instance.setValue(value || '', true);
+                    }
+                };
+
                 const syncFullAddress = function () {
                     const selectedProvinceName = customerProvinceInput.value
                         ? (customerProvinceInput.options[customerProvinceInput.selectedIndex] || {}).textContent || ''
@@ -302,6 +424,7 @@
 
                     if (!provinceCode) {
                         customerDistrictInput.disabled = true;
+                        refreshDistrictSelect();
                         syncFullAddress();
                         return;
                     }
@@ -321,14 +444,16 @@
                         customerDistrictInput.value = selectedDistrict;
                     }
 
+                    refreshDistrictSelect();
                     syncFullAddress();
                 };
 
                 const parseExistingAddress = function (address) {
                     customerAddressLineInput.value = '';
-                    customerProvinceInput.value = '';
+                    setSelectValue(customerProvinceInput, provinceSelect, '');
                     customerDistrictInput.innerHTML = '<option value="">Chọn phường/xã</option>';
                     customerDistrictInput.disabled = true;
+                    refreshDistrictSelect();
                     selectedDistrict = '';
 
                     if (!address) {
@@ -360,7 +485,7 @@
                         return;
                     }
 
-                    customerProvinceInput.value = matchedProvince.value;
+                    setSelectValue(customerProvinceInput, provinceSelect, matchedProvince.value);
 
                     const districtItems = communesData[matchedProvince.value] || [];
                     const matchedDistrict = districtItems.find(function (item) {
@@ -371,7 +496,7 @@
                     renderDistricts();
 
                     if (matchedDistrict) {
-                        customerDistrictInput.value = matchedDistrict.code;
+                        setSelectValue(customerDistrictInput, districtSelect, matchedDistrict.code);
                     }
 
                     syncFullAddress();
@@ -407,10 +532,7 @@
                         isValid = false;
                     }
 
-                    if (!customerCccdInput.value.trim()) {
-                        setFieldError('cccd', 'Vui lòng nhập CCCD.');
-                        isValid = false;
-                    } else if (!/^[0-9]{12}$/.test(customerCccdInput.value.trim())) {
+                    if (customerCccdInput.value.trim() && !/^[0-9]{12}$/.test(customerCccdInput.value.trim())) {
                         setFieldError('cccd', 'CCCD phải gồm đúng 12 chữ số.');
                         isValid = false;
                     }
@@ -483,6 +605,8 @@
                     populateForm(customer);
                 };
 
+                createAddressSelects();
+
                 document.querySelectorAll('[data-text-filter="digits"]').forEach(function (input) {
                     input.addEventListener('input', function () {
                         const filter = filters[input.dataset.textFilter];
@@ -531,7 +655,7 @@
                         const payload = {
                             full_name: customerNameInput.value.trim(),
                             phone: customerPhoneInput.value.trim(),
-                            cccd: customerCccdInput.value.trim(),
+                            cccd: customerCccdInput.value.trim() || null,
                             birthday: customerBirthdayInput.value,
                             gender: customerGenderInput.value,
                             province: customerProvinceInput.value || '',

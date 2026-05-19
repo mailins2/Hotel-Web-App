@@ -2,18 +2,27 @@
     $invoice = $payment?->hoaDon;
     $booking = $invoice?->datPhong;
     $customer = $booking?->khachHang;
+
     $formatDateTime = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y H:i:s') : '--';
     $formatCurrency = fn ($amount) => is_numeric($amount) ? number_format((float) $amount, 0, ',', '.') . ' VNĐ' : '--';
-    $paymentType = match ((int) $payment->LoaiThanhToan) {
+
+    $paymentMethod = match ((int) ($payment->PhuongThuc ?? -1)) {
+        1 => 'Thẻ',
+        2 => 'QR Code',
+        default => '--',
+    };
+
+    $transactionType = match ((int) ($payment->LoaiThanhToan ?? -1)) {
         0 => 'Đặt cọc',
         1 => 'Thanh toán checkout',
         default => '--',
     };
-    $invoiceStatus = match ((int) ($invoice?->TrangThai ?? -1)) {
-        0 => 'Chưa thanh toán',
-        1 => 'Đã thanh toán',
-        3 => 'Đã hủy',
-        default => 'Không xác định',
+
+    $transactionStatus = match ((int) ($payment->TrangThaiGiaoDich ?? -1)) {
+        0 => 'Thất bại',
+        1 => 'Thành công',
+        2 => 'Đang xử lý',
+        default => '--',
     };
 @endphp
 
@@ -23,10 +32,20 @@
     :index-route="route('hotel.payments.index')"
 >
     <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã thanh toán</div><div class="fw-semibold">{{ $payment->MaTT ?? '--' }}</div></div></div>
-    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã đặt phòng</div><div class="fw-semibold">{{ $booking->MaDatPhong ?? '--' }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã hóa đơn</div><div class="fw-semibold">{{ $payment->MaHD ?? '--' }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã khách hàng</div><div class="fw-semibold">{{ $customer->MaKH ?? '--' }}</div></div></div>
+
     <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người thanh toán</div><div class="fw-semibold">{{ $customer->TenKH ?? $payment->DinhDanhNguoiThanhToan ?? '--' }}</div></div></div>
-    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Số tiền</div><div class="fw-semibold">{{ $formatCurrency($payment->SoTien) }}</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Loại thanh toán</div><div class="fw-semibold">{{ $paymentType }}</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Ngày thanh toán</div><div class="fw-semibold">{{ $formatDateTime($payment->NgayThanhToan) }}</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trạng thái hóa đơn</div><div class="fw-semibold">{{ $invoiceStatus }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Định danh người thanh toán</div><div class="fw-semibold">{{ $payment->DinhDanhNguoiThanhToan ?? '--' }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Số tiền thanh toán</div><div class="fw-semibold">{{ $formatCurrency($payment->SoTien) }}</div></div></div>
+
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Phương thức</div><div class="fw-semibold">{{ $paymentMethod }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Loại thanh toán</div><div class="fw-semibold">{{ $transactionType }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Ngày thanh toán</div><div class="fw-semibold">{{ $formatDateTime($payment->NgayThanhToan) }}</div></div></div>
+
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Nhà cung cấp</div><div class="fw-semibold">{{ $payment->NhaCungCap ?? '--' }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trạng thái giao dịch</div><div class="fw-semibold">{{ $transactionStatus }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã giao dịch</div><div class="fw-semibold">{{ $payment->MaGiaoDich ?? '--' }}</div></div></div>
+
+    <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã giao dịch cổng thanh toán</div><div class="fw-semibold">{{ $payment->MaGiaoDichCongThanhToan ?? '--' }}</div></div></div>
 </x-hotel-management.show-page>

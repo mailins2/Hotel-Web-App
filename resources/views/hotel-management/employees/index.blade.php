@@ -16,7 +16,7 @@
                 <th>Mã nhân viên</th>
                 <th>Tên nhân viên</th>
                 <th>Mã tài khoản</th>
-                <th>Loại tài khoản</th>
+                <th>Chức vụ</th>
                 <th style="min-width: 180px;">Thao tác</th>
             </tr>
         </thead>
@@ -61,21 +61,27 @@
                     return rightValue.localeCompare(leftValue, undefined, { numeric: true, sensitivity: 'base' });
                 };
 
-                const mapAccountType = function (type) {
-                    switch (Number(type)) {
+                const mapPosition = function (position) {
+                    if (position === undefined || position === null || position === '') {
+                        return 'Chưa có chức vụ';
+                    }
+
+                    switch (Number(position)) {
                         case 0:
-                            return 'Khách hàng';
+                            return 'Quản lý';
                         case 1:
                             return 'Nhân viên';
-                        case 2:
-                            return 'Quản lý';
-                        case 3:
-                            return 'Kế toán';
-                        case 4:
-                            return 'Nhân viên kinh doanh';
                         default:
-                            return '--';
+                            return 'Chưa có chức vụ';
                     }
+                };
+
+                const getAccountId = function (employee) {
+                    const account = employee && (employee.taiKhoan || employee.tai_khoan)
+                        ? (employee.taiKhoan || employee.tai_khoan)
+                        : null;
+
+                    return account && account.MaTK ? account.MaTK : '';
                 };
 
                 const renderRows = function (rows) {
@@ -87,19 +93,13 @@
                     tableBody.innerHTML = rows.map(function (employee) {
                         const showUrl = showUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
                         const editUrl = editUrlTemplate.replace('__EMPLOYEE_ID__', employee.MaNV);
-                        const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const accountId = employee && employee.MaTK ? employee.MaTK : (account && account.MaTK ? account.MaTK : '');
-                        const hasAccountId = String(accountId).trim() !== '';
-                        const accountType = hasAccountId
-                            ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null)
-                            : '--';
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${employee.MaNV || '--'}</td>
                                 <td>${employee.TenNV || '--'}</td>
-                                <td>${accountId || '--'}</td>
-                                <td>${accountType}</td>
+                                <td>${getAccountId(employee) || '--'}</td>
+                                <td>${mapPosition(employee.ChucVu)}</td>
                                 <td>
                                     <div class="hm-action-group">
                                         <a href="${editUrl}" class="btn btn-sm btn-warning btn-icon" title="Chỉnh sửa">
@@ -129,18 +129,11 @@
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
 
                     const filtered = employees.filter(function (employee) {
-                        const account = employee && (employee.taiKhoan || employee.tai_khoan) ? (employee.taiKhoan || employee.tai_khoan) : null;
-                        const accountId = employee && employee.MaTK ? employee.MaTK : (account && account.MaTK ? account.MaTK : '');
-                        const hasAccountId = String(accountId).trim() !== '';
-                        const accountType = hasAccountId
-                            ? mapAccountType(account && account.LoaiTaiKhoan !== undefined ? account.LoaiTaiKhoan : null).toLowerCase()
-                            : '';
-
                         return !keyword
                             || String(employee && employee.MaNV ? employee.MaNV : '').toLowerCase().includes(keyword)
                             || String(employee && employee.TenNV ? employee.TenNV : '').toLowerCase().includes(keyword)
-                            || String(accountId).toLowerCase().includes(keyword)
-                            || accountType.includes(keyword);
+                            || String(getAccountId(employee)).toLowerCase().includes(keyword)
+                            || mapPosition(employee && employee.ChucVu !== undefined ? employee.ChucVu : null).toLowerCase().includes(keyword);
                     });
 
                     if (pagination) {

@@ -1,5 +1,10 @@
 @php
-    $accountId = $employee->MaTK ?? $employee?->taiKhoan?->MaTK;
+    $accountId = $employee?->taiKhoan?->MaTK;
+    $position = match ((int) ($employee->ChucVu ?? -1)) {
+        0 => 'Quản lý',
+        1 => 'Nhân viên',
+        default => 'Chưa có chức vụ',
+    };
 @endphp
 
 <x-hotel-management.show-page
@@ -10,5 +15,6 @@
 >
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã nhân viên</div><div class="fw-semibold">{{ $employee->MaNV ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên nhân viên</div><div class="fw-semibold">{{ $employee->TenNV ?? '--' }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Chức vụ</div><div class="fw-semibold">{{ $position }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã tài khoản</div><div class="fw-semibold">{{ $accountId ?? '--' }}</div></div></div>
 </x-hotel-management.show-page>

@@ -339,7 +339,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         Route::get('/{recordId}', function ($recordId) {
             $booking = DatPhong::with([
                 'khachHang.taiKhoan',
-                'chiTietDatPhong.phong.loaiPhong.bangGias',
+                'chiTietDatPhong.phong.loaiPhong.khuyenMai',
                 'hoaDon.thanhToans',
                 'hoaDon.khuyenMai',
             ])->findOrFail($recordId);

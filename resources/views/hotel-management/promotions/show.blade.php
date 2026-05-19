@@ -1,5 +1,6 @@
 @php
     $formatDate = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '--';
+    $formatPromotionType = fn ($type) => (int) $type === 1 ? 'Hội viên' : 'Chung';
 @endphp
 
 <x-hotel-management.show-page
@@ -15,4 +16,5 @@
     <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Ngày bắt đầu</div><div class="fw-semibold">{{ $formatDate($promotion->NgayBatDau) }}</div></div></div>
     <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Ngày kết thúc</div><div class="fw-semibold">{{ $formatDate($promotion->NgayKetThuc) }}</div></div></div>
     <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Phần trăm giảm giá</div><div class="fw-semibold">{{ $promotion->PhanTramGiamGia !== null ? (float) $promotion->PhanTramGiamGia . '%' : '--' }}</div></div></div>
+    <div class="col-md-4 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Loại khuyến mãi</div><div class="fw-semibold">{{ $formatPromotionType($promotion->LoaiKM ?? 0) }}</div></div></div>
 </x-hotel-management.show-page>
