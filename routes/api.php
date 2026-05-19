@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\NhanVienController;
 use App\Http\Controllers\Api\DenBuHuHongController;
 use App\Http\Controllers\Api\KhuyenMaiController;
 use App\Http\Controllers\Api\KhoKhuyenMaiController;
+use App\Http\Controllers\Api\LuuTruController;
 use App\Http\Controllers\Api\HoaDonController;
 use App\Http\Controllers\Api\ChiTietHoaDonController;
 use App\Http\Controllers\Api\ThanhToanController;
@@ -23,14 +24,10 @@ use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 use App\Http\Controllers\Api\AuthMobileController;
 
-Route::get('tien-nghi/trash', [TienNghiController::class, 'trash']);
-Route::post('tien-nghi/{id}/restore', [TienNghiController::class, 'restore']);
 Route::apiResource('tien-nghi', TienNghiController::class);
 
 Route::apiResource('khachhangs', KhachHangController::class);
 
-Route::get('loai-phong/trash', [LoaiPhongController::class, 'trash']);
-Route::post('loai-phong/{id}/restore', [LoaiPhongController::class, 'restore']);
 Route::apiResource('loai-phong', LoaiPhongController::class);
 
 Route::post('/loai-phong/{id}/tien-nghi', [LoaiPhongController::class, 'updateTienNghi']);
@@ -40,8 +37,6 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 
 
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
-Route::get('phong/trash', [PhongController::class, 'trash']);
-Route::post('phong/{id}/restore', [PhongController::class, 'restore']);
 Route::apiResource('phong', PhongController::class);
 
 // Lịch sử đặt phòng của khách hàng
@@ -54,8 +49,6 @@ Route::post('dat-phong/{id}/check-in', [DatPhongController::class, 'checkIn']);
 Route::post('dat-phong/{id}/check-out', [DatPhongController::class, 'checkOut']);
 Route::apiResource('dat-phong', DatPhongController::class);
 
-Route::get('dich-vu/trash', [\App\Http\Controllers\Api\DichVuController::class, 'trash']);
-Route::post('dich-vu/{id}/restore', [\App\Http\Controllers\Api\DichVuController::class, 'restore']);
 Route::apiResource('dich-vu', \App\Http\Controllers\Api\DichVuController::class);
 
 Route::get(
@@ -72,8 +65,8 @@ Route::apiResource('khach-hang', KhachHangController::class);
 
 Route::apiResource('den-bu', DenBuHuHongController::class);
 
-Route::get('khuyen-mai/trash', [KhuyenMaiController::class, 'trash']);
-Route::post('khuyen-mai/{id}/restore', [KhuyenMaiController::class, 'restore']);
+Route::apiResource('luu-tru', LuuTruController::class);
+
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
 
 

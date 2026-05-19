@@ -38,7 +38,7 @@ class HoaDonController extends Controller
                 'nullable',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
             'MaNV' => 'required|exists:NhanVien,MaNV'
         ]);
@@ -216,7 +216,7 @@ class HoaDonController extends Controller
                 'nullable',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
             'TrangThai' => 'sometimes|in:0,1'
         ]);

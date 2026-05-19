@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Models\DatPhong;
+use App\Models\ChiTietDatPhong;
 use Carbon\Carbon;
 
 class CancelExpiredBookings extends Command
@@ -22,6 +23,8 @@ class CancelExpiredBookings extends Command
         foreach ($expiredBookings as $booking) {
             \DB::transaction(function () use ($booking) {
                 $booking->update(['TinhTrang' => 4]);
+                ChiTietDatPhong::where('MaDatPhong', $booking->MaDatPhong)
+                    ->update(['TrangThai' => ChiTietDatPhong::CANCELLED]);
                 \App\Models\HoaDon::where('MaDatPhong', $booking->MaDatPhong)->update(['TrangThai' => 3]);
             });
             $this->info("Đã hủy booking #{$booking->MaDatPhong}");

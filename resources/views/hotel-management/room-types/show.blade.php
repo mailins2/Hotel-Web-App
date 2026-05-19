@@ -2,7 +2,7 @@
     title="Chi tiết loại phòng"
     subtitle="Thông tin loại phòng"
     :index-route="route('hotel.room-types.index')"
-    :edit-route="route('hotel.room-types.edit', ['recordId' => request()->route('recordId') ?? 1])"
+    :edit-route="route('hotel.room-types.edit', ['recordId' => $roomType->MaLoaiPhong])"
 >
     <style>
         .hm-room-type-images {
@@ -51,121 +51,41 @@
         }
     </style>
 
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã loại phòng</div><div class="fw-semibold" id="room-type-id">Đang tải...</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên loại phòng</div><div class="fw-semibold" id="room-type-name">Đang tải...</div></div></div>
-    <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold hm-room-type-description" id="room-type-desc">Đang tải...</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người lớn</div><div class="fw-semibold" id="room-type-adults">Đang tải...</div></div></div>
-    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trẻ em</div><div class="fw-semibold" id="room-type-children">Đang tải...</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã loại phòng</div><div class="fw-semibold">{{ $roomType->MaLoaiPhong ?? '--' }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên loại phòng</div><div class="fw-semibold">{{ $roomType->TenLoaiPhong ?? '--' }}</div></div></div>
+    <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold hm-room-type-description">{{ $roomType->Mota ?? '--' }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người lớn</div><div class="fw-semibold">{{ $roomType->NguoiLon ?? '--' }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trẻ em</div><div class="fw-semibold">{{ $roomType->TreEm ?? 0 }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã khuyến mãi</div><div class="fw-semibold">{{ $roomType->MaKM ?: 'chưa có khuyến mãi' }}</div></div></div>
     <div class="col-md-12 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-3">Tiện nghi phòng</div>
-            <div id="room-type-amenities" class="hm-room-type-amenities">
-                <div class="text-muted">Đang tải...</div>
+            <div class="hm-room-type-amenities">
+                @forelse($roomType->tienNghis as $amenity)
+                    <span class="hm-room-type-amenity">{{ $amenity->TenTienNghi ?? 'Tiện nghi' }}</span>
+                @empty
+                    <div class="text-muted">Chưa có tiện nghi phòng.</div>
+                @endforelse
             </div>
         </div>
     </div>
     <div class="col-md-12 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-3">Ảnh phòng</div>
-            <div id="room-type-images" class="hm-room-type-images">
-                <div class="text-muted">Đang tải...</div>
+            <div class="hm-room-type-images">
+                @forelse($roomType->hinhs as $image)
+                    <div class="hm-room-type-images__item">
+                        <img
+                            src="{{ $image->Url ?: 'https://placehold.co/800x800/f3f4f6/9ca3af?text=Room+Type' }}"
+                            alt="Ảnh phòng {{ $loop->iteration }}"
+                            class="hm-room-type-images__img rounded border bg-light"
+                            onerror="this.onerror=null;this.src='https://placehold.co/800x800/f3f4f6/9ca3af?text=Room+Type';"
+                        >
+                    </div>
+                @empty
+                    <div class="text-muted">Chưa có ảnh phòng.</div>
+                @endforelse
             </div>
         </div>
     </div>
-    <div id="room-type-show-config" data-room-type-id="{{ request()->route('recordId') }}" data-placeholder-image="https://placehold.co/800x800/f3f4f6/9ca3af?text=Room+Type" hidden></div>
-
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', async function () {
-                const config = document.getElementById('room-type-show-config');
-                const roomTypeId = config ? config.dataset.roomTypeId : '';
-                const placeholderImage = config ? config.dataset.placeholderImage : '';
-                const imageContainer = document.getElementById('room-type-images');
-                const amenitiesContainer = document.getElementById('room-type-amenities');
-
-                const getImageUrl = function (image) {
-                    if (!image) {
-                        return '';
-                    }
-
-                    return image.Url || image.url || image.DuongDan || image.duong_dan || '';
-                };
-
-                const renderImages = function (roomType) {
-                    if (!roomType || !Array.isArray(roomType.hinhs) || !roomType.hinhs.length) {
-                        imageContainer.innerHTML = '<div class="text-muted">Chưa có ảnh phòng.</div>';
-                        return;
-                    }
-
-                    imageContainer.innerHTML = roomType.hinhs.map(function (image, index) {
-                        const imageUrl = getImageUrl(image) || placeholderImage;
-                        return `
-                            <div class="hm-room-type-images__item">
-                                <img
-                                    src="${imageUrl}"
-                                    alt="Ảnh phòng ${index + 1}"
-                                    class="hm-room-type-images__img rounded border bg-light"
-                                    onerror="this.onerror=null;this.src='${placeholderImage}';"
-                                >
-                            </div>
-                        `;
-                    }).join('');
-                };
-
-                const renderAmenities = function (roomType) {
-                    const amenities = roomType && Array.isArray(roomType.tienNghis)
-                        ? roomType.tienNghis
-                        : (roomType && Array.isArray(roomType.tien_nghis) ? roomType.tien_nghis : []);
-
-                    if (!amenitiesContainer) {
-                        return;
-                    }
-
-                    if (!amenities.length) {
-                        amenitiesContainer.innerHTML = '<div class="text-muted">Chưa có tiện nghi phòng.</div>';
-                        return;
-                    }
-
-                    amenitiesContainer.innerHTML = amenities.map(function (amenity) {
-                        const amenityName = amenity && (amenity.TenTienNghi || amenity.ten_tien_nghi)
-                            ? (amenity.TenTienNghi || amenity.ten_tien_nghi)
-                            : 'Tiện nghi';
-
-                        return `<span class="hm-room-type-amenity">${amenityName}</span>`;
-                    }).join('');
-                };
-
-                try {
-                    const response = await fetch(`/api/loai-phong/${roomTypeId}`, {
-                        headers: { 'Accept': 'application/json' }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Không thể tải chi tiết loại phòng.');
-                    }
-
-                    const payload = await response.json();
-                    const roomType = payload && payload.data ? payload.data : null;
-
-                    document.getElementById('room-type-id').textContent = roomType && roomType.MaLoaiPhong ? roomType.MaLoaiPhong : '--';
-                    document.getElementById('room-type-name').textContent = roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : '--';
-                    document.getElementById('room-type-desc').textContent = roomType && roomType.Mota ? roomType.Mota : '--';
-                    document.getElementById('room-type-adults').textContent = roomType && roomType.NguoiLon ? roomType.NguoiLon : '--';
-                    document.getElementById('room-type-children').textContent = roomType && roomType.TreEm !== undefined ? roomType.TreEm : 0;
-                    renderAmenities(roomType);
-                    renderImages(roomType);
-                } catch (error) {
-                    ['room-type-id', 'room-type-desc', 'room-type-adults', 'room-type-children']
-                        .forEach(function (id) {
-                            document.getElementById(id).textContent = '--';
-                        });
-                    document.getElementById('room-type-name').textContent = error.message;
-                    if (amenitiesContainer) {
-                        amenitiesContainer.innerHTML = '<div class="text-muted">--</div>';
-                    }
-                    imageContainer.innerHTML = '<div class="text-muted">--</div>';
-                }
-            });
-        </script>
-    @endpush
 </x-hotel-management.show-page>

@@ -5,14 +5,15 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\LoaiPhong;
 use App\Models\TienNghi;
-use App\Services\Guards\LoaiPhongSoftDeleteGuard;
+use App\Services\Guards\LoaiPhongDeletionGuard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class LoaiPhongController extends Controller
 {
     public function __construct(
-        private LoaiPhongSoftDeleteGuard $guard
+        private LoaiPhongDeletionGuard $guard
     ) {
     }
 
@@ -45,13 +46,6 @@ class LoaiPhongController extends Controller
         return $this->success($data, 'Lấy danh sách loại phòng thành công');
     }
 
-    public function trash()
-    {
-        $data = LoaiPhong::onlyTrashed()->with($this->fullData())->get();
-
-        return $this->success($data, 'Lấy danh sách loại phòng trong thùng rác thành công');
-    }
-
     public function store(Request $request)
     {
         $data = $request->validate([
@@ -64,7 +58,7 @@ class LoaiPhongController extends Controller
                 'nullable',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
         ]);
 
@@ -105,7 +99,7 @@ class LoaiPhongController extends Controller
                 'nullable',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
         ]);
 
@@ -125,55 +119,33 @@ class LoaiPhongController extends Controller
             return $this->error('Không tìm thấy loại phòng', 404);
         }
 
-        $decision = $this->guard->canSoftDelete($loaiPhong);
+        $decision = $this->guard->canDelete($loaiPhong);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
-        $loaiPhong->delete();
+        DB::transaction(function () use ($loaiPhong) {
+            DB::table('ChiTietHoaDon')
+                ->where('MaLoaiPhong', $loaiPhong->MaLoaiPhong)
+                ->update(['MaLoaiPhong' => null]);
 
-        return $this->success(null, 'Đã chuyển loại phòng vào thùng rác');
-    }
+            DB::table('Hinh')
+                ->where('MaLoaiPhong', $loaiPhong->MaLoaiPhong)
+                ->delete();
 
-    public function restore($id)
-    {
-        $loaiPhong = LoaiPhong::onlyTrashed()->find($id);
+            $loaiPhong->tienNghis()->detach();
+            $loaiPhong->phongs()->delete();
+            $loaiPhong->delete();
+        });
 
-        if (!$loaiPhong) {
-            return $this->error('Không tìm thấy loại phòng trong thùng rác', 404);
-        }
-
-        $loaiPhong->restore();
-
-        return $this->success(
-            LoaiPhong::with($this->fullData())->find($id),
-            'Khôi phục loại phòng thành công'
-        );
-    }
-
-    public function forceDelete($id)
-    {
-        $loaiPhong = LoaiPhong::onlyTrashed()->find($id);
-
-        if (!$loaiPhong) {
-            return $this->error('Không tìm thấy loại phòng trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($loaiPhong);
-        if (!$decision['allowed']) {
-            return $this->error($decision['message'], 409);
-        }
-
-        $loaiPhong->forceDelete();
-
-        return $this->success(null, 'Xóa vĩnh viễn loại phòng thành công');
+        return $this->success(null, 'Xóa loại phòng thành công');
     }
 
     public function updateTienNghi(Request $request, $id)
     {
         $request->validate([
             'tienNghiIds' => 'present|array',
-            'tienNghiIds.*' => Rule::exists('TienNghi', 'MaTienNghi')->whereNull('deleted_at'),
+            'tienNghiIds.*' => Rule::exists('TienNghi', 'MaTienNghi'),
         ]);
 
         $loaiPhong = LoaiPhong::find($id);

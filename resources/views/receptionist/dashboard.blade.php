@@ -237,8 +237,8 @@
                                     . ($room['type'] ? '<div class="text-muted small mt-1">' . e($room['type']) . '</div>' : '');
                             @endphp
 
-                            @if($room['bookingId'] && in_array($room['status'], ['booked', 'using'], true))
-                                <a href="{{ route('reception.booking-detail', ['bookingId' => $room['bookingId']]) }}" class="fd-room-link {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</a>
+                            @if($room['bookingDetailId'] && in_array($room['status'], ['booked', 'using'], true))
+                                <a href="{{ route('reception.booking-detail', ['bookingDetailId' => $room['bookingDetailId']]) }}" class="fd-room-link {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</a>
                             @else
                                 <div class="fd-room {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</div>
                             @endif
@@ -255,8 +255,8 @@
                 <div class="fw-semibold mb-2" style="font-weight: 600">Tầng 1</div>
                 <div class="fd-room-grid">
                     <div class="fd-room fd-empty"><div class="fw-bold">A101</div><div>Trống</div></div>
-                    <a href="{{ route('reception.booking-detail', ['bookingId' => 9002]) }}" class="fd-room-link fd-using"><div class="fw-bold">A102</div><div>Đang sử dụng</div></a>
-                    <a href="{{ route('reception.booking-detail', ['bookingId' => 9001]) }}" class="fd-room-link fd-booked"><div class="fw-bold">A103</div><div>Đã đặt</div></a>
+                    <a href="{{ route('reception.booking-detail', ['bookingDetailId' => 9002]) }}" class="fd-room-link fd-using"><div class="fw-bold">A102</div><div>Đang sử dụng</div></a>
+                    <a href="{{ route('reception.booking-detail', ['bookingDetailId' => 9001]) }}" class="fd-room-link fd-booked"><div class="fw-bold">A103</div><div>Đã đặt</div></a>
                 </div>
             </div>
 
@@ -265,10 +265,10 @@
                 <div class="fd-room-grid">
                     <div class="fd-room fd-cleaning"><div class="fw-bold">B201</div><div>Đang dọn dẹp</div></div>
                     <div class="fd-room fd-empty"><div class="fw-bold">B202</div><div>Trống</div></div>
-                    <a href="{{ route('reception.booking-detail', ['bookingId' => 9003]) }}" class="fd-room-link fd-booked"><div class="fw-bold">B203</div><div>Đã đặt</div></a>
-                    <a href="{{ route('reception.booking-detail', ['bookingId' => 9004]) }}" class="fd-room-link fd-booked"><div class="fw-bold">B204</div><div>Đã đặt</div></a>
+                    <a href="{{ route('reception.booking-detail', ['bookingDetailId' => 9003]) }}" class="fd-room-link fd-booked"><div class="fw-bold">B203</div><div>Đã đặt</div></a>
+                    <a href="{{ route('reception.booking-detail', ['bookingDetailId' => 9004]) }}" class="fd-room-link fd-booked"><div class="fw-bold">B204</div><div>Đã đặt</div></a>
                     <div class="fd-room fd-empty"><div class="fw-bold">B205</div><div>Trống</div></div>
-                    <a href="{{ route('reception.booking-detail', ['bookingId' => 9005]) }}" class="fd-room-link fd-using"><div class="fw-bold">B206</div><div>Đang sử dụng</div></a>
+                    <a href="{{ route('reception.booking-detail', ['bookingDetailId' => 9005]) }}" class="fd-room-link fd-using"><div class="fw-bold">B206</div><div>Đang sử dụng</div></a>
                 </div>
             </div>
             @endif

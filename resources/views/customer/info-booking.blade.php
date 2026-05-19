@@ -242,6 +242,22 @@
           return `${Number(value || 0).toLocaleString('vi-VN')} vnd`;
         }
 
+        function renderUnitPrice(room) {
+          const salePrice = Number(room.price || 0);
+
+          if (salePrice <= 0) {
+            return formatUnitPrice(0);
+          }
+
+          return `
+            <span class="customer-room-price">
+              <span class="customer-room-price-current">
+                <span class="customer-room-price-sale">${formatUnitPrice(salePrice)}</span>
+              </span>
+            </span>
+          `;
+        }
+
         function escapeHtml(value) {
           return String(value ?? '').replace(/[&<>"']/g, (char) => ({
             '&': '&amp;',
@@ -315,7 +331,6 @@
                 adults > 0 ? `${adults} người lớn` : '',
                 children > 0 ? `${children} trẻ em` : '',
               ].filter(Boolean).join(', ') || 'Theo tiêu chí đã chọn';
-              const roomUnitPrice = Number(room.price || 0);
               const nights = Number(booking.nights || 1);
 
               return Array.from({ length: quantity }, () => {
@@ -325,7 +340,11 @@
                 <div class="booking-summary-room">
                   <p><strong>Phòng ${roomDisplayIndex}:</strong> ${escapeHtml(room.name)}</p>
                   <p>Số người: ${escapeHtml(guestText)}</p>
-                  <p class="booking-summary-room-unit-price">Đơn giá: ${formatUnitPrice(roomUnitPrice)}/ đêm x ${nights} đêm</p>
+                  <p class="booking-summary-room-unit-price">
+                    <span class="booking-summary-room-unit-label">Đơn giá:</span>
+                    <span class="booking-summary-room-unit-value">${renderUnitPrice(room)}</span>
+                    <span class="booking-summary-room-unit-meta">/ đêm x ${nights} đêm</span>
+                  </p>
                 </div>
               `;
               });

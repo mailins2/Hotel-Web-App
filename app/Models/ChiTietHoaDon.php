@@ -36,6 +36,6 @@ class ChiTietHoaDon extends Model
     }
     public function loaiPhong()
     {
-        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong')->withTrashed();
+        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong');
     }
 }

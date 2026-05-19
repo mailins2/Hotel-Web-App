@@ -79,9 +79,16 @@ Route::prefix('customer')->name('customer.')->group(function () {
         $serviceBookingOptions = collect();
 
         if ($customerId) {
-            $serviceBookingOptions = DatPhong::with('chiTietDatPhong.phong')
+            $serviceBookingOptions = DatPhong::with([
+                'chiTietDatPhong' => function ($query) {
+                    $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+                },
+                'chiTietDatPhong.phong',
+            ])
                 ->where('MaKH', $customerId)
-                ->where('TinhTrang', DatPhong::CHECKED_IN)
+                ->whereHas('chiTietDatPhong', function ($query) {
+                    $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+                })
                 ->orderByDesc('MaDatPhong')
                 ->get()
                 ->map(function (DatPhong $booking) {
@@ -167,6 +174,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
         if ($customerId) {
             $expiredBookingIds = \App\Models\DatPhong::where('MaKH', $customerId)
                 ->whereIn('TinhTrang', [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED])
+                ->whereDoesntHave('chiTietDatPhong', function ($query) {
+                    $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+                })
                 ->whereDate('NgayNhanPhong', '<', now()->toDateString())
                 ->pluck('MaDatPhong');
 
@@ -174,6 +184,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 \Illuminate\Support\Facades\DB::transaction(function () use ($expiredBookingIds) {
                     \App\Models\DatPhong::whereIn('MaDatPhong', $expiredBookingIds)
                         ->update(['TinhTrang' => \App\Models\DatPhong::CANCELLED]);
+
+                    \App\Models\ChiTietDatPhong::whereIn('MaDatPhong', $expiredBookingIds)
+                        ->update(['TrangThai' => \App\Models\ChiTietDatPhong::CANCELLED]);
 
                     \App\Models\HoaDon::whereIn('MaDatPhong', $expiredBookingIds)
                         ->update(['TrangThai' => 3]);
@@ -238,6 +251,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
         \Illuminate\Support\Facades\DB::transaction(function () use ($datPhong) {
             $datPhong->update(['TinhTrang' => \App\Models\DatPhong::CANCELLED]);
+
+            \App\Models\ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->update(['TrangThai' => \App\Models\ChiTietDatPhong::CANCELLED]);
 
             \App\Models\HoaDon::where('MaDatPhong', $datPhong->MaDatPhong)
                 ->update(['TrangThai' => 3]);
@@ -313,11 +329,14 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
             'amenities' => $amenities,
         ]);
     })->name('room-amenities.index');
-    Route::view('/room-amenities/trash', 'hotel-management.room-amenities.trash')->name('room-amenities.trash');
     Route::view('/room-amenities/create', 'hotel-management.room-amenities.form')->name('room-amenities.create');
     Route::view('/room-amenities/{recordId}/edit', 'hotel-management.room-amenities.form')->name('room-amenities.edit');
     Route::view('/room-amenities/{recordId}/assign', 'hotel-management.room-amenities.assign')->name('room-amenities.assign');
-    Route::view('/room-amenities/{recordId}', 'hotel-management.room-amenities.show')->name('room-amenities.show');
+    Route::get('/room-amenities/{recordId}', function ($recordId) {
+        return view('hotel-management.room-amenities.show', [
+            'amenity' => TienNghi::findOrFail($recordId),
+        ]);
+    })->name('room-amenities.show');
     Route::prefix('accounts')->name('accounts.')->group(function () {
         Route::post('/', [AccountManagementController::class, 'store'])->name('store');
         Route::put('/{recordId}', [AccountManagementController::class, 'update'])->name('update');
@@ -332,7 +351,18 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                 'bookings' => $bookings,
             ]);
         })->name('index');
-        Route::view('/{recordId}', 'hotel-management.bookings.show')->name('show');
+        Route::get('/{recordId}', function ($recordId) {
+            $booking = DatPhong::with([
+                'khachHang.taiKhoan',
+                'chiTietDatPhong.phong.loaiPhong.khuyenMai',
+                'hoaDon.thanhToans',
+                'hoaDon.khuyenMai',
+            ])->findOrFail($recordId);
+
+            return view('hotel-management.bookings.show', [
+                'booking' => $booking,
+            ]);
+        })->name('show');
     });
     Route::prefix('customers')->name('customers.')->group(function () {
         Route::get('/', function () {
@@ -348,7 +378,11 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         Route::post('/', [CustomerManagementController::class, 'store'])->name('store');
         Route::get('/{recordId}/edit', [CustomerManagementController::class, 'edit'])->name('edit');
         Route::put('/{recordId}', [CustomerManagementController::class, 'update'])->name('update');
-        Route::view('/{recordId}', 'hotel-management.customers.show')->name('show');
+        Route::get('/{recordId}', function ($recordId) {
+            return view('hotel-management.customers.show', [
+                'customer' => KhachHang::findOrFail($recordId),
+            ]);
+        })->name('show');
     });
 
     $hotelManagementViews = [
@@ -412,7 +446,6 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
 
                 return view($viewBase . '.index', $viewData);
             })->name('index');
-            Route::view('/trash', $viewBase . '.trash')->name('trash');
             Route::view('/create', $viewBase . '.form')->name('create');
             Route::view('/{recordId}/edit', $viewBase . '.form')->name('edit');
             if ($module === 'services') {
@@ -432,7 +465,68 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                     ]);
                 })->name('entertainment');
             }
-            Route::view('/{recordId}', $viewBase . '.show')->name('show');
+            Route::get('/{recordId}', function ($recordId) use ($viewBase, $module) {
+                $viewData = match ($module) {
+                    'accounts' => [
+                        'account' => TaiKhoan::with(['khachHang', 'nhanVien'])->findOrFail($recordId),
+                    ],
+                    'employees' => [
+                        'employee' => NhanVien::with('taiKhoan')->findOrFail($recordId),
+                    ],
+                    'room-types' => [
+                        'roomType' => LoaiPhong::with(['tienNghis', 'hinhs'])->findOrFail($recordId),
+                    ],
+                    'rooms' => [
+                        'room' => Phong::with([
+                            'loaiPhong',
+                            'chiTietDatPhong' => function ($query) {
+                                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                            },
+                            'chiTietDatPhong.datPhong' => function ($query) {
+                                $today = Carbon::today()->toDateString();
+
+                                $query->where('NgayNhanPhong', '<=', $today)
+                                    ->where('NgayTraPhong', '>=', $today)
+                                    ->whereIn('TinhTrang', [
+                                        DatPhong::HOLD,
+                                        DatPhong::CONFIRMED,
+                                        DatPhong::CHECKED_IN,
+                                    ]);
+                            },
+                        ])->findOrFail($recordId),
+                    ],
+                    'services' => [
+                        'service' => DichVu::with('hinhs')->findOrFail($recordId),
+                    ],
+                    'promotions' => [
+                        'promotion' => KhuyenMai::findOrFail($recordId),
+                    ],
+                    'invoices' => [
+                        'invoice' => HoaDon::with([
+                            'nhanVien',
+                            'datPhong.khachHang',
+                            'datPhong.chiTietDatPhong.phong.loaiPhong',
+                            'khuyenMai',
+                            'thanhToans',
+                            'chiTietHoaDons.loaiPhong',
+                            'chiTietHoaDons.suDung.dichVu',
+                            'chiTietHoaDons.denBu',
+                        ])->findOrFail($recordId),
+                    ],
+                    'payments' => [
+                        'payment' => ThanhToan::with('hoaDon.datPhong.khachHang')->findOrFail($recordId),
+                    ],
+                    'reviews' => [
+                        'review' => DanhGia::with([
+                            'datPhong.khachHang',
+                            'datPhong.chiTietDatPhong.phong.loaiPhong',
+                        ])->findOrFail($recordId),
+                    ],
+                    default => [],
+                };
+
+                return view($viewBase . '.show', $viewData);
+            })->name('show');
         });
     }
 });
@@ -449,6 +543,9 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
 
         $rooms = Phong::with([
             'loaiPhong',
+            'chiTietDatPhong' => function ($query) {
+                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+            },
             'chiTietDatPhong.datPhong' => function ($query) use ($today) {
                 $query->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -463,21 +560,25 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             ->orderBy('SoPhong')
             ->get()
             ->map(function (Phong $room) {
-                $activeBookings = $room->chiTietDatPhong
-                    ->pluck('datPhong')
-                    ->filter()
-                    ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
-                        DatPhong::CHECKED_IN => 3,
-                        DatPhong::CONFIRMED => 2,
-                        DatPhong::HOLD => 1,
+                $activeDetails = $room->chiTietDatPhong
+                    ->filter(fn ($detail) => $detail->datPhong)
+                    ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+                        \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+                        \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                            DatPhong::CONFIRMED => 2,
+                            DatPhong::HOLD => 1,
+                            default => 0,
+                        },
                         default => 0,
                     });
 
-                $activeBooking = $activeBookings->first();
+                $activeDetail = $activeDetails->first();
+                $activeBooking = $activeDetail?->datPhong;
                 $status = match (true) {
                     (int) $room->TinhTrang === 3 => 'cleaning',
-                    $activeBookings->contains(fn ($booking) => (int) $booking->TinhTrang === DatPhong::CHECKED_IN) => 'using',
-                    $activeBookings->contains(fn ($booking) => in_array((int) $booking->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
+                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 'using',
+                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
+                        && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
                     default => 'empty',
                 };
 
@@ -499,6 +600,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'type' => $room->loaiPhong?->TenLoaiPhong,
                     'status' => $status,
                     'statusLabel' => $statusLabel,
+                    'bookingDetailId' => $activeDetail?->MaCTDP,
                     'bookingId' => $activeBooking?->MaDatPhong,
                     'guestName' => $activeBooking?->khachHang?->TenKH,
                 ];
@@ -508,20 +610,28 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'roomFloors' => $rooms->groupBy('floor')->sortKeys(),
         ]);
     })->name('dashboard');
-    Route::get('/booking-details/{bookingId}', function ($bookingId) {
-        $booking = DatPhong::with([
-            'khachHang.taiKhoan',
-            'chiTietDatPhong.phong.loaiPhong',
-            'hoaDon.khuyenMai',
-            'hoaDon.thanhToans',
-            'hoaDon.chiTietHoaDons.loaiPhong',
-            'hoaDon.chiTietHoaDons.suDung.dichVu',
-            'hoaDon.chiTietHoaDons.denBu',
-            'suDungDichVu.dichVu',
-        ])->findOrFail($bookingId);
+    Route::get('/booking-details/{bookingDetailId}', function ($bookingDetailId) {
+        $bookingDetail = \App\Models\ChiTietDatPhong::with([
+            'phong.loaiPhong',
+            'datPhong.khachHang.taiKhoan',
+            'datPhong.hoaDon.khuyenMai',
+            'datPhong.hoaDon.thanhToans',
+            'datPhong.hoaDon.chiTietHoaDons.loaiPhong',
+            'datPhong.hoaDon.chiTietHoaDons.suDung.dichVu',
+            'datPhong.hoaDon.chiTietHoaDons.denBu',
+            'datPhong.suDungDichVu.dichVu',
+            'datPhong.luuTrus',
+        ])->findOrFail($bookingDetailId);
+
+        $booking = $bookingDetail->datPhong;
+        $booking->setRelation('chiTietDatPhong', collect([$bookingDetail]));
+        $booking->setRelation('luuTrus', ($booking->luuTrus ?? collect())
+            ->where('MaPhong', (int) $bookingDetail->MaPhong)
+            ->values());
 
         return view('receptionist.booking-detail', [
             'booking' => $booking,
+            'selectedRoomDetail' => $bookingDetail,
         ]);
     })->name('booking-detail');
 
@@ -561,13 +671,28 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
 
         $checkInBookings = DatPhong::with([
             'khachHang',
+            'chiTietDatPhong' => function ($query) {
+                $query->whereIn('TrangThai', [
+                    \App\Models\ChiTietDatPhong::BOOKED,
+                    \App\Models\ChiTietDatPhong::CHECKED_IN,
+                ]);
+            },
             'chiTietDatPhong.phong.loaiPhong',
         ])
             ->where('TinhTrang', DatPhong::CONFIRMED)
             ->whereDate('NgayNhanPhong', $today->toDateString())
             ->orderBy('NgayNhanPhong')
             ->orderBy('MaDatPhong')
-            ->get();
+            ->get()
+            ->map(function (DatPhong $booking) {
+                $booking->setRelation('chiTietDatPhong', $booking->chiTietDatPhong
+                    ->sortBy(fn ($detail) => ((int) $detail->TrangThai * 1000000) + (int) $detail->MaPhong)
+                    ->values());
+                return $booking;
+            })
+            ->filter(fn (DatPhong $booking) => $booking->chiTietDatPhong
+                ->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED))
+            ->values();
 
         return view('receptionist.check-in-form', [
             'checkInBookings' => $checkInBookings,

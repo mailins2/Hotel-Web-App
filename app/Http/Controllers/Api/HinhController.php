@@ -14,26 +14,15 @@ class HinhController extends Controller
 {
     public function index()
     {
-        $hinhs = Hinh::with([
-                'loaiPhongs' => function ($query) {
-                    $query->whereNull('LoaiPhong.deleted_at');
-                },
-                'dichVus' => function ($query) {
-                    $query->whereNull('DichVu.deleted_at');
-                },
-            ])
+        $hinhs = Hinh::with(['loaiPhongs', 'dichVus'])
             ->where(function ($query) {
                 $query->where(function ($q) {
                     $q->whereNotNull('MaLoaiPhong')
-                        ->whereHas('loaiPhongs', function ($relation) {
-                            $relation->whereNull('LoaiPhong.deleted_at');
-                        });
+                        ->whereHas('loaiPhongs');
                 })
                     ->orWhere(function ($q) {
                         $q->whereNotNull('MaDV')
-                            ->whereHas('dichVus', function ($relation) {
-                                $relation->whereNull('DichVu.deleted_at');
-                            });
+                            ->whereHas('dichVus');
                     })
                     ->orWhere(function ($q) {
                         $q->whereNull('MaLoaiPhong')
@@ -46,23 +35,20 @@ class HinhController extends Controller
 
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'Url'         => 'required|string|max:500',
-            'MaLoaiPhong' => [
-                'nullable',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
-            ],
-            'MaDV'        => [
-                'nullable',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
-            ],
-        ]);
+        $validator = $this->makeValidator($request, false);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $payload = $this->buildPayload($request);
+        try {
+            $payload = $this->buildPayload($request);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'message' => 'Khong the upload hinh anh. Vui long kiem tra cau hinh Cloudinary hoac thu lai sau.',
+            ], 500);
+        }
+
         $hinh = Hinh::create($payload);
 
         return response()->json([
@@ -94,11 +80,11 @@ class HinhController extends Controller
             'Url'         => 'sometimes|string|max:500',
             'MaLoaiPhong' => [
                 'nullable',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
             'MaDV'        => [
                 'nullable',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+                Rule::exists('DichVu', 'MaDV'),
             ],
         ]);
 

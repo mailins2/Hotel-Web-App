@@ -4,12 +4,9 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LoaiPhong extends Model
 {
-    use SoftDeletes;
-
     protected $table = 'LoaiPhong';
     protected $primaryKey = 'MaLoaiPhong';
     public $timestamps = false;
@@ -38,7 +35,7 @@ class LoaiPhong extends Model
     }
     public function khuyenMai()
     {
-        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM')->withTrashed();
+        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM');
     }
 
     public function getGiaGiamAttribute(): float
@@ -71,7 +68,7 @@ class LoaiPhong extends Model
             ? $this->getRelation('khuyenMai')
             : $this->khuyenMai()->first();
 
-        if (!$khuyenMai || $khuyenMai->trashed()) {
+        if (!$khuyenMai) {
             return null;
         }
 

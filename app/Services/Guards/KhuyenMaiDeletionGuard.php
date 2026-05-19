@@ -4,14 +4,9 @@ namespace App\Services\Guards;
 
 use App\Models\KhuyenMai;
 
-class KhuyenMaiSoftDeleteGuard extends AbstractSoftDeleteGuard
+class KhuyenMaiDeletionGuard extends AbstractDeletionGuard
 {
-    public function canSoftDelete(KhuyenMai $khuyenMai): array
-    {
-        return $this->allow();
-    }
-
-    public function canForceDelete(KhuyenMai $khuyenMai): array
+    public function canDelete(KhuyenMai $khuyenMai): array
     {
         $blockingMessages = [];
 
@@ -27,7 +22,7 @@ class KhuyenMaiSoftDeleteGuard extends AbstractSoftDeleteGuard
 
         if ($blockingMessages !== []) {
             return $this->deny(
-                'Không thể xóa vĩnh viễn khuyến mãi vì vẫn còn liên kết với ' . implode(', ', $blockingMessages) . '.'
+                'Khuyến mãi đang được dùng trong ' . implode(', ', $blockingMessages) . '.'
             );
         }
 
