@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\DanhGiaController;
 use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
+use App\Http\Controllers\Api\AuthMobileController;
 
 Route::apiResource('tien-nghi', TienNghiController::class);
 
@@ -38,7 +39,8 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
 Route::apiResource('phong', PhongController::class);
 
-
+// Lịch sử đặt phòng của khách hàng
+Route::get('/khach-hang/{maKH}/dat-phong', [DatPhongController::class, 'lichSuDatPhong']);
 Route::post('dat-phong/{id}/change-room', [DatPhongController::class, 'changeRoom']);
 Route::post('dat-phong/{id}/add-room', [DatPhongController::class, 'addRoom']);
 Route::delete('dat-phong/{id}/remove-room/{maPhong}', [DatPhongController::class, 'removeRoom']);
@@ -66,6 +68,17 @@ Route::apiResource('den-bu', DenBuHuHongController::class);
 Route::apiResource('luu-tru', LuuTruController::class);
 
 Route::apiResource('khuyen-mai', KhuyenMaiController::class);
+
+
+
+// 🔥 Đổi mã bằng điểm (mobile app)
+Route::post('kho-khuyen-mai/doi-bang-diem', [KhoKhuyenMaiController::class, 'doiBangDiem']);
+
+// 🔥 Sử dụng mã khi thanh toán (mobile app)
+Route::post('kho-khuyen-mai/su-dung', [KhoKhuyenMaiController::class, 'suDung']);
+
+// 🔥 Kiểm tra điểm trước khi đổi
+Route::get('kho-khuyen-mai/kiem-tra-diem/{maKH}/{maKM}', [KhoKhuyenMaiController::class, 'kiemTraDiem']);
 
 Route::get('kho-khuyen-mai/khach-hang/{maKH}', [KhoKhuyenMaiController::class, 'showByKhachHang']);
 Route::put('kho-khuyen-mai/update-status', [KhoKhuyenMaiController::class, 'updateStatus']);
@@ -95,3 +108,33 @@ Route::post('/zalopay-callback', [PaymentController::class, 'callback']);
 Route::post('/vnpay-payment', [VnPayPaymentController::class, 'createPayment']);
 Route::get('/vnpay-ipn', [VnPayPaymentController::class, 'ipn']);
 Route::get('/vnpay-return', [VnPayPaymentController::class, 'return']);
+
+// route mobile app
+
+// Auth Mobile
+Route::post('/mobile/login', [AuthMobileController::class, 'login']);
+Route::post('/mobile/register/step1', [AuthMobileController::class, 'registerStepOne']);
+Route::post('/mobile/register/step2', [AuthMobileController::class, 'registerStepTwo']);
+Route::get('/mobile/provinces', [AuthMobileController::class, 'getProvinces']);
+Route::get('/mobile/districts/{provinceCode}', [AuthMobileController::class, 'getDistricts']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/mobile/logout', [AuthMobileController::class, 'logout']);
+     Route::get('/mobile/user-profile', [AuthMobileController::class, 'getUserProfile']);
+});
+
+Route::get('/vnpay/check-status/{txnRef}', function ($txnRef) {
+    $mapping = Cache::get("vnpay:txn:{$txnRef}");
+    
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'txn_ref' => $txnRef,
+            'paid' => $mapping['paid'] ?? false,
+            'paid_at' => $mapping['paid_at'] ?? null,
+            'amount' => $mapping['amount'] ?? 0,
+        ],
+    ]);
+});
+// Thêm dòng này vào sau các route của DatPhongController
+Route::post('/dat-phong/{id}/cancel', [DatPhongController::class, 'cancel']);

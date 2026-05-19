@@ -3,72 +3,95 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: laravel_app
     working_dir: /var/www
+
+    env_file:
+      - .env
+
     ports:
       - "5173:5173"
+
     volumes:
       - ./:/var/www
       - /var/www/node_modules
       - /var/www/public/build
+
     depends_on:
       db:
         condition: service_healthy
+
     healthcheck:
       test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
       interval: 5s
       timeout: 3s
       retries: 60
       start_period: 10s
+
     networks:
       - laravel
 
   webserver:
     image: nginx:alpine
     container_name: laravel_nginx
+
     ports:
       - "8000:80"
+
     volumes:
       - ./:/var/www
       - ./docker/nginx:/etc/nginx/conf.d
+
     depends_on:
       app:
         condition: service_healthy
+
     networks:
       - laravel
 
   db:
     image: mysql:8.0
     container_name: laravel_mysql
+
     restart: always
+
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: QLKS
       MYSQL_USER: laravel
       MYSQL_PASSWORD: laravel
+
     ports:
       - "3306:3306"
+
     volumes:
       - dbdata:/var/lib/mysql
+
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot --silent"]
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 20s
+
     networks:
       - laravel
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: laravel_pma
+
     ports:
       - "8080:80"
+
     environment:
       PMA_HOST: db
+
     depends_on:
       db:
         condition: service_healthy
+
     networks:
       - laravel
 
