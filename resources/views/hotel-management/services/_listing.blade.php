@@ -18,11 +18,11 @@
 >
     <x-slot:filters>
         <div class="col-md-4">
-            <label class="form-label">Tên dịch vụ</label>
+            <label class="form-label">Tìm kiếm</label>
             <input
                 type="text"
                 class="form-control"
-                placeholder="Tìm theo tên dịch vụ"
+                placeholder="Tìm theo mã, tên dịch vụ"
                 data-service-search
             >
         </div>
@@ -272,7 +272,21 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
                 }
 
                 if (resetButton) {

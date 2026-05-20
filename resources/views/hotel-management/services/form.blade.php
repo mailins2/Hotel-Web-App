@@ -38,6 +38,7 @@
             id="service-id"
             value="--"
             readonly
+            disabled
         >
     </div>
 
@@ -91,7 +92,7 @@
             id="service-image-preview"
             class="hm-service-image-preview is-hidden"
         >
-        <div class="hm-service-image-note" id="service-image-note">Chọn 1 ảnh từ máy tính để upload lên Cloudinary.</div>
+        <div class="hm-service-image-note" id="service-image-note">Chọn 1 ảnh để upload</div>
         <div class="invalid-feedback d-block" id="service-image-file-error"></div>
     </div>
 

@@ -5,13 +5,16 @@
 >
     <x-slot:filters>
         <div class="col-md-3">
-            <label class="form-label">Trạng thái hóa đơn</label>
+            <label class="form-label">Tìm kiếm</label>
+            <input type="text" class="form-control" placeholder="Tìm theo tên khách hàng" data-payment-search>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Loại thanh toán</label>
             <div class="hm-select-wrap">
-                <select class="form-select" data-payment-status>
-                    <option value="">Tất cả trạng thái</option>
-                    <option value="0">Chưa thanh toán</option>
-                    <option value="1">Đã thanh toán</option>
-                    <option value="3">Đã hủy</option>
+                <select class="form-select" data-payment-type>
+                    <option value="">Tất cả loại thanh toán</option>
+                    <option value="0">Đặt cọc</option>
+                    <option value="1">Thanh toán trả phòng</option>
                 </select>
             </div>
         </div>
@@ -49,7 +52,8 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const tableBody = document.getElementById('payment-table-body');
-                const statusSelect = document.querySelector('[data-payment-status]');
+                const searchInput = document.querySelector('[data-payment-search]');
+                const typeSelect = document.querySelector('[data-payment-type]');
                 const filterPanel = document.querySelector('.hm-filter-panel');
                 const config = document.getElementById('payment-index-config');
                 const applyButton = filterPanel ? filterPanel.querySelector('.btn.btn-primary') : null;
@@ -95,7 +99,7 @@
                         case 0:
                             return 'Đặt cọc';
                         case 1:
-                            return 'Thanh toán checkout';
+                            return 'Thanh toán trả phòng';
                         default:
                             return '--';
                     }
@@ -154,6 +158,14 @@
                     }).join('');
                 };
 
+                const getPaymentCustomerName = function (payment) {
+                    const invoice = payment && (payment.hoaDon || payment.hoa_don) ? (payment.hoaDon || payment.hoa_don) : null;
+                    const booking = invoice && (invoice.datPhong || invoice.dat_phong) ? (invoice.datPhong || invoice.dat_phong) : null;
+                    const customer = booking && (booking.khachHang || booking.khach_hang) ? (booking.khachHang || booking.khach_hang) : null;
+
+                    return customer && customer.TenKH ? customer.TenKH : '';
+                };
+
                 const pagination = typeof window.createHmPagination === 'function'
                     ? window.createHmPagination({
                         container: document.querySelector('[data-hm-pagination]'),
@@ -163,11 +175,14 @@
                     : null;
 
                 const applyFilters = function () {
-                    const statusValue = (statusSelect ? statusSelect.value : '') || '';
+                    const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
+                    const typeValue = (typeSelect ? typeSelect.value : '') || '';
 
                     const filtered = payments.filter(function (payment) {
-                        const invoice = payment && (payment.hoaDon || payment.hoa_don) ? (payment.hoaDon || payment.hoa_don) : null;
-                        return statusValue === '' || String(invoice && invoice.TrangThai !== undefined ? invoice.TrangThai : '') === statusValue;
+                        const matchesKeyword = !keyword || getPaymentCustomerName(payment).toLowerCase().includes(keyword);
+                        const matchesType = typeValue === '' || String(payment && payment.LoaiThanhToan !== undefined ? payment.LoaiThanhToan : '') === typeValue;
+
+                        return matchesKeyword && matchesType;
                     });
 
                     if (pagination) {
@@ -186,13 +201,34 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
                     resetButton.addEventListener('click', function () {
-                        if (statusSelect) {
-                            statusSelect.value = '';
+                        if (searchInput) {
+                            searchInput.value = '';
+                        }
+                        if (typeSelect) {
+                            typeSelect.value = '';
                         }
                         applyFilters();
                     });

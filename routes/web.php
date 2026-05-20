@@ -313,7 +313,20 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 */
 
 Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(function () {
-    Route::view('/dashboard', 'hotel-management.report')->name('dashboard');
+    Route::get('/dashboard', function () {
+        $customerCount = DatPhong::whereNotNull('MaKH')
+            ->whereHas('khachHang')
+            ->distinct()
+            ->count('MaKH');
+        $roomUsingCount = Phong::where('TinhTrang', 2)->count();
+        $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
+
+        return view('hotel-management.report', [
+            'customerCount' => $customerCount,
+            'roomUsingCount' => $roomUsingCount,
+            'roomEmptyCount' => $roomEmptyCount,
+        ]);
+    })->name('dashboard');
 });
 
 /*
@@ -323,7 +336,20 @@ Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(func
 */
 
 Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () {
-    Route::view('/reports', 'hotel-management.report')->name('reports.index');
+    Route::get('/reports', function () {
+        $customerCount = DatPhong::whereNotNull('MaKH')
+            ->whereHas('khachHang')
+            ->distinct()
+            ->count('MaKH');
+        $roomUsingCount = Phong::where('TinhTrang', 2)->count();
+        $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
+
+        return view('hotel-management.report', [
+            'customerCount' => $customerCount,
+            'roomUsingCount' => $roomUsingCount,
+            'roomEmptyCount' => $roomEmptyCount,
+        ]);
+    })->name('reports.index');
     Route::get('/room-amenities', function () {
         $amenities = TienNghi::orderByDesc('MaTienNghi')->get();
 
@@ -391,7 +417,6 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
         'accounts' => 'hotel-management.accounts',
         'employees' => 'hotel-management.employees',
         'room-types' => 'hotel-management.room-types',
-        'price-lists' => 'hotel-management.price-lists',
         'rooms' => 'hotel-management.rooms',
         'services' => 'hotel-management.services',
         'promotions' => 'hotel-management.promotions',
@@ -431,7 +456,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'promotions' => KhuyenMai::orderByDesc('MaKM')->get(),
                     ],
                     'invoices' => [
-                        'invoices' => HoaDon::with('nhanVien')
+                        'invoices' => HoaDon::with(['nhanVien', 'datPhong.khachHang'])
                             ->orderByDesc('MaHD')
                             ->get(),
                     ],

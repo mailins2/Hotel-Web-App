@@ -6,7 +6,17 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã NV, tên, mã TK" data-employee-search>
+            <input type="text" class="form-control" placeholder="Tìm theo mã NV, tên nhân viên" data-employee-search>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Chức vụ</label>
+            <div class="hm-select-wrap">
+                <select class="form-select" data-employee-position>
+                    <option value="">Tất cả chức vụ</option>
+                    <option value="0">Quản lý</option>
+                    <option value="1">Nhân viên</option>
+                </select>
+            </div>
         </div>
     </x-slot:filters>
 
@@ -40,6 +50,7 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const tableBody = document.getElementById('employee-table-body');
                 const searchInput = document.querySelector('[data-employee-search]');
+                const positionSelect = document.querySelector('[data-employee-position]');
                 const filterPanel = document.querySelector('.hm-filter-panel');
                 const config = document.getElementById('employee-index-config');
                 const applyButton = filterPanel ? filterPanel.querySelector('.btn.btn-primary') : null;
@@ -140,13 +151,18 @@
 
                 const applyFilters = function () {
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
+                    const positionValue = (positionSelect ? positionSelect.value : '') || '';
 
                     const filtered = employees.filter(function (employee) {
-                        return !keyword
+                        const matchesKeyword = !keyword
                             || String(employee && employee.MaNV ? employee.MaNV : '').toLowerCase().includes(keyword)
-                            || String(employee && employee.TenNV ? employee.TenNV : '').toLowerCase().includes(keyword)
-                            || String(getAccountId(employee)).toLowerCase().includes(keyword)
-                            || mapPosition(employee && employee.ChucVu !== undefined ? employee.ChucVu : null).toLowerCase().includes(keyword);
+                            || String(employee && employee.TenNV ? employee.TenNV : '').toLowerCase().includes(keyword);
+                        const employeePosition = employee && employee.ChucVu !== undefined && employee.ChucVu !== null
+                            ? String(employee.ChucVu)
+                            : '';
+                        const matchesPosition = positionValue === '' || employeePosition === positionValue;
+
+                        return matchesKeyword && matchesPosition;
                     });
 
                     if (pagination) {
@@ -165,13 +181,34 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (positionSelect) {
+                    positionSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
                     resetButton.addEventListener('click', function () {
                         if (searchInput) {
                             searchInput.value = '';
+                        }
+                        if (positionSelect) {
+                            positionSelect.value = '';
                         }
                         applyFilters();
                     });

@@ -88,6 +88,7 @@
             id="assign-room-amenity-id"
             class="form-control hm-readonly-input"
             readonly
+            disabled
             value="Đang tải..."
         >
     </div>
@@ -99,6 +100,7 @@
             id="assign-room-amenity-name"
             class="form-control hm-readonly-input"
             readonly
+            disabled
             value="Đang tải..."
         >
     </div>

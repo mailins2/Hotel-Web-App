@@ -14,7 +14,7 @@
 
     <div class="form-group col-md-6" id="customer-id-group">
         <label class="form-label">Mã khách hàng</label>
-        <input type="text" class="form-control hm-readonly-input" id="customer-id" value="--" readonly>
+        <input type="text" class="form-control hm-readonly-input" id="customer-id" value="--" readonly disabled>
     </div>
 
     <div class="form-group col-md-6">

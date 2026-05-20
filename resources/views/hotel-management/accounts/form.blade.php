@@ -14,6 +14,7 @@
             id="account-id"
             value="--"
             readonly
+            disabled
         >
     </div>
 

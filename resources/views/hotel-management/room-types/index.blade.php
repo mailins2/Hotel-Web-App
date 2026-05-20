@@ -37,7 +37,7 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Loại phòng</label>
-            <div class="hm-select-wrap">
+            <div>
                 <select class="form-select" data-room-type-filter>
                     <option value="">Tất cả</option>
                 </select>
@@ -72,6 +72,43 @@
     ></div>
 
     @push('scripts')
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css">
+        <style>
+            .ts-wrapper.room-type-filter-select .ts-control {
+                min-height: 47px;
+                padding: 0.625rem 0.875rem;
+                border-color: #e7d3cb;
+                border-radius: 0.375rem;
+                color: #4b5563;
+                box-shadow: none;
+            }
+
+            .ts-wrapper.room-type-filter-select.focus .ts-control {
+                border-color: #c97952;
+                box-shadow: 0 0 0 0.2rem rgba(201, 121, 82, 0.18);
+            }
+
+            .ts-wrapper.room-type-filter-select .ts-control input {
+                color: #4b5563;
+            }
+
+            .ts-wrapper.room-type-filter-select .ts-dropdown {
+                border-color: #e7d3cb;
+                box-shadow: 0 14px 32px rgba(74, 52, 40, 0.12);
+            }
+
+            .ts-wrapper.room-type-filter-select .option.active,
+            .ts-wrapper.room-type-filter-select .option:hover {
+                background: rgba(201, 121, 82, 0.12);
+                color: #7c3f28;
+            }
+
+            .ts-wrapper.room-type-filter-select .highlight {
+                background: transparent;
+                color: inherit;
+            }
+        </style>
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const tableBody = document.getElementById('room-type-table-body');
@@ -85,6 +122,7 @@
                 const deleteUrlTemplate = config ? config.dataset.deleteUrlTemplate : '';
 
                 let roomTypes = @json($roomTypes ?? []);
+                let roomTypeFilterSelect = null;
 
                 const compareRecordIdDesc = function (left, right, fieldName) {
                     const leftValue = left && left[fieldName] !== undefined && left[fieldName] !== null ? String(left[fieldName]) : '';
@@ -182,21 +220,69 @@
                     : null;
 
                 const populateFilterOptions = function () {
+                    const currentValue = typeSelect ? typeSelect.value : '';
                     const options = roomTypes
                         .map(function (item) { return item.TenLoaiPhong; })
                         .filter(Boolean);
 
                     const uniqueOptions = Array.from(new Set(options));
-                    typeSelect.innerHTML = '<option value="">Tất cả</option>' + uniqueOptions.map(function (name) {
-                        return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
-                    }).join('');
+
+                    if (roomTypeFilterSelect) {
+                        roomTypeFilterSelect.clear(true);
+                        roomTypeFilterSelect.clearOptions();
+                        roomTypeFilterSelect.addOption({ value: '', text: 'Tất cả' });
+                        uniqueOptions.forEach(function (name) {
+                            roomTypeFilterSelect.addOption({ value: name, text: name });
+                        });
+                        roomTypeFilterSelect.refreshOptions(false);
+
+                        if (currentValue && uniqueOptions.includes(currentValue)) {
+                            roomTypeFilterSelect.setValue(currentValue, true);
+                        }
+                    } else if (typeSelect) {
+                        typeSelect.innerHTML = '<option value="">Tất cả</option>' + uniqueOptions.map(function (name) {
+                            return `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`;
+                        }).join('');
+
+                        if (currentValue && uniqueOptions.includes(currentValue)) {
+                            typeSelect.value = currentValue;
+                        }
+                    }
+                };
+
+                const createRoomTypeFilterSelect = function () {
+                    if (!typeSelect || !window.TomSelect || roomTypeFilterSelect) {
+                        return;
+                    }
+
+                    roomTypeFilterSelect = new TomSelect(typeSelect, {
+                        create: false,
+                        allowEmptyOption: true,
+                        maxItems: 1,
+                        placeholder: 'Tất cả',
+                        searchField: ['text'],
+                        sortField: {
+                            field: '$order',
+                            direction: 'asc'
+                        },
+                        render: {
+                            no_results: function () {
+                                return '<div class="no-results px-3 py-2">Không tìm thấy loại phòng</div>';
+                            }
+                        }
+                    });
+
+                    roomTypeFilterSelect.wrapper.classList.add('room-type-filter-select');
+                    roomTypeFilterSelect.on('change', applyFilters);
                 };
 
                 const applyFilters = function () {
                     const typeValue = (typeSelect ? typeSelect.value : '') || '';
 
                     const filtered = roomTypes.filter(function (roomType) {
-                        return typeValue === '' || String(roomType.TenLoaiPhong || '') === typeValue;
+                        const roomTypeName = String(roomType.TenLoaiPhong || '');
+
+                        return typeValue === '' || roomTypeName === typeValue;
                     });
 
                     if (pagination) {
@@ -212,16 +298,33 @@
                         return compareRecordIdDesc(left, right, 'MaLoaiPhong');
                     });
                     populateFilterOptions();
+                    createRoomTypeFilterSelect();
                     applyFilters();
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
                     resetButton.addEventListener('click', function () {
-                        if (typeSelect) {
+                        if (roomTypeFilterSelect) {
+                            roomTypeFilterSelect.clear();
+                        } else if (typeSelect) {
                             typeSelect.value = '';
                         }
                         applyFilters();

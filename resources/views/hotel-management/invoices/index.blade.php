@@ -5,8 +5,8 @@
 >
     <x-slot:filters>
         <div class="col-md-3">
-            <label class="form-label">Mã hóa đơn</label>
-            <input type="text" class="form-control" placeholder="Tìm mã hóa đơn" data-invoice-search>
+            <label class="form-label">Tìm kiếm</label>
+            <input type="text" class="form-control" placeholder="Tìm theo mã hóa đơn, tên khách hàng, SĐT" data-invoice-search>
         </div>
         <div class="col-md-3">
             <label class="form-label">Trạng thái</label>
@@ -26,6 +26,8 @@
             <tr>
                 <th>Mã hóa đơn</th>
                 <th>Ngày lập</th>
+                <th>Tên khách hàng</th>
+                <th>SĐT</th>
                 <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Đã thanh toán</th>
@@ -35,7 +37,7 @@
         </thead>
         <tbody id="invoice-table-body">
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">Đang tải dữ liệu hóa đơn...</td>
+                <td colspan="8" class="text-center text-muted py-4">Đang tải dữ liệu hóa đơn...</td>
             </tr>
         </tbody>
     </table>
@@ -89,9 +91,22 @@
                     }
                 };
 
+                const getRelation = function (record, camelName, snakeName) {
+                    if (!record) {
+                        return null;
+                    }
+
+                    return record[camelName] || record[snakeName] || null;
+                };
+
+                const getInvoiceCustomer = function (invoice) {
+                    const booking = getRelation(invoice, 'datPhong', 'dat_phong');
+                    return getRelation(booking, 'khachHang', 'khach_hang');
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không có hóa đơn phù hợp.</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có hóa đơn phù hợp.</td></tr>';
                         return;
                     }
 
@@ -100,11 +115,16 @@
                         const showUrl = showUrlTemplate.replace('__INVOICE_ID__', invoice.MaHD);
                         const employee = invoice && (invoice.nhanVien || invoice.nhan_vien) ? (invoice.nhanVien || invoice.nhan_vien) : null;
                         const employeeName = employee && employee.TenNV ? employee.TenNV : '--';
+                        const customer = getInvoiceCustomer(invoice);
+                        const customerName = customer && customer.TenKH ? customer.TenKH : '--';
+                        const customerPhone = customer && customer.SoDienThoai ? customer.SoDienThoai : '--';
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${invoice.MaHD || '--'}</td>
                                 <td>${formatDate(invoice.NgayLapHD)}</td>
+                                <td>${customerName}</td>
+                                <td>${customerPhone}</td>
                                 <td>${employeeName}</td>
                                 <td>${formatCurrency(invoice.TongTien)}</td>
                                 <td>${formatCurrency(invoice.DaThanhToan)}</td>
@@ -128,7 +148,9 @@
 
                     const filtered = invoices.filter(function (invoice) {
                         const matchesKeyword = !keyword
-                            || String(invoice && invoice.MaHD ? invoice.MaHD : '').toLowerCase().includes(keyword);
+                            || String(invoice && invoice.MaHD ? invoice.MaHD : '').toLowerCase().includes(keyword)
+                            || String(getInvoiceCustomer(invoice)?.TenKH || '').toLowerCase().includes(keyword)
+                            || String(getInvoiceCustomer(invoice)?.SoDienThoai || '').toLowerCase().includes(keyword);
                         const matchesStatus = statusValue === ''
                             || String(invoice && invoice.TrangThai !== undefined ? invoice.TrangThai : '') === statusValue;
                         return matchesKeyword && matchesStatus;
@@ -150,7 +172,25 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {

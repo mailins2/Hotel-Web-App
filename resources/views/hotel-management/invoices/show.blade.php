@@ -198,7 +198,7 @@
             border-bottom: 1px solid rgba(151, 64, 26, 0.1);
             color: #241917;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 500;
             padding: 15px 16px;
             vertical-align: middle;
         }
@@ -209,7 +209,6 @@
 
         .invoice-detail-table tfoot td {
             background: #fff7ef;
-            border-top: 1px solid rgba(151, 64, 26, 0.18);
             color: #7a270c;
             font-size: 15px;
             font-weight: 800;

@@ -64,6 +64,7 @@
             id="room-type-id"
             value="--"
             readonly
+            disabled
         >
     </div>
 
