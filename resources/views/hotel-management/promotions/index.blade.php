@@ -5,6 +5,10 @@
 >
     <x-slot:filters>
         <div class="col-md-3">
+            <label class="form-label">Tìm kiếm</label>
+            <input type="text" class="form-control" placeholder="Tìm theo mã, tên khuyến mãi" data-promotion-search>
+        </div>
+        <div class="col-md-3">
             <label class="form-label">Ngày bắt đầu từ</label>
             <input type="date" class="form-control" data-promotion-start>
         </div>
@@ -45,6 +49,7 @@
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const tableBody = document.getElementById('promotion-table-body');
+                const searchInput = document.querySelector('[data-promotion-search]');
                 const startInput = document.querySelector('[data-promotion-start]');
                 const endInput = document.querySelector('[data-promotion-end]');
                 const filterPanel = document.querySelector('.hm-filter-panel');
@@ -143,15 +148,19 @@
                     : null;
 
                 const applyFilters = function () {
+                    const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
                     const startValue = startInput && startInput.value ? startInput.value : '';
                     const endValue = endInput && endInput.value ? endInput.value : '';
 
                     const filtered = promotions.filter(function (promotion) {
                         const promotionStart = promotion.NgayBatDau || '';
                         const promotionEnd = promotion.NgayKetThuc || '';
+                        const matchesKeyword = !keyword
+                            || String(promotion && promotion.MaKM ? promotion.MaKM : '').toLowerCase().includes(keyword)
+                            || String(promotion && promotion.TenKM ? promotion.TenKM : '').toLowerCase().includes(keyword);
                         const matchesStart = !startValue || promotionStart >= startValue;
                         const matchesEnd = !endValue || promotionEnd <= endValue;
-                        return matchesStart && matchesEnd;
+                        return matchesKeyword && matchesStart && matchesEnd;
                     });
 
                     if (pagination) {
@@ -170,11 +179,36 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (startInput) {
+                    startInput.addEventListener('change', applyFilters);
+                }
+
+                if (endInput) {
+                    endInput.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
                     resetButton.addEventListener('click', function () {
+                        if (searchInput) {
+                            searchInput.value = '';
+                        }
                         if (startInput) {
                             startInput.value = '';
                         }

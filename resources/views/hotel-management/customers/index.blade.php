@@ -6,7 +6,7 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã, tên, số điện thoại" data-customer-search>
+            <input type="text" class="form-control" placeholder="Tìm theo tên, số điện thoại" data-customer-search>
         </div>
     </x-slot:filters>
 
@@ -16,6 +16,7 @@
                 <th>Mã khách hàng</th>
                 <th>Mã tài khoản</th>
                 <th>Tên khách hàng</th>
+                <th>SĐT</th>
                 <th>Ngày sinh</th>
                 <th>Giới tính</th>
                 <th>Điểm</th>
@@ -24,7 +25,7 @@
         </thead>
         <tbody id="customer-table-body">
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">Đang tải dữ liệu khách hàng...</td>
+                <td colspan="8" class="text-center text-muted py-4">Đang tải dữ liệu khách hàng...</td>
             </tr>
         </tbody>
     </table>
@@ -94,7 +95,7 @@
 
                 const renderRows = function (rows) {
                     if (!rows.length) {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không có khách hàng phù hợp.</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có khách hàng phù hợp.</td></tr>';
                         return;
                     }
 
@@ -107,6 +108,7 @@
                                 <td>${customer.MaKH || '--'}</td>
                                 <td>${getAccountId(customer) || '--'}</td>
                                 <td>${customer.TenKH || '--'}</td>
+                                <td>${customer.SoDienThoai || '--'}</td>
                                 <td>${formatDate(customer.NgaySinh)}</td>
                                 <td>${mapGender(customer.GioiTinh)}</td>
                                 <td>${customer.DIEM !== undefined && customer.DIEM !== null ? customer.DIEM : '--'}</td>
@@ -151,8 +153,6 @@
 
                     const filtered = customers.filter(function (customer) {
                         const matchesKeyword = !keyword
-                            || String(customer && customer.MaKH ? customer.MaKH : '').toLowerCase().includes(keyword)
-                            || String(getAccountId(customer)).toLowerCase().includes(keyword)
                             || String(customer && customer.TenKH ? customer.TenKH : '').toLowerCase().includes(keyword)
                             || String(customer && customer.SoDienThoai ? customer.SoDienThoai : '').toLowerCase().includes(keyword);
                         return matchesKeyword;
@@ -174,7 +174,21 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
                 }
 
                 if (resetButton) {

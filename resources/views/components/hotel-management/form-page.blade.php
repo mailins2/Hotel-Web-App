@@ -5,10 +5,21 @@
 
 <x-app-layout :assets="['animation']">
     <style>
-        .hm-readonly-input {
+        .hm-readonly-input,
+        .hm-readonly-input:disabled,
+        .form-control:disabled.hm-readonly-input,
+        .form-select:disabled.hm-readonly-input {
             background-color: #f3f4f6;
             color: #6b7280;
             border-color: #cbd5e1;
+            cursor: not-allowed;
+            opacity: 1;
+        }
+
+        .form-control:disabled,
+        .form-select:disabled {
+            cursor: not-allowed;
+            opacity: 1;
         }
     </style>
 

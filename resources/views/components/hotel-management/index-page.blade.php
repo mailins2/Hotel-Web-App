@@ -252,38 +252,72 @@
             }
         }
 
-        .hm-toast-stack {
+        .hm-notice-backdrop {
             position: fixed;
-            top: 1rem;
-            right: 1rem;
+            inset: 0;
             z-index: 1090;
-            display: grid;
-            gap: 0.7rem;
-            width: min(390px, calc(100vw - 2rem));
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.25rem;
+            background: rgba(15, 23, 42, 0.34);
+            backdrop-filter: blur(3px);
         }
 
-        .hm-toast {
-            border-left: 4px solid #2563eb;
-            border-radius: 8px;
-            padding: 0.9rem 1rem;
+        .hm-notice-backdrop.is-visible {
+            display: flex;
+        }
+
+        .hm-notice {
+            position: relative;
+            width: min(360px, 100%);
+            min-height: 195px;
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.95);
+            border-radius: 16px;
+            padding: 2.15rem 2rem 1.95rem;
             background: #fff;
-            box-shadow: 0 18px 48px -26px rgba(15, 23, 42, 0.55);
+            box-shadow: 0 30px 90px -28px rgba(15, 23, 42, 0.72);
+            transform: translateY(8px) scale(0.98);
+            animation: hm-notice-in 0.16s ease-out forwards;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
-        .hm-toast--success { border-left-color: #16a34a; }
-        .hm-toast--danger { border-left-color: #dc2626; }
-        .hm-toast--warning { border-left-color: #d97706; }
+        .hm-notice::before {
+            content: '';
+            position: absolute;
+            inset: 0 0 auto;
+            height: 7px;
+            background: #2563eb;
+        }
 
-        .hm-toast__title {
-            margin: 0 0 0.2rem;
+        .hm-notice--success::before { background: #16a34a; }
+        .hm-notice--danger::before { background: #dc2626; }
+        .hm-notice--warning::before { background: #d97706; }
+
+        .hm-notice__title {
+            margin: 0 0 0.7rem;
+            text-align: center;
+            font-size: 1.3rem;
             font-weight: 700;
             color: #111827;
         }
 
-        .hm-toast__message {
-            margin: 0;
+        .hm-notice__message {
+            margin: 0 auto;
+            max-width: 460px;
+            text-align: center;
             color: #4b5563;
-            line-height: 1.45;
+            font-size: 1rem;
+            line-height: 1.55;
+        }
+
+        @keyframes hm-notice-in {
+            to {
+                transform: translateY(0) scale(1);
+            }
         }
     </style>
 
@@ -383,7 +417,12 @@
         </div>
     </div>
 
-    <div class="hm-toast-stack" data-hm-toast-stack></div>
+    <div class="hm-notice-backdrop" data-hm-notice-dialog aria-hidden="true">
+        <div class="hm-notice" data-hm-notice-box role="status" aria-live="polite">
+            <div class="hm-notice__title" data-hm-notice-title>Thông báo</div>
+            <p class="hm-notice__message" data-hm-notice-message></p>
+        </div>
+    </div>
 
     @push('scripts')
         <script>
@@ -539,28 +578,30 @@
             if (typeof window.hmShowToast !== 'function') {
                 window.hmShowToast = function (options) {
                     const settings = options || {};
-                    const stack = document.querySelector('[data-hm-toast-stack]');
+                    const dialog = document.querySelector('[data-hm-notice-dialog]');
+                    const box = dialog ? dialog.querySelector('[data-hm-notice-box]') : null;
+                    const title = dialog ? dialog.querySelector('[data-hm-notice-title]') : null;
+                    const message = dialog ? dialog.querySelector('[data-hm-notice-message]') : null;
 
-                    if (!stack) {
+                    if (!dialog || !box || !title || !message) {
                         return;
                     }
 
                     const type = settings.type || 'success';
-                    const toast = document.createElement('div');
-                    const toastTitle = document.createElement('div');
-                    const toastMessage = document.createElement('p');
-                    toast.className = `hm-toast hm-toast--${type}`;
-                    toastTitle.className = 'hm-toast__title';
-                    toastMessage.className = 'hm-toast__message';
-                    toastTitle.textContent = settings.title || 'Thông báo';
-                    toastMessage.textContent = settings.message || '';
-                    toast.appendChild(toastTitle);
-                    toast.appendChild(toastMessage);
+                    box.className = `hm-notice hm-notice--${type}`;
+                    title.textContent = settings.title || 'Thông báo';
+                    message.textContent = settings.message || '';
+                    dialog.classList.add('is-visible');
+                    dialog.setAttribute('aria-hidden', 'false');
 
-                    stack.appendChild(toast);
-                    window.setTimeout(function () {
-                        toast.remove();
-                    }, Number(settings.duration || 4500));
+                    if (window.hmNoticeTimer) {
+                        window.clearTimeout(window.hmNoticeTimer);
+                    }
+
+                    window.hmNoticeTimer = window.setTimeout(function () {
+                        dialog.classList.remove('is-visible');
+                        dialog.setAttribute('aria-hidden', 'true');
+                    }, Number(settings.duration || 1800));
                 };
             }
 

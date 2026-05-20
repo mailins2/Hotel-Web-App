@@ -10,6 +10,7 @@
                 id="room-amenity-id"
                 class="form-control hm-readonly-input"
                 readonly
+                disabled
                 value="Đang tải..."
             >
         </div>

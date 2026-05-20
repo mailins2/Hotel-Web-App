@@ -168,13 +168,8 @@ class HinhController extends Controller
             );
 
             $payload['Url'] = $uploaded['secure_url'];
-            $payload['public_id'] = $uploaded['public_id'] ?? null;
         } elseif ($request->has('Url')) {
             $payload['Url'] = trim((string) $request->input('Url'));
-
-            if (! $currentImage || $payload['Url'] !== $currentImage->Url) {
-                $payload['public_id'] = null;
-            }
         }
 
         return $payload;

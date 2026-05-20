@@ -8,6 +8,7 @@ use App\Models\Phong;
 use App\Services\Guards\PhongDeletionGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class PhongController extends Controller
 {
@@ -179,7 +180,6 @@ class PhongController extends Controller
                 'required',
                 Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
-            'TinhTrang' => 'required|integer',
         ]);
 
         $phong->update($data);

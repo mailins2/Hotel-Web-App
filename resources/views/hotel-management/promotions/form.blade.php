@@ -316,6 +316,7 @@
 
                 if (promotionIdInput) {
                     promotionIdInput.readOnly = isEdit;
+                    promotionIdInput.disabled = isEdit;
                     promotionIdInput.classList.toggle('hm-readonly-input', isEdit);
                     if (isEdit) {
                         promotionIdInput.placeholder = '';

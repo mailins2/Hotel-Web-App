@@ -6,15 +6,18 @@
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã, email, họ tên" data-account-search>
+            <input type="text" class="form-control" placeholder="Tìm theo mã, họ tên" data-account-search>
         </div>
         <div class="col-md-3">
-            <label class="form-label">Trạng thái</label>
+            <label class="form-label">Loại tài khoản</label>
             <div class="hm-select-wrap">
-                <select class="form-select" data-account-status>
-                    <option value="">Tất cả</option>
-                    <option value="1">Hoạt động</option>
-                    <option value="0">Không hoạt động</option>
+                <select class="form-select" data-account-type>
+                    <option value="">Tất cả loại tài khoản</option>
+                    <option value="0">Khách hàng</option>
+                    <option value="1">Nhân viên</option>
+                    <option value="2">Quản lý</option>
+                    <option value="3">Kế toán</option>
+                    <option value="4">Nhân viên kinh doanh</option>
                 </select>
             </div>
         </div>
@@ -51,7 +54,7 @@
             document.addEventListener('DOMContentLoaded', function () {
                 const tableBody = document.getElementById('account-table-body');
                 const searchInput = document.querySelector('[data-account-search]');
-                const statusSelect = document.querySelector('[data-account-status]');
+                const accountTypeSelect = document.querySelector('[data-account-type]');
                 const filterPanel = document.querySelector('.hm-filter-panel');
                 const config = document.getElementById('account-index-config');
                 const applyButton = filterPanel ? filterPanel.querySelector('.btn.btn-primary') : null;
@@ -164,18 +167,19 @@
 
                 const applyFilters = function () {
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
-                    const statusValue = (statusSelect ? statusSelect.value : '') || '';
+                    const accountTypeValue = (accountTypeSelect ? accountTypeSelect.value : '') || '';
 
                     const filtered = accounts.filter(function (account) {
                         const matchesKeyword = !keyword
                             || String(account && account.MaTK ? account.MaTK : '').toLowerCase().includes(keyword)
-                            || String(account && account.Email ? account.Email : '').toLowerCase().includes(keyword)
                             || resolveDisplayName(account).toLowerCase().includes(keyword);
 
-                        const matchesStatus = statusValue === ''
-                            || String(account && account.TrangThai ? account.TrangThai : '') === statusValue;
+                        const accountType = account && account.LoaiTaiKhoan !== undefined && account.LoaiTaiKhoan !== null
+                            ? String(account.LoaiTaiKhoan)
+                            : '';
+                        const matchesAccountType = accountTypeValue === '' || accountType === accountTypeValue;
 
-                        return matchesKeyword && matchesStatus;
+                        return matchesKeyword && matchesAccountType;
                     });
 
                     if (pagination) {
@@ -194,7 +198,25 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
+                }
+
+                if (accountTypeSelect) {
+                    accountTypeSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
@@ -203,8 +225,8 @@
                             searchInput.value = '';
                         }
 
-                        if (statusSelect) {
-                            statusSelect.value = '';
+                        if (accountTypeSelect) {
+                            accountTypeSelect.value = '';
                         }
 
                         applyFilters();

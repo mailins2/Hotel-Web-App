@@ -179,7 +179,21 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', applyFilters);
                 }
 
                 if (resetButton) {
@@ -189,15 +203,6 @@
                         }
 
                         applyFilters();
-                    });
-                }
-
-                if (searchInput) {
-                    searchInput.addEventListener('keydown', function (event) {
-                        if (event.key === 'Enter') {
-                            event.preventDefault();
-                            applyFilters();
-                        }
                     });
                 }
 
