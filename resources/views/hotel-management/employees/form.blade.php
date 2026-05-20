@@ -14,6 +14,7 @@
             id="employee-id"
             value="--"
             readonly
+            disabled
         >
     </div>
 

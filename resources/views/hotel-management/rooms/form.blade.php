@@ -14,6 +14,7 @@
             id="room-id"
             value="--"
             readonly
+            disabled
         >
     </div>
 
@@ -169,7 +170,7 @@
                         isValid = false;
                     }
 
-                    if (roomStatusInput.value === '') {
+                    if (!isEdit && roomStatusInput.value === '') {
                         setFieldError('TinhTrang', 'Vui lòng chọn tình trạng.');
                         isValid = false;
                     }
@@ -243,6 +244,11 @@
                     roomIdGroup.style.display = isEdit ? '' : 'none';
                 }
 
+                if (roomStatusInput && isEdit) {
+                    roomStatusInput.disabled = true;
+                    roomStatusInput.classList.add('hm-readonly-input');
+                }
+
                 if (form) {
                     form.addEventListener('submit', async function (event) {
                         event.preventDefault();
@@ -253,9 +259,12 @@
 
                         const payload = {
                             SoPhong: roomNumberInput.value.trim(),
-                            MaLoaiPhong: roomTypeIdInput.value,
-                            TinhTrang: Number(roomStatusInput.value)
+                            MaLoaiPhong: roomTypeIdInput.value
                         };
+
+                        if (!isEdit) {
+                            payload.TinhTrang = Number(roomStatusInput.value);
+                        }
 
                         const requestUrl = isEdit
                             ? detailUrlTemplate.replace('__ROOM_ID__', roomId)

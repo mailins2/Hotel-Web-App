@@ -27,6 +27,7 @@
                 <th>Mã hóa đơn</th>
                 <th>Ngày lập</th>
                 <th>Tên khách hàng</th>
+                <th>SĐT</th>
                 <th>Tên nhân viên</th>
                 <th>Tổng tiền</th>
                 <th>Đã thanh toán</th>
@@ -36,7 +37,7 @@
         </thead>
         <tbody id="invoice-table-body">
             <tr>
-                <td colspan="7" class="text-center text-muted py-4">Đang tải dữ liệu hóa đơn...</td>
+                <td colspan="8" class="text-center text-muted py-4">Đang tải dữ liệu hóa đơn...</td>
             </tr>
         </tbody>
     </table>
@@ -105,7 +106,7 @@
 
                 const renderRows = function (rows) {
                     if (!rows.length) {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Không có hóa đơn phù hợp.</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có hóa đơn phù hợp.</td></tr>';
                         return;
                     }
 
@@ -116,12 +117,14 @@
                         const employeeName = employee && employee.TenNV ? employee.TenNV : '--';
                         const customer = getInvoiceCustomer(invoice);
                         const customerName = customer && customer.TenKH ? customer.TenKH : '--';
+                        const customerPhone = customer && customer.SoDienThoai ? customer.SoDienThoai : '--';
 
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${invoice.MaHD || '--'}</td>
                                 <td>${formatDate(invoice.NgayLapHD)}</td>
                                 <td>${customerName}</td>
+                                <td>${customerPhone}</td>
                                 <td>${employeeName}</td>
                                 <td>${formatCurrency(invoice.TongTien)}</td>
                                 <td>${formatCurrency(invoice.DaThanhToan)}</td>
