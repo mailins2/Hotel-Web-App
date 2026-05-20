@@ -478,9 +478,15 @@
                                         $quantity = (int) ($detail->SoLuong ?? $detail?->suDung?->SoLuong ?? 1);
                                         $unitPrice = (float) ($detail->DonGia ?? $detail?->suDung?->dichVu?->GiaDV ?? 0);
                                         $serviceType = $detail?->suDung?->dichVu?->LoaiDVText ?? '--';
+                                        $serviceRoom = $detail?->suDung?->chiTietDatPhong?->phong?->SoPhong;
                                     @endphp
                                     <tr>
-                                        <td>{{ $detail?->suDung?->dichVu?->TenDV ?? $detail->MoTa ?? 'Dịch vụ' }}</td>
+                                        <td>
+                                            {{ $detail?->suDung?->dichVu?->TenDV ?? $detail->MoTa ?? 'Dịch vụ' }}
+                                            @if($serviceRoom)
+                                                <div class="small text-muted">Phòng {{ $serviceRoom }}</div>
+                                            @endif
+                                        </td>
                                         <td>{{ $serviceType }}</td>
                                         <td>{{ $quantity }}</td>
                                         <td>{{ $formatDateTime($detail?->suDung?->ThoiGian) }}</td>

@@ -1,3 +1,7 @@
+@php
+    $serviceRoomOptions = collect($serviceRoomOptions ?? []);
+@endphp
+
 <x-app-layout :assets="['animation']">
     <style>
         .rs-shell { padding-top: 4.5rem; }
@@ -72,7 +76,7 @@
                     <p class="text-muted mb-0">Danh sách dịch vụ đang sử dụng theo từng đặt phòng</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button id="openServiceDialogButton" type="button" class="btn btn-primary rs-add-button">
+                    <button id="openServiceDialogButton" type="button" class="btn btn-primary rs-add-button" @disabled($serviceRoomOptions->isEmpty())>
                         <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 5V19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
                             <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
@@ -163,12 +167,21 @@
             <form data-ui-only-form>
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Mã sử dụng</label>
-                        <input type="text" class="form-control" value="SD004">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Mã đặt phòng</label>
-                        <input type="text" class="form-control" value="9005">
+                        <label class="form-label">Số phòng</label>
+                        <select class="form-select" name="MaCTDP" required>
+                            @forelse($serviceRoomOptions as $roomOption)
+                                <option
+                                    value="{{ $roomOption['id'] }}"
+                                    data-booking-id="{{ $roomOption['bookingId'] }}"
+                                    data-room-id="{{ $roomOption['roomId'] }}"
+                                    data-room-number="{{ $roomOption['roomNumber'] }}"
+                                >
+                                    {{ $roomOption['label'] }}
+                                </option>
+                            @empty
+                                <option value="" disabled>Chưa có phòng đang check-in</option>
+                            @endforelse
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Loại dịch vụ</label>
@@ -201,7 +214,7 @@
                 </div>
 
                 <div class="rs-dialog-actions">
-                    <button type="submit" class="btn btn-primary">Lưu đăng ký</button>
+                    <button type="submit" class="btn btn-primary" @disabled($serviceRoomOptions->isEmpty())>Lưu đăng ký</button>
                     <button id="closeServiceDialogButton" type="button" class="btn btn-light">Đóng</button>
                 </div>
             </form>

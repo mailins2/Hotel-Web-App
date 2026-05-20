@@ -34,4 +34,9 @@ class ChiTietDatPhong extends Model
     {
         return $this->belongsTo(DatPhong::class, 'MaDatPhong');
     }
+
+    public function suDungDichVu()
+    {
+        return $this->hasMany(SuDungDichVu::class, 'MaCTDP');
+    }
 }

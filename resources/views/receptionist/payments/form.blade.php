@@ -1,3 +1,7 @@
+@php
+    $paymentData = $paymentData ?? [];
+@endphp
+
 <x-app-layout :assets="['animation']">
     <style>
         .rp-shell { padding-top: 4.5rem; }
@@ -290,11 +294,11 @@
                         </div>
                         <div class="rp-info-item">
                             <div class="rp-info-label">Thời gian ở</div>
-                            <div class="rp-info-value">03/05/2026 - 05/05/2026</div>
+                            <div id="paymentStayPeriod" class="rp-info-value">03/05/2026 - 05/05/2026</div>
                         </div>
                         <div class="rp-info-item">
                             <div class="rp-info-label">Ngày lập hóa đơn</div>
-                            <div class="rp-info-value">05/05/2026</div>
+                            <div id="paymentInvoiceDate" class="rp-info-value">05/05/2026</div>
                         </div>
                         <div class="rp-info-item">
                             <div class="rp-info-label">Ngày trả</div>
@@ -314,7 +318,7 @@
                                     <th>Số phòng</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="paymentRoomSummaryTableBody">
                                 <tr>
                                     <td>Suite</td>
                                     <td>102, 104</td>
@@ -352,7 +356,7 @@
                                             <th>Thành tiền</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="paymentRoomTableBody">
                                         <tr>
                                             <td>Suite</td>
                                             <td>1</td>
@@ -442,7 +446,7 @@
                         </div>
                         <div class="rp-total-line">
                             <div class="rp-total-label">Số tiền đã thanh toán</div>
-                            <div class="rp-total-value">300.000 VNĐ</div>
+                            <div id="paymentPaidAmount" class="rp-total-value">300.000 VNĐ</div>
                         </div>
                         <div class="rp-total-line">
                             <div class="rp-total-label">Số tiền còn phải trả</div>
@@ -508,7 +512,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Lưu</button>
+                    <button type="button" class="btn btn-primary" id="saveCompensationButton">Lưu</button>
                 </div>
             </div>
         </div>
@@ -516,6 +520,331 @@
 
     <script>
         const paymentMethodOptions = document.querySelectorAll('.rp-method-option');
+
+        function parseJsonValue(value, fallback = null) {
+            try {
+                return value ? JSON.parse(value) : fallback;
+            } catch (error) {
+                return fallback;
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            }[char]));
+        }
+
+        function formatMoney(value) {
+            return `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
+        }
+
+        function setText(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value || '--';
+            }
+        }
+
+        function renderRoomSummary(payload) {
+            const body = document.getElementById('paymentRoomSummaryTableBody');
+            if (!body) return;
+
+            const roomItems = Array.isArray(payload.roomSummaryItems) && payload.roomSummaryItems.length
+                ? payload.roomSummaryItems
+                : (Array.isArray(payload.roomItems) ? payload.roomItems : []);
+
+            if (!roomItems.length) {
+                body.innerHTML = '<tr><td colspan="2" class="text-muted">Không có thông tin phòng.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = roomItems.map((item, index) => `
+                <tr>
+                    <td>${escapeHtml(item.type || 'Loại phòng')}</td>
+                    <td>${escapeHtml(item.roomNumbers || '--')}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderRoomItems(payload) {
+            const body = document.getElementById('paymentRoomTableBody');
+            if (!body) return;
+
+            const roomItems = Array.isArray(payload.roomItems) ? payload.roomItems : [];
+            const roomTotal = Number(payload.roomTotal ?? roomItems.reduce((total, item) => total + Number(item.total || 0), 0));
+
+            if (!roomItems.length) {
+                body.innerHTML = '<tr><td colspan="5" class="text-muted">Không có thông tin phòng.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = `${roomItems.map((item) => `
+                <tr>
+                    <td>${escapeHtml(item.type || 'Loại phòng')}</td>
+                    <td>${Number(item.quantity || 0)}</td>
+                    <td>${formatMoney(item.unitPrice)}</td>
+                    <td>${Number(item.nights || 0)}</td>
+                    <td>${formatMoney(item.total)}</td>
+                </tr>
+            `).join('')}
+                <tr class="rp-table-total">
+                    <td colspan="4">Tổng tiền</td>
+                    <td>${formatMoney(roomTotal)}</td>
+                </tr>`;
+        }
+
+        function renderServiceItems(payload) {
+            const body = document.getElementById('paymentServiceTableBody');
+            const empty = document.getElementById('paymentServiceEmpty');
+            if (!body) return;
+
+            const serviceItems = Array.isArray(payload.serviceItems) ? payload.serviceItems : [];
+            const serviceAmount = Number(payload.serviceAmount ?? serviceItems.reduce((total, item) => total + Number(item.price || 0), 0));
+
+            if (empty) empty.hidden = serviceItems.length > 0;
+
+            if (!serviceItems.length) {
+                body.innerHTML = '';
+                return;
+            }
+
+            body.innerHTML = `${serviceItems.map((item) => `
+                <tr>
+                    <td>${escapeHtml(item.name || 'Dịch vụ')}</td>
+                    <td>${escapeHtml(item.type || 'Dịch vụ')}</td>
+                    <td>${formatMoney(item.price ?? (Number(item.unitPrice || 0) * Number(item.quantity || 1)))}</td>
+                </tr>
+            `).join('')}
+                <tr class="rp-table-total">
+                    <td colspan="2">Phí tổng dịch vụ</td>
+                    <td>${formatMoney(serviceAmount)}</td>
+                </tr>`;
+        }
+
+        function renderCompensationItems(payload) {
+            const body = document.getElementById('paymentCompensationTableBody');
+            const empty = document.getElementById('paymentCompensationEmpty');
+            if (!body) return;
+
+            const items = Array.isArray(payload.compensationItems) ? payload.compensationItems : [];
+
+            if (empty) empty.hidden = items.length > 0;
+
+            body.innerHTML = items.map((item) => `
+                <tr>
+                    <td>${escapeHtml(item.description || 'Đền bù')}</td>
+                    <td>${formatMoney(item.amount)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPayment(payload) {
+            setText('paymentInvoiceId', payload.invoiceId);
+            setText('paymentBookingId', payload.bookingId);
+            setText('paymentCustomerName', payload.customer);
+            setText('paymentStayPeriod', payload.stayPeriod || payload.stay);
+            setText('paymentInvoiceDate', payload.invoiceDate);
+            setText('paymentCheckoutDate', payload.checkoutDate);
+            setText('paymentCheckoutTime', payload.checkoutTime);
+            setText('paymentGrandTotal', formatMoney(payload.totalAmount));
+            setText('paymentPaidAmount', formatMoney(payload.paidAmount));
+            setText('paymentAmountDue', formatMoney(payload.amountDue));
+
+            const compensationBookingId = document.getElementById('compensationBookingId');
+            const compensationAmount = document.getElementById('compensationAmount');
+            const compensationDescription = document.getElementById('compensationDescription');
+            const compensationItems = Array.isArray(payload.compensationItems) ? payload.compensationItems : [];
+            const currentCompensationAmount = payload.compensationAmount ?? compensationItems[0]?.amount ?? 0;
+            if (compensationBookingId) compensationBookingId.value = payload.bookingId || '';
+            if (compensationAmount) compensationAmount.value = Number(currentCompensationAmount || 0);
+            if (compensationDescription) compensationDescription.value = compensationItems[0]?.description || '';
+
+            renderRoomSummary(payload);
+            renderRoomItems(payload);
+            renderServiceItems(payload);
+            renderCompensationItems(payload);
+        }
+
+        function readErrorMessage(data) {
+            if (data?.message) {
+                return data.message;
+            }
+
+            if (data?.errors) {
+                return Object.values(data.errors).flat().join('\n');
+            }
+
+            return 'Không thể lưu tiền đền bù. Vui lòng thử lại.';
+        }
+
+        function hideCompensationModal() {
+            const modalElement = document.getElementById('compensationModal');
+            if (!modalElement || !window.bootstrap?.Modal) return;
+
+            const modal = bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement);
+            modal.hide();
+        }
+
+        function updatePaymentAfterCompensation(payload, responseData, description, amount) {
+            const invoice = responseData?.data?.hoaDon || {};
+            const totalAmount = Number(invoice.TongTien ?? payload.totalAmount ?? 0);
+            const paidAmount = Number(invoice.DaThanhToan ?? payload.paidAmount ?? 0);
+
+            return {
+                ...payload,
+                compensationAmount: amount,
+                compensationItems: amount > 0
+                    ? [{
+                        description: description || 'Đền bù hư hỏng',
+                        amount,
+                    }]
+                    : [],
+                totalAmount,
+                paidAmount,
+                amountDue: Math.max(totalAmount - paidAmount, 0),
+            };
+        }
+
+        function fillMissingRoomNumbers(payload, fallbackPayload) {
+            const roomItems = Array.isArray(payload.roomItems) ? payload.roomItems : [];
+            const fallbackItems = Array.isArray(fallbackPayload.roomItems) ? fallbackPayload.roomItems : [];
+            const roomSummaryItems = Array.isArray(payload.roomSummaryItems) ? payload.roomSummaryItems : [];
+            const fallbackSummaryItems = Array.isArray(fallbackPayload.roomSummaryItems) ? fallbackPayload.roomSummaryItems : [];
+            const sameBooking = String(payload.bookingId || '') === String(fallbackPayload.bookingId || '');
+            const normalizeType = (value) => String(value || '').trim().toLowerCase();
+
+            const nextPayload = {
+                ...payload,
+            };
+
+            nextPayload.roomItems = roomItems.map((item, index) => {
+                    if (item.roomNumbers) {
+                        return item;
+                    }
+
+                    const fallback = fallbackItems.find((fallbackItem) => (
+                        item.roomTypeId && String(fallbackItem.roomTypeId || '') === String(item.roomTypeId)
+                    )) || fallbackItems.find((fallbackItem) => (
+                        String(fallbackItem.type || '') === String(item.type || '')
+                    )) || fallbackItems[index];
+
+                    return {
+                        ...item,
+                        roomNumbers: fallback?.roomNumbers || '--',
+                    };
+                });
+
+            const sourceSummaryItems = sameBooking && fallbackSummaryItems.length
+                ? fallbackSummaryItems
+                : roomSummaryItems;
+
+            const sourceRoomItems = sameBooking && fallbackItems.length
+                ? fallbackItems
+                : (nextPayload.roomItems || []);
+
+            const summaryByType = new Map();
+
+            sourceRoomItems.forEach((item) => {
+                const type = item.type || 'Loại phòng';
+                const key = normalizeType(type);
+                if (!key || summaryByType.has(key)) return;
+
+                summaryByType.set(key, {
+                    roomTypeId: item.roomTypeId || '',
+                    type,
+                    roomNumbers: item.roomNumbers || '--',
+                });
+            });
+
+            sourceSummaryItems.forEach((item) => {
+                const type = item.type || 'Loại phòng';
+                const key = normalizeType(type);
+                if (!key) return;
+
+                const existing = summaryByType.get(key);
+                summaryByType.set(key, {
+                    roomTypeId: item.roomTypeId || existing?.roomTypeId || '',
+                    type,
+                    roomNumbers: item.roomNumbers && item.roomNumbers !== '--'
+                        ? item.roomNumbers
+                        : (existing?.roomNumbers || '--'),
+                });
+            });
+
+            nextPayload.roomSummaryItems = Array.from(summaryByType.values());
+
+            return nextPayload;
+        }
+
+        const serverPaymentPayload = @json($paymentData);
+        const sessionPaymentPayload = parseJsonValue(sessionStorage.getItem('receptionCheckoutPayment'), null);
+        const mergedPaymentPayload = {
+            ...serverPaymentPayload,
+            ...(sessionPaymentPayload || {}),
+        };
+
+        let currentPaymentPayload = fillMissingRoomNumbers(mergedPaymentPayload, serverPaymentPayload);
+        renderPayment(currentPaymentPayload);
+
+        document.getElementById('saveCompensationButton')?.addEventListener('click', async (event) => {
+            const button = event.currentTarget;
+            const bookingId = document.getElementById('compensationBookingId')?.value?.trim();
+            const amount = Number(document.getElementById('compensationAmount')?.value || 0);
+            const description = document.getElementById('compensationDescription')?.value?.trim();
+
+            if (!bookingId) {
+                alert('Vui lòng chọn hóa đơn/đặt phòng trước khi thêm đền bù.');
+                return;
+            }
+
+            if (!Number.isFinite(amount) || amount < 0) {
+                alert('Tiền đền bù không hợp lệ.');
+                return;
+            }
+
+            button.disabled = true;
+
+            try {
+                const response = await fetch('/api/den-bu', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        MaDatPhong: bookingId,
+                        MoTa: description,
+                        TienDenBu: amount,
+                    }),
+                });
+
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || data.success === false) {
+                    throw new Error(readErrorMessage(data));
+                }
+
+                currentPaymentPayload = updatePaymentAfterCompensation(
+                    currentPaymentPayload,
+                    data,
+                    description,
+                    amount
+                );
+                sessionStorage.setItem('receptionCheckoutPayment', JSON.stringify(currentPaymentPayload));
+
+                renderPayment(currentPaymentPayload);
+                hideCompensationModal();
+            } catch (error) {
+                alert(error.message || 'Không thể lưu tiền đền bù. Vui lòng thử lại.');
+            } finally {
+                button.disabled = false;
+            }
+        });
 
         paymentMethodOptions.forEach((option) => {
             option.addEventListener('click', () => {

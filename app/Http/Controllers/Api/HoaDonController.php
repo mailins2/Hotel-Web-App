@@ -86,10 +86,14 @@ class HoaDonController extends Controller
             // =====================
             // 🍹 DỊCH VỤ
             // =====================
-            $dichVus = SuDungDichVu::where('MaDatPhong', $request->MaDatPhong)->get();
+            $dichVus = SuDungDichVu::with('dichVu')
+                ->whereHas('chiTietDatPhong', function ($query) use ($request) {
+                    $query->where('MaDatPhong', $request->MaDatPhong);
+                })
+                ->get();
 
             foreach ($dichVus as $dv) {
-                $dichVu = DichVu::find($dv->MaDV);
+                $dichVu = $dv->dichVu;
 
                 if (!$dichVu) continue;
 
@@ -159,6 +163,7 @@ class HoaDonController extends Controller
             'khuyenMai',
             'chiTietHoaDons.loaiPhong.khuyenMai',
             'chiTietHoaDons.suDung.dichVu',
+            'chiTietHoaDons.suDung.chiTietDatPhong.phong',
             'chiTietHoaDons.denBu',
             'thanhToans'
         ])->find($id);
