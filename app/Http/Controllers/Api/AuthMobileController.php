@@ -149,7 +149,7 @@ class AuthMobileController extends Controller
         ], 422);
     }
 
-    // 🔥 Kiểm tra SĐT và CCCD
+    //  Kiểm tra SĐT và CCCD
     $khachHangExists = \App\Models\KhachHang::where('SoDienThoai', $request->phone)
         ->orWhere('CCCD', $request->cccd)
         ->first();
@@ -167,7 +167,7 @@ class AuthMobileController extends Controller
     try {
         DB::beginTransaction();
 
-        // 🔥 BƯỚC 1: Tạo KhachHang TRƯỚC
+        //  BƯỚC 1: Tạo KhachHang TRƯỚC
         $khachHang = \App\Models\KhachHang::create([
             'TenKH' => $request->full_name,
             'SoDienThoai' => $request->phone,
@@ -177,7 +177,7 @@ class AuthMobileController extends Controller
             'DiaChi' => $request->address ?? '',
         ]);
 
-        // 🔥 BƯỚC 2: Tạo TaiKhoan SAU (với MaKH đã có)
+        //  BƯỚC 2: Tạo TaiKhoan SAU (với MaKH đã có)
         $taiKhoan = TaiKhoan::create([
             'Email' => $request->email,
             'MatKhau' => Hash::make($request->password),
