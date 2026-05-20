@@ -138,3 +138,5 @@ Route::get('/vnpay/check-status/{txnRef}', function ($txnRef) {
 });
 // Thêm dòng này vào sau các route của DatPhongController
 Route::post('/dat-phong/{id}/cancel', [DatPhongController::class, 'cancel']);
+
+Route::get('danh-gia/kiem-tra/{maDatPhong}', [DanhGiaController::class, 'kiemTraDanhGia']);

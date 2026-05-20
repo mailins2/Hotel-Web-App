@@ -104,88 +104,117 @@ class AuthMobileController extends Controller
 
     // ========== ĐĂNG KÝ BƯỚC 2 ==========
     public function registerStepTwo(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8'],
-            'full_name' => ['required', 'string', 'min:2', 'max:60'],
-            'gender' => ['required', 'in:0,1,2'],
-            'phone' => ['required', 'regex:/^0[0-9]{9}$/'],
-            'cccd' => ['required', 'regex:/^[0-9]{12}$/'],
-            'birthday' => ['required', 'date', 'before_or_equal:today'],
-            'address' => ['nullable', 'string', 'max:255'],
-        ], [
-            'email.required' => 'Vui lòng nhập email.',
-            'email.email' => 'Email không đúng định dạng.',
-            'password.required' => 'Vui lòng nhập mật khẩu.',
-            'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
-            'full_name.required' => 'Vui lòng nhập họ và tên.',
-            'full_name.min' => 'Họ và tên phải có ít nhất 2 ký tự.',
-            'full_name.max' => 'Họ và tên không được vượt quá 60 ký tự.',
-            'gender.required' => 'Vui lòng chọn giới tính.',
-            'gender.in' => 'Giới tính không hợp lệ.',
-            'phone.required' => 'Vui lòng nhập số điện thoại.',
-            'phone.regex' => 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.',
-            'cccd.required' => 'Vui lòng nhập CCCD.',
-            'cccd.regex' => 'CCCD phải gồm đúng 12 chữ số.',
-            'birthday.required' => 'Vui lòng chọn ngày sinh.',
-            'birthday.date' => 'Ngày sinh không hợp lệ.',
-            'birthday.before_or_equal' => 'Ngày sinh không được lớn hơn ngày hiện tại.',
-            'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
+{
+    $validator = Validator::make($request->all(), [
+        'email' => ['required', 'email'],
+        'password' => ['required', 'string', 'min:8'],
+        'full_name' => ['required', 'string', 'min:2', 'max:60'],
+        'gender' => ['required', 'in:0,1,2'],
+        'phone' => ['required', 'regex:/^0[0-9]{9}$/'],
+        'cccd' => ['required', 'regex:/^[0-9]{12}$/'],
+        'birthday' => ['required', 'date', 'before_or_equal:today'],
+        'address' => ['nullable', 'string', 'max:255'],
+    ], [
+        'email.required' => 'Vui lòng nhập email.',
+        'email.email' => 'Email không đúng định dạng.',
+        'password.required' => 'Vui lòng nhập mật khẩu.',
+        'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự.',
+        'full_name.required' => 'Vui lòng nhập họ và tên.',
+        'full_name.min' => 'Họ và tên phải có ít nhất 2 ký tự.',
+        'full_name.max' => 'Họ và tên không được vượt quá 60 ký tự.',
+        'gender.required' => 'Vui lòng chọn giới tính.',
+        'gender.in' => 'Giới tính không hợp lệ.',
+        'phone.required' => 'Vui lòng nhập số điện thoại.',
+        'phone.regex' => 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.',
+        'cccd.required' => 'Vui lòng nhập CCCD.',
+        'cccd.regex' => 'CCCD phải gồm đúng 12 chữ số.',
+        'birthday.required' => 'Vui lòng chọn ngày sinh.',
+        'birthday.date' => 'Ngày sinh không hợp lệ.',
+        'birthday.before_or_equal' => 'Ngày sinh không được lớn hơn ngày hiện tại.',
+        'address.max' => 'Địa chỉ không được vượt quá 255 ký tự.',
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $validator->errors()->first()
+        ], 422);
+    }
+
+    // Kiểm tra email
+    if (TaiKhoan::where('Email', $request->email)->exists()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Email này đã được sử dụng.'
+        ], 422);
+    }
+
+    // 🔥 Kiểm tra SĐT và CCCD
+    $khachHangExists = \App\Models\KhachHang::where('SoDienThoai', $request->phone)
+        ->orWhere('CCCD', $request->cccd)
+        ->first();
+    
+    if ($khachHangExists) {
+        $message = $khachHangExists->SoDienThoai === $request->phone 
+            ? 'Số điện thoại này đã được sử dụng.' 
+            : 'CCCD này đã được sử dụng.';
+        return response()->json([
+            'status' => 'error',
+            'message' => $message
+        ], 422);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        // 🔥 BƯỚC 1: Tạo KhachHang TRƯỚC
+        $khachHang = \App\Models\KhachHang::create([
+            'TenKH' => $request->full_name,
+            'SoDienThoai' => $request->phone,
+            'CCCD' => $request->cccd,
+            'NgaySinh' => $request->birthday,
+            'GioiTinh' => $request->gender,
+            'DiaChi' => $request->address ?? '',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => $validator->errors()->first()
-            ], 422);
-        }
+        // 🔥 BƯỚC 2: Tạo TaiKhoan SAU (với MaKH đã có)
+        $taiKhoan = TaiKhoan::create([
+            'Email' => $request->email,
+            'MatKhau' => Hash::make($request->password),
+            'LoaiTaiKhoan' => 0,
+            'TrangThai' => 1,
+            'MaKH' => $khachHang->MaKH, // 👈 GÁN MaKH NGAY
+        ]);
 
-        $exists = TaiKhoan::where('Email', $request->email)->exists();
-        if ($exists) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Email này đã được sử dụng.'
-            ], 422);
-        }
+        DB::commit();
 
-        try {
-            DB::beginTransaction();
+        // Tạo token
+        $token = $taiKhoan->createToken('mobile-token')->plainTextToken;
 
-            $taiKhoan = TaiKhoan::create([
-                'Email' => $request->email,
-                'MatKhau' => Hash::make($request->password),
-                'LoaiTaiKhoan' => 0,
-                'TrangThai' => 1,
-            ]);
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Đăng ký thành công.',
+            'token' => $token,
+            'user' => [
+                'MaTK' => $taiKhoan->MaTK,
+                'Email' => $taiKhoan->Email,
+                'LoaiTaiKhoan' => $taiKhoan->LoaiTaiKhoan,
+                'MaKH' => $khachHang->MaKH,
+                'Ten' => $khachHang->TenKH,
+            ]
+        ], 201);
 
-            $taiKhoan->khachHang()->create([
-                'TenKH' => $request->full_name,
-                'SoDienThoai' => $request->phone,
-                'CCCD' => $request->cccd,
-                'NgaySinh' => $request->birthday,
-                'GioiTinh' => $request->gender,
-                'DiaChi' => $request->address ?? '',
-            ]);
-
-            DB::commit();
-
-            $token = $taiKhoan->createToken('mobile-token')->plainTextToken;
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Đăng ký thành công.',
-                'token' => $token,
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Đăng ký thất bại. Vui lòng thử lại.'
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        DB::rollBack();
+        
+        \Log::error('Đăng ký thất bại: ' . $e->getMessage());
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Đăng ký thất bại. Vui lòng thử lại.'
+        ], 500);
     }
+}
 
     // ========== ĐĂNG XUẤT ==========
     public function logout(Request $request)
