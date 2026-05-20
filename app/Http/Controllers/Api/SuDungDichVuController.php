@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\ChiTietHoaDon;
 use App\Models\ChiTietDatPhong;
-use App\Models\DatPhong;
 use App\Models\DichVu;
 use App\Models\HoaDon;
 use App\Models\SuDungDichVu;
@@ -34,14 +33,22 @@ class SuDungDichVuController extends Controller
 
     public function index()
     {
-        $data = SuDungDichVu::with('dichVu')->get();
+        $data = SuDungDichVu::with([
+            'dichVu',
+            'chiTietDatPhong.phong',
+            'chiTietDatPhong.datPhong.khachHang',
+        ])->get();
 
         return $this->success($data, 'Danh sach su dung dich vu');
     }
 
     public function show($id)
     {
-        $item = SuDungDichVu::with('dichVu')->find($id);
+        $item = SuDungDichVu::with([
+            'dichVu',
+            'chiTietDatPhong.phong',
+            'chiTietDatPhong.datPhong.khachHang',
+        ])->find($id);
 
         if (!$item) {
             return $this->error('Khong tim thay', 404);
@@ -52,8 +59,13 @@ class SuDungDichVuController extends Controller
 
     public function byDatPhong($id)
     {
-        $data = SuDungDichVu::with('dichVu')
-            ->where('MaDatPhong', $id)
+        $data = SuDungDichVu::with([
+            'dichVu',
+            'chiTietDatPhong.phong',
+        ])
+            ->whereHas('chiTietDatPhong', function ($query) use ($id) {
+                $query->where('MaDatPhong', $id);
+            })
             ->get();
 
         return $this->success($data, 'Dich vu theo don');
@@ -62,7 +74,7 @@ class SuDungDichVuController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'MaDatPhong' => 'required|exists:DatPhong,MaDatPhong',
+            'MaCTDP' => 'required|exists:ChiTietDatPhong,MaCTDP',
             'ThoiGian' => 'nullable|date',
             'MaDV' => [
                 'required_without:items',
@@ -91,17 +103,17 @@ class SuDungDichVuController extends Controller
 
         try {
             $result = DB::transaction(function () use ($data, $items) {
-                $datPhong = DatPhong::select('MaDatPhong', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang')
-                    ->find($data['MaDatPhong']);
+                $chiTietDatPhong = ChiTietDatPhong::with([
+                    'datPhong' => function ($query) {
+                        $query->select('MaDatPhong', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang');
+                    },
+                    'phong',
+                ])->find($data['MaCTDP']);
 
-                $hasCheckedInRoom = $datPhong
-                    ? ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
-                        ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
-                        ->exists()
-                    : false;
+                $datPhong = $chiTietDatPhong?->datPhong;
 
-                if (!$datPhong || !$hasCheckedInRoom) {
-                    throw new \RuntimeException('Chi co the dat dich vu sau khi check-in.');
+                if (!$chiTietDatPhong || !$datPhong || (int) $chiTietDatPhong->TrangThai !== ChiTietDatPhong::CHECKED_IN) {
+                    throw new \RuntimeException('Chi co the dat dich vu cho phong da check-in.');
                 }
 
                 $serviceDate = isset($data['ThoiGian'])
@@ -143,7 +155,7 @@ class SuDungDichVuController extends Controller
                     }
 
                     $suDung = SuDungDichVu::create([
-                        'MaDatPhong' => $datPhong->MaDatPhong,
+                        'MaCTDP' => $chiTietDatPhong->MaCTDP,
                         'MaDV' => $dichVu->MaDV,
                         'SoLuong' => $item['SoLuong'],
                         'ThoiGian' => $thoiGian,

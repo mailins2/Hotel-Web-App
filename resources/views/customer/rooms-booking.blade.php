@@ -1018,7 +1018,12 @@
               const roomTypeId = room.MaLoaiPhong || room.ma_loai_phong || room.loaiPhong?.MaLoaiPhong || room.loai_phong?.ma_loai_phong;
               if (!roomTypeId) return;
               const key = String(roomTypeId);
-              availableCounts.set(key, (availableCounts.get(key) || 0) + 1);
+              const roomRows = Array.isArray(room.phongs) ? room.phongs : [];
+              const availableCount = Number(
+                roomRows.length || room.soPhongTrong || room.so_luong_phong || room.tongPhong || room.tong_phong || 0
+              );
+
+              availableCounts.set(key, Number.isFinite(availableCount) ? availableCount : 0);
             });
 
             const searchedRoomTypes = allRoomTypes

@@ -362,10 +362,17 @@
           </div>
 
           <label for="service_booking_room">Số phòng</label>
-          <select id="service_booking_room" name="MaDatPhong" required>
-            @foreach($serviceBookingOptions as $bookingOption)
-              <option value="{{ $bookingOption['id'] }}">{{ $bookingOption['label'] }}</option>
-            @endforeach
+          <select id="service_booking_room" name="MaCTDP" required>
+            @forelse($serviceBookingOptions as $bookingOption)
+              <option
+                value="{{ $bookingOption['id'] }}"
+                data-booking-id="{{ $bookingOption['bookingId'] ?? '' }}"
+                data-room-id="{{ $bookingOption['roomId'] ?? '' }}"
+                data-room-number="{{ $bookingOption['roomNumber'] ?? '' }}"
+              >{{ $bookingOption['label'] }}</option>
+            @empty
+              <option value="" disabled>Chưa có phòng đang check-in</option>
+            @endforelse
           </select>
 
           <label for="service_booking_type">Loại dịch vụ</label>
@@ -590,7 +597,7 @@
 
           const triggers = document.querySelectorAll('[data-service-booking-trigger]');
           const closeButtons = modal.querySelectorAll('[data-service-booking-close]');
-          const roomSelect = modal.querySelector('select[name="MaDatPhong"]');
+          const roomSelect = modal.querySelector('select[name="MaCTDP"]');
           const typeSelect = modal.querySelector('[data-service-type-select]');
           const nameSelect = modal.querySelector('[data-service-name-select]');
           const singleServiceBlock = modal.querySelector('[data-service-single-block]');
@@ -980,7 +987,7 @@
           const buildServiceBookingPayload = () => {
             const selectedType = String(typeSelect.value || '');
             const payload = {
-              MaDatPhong: roomSelect?.value || '',
+              MaCTDP: roomSelect?.value || '',
               ThoiGian: timeInput?.value || '',
             };
 
@@ -1035,7 +1042,7 @@
 
             const payload = buildServiceBookingPayload();
 
-            if (!payload.MaDatPhong || (!payload.MaDV && !payload.items?.length)) {
+            if (!payload.MaCTDP || (!payload.MaDV && !payload.items?.length)) {
               setBookingStatus('Vui long chon phong va dich vu.');
               return;
             }

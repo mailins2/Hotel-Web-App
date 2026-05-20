@@ -10,16 +10,17 @@ class SuDungDichVu extends Model
     protected $primaryKey = 'MaSuDung';
     public $timestamps = false;
      protected $fillable = [
-        'MaDatPhong',
+        'MaCTDP',
         'MaDV',
         'SoLuong',
         'ThoiGian'
     ];
 
-    public function datPhong()
+    public function chiTietDatPhong()
     {
-        return $this->belongsTo(DatPhong::class, 'MaDatPhong');
+        return $this->belongsTo(ChiTietDatPhong::class, 'MaCTDP');
     }
+
     public function dichVu()
     {
         return $this->belongsTo(DichVu::class, 'MaDV');

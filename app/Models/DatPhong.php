@@ -43,7 +43,14 @@ class DatPhong extends Model
     }
     public function suDungDichVu()
     {
-        return $this->hasMany(SuDungDichVu::class, 'MaDatPhong');
+        return $this->hasManyThrough(
+            SuDungDichVu::class,
+            ChiTietDatPhong::class,
+            'MaDatPhong',
+            'MaCTDP',
+            'MaDatPhong',
+            'MaCTDP'
+        );
     }
     public function chiTietDatPhong()
     {

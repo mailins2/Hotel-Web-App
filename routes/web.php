@@ -91,21 +91,23 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 })
                 ->orderByDesc('MaDatPhong')
                 ->get()
-                ->map(function (DatPhong $booking) {
-                    $roomNumbers = $booking->chiTietDatPhong
-                        ->map(fn ($detail) => $detail->phong?->SoPhong)
-                        ->filter()
-                        ->values()
-                        ->implode(', ');
+                ->flatMap(function (DatPhong $booking) {
+                    return $booking->chiTietDatPhong
+                        ->map(function ($detail) use ($booking) {
+                            $roomNumber = $detail->phong?->SoPhong;
 
-                    return [
-                        'id' => (string) $booking->MaDatPhong,
-                        'label' => $roomNumbers
-                            ? "#{$booking->MaDatPhong} - {$roomNumbers}"
-                            : "#{$booking->MaDatPhong}",
-                        'checkIn' => \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString(),
-                        'checkOut' => \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString(),
-                    ];
+                            return [
+                                'id' => (string) $detail->MaCTDP,
+                                'bookingId' => (string) $booking->MaDatPhong,
+                                'roomId' => (string) $detail->MaPhong,
+                                'roomNumber' => $roomNumber ? (string) $roomNumber : '',
+                                'label' => $roomNumber
+                                    ? "#{$booking->MaDatPhong} - Phòng {$roomNumber}"
+                                    : "#{$booking->MaDatPhong}",
+                                'checkIn' => \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString(),
+                                'checkOut' => \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString(),
+                            ];
+                        });
                 })
                 ->values();
         }
@@ -535,6 +537,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                             'thanhToans',
                             'chiTietHoaDons.loaiPhong',
                             'chiTietHoaDons.suDung.dichVu',
+                            'chiTietHoaDons.suDung.chiTietDatPhong.phong',
                             'chiTietHoaDons.denBu',
                         ])->findOrFail($recordId),
                     ],
@@ -643,8 +646,10 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'datPhong.hoaDon.thanhToans',
             'datPhong.hoaDon.chiTietHoaDons.loaiPhong',
             'datPhong.hoaDon.chiTietHoaDons.suDung.dichVu',
+            'datPhong.hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
             'datPhong.hoaDon.chiTietHoaDons.denBu',
             'datPhong.suDungDichVu.dichVu',
+            'datPhong.suDungDichVu.chiTietDatPhong.phong',
             'datPhong.luuTrus',
         ])->findOrFail($bookingDetailId);
 
@@ -652,6 +657,9 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $booking->setRelation('chiTietDatPhong', collect([$bookingDetail]));
         $booking->setRelation('luuTrus', ($booking->luuTrus ?? collect())
             ->where('MaPhong', (int) $bookingDetail->MaPhong)
+            ->values());
+        $booking->setRelation('suDungDichVu', ($booking->suDungDichVu ?? collect())
+            ->where('MaCTDP', (int) $bookingDetail->MaCTDP)
             ->values());
 
         return view('receptionist.booking-detail', [
@@ -689,7 +697,39 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
     Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
 
-    Route::view('/services', 'receptionist.services.index')->name('services.index');
+    Route::get('/services', function () {
+        $serviceRoomOptions = \App\Models\ChiTietDatPhong::with([
+            'phong',
+            'datPhong.khachHang',
+        ])
+            ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN)
+            ->orderBy('MaDatPhong')
+            ->orderBy('MaPhong')
+            ->get()
+            ->map(function ($detail) {
+                $booking = $detail->datPhong;
+                $roomNumber = $detail->phong?->SoPhong;
+                $customerName = $booking?->khachHang?->TenKH;
+
+                return [
+                    'id' => (string) $detail->MaCTDP,
+                    'bookingId' => (string) $detail->MaDatPhong,
+                    'roomId' => (string) $detail->MaPhong,
+                    'roomNumber' => $roomNumber ? (string) $roomNumber : '',
+                    'customerName' => $customerName ?: '',
+                    'label' => trim(
+                        ($roomNumber ? "Phòng {$roomNumber}" : "Phòng #{$detail->MaPhong}")
+                        . " - Đặt phòng #{$detail->MaDatPhong}"
+                        . ($customerName ? " - {$customerName}" : '')
+                    ),
+                ];
+            })
+            ->values();
+
+        return view('receptionist.services.index', [
+            'serviceRoomOptions' => $serviceRoomOptions,
+        ]);
+    })->name('services.index');
     Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
     Route::get('/check-ins/create', function () {
         $today = Carbon::today();
@@ -705,7 +745,8 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'chiTietDatPhong.phong.loaiPhong',
         ])
             ->where('TinhTrang', DatPhong::CONFIRMED)
-            ->whereDate('NgayNhanPhong', $today->toDateString())
+            ->whereDate('NgayNhanPhong', '<=', $today->toDateString())
+            ->whereDate('NgayTraPhong', '>=', $today->toDateString())
             ->orderBy('NgayNhanPhong')
             ->orderBy('MaDatPhong')
             ->get()
@@ -730,7 +771,54 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             ],
         ]);
     })->name('check-ins.create');
-    Route::view('/check-outs/create', 'receptionist.check-out-form')->name('check-outs.create');
+    Route::get('/check-outs/create', function () {
+        $today = Carbon::today();
+
+        $checkOutBookings = DatPhong::with([
+            'khachHang',
+            'chiTietDatPhong' => function ($query) {
+                $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+            },
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai',
+            'hoaDon.chiTietHoaDons.loaiPhong.khuyenMai',
+            'hoaDon.chiTietHoaDons.suDung.dichVu',
+            'hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
+            'hoaDon.chiTietHoaDons.denBu',
+            'hoaDon.thanhToans',
+            'luuTrus',
+        ])
+            ->where(function ($query) {
+                $query->where('TinhTrang', DatPhong::CHECKED_IN)
+                    ->orWhereHas('chiTietDatPhong', function ($detailQuery) {
+                        $detailQuery->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+                    });
+            })
+            ->orderBy('NgayTraPhong')
+            ->orderBy('MaDatPhong')
+            ->get()
+            ->map(function (DatPhong $booking) {
+                $booking->setRelation('chiTietDatPhong', $booking->chiTietDatPhong
+                    ->sortBy(fn ($detail) => (int) ($detail->phong?->SoPhong ?? $detail->MaPhong))
+                    ->values());
+
+                return $booking;
+            })
+            ->filter(fn (DatPhong $booking) => $booking->chiTietDatPhong->isNotEmpty())
+            ->values();
+
+        return view('receptionist.check-out-form', [
+            'checkOutBookings' => $checkOutBookings,
+            'checkOutStats' => [
+                'upcoming' => $checkOutBookings->count(),
+                'today' => $checkOutBookings
+                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayTraPhong)->isSameDay($today))
+                    ->count(),
+                'roomsFreeing' => $checkOutBookings
+                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayTraPhong)->isSameDay($today))
+                    ->sum(fn (DatPhong $booking) => $booking->chiTietDatPhong->count()),
+            ],
+        ]);
+    })->name('check-outs.create');
     Route::get('/payments', function () {
         $payments = ThanhToan::with([
             'hoaDon.datPhong.khachHang',
@@ -742,7 +830,214 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'payments' => $payments,
         ]);
     })->name('payments.index');
-    Route::view('/payments/create', 'receptionist.payments.form')->name('payments.create');
+    Route::get('/payments/create', function () {
+        $formatDate = fn ($value) => $value ? Carbon::parse($value)->format('d/m/Y') : '--';
+        $formatTime = fn ($value) => $value ? Carbon::parse($value)->format('H:i') : '--';
+        $moneyValue = fn ($value) => (float) ($value ?? 0);
+        $getNights = function (DatPhong $booking) {
+            if (!$booking->NgayNhanPhong || !$booking->NgayTraPhong) {
+                return 0;
+            }
+
+            return max(1, Carbon::parse($booking->NgayNhanPhong)->diffInDays(Carbon::parse($booking->NgayTraPhong)));
+        };
+
+        $bookingId = request('booking');
+        $invoiceId = request('invoice');
+
+        $query = DatPhong::with([
+            'khachHang',
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai',
+            'hoaDon.chiTietHoaDons.loaiPhong.khuyenMai',
+            'hoaDon.chiTietHoaDons.suDung.dichVu',
+            'hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
+            'hoaDon.chiTietHoaDons.denBu',
+            'hoaDon.thanhToans',
+        ])
+            ->where(function ($query) {
+                $query->where('TinhTrang', DatPhong::CHECKED_IN)
+                    ->orWhereHas('chiTietDatPhong', function ($detailQuery) {
+                        $detailQuery->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+                    });
+            });
+
+        if ($bookingId) {
+            $query->where('MaDatPhong', $bookingId);
+        }
+
+        if ($invoiceId) {
+            $query->whereHas('hoaDon', function ($invoiceQuery) use ($invoiceId) {
+                $invoiceQuery->where('MaHD', $invoiceId);
+            });
+        }
+
+        $booking = $query
+            ->orderBy('NgayTraPhong')
+            ->orderBy('MaDatPhong')
+            ->first();
+
+        $paymentData = [
+            'invoiceId' => '--',
+            'bookingId' => '--',
+            'customer' => '--',
+            'phone' => '',
+            'stay' => '--',
+            'stayPeriod' => '--',
+            'invoiceDate' => $formatDate(now()),
+            'checkoutDate' => $formatDate(now()),
+            'checkoutTime' => $formatTime(now()),
+            'roomNumbersByType' => [],
+            'roomSummaryItems' => [],
+            'roomItems' => [],
+            'serviceItems' => [],
+            'compensationItems' => [],
+            'roomTotal' => 0,
+            'serviceAmount' => 0,
+            'compensationAmount' => 0,
+            'totalAmount' => 0,
+            'paidAmount' => 0,
+            'amountDue' => 0,
+        ];
+
+        if ($booking) {
+            $invoice = $booking->hoaDon;
+            $nights = $getNights($booking);
+            $customer = $booking->khachHang;
+            $details = $invoice?->chiTietHoaDons ?? collect();
+
+            $roomNumbersByType = $booking->chiTietDatPhong
+                ->filter(fn ($detail) => $detail?->phong?->MaLoaiPhong)
+                ->groupBy(fn ($detail) => (string) $detail->phong->MaLoaiPhong)
+                ->map(fn ($items) => $items
+                    ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                    ->filter()
+                    ->values()
+                    ->implode(', '));
+
+            $roomSummaryItems = $booking->chiTietDatPhong
+                ->groupBy(fn ($detail) => (string) ($detail->phong?->MaLoaiPhong ?? $detail->MaPhong))
+                ->map(function ($items) {
+                    $firstDetail = $items->first();
+                    $roomType = $firstDetail?->phong?->loaiPhong;
+                    $roomNumbers = $items
+                        ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                        ->filter()
+                        ->values()
+                        ->implode(', ');
+
+                    return [
+                        'roomTypeId' => (string) ($roomType?->MaLoaiPhong ?? $firstDetail?->MaPhong),
+                        'type' => $roomType?->TenLoaiPhong ?? 'Loại phòng',
+                        'roomNumbers' => $roomNumbers ?: '--',
+                    ];
+                })
+                ->values();
+
+            $roomItems = $details
+                ->filter(fn ($detail) => $detail->MaLoaiPhong)
+                ->map(function ($detail) use ($nights, $moneyValue, $roomNumbersByType) {
+                    $quantity = max(1, (int) ($detail->SoLuong ?? 1));
+                    $lineTotal = $moneyValue($detail->DonGia) * $quantity;
+                    $unitPrice = $nights > 0 ? ($lineTotal / $quantity / $nights) : $moneyValue($detail->DonGia);
+
+                    return [
+                        'roomTypeId' => (string) $detail->MaLoaiPhong,
+                        'type' => $detail->loaiPhong?->TenLoaiPhong ?? $detail->MoTa ?? 'Loại phòng',
+                        'roomNumbers' => $roomNumbersByType->get((string) $detail->MaLoaiPhong, '--') ?: '--',
+                        'quantity' => $quantity,
+                        'unitPrice' => $unitPrice,
+                        'nights' => $nights,
+                        'total' => $lineTotal,
+                    ];
+                })
+                ->values();
+
+            if ($roomItems->isEmpty()) {
+                $roomItems = $booking->chiTietDatPhong
+                    ->groupBy(fn ($detail) => $detail->phong?->MaLoaiPhong ?? $detail->MaPhong)
+                    ->map(function ($items) use ($nights, $moneyValue) {
+                        $roomType = $items->first()?->phong?->loaiPhong;
+                        $unitPrice = $moneyValue($roomType?->GiaGiam ?? $roomType?->GiaPhong);
+                        $roomNumbers = $items
+                            ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                            ->filter()
+                            ->values()
+                            ->implode(', ');
+
+                        return [
+                            'roomTypeId' => (string) ($roomType?->MaLoaiPhong ?? $items->first()?->MaPhong),
+                            'type' => $roomType?->TenLoaiPhong ?? 'Loại phòng',
+                            'roomNumbers' => $roomNumbers ?: '--',
+                            'quantity' => $items->count(),
+                            'unitPrice' => $unitPrice,
+                            'nights' => $nights,
+                            'total' => $unitPrice * $items->count() * $nights,
+                        ];
+                    })
+                    ->values();
+            }
+
+            $serviceItems = $details
+                ->filter(fn ($detail) => $detail->MaSuDung)
+                ->map(function ($detail) use ($moneyValue, $formatDate) {
+                    $service = $detail->suDung?->dichVu;
+                    $roomNumber = $detail->suDung?->chiTietDatPhong?->phong?->SoPhong;
+                    $quantity = max(1, (int) ($detail->SoLuong ?? $detail->suDung?->SoLuong ?? 1));
+                    $unitPrice = $moneyValue($detail->DonGia ?? $service?->GiaDV);
+
+                    return [
+                        'name' => trim(($detail->MoTa ?: ($service?->TenDV ?? 'Dịch vụ')) . ($roomNumber ? " - Phòng {$roomNumber}" : '')),
+                        'type' => $service?->LoaiDVText ?? 'Dịch vụ',
+                        'quantity' => $quantity,
+                        'unitPrice' => $unitPrice,
+                        'price' => $unitPrice * $quantity,
+                        'time' => $detail->suDung?->ThoiGian ? Carbon::parse($detail->suDung->ThoiGian)->format('d/m/Y H:i') : '--',
+                    ];
+                })
+                ->values();
+
+            $compensationItems = $details
+                ->filter(fn ($detail) => $detail->MaDenBu)
+                ->map(fn ($detail) => [
+                    'description' => $detail->MoTa ?: ($detail->denBu?->MoTa ?? 'Đền bù'),
+                    'amount' => $moneyValue($detail->DonGia) * max(1, (int) ($detail->SoLuong ?? 1)),
+                ])
+                ->values();
+
+            $roomTotal = $roomItems->sum('total');
+            $serviceAmount = $serviceItems->sum('price');
+            $compensationAmount = $compensationItems->sum('amount');
+            $totalAmount = $moneyValue($invoice?->TongTien) ?: ($roomTotal + $serviceAmount + $compensationAmount);
+            $paidAmount = $moneyValue($invoice?->DaThanhToan ?? $invoice?->thanhToans?->sum('SoTien'));
+
+            $paymentData = [
+                'invoiceId' => $invoice?->MaHD ? 'HD' . $invoice->MaHD : 'HD' . $booking->MaDatPhong,
+                'bookingId' => (string) $booking->MaDatPhong,
+                'customer' => $customer?->TenKH ?? '--',
+                'phone' => $customer?->SoDienThoai ?? '',
+                'stay' => "{$nights} đêm - {$booking->chiTietDatPhong->count()} phòng",
+                'stayPeriod' => $formatDate($booking->NgayNhanPhong) . ' - ' . $formatDate($booking->NgayTraPhong),
+                'invoiceDate' => $formatDate($invoice?->NgayLapHD ?? now()),
+                'checkoutDate' => $formatDate(now()),
+                'checkoutTime' => $formatTime(now()),
+                'roomNumbersByType' => $roomNumbersByType->toArray(),
+                'roomSummaryItems' => $roomSummaryItems,
+                'roomItems' => $roomItems,
+                'serviceItems' => $serviceItems,
+                'compensationItems' => $compensationItems,
+                'roomTotal' => $roomTotal,
+                'serviceAmount' => $serviceAmount,
+                'compensationAmount' => $compensationAmount,
+                'totalAmount' => $totalAmount,
+                'paidAmount' => $paidAmount,
+                'amountDue' => max($totalAmount - $paidAmount, 0),
+            ];
+        }
+
+        return view('receptionist.payments.form', [
+            'paymentData' => $paymentData,
+        ]);
+    })->name('payments.create');
     Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
     Route::get('/invoices', function () {
         $invoices = HoaDon::with([

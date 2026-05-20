@@ -1,3 +1,114 @@
+@php
+    $checkOutBookings = $checkOutBookings ?? collect();
+    $checkOutStats = $checkOutStats ?? ['upcoming' => 0, 'today' => 0, 'roomsFreeing' => 0];
+    $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y') : '--';
+    $formatMoneyValue = fn ($value) => (float) ($value ?? 0);
+    $getNights = function ($booking) {
+        if (!$booking?->NgayNhanPhong || !$booking?->NgayTraPhong) {
+            return 0;
+        }
+
+        return max(1, \Carbon\Carbon::parse($booking->NgayNhanPhong)->diffInDays(\Carbon\Carbon::parse($booking->NgayTraPhong)));
+    };
+    $getServiceItems = function ($booking) use ($formatMoneyValue) {
+        $invoiceDetails = $booking->hoaDon?->chiTietHoaDons ?? collect();
+
+        return $invoiceDetails
+            ->filter(fn ($detail) => $detail->MaSuDung)
+            ->map(function ($detail) use ($formatMoneyValue) {
+                $service = $detail->suDung?->dichVu;
+                $roomNumber = $detail->suDung?->chiTietDatPhong?->phong?->SoPhong;
+                $quantity = max(1, (int) ($detail->SoLuong ?? $detail->suDung?->SoLuong ?? 1));
+                $unitPrice = $formatMoneyValue($detail->DonGia ?? $service?->GiaDV);
+
+                return [
+                    'name' => trim(($detail->MoTa ?: ($service?->TenDV ?? 'Dịch vụ')) . ($roomNumber ? " - Phòng {$roomNumber}" : '')),
+                    'type' => $service?->LoaiDVText ?? 'Dịch vụ',
+                    'price' => $unitPrice * $quantity,
+                ];
+            })
+            ->values();
+    };
+    $getRoomItems = function ($booking) use ($getNights, $formatMoneyValue) {
+        $nights = $getNights($booking);
+        $invoiceDetails = $booking->hoaDon?->chiTietHoaDons ?? collect();
+        $roomNumbersByType = $booking->chiTietDatPhong
+            ->filter(fn ($detail) => $detail?->phong?->MaLoaiPhong)
+            ->groupBy(fn ($detail) => (string) $detail->phong->MaLoaiPhong)
+            ->map(fn ($items) => $items
+                ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                ->filter()
+                ->values()
+                ->implode(', '));
+
+        $invoiceRoomItems = $invoiceDetails
+            ->filter(fn ($detail) => $detail->MaLoaiPhong)
+            ->map(function ($detail) use ($nights, $formatMoneyValue, $roomNumbersByType) {
+                $quantity = max(1, (int) ($detail->SoLuong ?? 1));
+                $lineTotal = $formatMoneyValue($detail->DonGia) * $quantity;
+                $unitPrice = $nights > 0 ? ($lineTotal / $quantity / $nights) : $formatMoneyValue($detail->DonGia);
+
+                return [
+                    'roomTypeId' => (string) $detail->MaLoaiPhong,
+                    'type' => $detail->loaiPhong?->TenLoaiPhong ?? 'Loại phòng',
+                    'roomNumbers' => $roomNumbersByType->get((string) $detail->MaLoaiPhong, '--') ?: '--',
+                    'quantity' => $quantity,
+                    'unitPrice' => $unitPrice,
+                    'nights' => $nights,
+                    'total' => $lineTotal,
+                ];
+            })
+            ->values();
+
+        if ($invoiceRoomItems->isNotEmpty()) {
+            return $invoiceRoomItems;
+        }
+
+        return $booking->chiTietDatPhong
+            ->groupBy(fn ($detail) => $detail->phong?->MaLoaiPhong ?? $detail->MaPhong)
+            ->map(function ($items) use ($nights, $formatMoneyValue) {
+                $roomType = $items->first()?->phong?->loaiPhong;
+                $unitPrice = $formatMoneyValue($roomType?->GiaGiam ?? $roomType?->GiaPhong);
+                $roomNumbers = $items
+                    ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                    ->filter()
+                    ->values()
+                    ->implode(', ');
+
+                return [
+                    'roomTypeId' => (string) ($roomType?->MaLoaiPhong ?? $items->first()?->MaPhong),
+                    'type' => $roomType?->TenLoaiPhong ?? 'Loại phòng',
+                    'roomNumbers' => $roomNumbers ?: '--',
+                    'quantity' => $items->count(),
+                    'unitPrice' => $unitPrice,
+                    'nights' => $nights,
+                    'total' => $unitPrice * $items->count() * $nights,
+                ];
+            })
+            ->values();
+    };
+    $getRoomSummaryItems = function ($booking) {
+        return $booking->chiTietDatPhong
+            ->groupBy(fn ($detail) => (string) ($detail->phong?->MaLoaiPhong ?? $detail->MaPhong))
+            ->map(function ($items) {
+                $firstDetail = $items->first();
+                $roomType = $firstDetail?->phong?->loaiPhong;
+                $roomNumbers = $items
+                    ->map(fn ($detail) => $detail?->phong?->SoPhong)
+                    ->filter()
+                    ->values()
+                    ->implode(', ');
+
+                return [
+                    'roomTypeId' => (string) ($roomType?->MaLoaiPhong ?? $firstDetail?->MaPhong),
+                    'type' => $roomType?->TenLoaiPhong ?? 'Loại phòng',
+                    'roomNumbers' => $roomNumbers ?: '--',
+                ];
+            })
+            ->values();
+    };
+@endphp
+
 <x-app-layout :assets="['animation']">
     <style>
         .co-shell { padding-top: 4.5rem; }
@@ -13,11 +124,7 @@
             background: linear-gradient(180deg, #fff7ef 0%, #fff 55%, #f8fbff 100%);
         }
         .co-card { padding: 1.4rem; height: 100%; }
-        .co-booking-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.85rem;
-        }
+        .co-booking-list { display: flex; flex-direction: column; gap: 0.85rem; }
         .co-booking-card {
             width: 100%;
             border: 1px solid rgba(166, 98, 43, 0.12);
@@ -61,15 +168,14 @@
             border-color: rgba(37, 99, 235, 0.24);
             box-shadow: 0 12px 26px rgba(37, 99, 235, 0.08);
         }
-        .co-room-number {
-            color: #1d4ed8;
-            font-size: 1rem;
-            font-weight: 700;
-        }
-        .co-room-type {
-            margin-top: 0.2rem;
-            color: #6f1d01;
-            font-weight: 600;
+        .co-room-number { color: #1d4ed8; font-size: 1rem; font-weight: 700; }
+        .co-room-type { margin-top: 0.2rem; color: #6f1d01; font-weight: 600; }
+        .co-empty {
+            border: 1px dashed rgba(166, 98, 43, 0.28);
+            border-radius: 18px;
+            padding: 1rem;
+            color: #7c5b45;
+            background: #fffaf3;
         }
         .co-dialog {
             width: min(560px, calc(100vw - 2rem));
@@ -79,28 +185,14 @@
             overflow: hidden;
             box-shadow: 0 28px 70px rgba(73, 18, 15, 0.22);
         }
-        .co-dialog::backdrop {
-            background: rgba(73, 18, 15, 0.28);
-            backdrop-filter: blur(2px);
-        }
+        .co-dialog::backdrop { background: rgba(73, 18, 15, 0.28); backdrop-filter: blur(2px); }
         .co-dialog-body {
             padding: 1.5rem;
             background: linear-gradient(180deg, #fffaf3 0%, #fff 100%);
         }
-        .co-guest-dialog .co-dialog-body {
-            max-height: min(82vh, 760px);
-            overflow-y: auto;
-        }
-        .co-dialog-title {
-            margin: 0 0 0.5rem;
-            color: #6f1d01;
-            font-size: 1.35rem;
-            font-weight: 700;
-        }
-        .co-dialog-text {
-            margin: 0 0 1.25rem;
-            color: #7c5b45;
-        }
+        .co-guest-dialog .co-dialog-body { max-height: min(82vh, 760px); overflow-y: auto; }
+        .co-dialog-title { margin: 0 0 0.5rem; color: #6f1d01; font-size: 1.35rem; font-weight: 700; }
+        .co-dialog-text { margin: 0 0 1.25rem; color: #7c5b45; }
         .co-dialog-info {
             border: 1px solid rgba(166, 98, 43, 0.12);
             border-radius: 18px;
@@ -113,25 +205,10 @@
             font-weight: 700;
             text-transform: uppercase;
         }
-        .co-dialog-value {
-            margin-top: 0.45rem;
-            color: #6f1d01;
-            font-size: 1.05rem;
-            font-weight: 600;
-        }
-        .co-dialog-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-        .co-dialog-actions .btn {
-            flex: 1 1 200px;
-        }
-        .co-guest-stack {
-            display: flex;
-            flex-direction: column;
-            gap: 0.85rem;
-        }
+        .co-dialog-value { margin-top: 0.45rem; color: #6f1d01; font-size: 1.05rem; font-weight: 600; }
+        .co-dialog-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .co-dialog-actions .btn { flex: 1 1 200px; }
+        .co-guest-stack { display: flex; flex-direction: column; gap: 0.85rem; }
         .co-guest-card {
             border: 1px solid rgba(166, 98, 43, 0.12);
             border-radius: 18px;
@@ -159,9 +236,7 @@
         @media (max-width: 767.98px) {
             .co-detail-grid,
             .co-room-list,
-            .co-guest-grid {
-                grid-template-columns: 1fr;
-            }
+            .co-guest-grid { grid-template-columns: 1fr; }
         }
     </style>
 
@@ -180,51 +255,59 @@
         </div>
 
         <div class="row g-3 mb-4">
-            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Khách sắp trả phòng</div><div class="h4 mb-0 mt-2">4</div></div></div>
-            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Trả phòng hôm nay</div><div class="h4 mb-0 mt-2">2</div></div></div>
-            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Phòng sẽ trống</div><div class="h4 mb-0 mt-2">2</div></div></div>
+            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Khách sắp trả phòng</div><div class="h4 mb-0 mt-2">{{ $checkOutStats['upcoming'] ?? 0 }}</div></div></div>
+            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Trả phòng hôm nay</div><div class="h4 mb-0 mt-2">{{ $checkOutStats['today'] ?? 0 }}</div></div></div>
+            <div class="col-md-4"><div class="co-card text-center"><div class="small text-uppercase text-muted fw-bold">Phòng sẽ trống</div><div class="h4 mb-0 mt-2">{{ $checkOutStats['roomsFreeing'] ?? 0 }}</div></div></div>
         </div>
 
         <div class="row g-4">
             <div class="col-xl-5">
                 <div class="co-card">
-                    <h5 class="mb-3">Danh sách trả phòng hôm nay</h5>
+                    <h5 class="mb-3">Danh sách đang lưu trú</h5>
                     <div class="co-booking-list">
-                        <button
-                            type="button"
-                            class="co-booking-card is-active"
-                            data-checkout-card
-                            data-booking-id="9002"
-                            data-customer="Trần Bảo Ngọc"
-                            data-phone="0912345678"
-                            data-stay="2 đêm - 2 khách"
-                            data-service-total="450000"
-                            data-services='[{"name":"Mini bar","type":"Dịch vụ ăn uống","price":180000},{"name":"Giặt ủi","type":"Dịch vụ phòng","price":150000},{"name":"Nước suối Evian","type":"Dịch vụ ăn uống","price":120000}]'
-                            data-amount-due="1250000"
-                            aria-pressed="true"
-                        >
-                            <div class="small text-uppercase text-muted fw-bold mb-1">Trả phòng #9002</div>
-                            <div class="fw-semibold">Trần Bảo Ngọc</div>
-                            <div class="text-muted small">07/04/2026 đến 09/04/2026</div>
-                        </button>
-
-                        <button
-                            type="button"
-                            class="co-booking-card"
-                            data-checkout-card
-                            data-booking-id="9005"
-                            data-customer="Đỗ Thanh Tùng"
-                            data-phone="0908456123"
-                            data-stay="4 đêm - 3 khách"
-                            data-service-total="680000"
-                            data-services='[{"name":"Giặt ủi","type":"Dịch vụ phòng","price":200000},{"name":"Coca Cola","type":"Dịch vụ ăn uống","price":80000},{"name":"Bún bò","type":"Dịch vụ ăn uống","price":220000},{"name":"Trái cây theo mùa","type":"Dịch vụ ăn uống","price":180000}]'
-                            data-amount-due="1980000"
-                            aria-pressed="false"
-                        >
-                            <div class="small text-uppercase text-muted fw-bold mb-1">Trả phòng #9005</div>
-                            <div class="fw-semibold">Đỗ Thanh Tùng</div>
-                            <div class="text-muted small">06/04/2026 đến 10/04/2026</div>
-                        </button>
+                        @forelse($checkOutBookings as $booking)
+                            @php
+                                $customer = $booking->khachHang;
+                                $customerName = $customer?->TenKH ?? 'Khách chưa có tên';
+                                $nights = $getNights($booking);
+                                $guestCount = max((int) ($booking->luuTrus?->count() ?? 0), (int) ($booking->SoLuong ?? 0));
+                                $stayText = $nights . ' đêm - ' . $guestCount . ' khách';
+                                $serviceItems = $getServiceItems($booking);
+                                $serviceTotal = $serviceItems->sum('price');
+                                $roomItems = $getRoomItems($booking);
+                                $roomSummaryItems = $getRoomSummaryItems($booking);
+                                $invoice = $booking->hoaDon;
+                                $paidAmount = (float) ($invoice?->DaThanhToan ?? $invoice?->thanhToans?->sum('SoTien') ?? 0);
+                                $totalAmount = (float) ($invoice?->TongTien ?? $roomItems->sum('total') + $serviceTotal);
+                                $amountDue = max($totalAmount - $paidAmount, 0);
+                                $activeClass = $loop->first ? 'is-active' : '';
+                            @endphp
+                            <button
+                                type="button"
+                                class="co-booking-card {{ $activeClass }}"
+                                data-checkout-card
+                                data-booking-id="{{ $booking->MaDatPhong }}"
+                                data-invoice-id="{{ $invoice?->MaHD ? 'HD' . $invoice->MaHD : 'HD' . $booking->MaDatPhong }}"
+                                data-customer="{{ $customerName }}"
+                                data-phone="{{ $customer?->SoDienThoai ?? '' }}"
+                                data-stay="{{ $stayText }}"
+                                data-stay-period="{{ $formatDate($booking->NgayNhanPhong) }} - {{ $formatDate($booking->NgayTraPhong) }}"
+                                data-service-total="{{ $serviceTotal }}"
+                                data-services='@json($serviceItems)'
+                                data-room-summary-items='@json($roomSummaryItems)'
+                                data-room-items='@json($roomItems)'
+                                data-paid-amount="{{ $paidAmount }}"
+                                data-total-amount="{{ $totalAmount }}"
+                                data-amount-due="{{ $amountDue }}"
+                                aria-pressed="{{ $loop->first ? 'true' : 'false' }}"
+                            >
+                                <div class="small text-uppercase text-muted fw-bold mb-1">Trả phòng #{{ $booking->MaDatPhong }}</div>
+                                <div class="fw-semibold">{{ $customerName }}</div>
+                                <div class="text-muted small">{{ $formatDate($booking->NgayNhanPhong) }} đến {{ $formatDate($booking->NgayTraPhong) }}</div>
+                            </button>
+                        @empty
+                            <div class="co-empty">Chưa có đặt phòng nào đang ở để trả phòng.</div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -235,41 +318,52 @@
                     <div class="co-detail-grid mb-4">
                         <div class="border rounded p-3">
                             <div class="small text-uppercase text-muted fw-bold">Khách hàng</div>
-                            <div id="checkoutCustomerName" class="fw-semibold mt-2">Trần Bảo Ngọc</div>
+                            <div id="checkoutCustomerName" class="fw-semibold mt-2">{{ $checkOutBookings->first()?->khachHang?->TenKH ?? '--' }}</div>
                         </div>
                         <div class="border rounded p-3">
                             <div class="small text-uppercase text-muted fw-bold">Lưu trú</div>
-                            <div id="checkoutStay" class="fw-semibold mt-2">2 đêm - 2 khách</div>
+                            <div id="checkoutStay" class="fw-semibold mt-2">--</div>
                         </div>
                     </div>
 
-                    <h6 class="mb-3">Loại phòng sẽ trả</h6>
+                    <h6 class="mb-3">Phòng sẽ trả</h6>
                     <div id="checkoutRoomList" class="co-room-list mb-4">
-                        <button
-                            type="button"
-                            class="co-room-card"
-                            data-room-guest-card
-                            data-booking-id="9002"
-                            data-room-type="Suite"
-                            data-guests='[{"label":"Người lớn 1","name":"Trần Bảo Ngọc","birth":"12/03/1995","phone":"0912345678","cccd":"079204000111"},{"label":"Người lớn 2","name":"Lê Thanh Mai","birth":"21/08/1997","phone":"0909988776","cccd":"079204000222"}]'
-                        >
-                            <div class="co-room-number">Phòng 102</div>
-                            <div class="co-room-type">Suite</div>
-                        </button>
-                        <button
-                            type="button"
-                            class="co-room-card"
-                            data-room-guest-card
-                            data-booking-id="9002"
-                            data-room-type="Suite Twin"
-                            data-guests='[{"label":"Người lớn 1","name":"Nguyễn Minh Châu","birth":"05/10/1993","phone":"0934567812","cccd":"079204000333"},{"label":"Trẻ em 1","name":"Nguyễn Gia Hân","birth":"18/07/2018","phone":"--","cccd":"--"}]'
-                        >
-                            <div class="co-room-number">Phòng 104</div>
-                            <div class="co-room-type">Suite Twin</div>
-                        </button>
+                        @foreach($checkOutBookings as $booking)
+                            @php
+                                $stayGuestsByRoom = ($booking->luuTrus ?? collect())->groupBy(fn ($guest) => (int) $guest->MaPhong);
+                            @endphp
+                            @foreach($booking->chiTietDatPhong as $detail)
+                                @php
+                                    $room = $detail->phong;
+                                    $roomType = $room?->loaiPhong;
+                                    $guests = ($stayGuestsByRoom->get((int) $detail->MaPhong) ?? collect())
+                                        ->values()
+                                        ->map(function ($guest, $index) {
+                                            return [
+                                                'label' => 'Khách ' . ($index + 1),
+                                                'name' => $guest->TenKhach,
+                                                'birth' => $guest->NgaySinh ? \Carbon\Carbon::parse($guest->NgaySinh)->format('d/m/Y') : '--',
+                                                'phone' => $guest->SoDienThoai ?: '--',
+                                                'cccd' => $guest->CCCD ?: '--',
+                                            ];
+                                        });
+                                @endphp
+                                <button
+                                    type="button"
+                                    class="co-room-card"
+                                    data-room-guest-card
+                                    data-booking-id="{{ $booking->MaDatPhong }}"
+                                    data-room-type="{{ $roomType?->TenLoaiPhong ?? 'Chưa có loại phòng' }}"
+                                    data-guests='@json($guests)'
+                                >
+                                    <div class="co-room-number">Phòng {{ $room?->SoPhong ?? '--' }}</div>
+                                    <div class="co-room-type">{{ $roomType?->TenLoaiPhong ?? 'Chưa có loại phòng' }}</div>
+                                </button>
+                            @endforeach
+                        @endforeach
                     </div>
 
-                    <button id="processCheckoutButton" type="button" class="btn btn-primary w-100">Trả phòng</button>
+                    <button id="processCheckoutButton" type="button" class="btn btn-primary w-100" @disabled($checkOutBookings->isEmpty())>Trả phòng</button>
                 </div>
             </div>
         </div>
@@ -313,20 +407,7 @@
             }).format(dateValue);
         }
 
-        function parseServices(rawValue) {
-            if (!rawValue) {
-                return [];
-            }
-
-            try {
-                const parsedValue = JSON.parse(rawValue);
-                return Array.isArray(parsedValue) ? parsedValue : [];
-            } catch (error) {
-                return [];
-            }
-        }
-
-        function parseGuests(rawValue) {
+        function parseJsonDataset(rawValue) {
             if (!rawValue) {
                 return [];
             }
@@ -342,17 +423,15 @@
         function syncRoomCards(activeCard) {
             const bookingId = activeCard?.dataset.bookingId || '';
 
-            roomGuestCards.forEach((roomCard, index) => {
-                const isVisible = roomCard.dataset.bookingId === bookingId;
-                roomCard.hidden = !isVisible;
-                if (index === 0 && isVisible) {
-                    roomCard.closest('.co-room-list')?.removeAttribute('data-empty');
-                }
+            roomGuestCards.forEach((roomCard) => {
+                roomCard.hidden = roomCard.dataset.bookingId !== bookingId;
             });
         }
 
         function syncCheckoutDetails(activeCard) {
             if (!activeCard) {
+                checkoutCustomerName.textContent = '--';
+                checkoutStay.textContent = '--';
                 return;
             }
 
@@ -368,26 +447,40 @@
             syncRoomCards(activeCard);
         }
 
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;',
+            }[char]));
+        }
+
         function buildGuestCards(guests) {
+            if (!guests.length) {
+                return '<div class="co-empty">Phòng này chưa có thông tin khách lưu trú.</div>';
+            }
+
             return guests.map((guest) => `
                 <div class="co-guest-card">
-                    <span class="co-guest-chip">${guest.label || '--'}</span>
+                    <span class="co-guest-chip">${escapeHtml(guest.label || '--')}</span>
                     <div class="co-guest-grid">
                         <div class="co-dialog-info">
                             <div class="co-dialog-label">Tên khách</div>
-                            <div class="co-dialog-value">${guest.name || '--'}</div>
+                            <div class="co-dialog-value">${escapeHtml(guest.name || '--')}</div>
                         </div>
                         <div class="co-dialog-info">
                             <div class="co-dialog-label">Ngày sinh</div>
-                            <div class="co-dialog-value">${guest.birth || '--'}</div>
+                            <div class="co-dialog-value">${escapeHtml(guest.birth || '--')}</div>
                         </div>
                         <div class="co-dialog-info">
                             <div class="co-dialog-label">Số điện thoại</div>
-                            <div class="co-dialog-value">${guest.phone || '--'}</div>
+                            <div class="co-dialog-value">${escapeHtml(guest.phone || '--')}</div>
                         </div>
                         <div class="co-dialog-info">
                             <div class="co-dialog-label">CCCD</div>
-                            <div class="co-dialog-value">${guest.cccd || '--'}</div>
+                            <div class="co-dialog-value">${escapeHtml(guest.cccd || '--')}</div>
                         </div>
                     </div>
                 </div>
@@ -395,7 +488,7 @@
         }
 
         function openRoomGuestDialog(roomCard) {
-            const guests = parseGuests(roomCard.dataset.guests);
+            const guests = parseJsonDataset(roomCard.dataset.guests);
             roomGuestDialogStack.innerHTML = buildGuestCards(guests);
             roomGuestDialog.showModal();
         }
@@ -404,19 +497,28 @@
             const activeCard = getActiveCheckoutCard();
             const currentDateTime = new Date();
             const amountDue = Number(activeCard?.dataset.amountDue || 0);
-            const serviceItems = parseServices(activeCard?.dataset.services);
+            const serviceItems = parseJsonDataset(activeCard?.dataset.services);
+            const roomSummaryItems = parseJsonDataset(activeCard?.dataset.roomSummaryItems);
+            const roomItems = parseJsonDataset(activeCard?.dataset.roomItems);
             const serviceAmount = serviceItems.reduce((total, item) => total + Number(item.price || 0), 0);
+            const totalAmount = Number(activeCard?.dataset.totalAmount || amountDue);
+            const paidAmount = Number(activeCard?.dataset.paidAmount || 0);
 
             return {
-                invoiceId: `HD${activeCard?.dataset.bookingId || '0000'}`,
+                invoiceId: activeCard?.dataset.invoiceId || `HD${activeCard?.dataset.bookingId || '0000'}`,
                 bookingId: activeCard?.dataset.bookingId || '',
                 customer: activeCard?.dataset.customer || '',
                 phone: activeCard?.dataset.phone || '',
                 stay: activeCard?.dataset.stay || '',
+                stayPeriod: activeCard?.dataset.stayPeriod || '',
                 checkoutDate: formatDisplayDate(currentDateTime),
                 checkoutTime: formatDisplayTime(currentDateTime),
+                roomSummaryItems,
+                roomItems,
                 serviceItems,
-                serviceAmount: serviceAmount || Number(activeCard?.dataset.serviceTotal || 0),
+                serviceAmount,
+                totalAmount,
+                paidAmount,
                 amountDue,
                 compensationCode: '',
                 compensationDescription: '',
@@ -426,6 +528,12 @@
         }
 
         function processCheckoutPayment() {
+            const activeCard = getActiveCheckoutCard();
+
+            if (!activeCard) {
+                return;
+            }
+
             const payload = buildCheckoutPaymentPayload();
             sessionStorage.setItem('receptionCheckoutPayment', JSON.stringify(payload));
             window.location.href = paymentPageUrl;
@@ -443,11 +551,11 @@
             });
         });
 
-        closeRoomGuestDialogButton.addEventListener('click', () => {
+        closeRoomGuestDialogButton?.addEventListener('click', () => {
             roomGuestDialog.close();
         });
 
-        processCheckoutButton.addEventListener('click', processCheckoutPayment);
+        processCheckoutButton?.addEventListener('click', processCheckoutPayment);
 
         syncCheckoutDetails(getActiveCheckoutCard());
     </script>
