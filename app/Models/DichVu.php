@@ -4,10 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-
 class DichVu extends Model
 {
-
     public const TYPE_FOOD_AND_BEVERAGE = 1;
     public const TYPE_ROOM_SERVICE = 2;
     public const TYPE_ENTERTAINMENT = 3;

@@ -2,7 +2,6 @@
     title="Quản lý khuyến mãi"
     subtitle="Danh sách chương trình khuyến mãi tại khách sạn"
     :create-route="route('hotel.promotions.create')"
-    :trash-route="route('hotel.promotions.trash')"
 >
     <x-slot:filters>
         <div class="col-md-3">
@@ -200,7 +199,18 @@
 
                     const promotionId = deleteButton.getAttribute('data-delete-promotion-id') || '';
 
-                    if (!promotionId || !window.confirm(`Xóa khuyến mãi ${promotionId}?`)) {
+                    if (!promotionId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa khuyến mãi?',
+                        message: 'Bạn muốn xóa khuyến mãi này?',
+                        recordLabel: 'Mã khuyến mãi: ' + promotionId,
+                        note: 'Khuyến mãi đã nằm trong kho hoặc hóa đơn sẽ không thể xóa.',
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
@@ -225,8 +235,17 @@
                             return String(promotion.MaKM || '') !== String(promotionId);
                         });
                         loadPromotions();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa khuyến mãi thành công.',
+                        });
                     } catch (error) {
-                        window.alert(error.message);
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
                     } finally {
                         deleteButton.disabled = originalDisabledState;
                     }

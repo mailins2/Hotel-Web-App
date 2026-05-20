@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ChiTietHoaDon;
+use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\DichVu;
 use App\Models\HoaDon;
@@ -65,13 +66,13 @@ class SuDungDichVuController extends Controller
             'ThoiGian' => 'nullable|date',
             'MaDV' => [
                 'required_without:items',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+                Rule::exists('DichVu', 'MaDV'),
             ],
             'SoLuong' => 'required_without:items|integer|min:1',
             'items' => 'sometimes|array|min:1',
             'items.*.MaDV' => [
                 'required',
-                Rule::exists('DichVu', 'MaDV')->whereNull('deleted_at'),
+                Rule::exists('DichVu', 'MaDV'),
             ],
             'items.*.SoLuong' => 'required|integer|min:1',
         ]);
@@ -93,7 +94,13 @@ class SuDungDichVuController extends Controller
                 $datPhong = DatPhong::select('MaDatPhong', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang')
                     ->find($data['MaDatPhong']);
 
-                if (!$datPhong || (int) $datPhong->TinhTrang !== DatPhong::CHECKED_IN) {
+                $hasCheckedInRoom = $datPhong
+                    ? ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                        ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+                        ->exists()
+                    : false;
+
+                if (!$datPhong || !$hasCheckedInRoom) {
                     throw new \RuntimeException('Chi co the dat dich vu sau khi check-in.');
                 }
 
@@ -160,7 +167,6 @@ class SuDungDichVuController extends Controller
                 if ($hoaDon->MaKM) {
                     $discountRate = (float) DB::table('KhuyenMai')
                         ->where('MaKM', $hoaDon->MaKM)
-                        ->whereNull('deleted_at')
                         ->value('PhanTramGiamGia');
                 }
 

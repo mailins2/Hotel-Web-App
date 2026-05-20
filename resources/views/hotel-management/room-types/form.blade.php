@@ -114,7 +114,7 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">GiÃ¡ phÃ²ng</label>
+        <label class="form-label">Giá phòng</label>
         <input
             type="number"
             class="form-control"
@@ -127,14 +127,10 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">MÃ£ khuyáº¿n mÃ£i</label>
-        <input
-            type="text"
-            class="form-control"
-            id="room-type-promotion"
-            maxlength="10"
-            placeholder="Bá» trá»‘ng náº¿u khÃ´ng Ã¡p dá»¥ng"
-        >
+        <label class="form-label">Mã khuyến mãi</label>
+        <select class="form-select" id="room-type-promotion">
+            <option value="">Chưa có khuyến mãi</option>
+        </select>
         <div class="invalid-feedback" id="room-type-promotion-error"></div>
     </div>
 
@@ -160,6 +156,7 @@
         data-room-type-id="{{ request()->route('recordId') }}"
         data-create-url="{{ url('/api/loai-phong') }}"
         data-detail-url-template="{{ url('/api/loai-phong/__ROOM_TYPE_ID__') }}"
+        data-promotions-url="{{ url('/api/khuyen-mai') }}"
         data-image-create-url="{{ url('/api/hinh-anh') }}"
         data-image-detail-url-template="{{ url('/api/hinh-anh/__IMAGE_ID__') }}"
         data-index-url="{{ route('hotel.room-types.index') }}"
@@ -176,6 +173,7 @@
                 const roomTypeId = config ? (config.dataset.roomTypeId || '') : '';
                 const createUrl = config ? config.dataset.createUrl : '';
                 const detailUrlTemplate = config ? config.dataset.detailUrlTemplate : '';
+                const promotionsUrl = config ? config.dataset.promotionsUrl : '';
                 const imageCreateUrl = config ? config.dataset.imageCreateUrl : '';
                 const imageDetailUrlTemplate = config ? config.dataset.imageDetailUrlTemplate : '';
                 const indexUrl = config ? config.dataset.indexUrl : '';
@@ -280,6 +278,52 @@
                         if (Array.isArray(messages) && messages.length) {
                             setFieldError(fieldName, messages[0]);
                         }
+                    });
+                };
+
+                const buildPromotionLabel = function (promotion) {
+                    const id = promotion && promotion.MaKM ? String(promotion.MaKM) : '';
+                    const name = promotion && promotion.TenKM ? String(promotion.TenKM) : '';
+                    const discount = promotion && promotion.PhanTramGiamGia !== undefined && promotion.PhanTramGiamGia !== null
+                        ? `${promotion.PhanTramGiamGia}%`
+                        : '';
+                    const parts = [id, name].filter(Boolean).join(' - ');
+
+                    return discount ? `${parts} (${discount})` : parts;
+                };
+
+                const loadPromotions = async function () {
+                    if (!roomTypePromotionInput || !promotionsUrl) {
+                        return;
+                    }
+
+                    roomTypePromotionInput.innerHTML = '';
+
+                    const emptyOption = document.createElement('option');
+                    emptyOption.value = '';
+                    emptyOption.textContent = 'Chưa có khuyến mãi';
+                    roomTypePromotionInput.appendChild(emptyOption);
+
+                    const response = await fetch(promotionsUrl, {
+                        headers: { 'Accept': 'application/json' },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Không thể tải danh sách khuyến mãi.');
+                    }
+
+                    const payload = await response.json();
+                    const promotions = Array.isArray(payload && payload.data) ? payload.data : [];
+
+                    promotions.forEach(function (promotion) {
+                        if (!promotion || !promotion.MaKM) {
+                            return;
+                        }
+
+                        const option = document.createElement('option');
+                        option.value = promotion.MaKM;
+                        option.textContent = buildPromotionLabel(promotion);
+                        roomTypePromotionInput.appendChild(option);
                     });
                 };
 
@@ -427,7 +471,7 @@
                     }
 
                     if (roomTypePriceInput.value === '' || Number(roomTypePriceInput.value) < 0) {
-                        setFieldError('GiaPhong', 'GiÃ¡ phÃ²ng pháº£i lá»›n hÆ¡n hoáº·c báº±ng 0.');
+                        setFieldError('GiaPhong', 'Giá phòng phải lớn hơn hoặc bằng 0.');
                         isValid = false;
                     }
 
@@ -647,6 +691,12 @@
                 }
 
                 (async function init() {
+                    try {
+                        await loadPromotions();
+                    } catch (error) {
+                        setAlert('warning', error.message);
+                    }
+
                     try {
                         await loadRoomType();
                     } catch (error) {

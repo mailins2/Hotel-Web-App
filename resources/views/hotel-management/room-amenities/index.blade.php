@@ -2,7 +2,6 @@
     title="Quản lý tiện nghi phòng"
     subtitle="Danh sách tiện nghi trong hệ thống"
     :create-route="route('hotel.room-amenities.create')"
-    :trash-route="route('hotel.room-amenities.trash')"
 >
     <style>
         .hm-assign-amenity-button {
@@ -215,7 +214,18 @@
 
                     const amenityId = deleteButton.getAttribute('data-delete-room-amenity-id') || '';
 
-                    if (!amenityId || !window.confirm(`Xóa tiện nghi ${amenityId} khỏi hệ thống?`)) {
+                    if (!amenityId) {
+                        return;
+                    }
+
+                    const confirmed = await window.hmConfirmDeletion({
+                        title: 'Xóa tiện nghi?',
+                        message: 'Bạn muốn xóa tiện nghi này?',
+                        recordLabel: 'Mã tiện nghi: ' + amenityId,
+                        note: 'Tiện nghi sẽ được gỡ khỏi các loại phòng đang dùng.',
+                    });
+
+                    if (!confirmed) {
                         return;
                     }
 
@@ -244,8 +254,17 @@
                             });
                         }
                         applyFilters();
+                        window.hmShowToast({
+                            type: 'success',
+                            title: 'Đã xóa',
+                            message: payload.message || 'Đã xóa tiện nghi thành công.',
+                        });
                     } catch (error) {
-                        window.alert(error.message);
+                        window.hmShowToast({
+                            type: 'danger',
+                            title: 'Không thể xóa',
+                            message: error.message,
+                        });
                     } finally {
                         deleteButton.disabled = originalDisabledState;
                     }

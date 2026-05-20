@@ -3,13 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChiTietDatPhong;
 use App\Models\Phong;
-use Illuminate\Http\Request;
+use App\Services\Guards\PhongDeletionGuard;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class PhongController extends Controller
 {
-    private function success($data = null, $message = 'Success', $code = 200)
+    public function __construct(
+        private PhongDeletionGuard $guard
+    ) {
+    }
+
+    private function success($data = null, string $message = 'Success', int $code = 200)
     {
         return response()->json([
             'success' => true,
@@ -33,12 +40,15 @@ class PhongController extends Controller
 
         $query = Phong::with([
             'loaiPhong.khuyenMai',
+            'chiTietDatPhong' => function ($q) {
+                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
                     ->whereIn('TinhTrang', [0, 1, 2]);
             },
-        ]);
+        ])->whereHas('loaiPhong');
 
         if ($request->MaLoaiPhong) {
             $query->where('MaLoaiPhong', $request->MaLoaiPhong);
@@ -66,28 +76,21 @@ class PhongController extends Controller
         return $this->success($data, 'Lấy danh sách phòng thành công');
     }
 
-    public function trash()
-    {
-        $data = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->get();
-
-        return $this->success($data, 'Lấy danh sách phòng trong thùng rác thành công');
-    }
-
     private function resolveTinhTrangHienTai(Phong $phong): int
     {
-        if (in_array((int) $phong->TinhTrang, [2, 3], true)) {
+        if ((int) $phong->TinhTrang === 3) {
             return (int) $phong->TinhTrang;
         }
 
-        $bookingsToday = $phong->chiTietDatPhong
-            ->pluck('datPhong')
-            ->filter();
+        $detailsToday = $phong->chiTietDatPhong
+            ->filter(fn ($detail) => $detail->datPhong);
 
-        if ($bookingsToday->contains(fn ($booking) => (int) $booking->TinhTrang === 2)) {
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN)) {
             return 2;
         }
 
-        if ($bookingsToday->contains(fn ($booking) => in_array((int) $booking->TinhTrang, [0, 1], true))) {
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED
+            && in_array((int) $detail->datPhong->TinhTrang, [0, 1], true))) {
             return 1;
         }
 
@@ -97,15 +100,18 @@ class PhongController extends Controller
     private function resolveDatPhongHienTai(Phong $phong)
     {
         return $phong->chiTietDatPhong
-            ->pluck('datPhong')
-            ->filter()
-            ->sortByDesc(fn ($booking) => match ((int) $booking->TinhTrang) {
-                2 => 3,
-                1 => 2,
-                0 => 1,
+            ->filter(fn ($detail) => $detail->datPhong)
+            ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+                ChiTietDatPhong::CHECKED_IN => 3,
+                ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                    1 => 2,
+                    0 => 1,
+                    default => 0,
+                },
                 default => 0,
             })
-            ->first();
+            ->first()
+            ?->datPhong;
     }
 
     // POST /api/phong
@@ -113,8 +119,11 @@ class PhongController extends Controller
     {
         $data = $request->validate([
             'SoPhong' => 'required|unique:Phong,SoPhong',
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
-            'TinhTrang' => 'required|integer'
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
+            ],
+            'TinhTrang' => 'required|integer',
         ]);
 
         $phong = Phong::create($data);
@@ -129,6 +138,9 @@ class PhongController extends Controller
 
         $phong = Phong::with([
             'loaiPhong.khuyenMai',
+            'chiTietDatPhong' => function ($q) {
+                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
@@ -163,8 +175,11 @@ class PhongController extends Controller
 
         $data = $request->validate([
             'SoPhong' => 'required|unique:Phong,SoPhong,' . $id . ',MaPhong',
-            'MaLoaiPhong' => 'required|exists:LoaiPhong,MaLoaiPhong',
-            'TinhTrang' => 'required|integer'
+            'MaLoaiPhong' => [
+                'required',
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
+            ],
+            'TinhTrang' => 'required|integer',
         ]);
 
         $phong->update($data);
@@ -181,40 +196,14 @@ class PhongController extends Controller
             return $this->error('Không tìm thấy phòng', 404);
         }
 
-        $phong->delete();
-
-        return $this->success(null, 'Đã chuyển phòng vào thùng rác');
-    }
-
-    public function restore($id)
-    {
-        $phong = Phong::onlyTrashed()->with('loaiPhong.khuyenMai')->find($id);
-
-        if (!$phong) {
-            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
-        }
-
-        $phong->restore();
-
-        return $this->success($phong->fresh(['loaiPhong.khuyenMai']), 'Khôi phục phòng thành công');
-    }
-
-    public function forceDelete($id)
-    {
-        $phong = Phong::onlyTrashed()->find($id);
-
-        if (!$phong) {
-            return $this->error('Không tìm thấy phòng trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($phong);
+        $decision = $this->guard->canDelete($phong);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
-        $phong->forceDelete();
+        $phong->delete();
 
-        return $this->success(null, 'Xóa vĩnh viễn phòng thành công');
+        return $this->success(null, 'Xóa phòng thành công');
     }
     //=============================================================================
     // kiểm tra phòng trống và số lượng người ở 

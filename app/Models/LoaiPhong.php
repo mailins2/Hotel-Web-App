@@ -5,10 +5,8 @@ namespace App\Models;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
-
 class LoaiPhong extends Model
 {
-
     protected $table = 'LoaiPhong';
     protected $primaryKey = 'MaLoaiPhong';
     public $timestamps = false;
@@ -37,7 +35,7 @@ class LoaiPhong extends Model
     }
     public function khuyenMai()
     {
-        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM')->withTrashed();
+        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM');
     }
 
     public function getGiaGiamAttribute(): float
@@ -70,7 +68,7 @@ class LoaiPhong extends Model
             ? $this->getRelation('khuyenMai')
             : $this->khuyenMai()->first();
 
-        if (!$khuyenMai || $khuyenMai->trashed()) {
+        if (!$khuyenMai) {
             return null;
         }
 

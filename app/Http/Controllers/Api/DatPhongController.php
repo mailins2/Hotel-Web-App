@@ -9,6 +9,7 @@ use App\Models\Phong;
 use App\Models\HoaDon;
 use App\Models\ChiTietHoaDon;
 use App\Models\KhachHang;
+use App\Models\LuuTru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -17,7 +18,7 @@ use Illuminate\Validation\Rule;
 class DatPhongController extends Controller
 {
     // =========================
-    // 🔹 HELPER FUNCTIONS
+    // ðŸ”¹ HELPER FUNCTIONS
     // =========================
     private function success($data = null, $message = 'Success', $code = 200)
     {
@@ -36,8 +37,13 @@ class DatPhongController extends Controller
         ], $code);
     }
 
+    private function updateBookingDetailsStatus(int $bookingId, int $status): void
+    {
+        ChiTietDatPhong::where('MaDatPhong', $bookingId)->update(['TrangThai' => $status]);
+    }
+
     // =========================
-    // 🔹 GET ALL
+    // ðŸ”¹ GET ALL
     // =========================
     public function index()
     {
@@ -47,7 +53,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 CREATE (ĐÃ FIX RACE CONDITION)
+    // ðŸ”¹ CREATE (ÄÃƒ FIX RACE CONDITION)
     // =========================
     public function store(Request $request)
     {
@@ -61,21 +67,21 @@ class DatPhongController extends Controller
                 $bookingData = $data;
                 $bookingData['MaKH'] = $this->resolveCustomerId($bookingData);
 
-                // 1. Tạo DatPhong trước
+                // 1. Táº¡o DatPhong trÆ°á»›c
                 $datPhong = $this->createDatPhong($bookingData);
                 
                 // 2. Atomic assign rooms
                 $assignedRoomIds = $this->atomicAssignRooms($bookingData, $datPhong);
                 
-                // 3. Kiểm tra đủ phòng
+                // 3. Kiá»ƒm tra Ä‘á»§ phÃ²ng
                 if (count($assignedRoomIds) < $bookingData['SoLuong']) {
-                    throw new \Exception('Không đủ phòng trống');
+                    throw new \Exception('KhÃ´ng Ä‘á»§ phÃ²ng trá»‘ng');
                 }
 
-                // 4. Tạo hóa đơn
+                // 4. Táº¡o hÃ³a Ä‘Æ¡n
                 $hoaDon = $this->createHoaDon($datPhong);
                 
-                // 5. Load phòng và tính tiền
+                // 5. Load phÃ²ng vÃ  tÃ­nh tiá»n
                 $datPhong->load('chiTietDatPhong.phong');
                 $this->addTienPhong($datPhong, $hoaDon);
 
@@ -84,9 +90,9 @@ class DatPhongController extends Controller
                 return $this->success([
                     'datPhong' => $datPhong->fresh('chiTietDatPhong.phong'),
                     'hoaDon' => $hoaDon->fresh('chiTietHoaDons.loaiPhong.khuyenMai'),
-                    'hold_expires_at' => now()->addMinutes(15)->format('Y-m-d H:i:s'), // THÊM
-                    'hold_remaining_seconds' => 900 // THÊM
-                ], 'Đặt phòng thành công . Vui lòng thanh toán đặt cọc trong vòng 15 phút !');
+                    'hold_expires_at' => now()->addMinutes(15)->format('Y-m-d H:i:s'), // THÃŠM
+                    'hold_remaining_seconds' => 900 // THÃŠM
+                ], 'Äáº·t phÃ²ng thÃ nh cÃ´ng . Vui lÃ²ng thanh toÃ¡n Ä‘áº·t cá»c trong vÃ²ng 15 phÃºt !');
 
             } catch (\Illuminate\Database\QueryException $e) {
                 DB::rollBack();
@@ -96,14 +102,14 @@ class DatPhongController extends Controller
                     continue;
                 }
                 
-                return $this->error('Lỗi database: ' . $e->getMessage(), 500);
+                return $this->error('Lá»—i database: ' . $e->getMessage(), 500);
                 
             } catch (\Exception $e) {
                 DB::rollBack();
                 
                 if ($attempt < $maxAttempts - 1 && 
-                    (str_contains($e->getMessage(), 'Không đủ phòng') || 
-                     str_contains($e->getMessage(), 'vừa bị đặt'))) {
+                    (str_contains($e->getMessage(), 'KhÃ´ng Ä‘á»§ phÃ²ng') || 
+                     str_contains($e->getMessage(), 'vá»«a bá»‹ Ä‘áº·t'))) {
                     usleep(rand(100000, 300000));
                     continue;
                 }
@@ -112,11 +118,11 @@ class DatPhongController extends Controller
             }
         }
 
-        return $this->error('Không thể đặt phòng sau ' . $maxAttempts . ' lần thử. Vui lòng thử lại sau.');
+        return $this->error('KhÃ´ng thá»ƒ Ä‘áº·t phÃ²ng sau ' . $maxAttempts . ' láº§n thá»­. Vui lÃ²ng thá»­ láº¡i sau.');
     }
 
     // =========================
-    // 🔹 ATOMIC ASSIGN ROOMS (FIX RACE CONDITION)
+    // ðŸ”¹ ATOMIC ASSIGN ROOMS (FIX RACE CONDITION)
     // =========================
     private function atomicAssignRooms($data, $datPhong)
     {
@@ -131,12 +137,12 @@ class DatPhongController extends Controller
 
                 $availableRooms = DB::table('Phong as p')
                     ->where('p.MaLoaiPhong', $maLoaiPhong)
-                    ->whereNull('p.deleted_at')
                     ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                         $query->select(DB::raw(1))
                             ->from('ChiTietDatPhong as ctdp')
                             ->join('DatPhong as dp', 'dp.MaDatPhong', '=', 'ctdp.MaDatPhong')
                             ->whereColumn('ctdp.MaPhong', 'p.MaPhong')
+                            ->where('ctdp.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
                             ->where('dp.NgayNhanPhong', '<', $ngayTra)
                             ->where('dp.NgayTraPhong', '>', $ngayNhan)
                             ->where(function ($q) {
@@ -160,7 +166,8 @@ class DatPhongController extends Controller
                     try {
                         ChiTietDatPhong::create([
                             'MaDatPhong' => $datPhong->MaDatPhong,
-                            'MaPhong' => $room->MaPhong
+                            'MaPhong' => $room->MaPhong,
+                            'TrangThai' => ChiTietDatPhong::BOOKED,
                         ]);
                         $assignedRooms[] = $room->MaPhong;
                     } catch (\Illuminate\Database\QueryException $e) {
@@ -179,15 +186,15 @@ class DatPhongController extends Controller
         $ngayTra = $data['NgayTraPhong'];
         $soLuong = $data['SoLuong'];
         
-        // Lấy phòng trống với FOR UPDATE
+        // Láº¥y phÃ²ng trá»‘ng vá»›i FOR UPDATE
         $availableRooms = DB::table('Phong as p')
             ->where('p.MaLoaiPhong', $maLoaiPhong)
-            ->whereNull('p.deleted_at')
             ->whereNotExists(function ($query) use ($ngayNhan, $ngayTra) {
                 $query->select(DB::raw(1))
                     ->from('ChiTietDatPhong as ctdp')
                     ->join('DatPhong as dp', 'dp.MaDatPhong', '=', 'ctdp.MaDatPhong')
                     ->whereColumn('ctdp.MaPhong', 'p.MaPhong')
+                    ->where('ctdp.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
                     ->where('dp.NgayNhanPhong', '<', $ngayTra)
                     ->where('dp.NgayTraPhong', '>', $ngayNhan)
                     ->where(function ($q) {
@@ -204,19 +211,20 @@ class DatPhongController extends Controller
             ->get();
         
         if ($availableRooms->count() < $soLuong) {
-            throw new \Exception('Không đủ phòng trống');
+            throw new \Exception('KhÃ´ng Ä‘á»§ phÃ²ng trá»‘ng');
         }
         
         foreach ($availableRooms as $room) {
             try {
                 ChiTietDatPhong::create([
                     'MaDatPhong' => $datPhong->MaDatPhong,
-                    'MaPhong' => $room->MaPhong
+                    'MaPhong' => $room->MaPhong,
+                    'TrangThai' => ChiTietDatPhong::BOOKED,
                 ]);
                 $assignedRooms[] = $room->MaPhong;
             } catch (\Illuminate\Database\QueryException $e) {
                 if ($e->getCode() == 23000) {
-                    throw new \Exception('Phòng ' . $room->MaPhong . ' vừa bị đặt bởi người khác');
+                    throw new \Exception('PhÃ²ng ' . $room->MaPhong . ' vá»«a bá»‹ Ä‘áº·t bá»Ÿi ngÆ°á»i khÃ¡c');
                 }
                 throw $e;
             }
@@ -226,7 +234,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 VALIDATE REQUEST
+    // ðŸ”¹ VALIDATE REQUEST
     // =========================
     private function validateRequest($request)
     {
@@ -245,13 +253,13 @@ class DatPhongController extends Controller
                 'LoaiPhongs' => 'required|array|min:1',
                 'LoaiPhongs.*.MaLoaiPhong' => [
                     'required',
-                    Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                    Rule::exists('LoaiPhong', 'MaLoaiPhong'),
                 ],
                 'LoaiPhongs.*.SoLuong' => 'required|integer|min:1',
             ], [
-                'NgayNhanPhong.after_or_equal' => 'KhÃ´ng thá»ƒ Ä‘áº·t phÃ²ng trong quÃ¡ khá»©',
-                'NgayNhanPhong.before_or_equal' => 'Chá»‰ Ä‘Æ°á»£c Ä‘áº·t tá»‘i Ä‘a 1 nÄƒm tá»›i',
-                'NgayTraPhong.after' => 'NgÃ y tráº£ pháº£i sau ngÃ y nháº­n'
+                'NgayNhanPhong.after_or_equal' => 'KhÃƒÂ´ng thÃ¡Â»Æ’ Ã„â€˜Ã¡ÂºÂ·t phÃƒÂ²ng trong quÃƒÂ¡ khÃ¡Â»Â©',
+                'NgayNhanPhong.before_or_equal' => 'ChÃ¡Â»â€° Ã„â€˜Ã†Â°Ã¡Â»Â£c Ã„â€˜Ã¡ÂºÂ·t tÃ¡Â»â€˜i Ã„â€˜a 1 nÃ„Æ’m tÃ¡Â»â€ºi',
+                'NgayTraPhong.after' => 'NgÃƒÂ y trÃ¡ÂºÂ£ phÃ¡ÂºÂ£i sau ngÃƒÂ y nhÃ¡ÂºÂ­n'
             ]);
 
            $data['SoLuong'] = collect($data['LoaiPhongs'])->sum('SoLuong');
@@ -272,18 +280,18 @@ class DatPhongController extends Controller
             'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
             'MaLoaiPhong' => [
                 'required',
-                Rule::exists('LoaiPhong', 'MaLoaiPhong')->whereNull('deleted_at'),
+                Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
             'SoLuong' => 'required|integer|min:1'
         ], [
-            'NgayNhanPhong.after_or_equal' => 'Không thể đặt phòng trong quá khứ',
-            'NgayNhanPhong.before_or_equal' => 'Chỉ được đặt tối đa 1 năm tới',
-            'NgayTraPhong.after' => 'Ngày trả phải sau ngày nhận'
+            'NgayNhanPhong.after_or_equal' => 'KhÃ´ng thá»ƒ Ä‘áº·t phÃ²ng trong quÃ¡ khá»©',
+            'NgayNhanPhong.before_or_equal' => 'Chá»‰ Ä‘Æ°á»£c Ä‘áº·t tá»‘i Ä‘a 1 nÄƒm tá»›i',
+            'NgayTraPhong.after' => 'NgÃ y tráº£ pháº£i sau ngÃ y nháº­n'
         ]);
     }
 
     // =========================
-    // 🔹 CREATE DAT PHONG
+    // ðŸ”¹ CREATE DAT PHONG
     // =========================
     private function resolveCustomerId(array $data)
     {
@@ -327,7 +335,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 CREATE HOA DON
+    // ðŸ”¹ CREATE HOA DON
     // =========================
     private function createHoaDon($datPhong)
     {
@@ -340,7 +348,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 GET MUA (SEASON)
+    // ðŸ”¹ GET MUA (SEASON)
     // =========================
     private function getMua($ngay)
     {
@@ -348,7 +356,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 ADD TIEN PHONG
+    // ðŸ”¹ ADD TIEN PHONG
     // =========================
     private function addTienPhong($datPhong, $hoaDon)
     {
@@ -365,7 +373,7 @@ class DatPhongController extends Controller
             $giaPhong = (float) ($roomType?->giaSauKhuyenMai($start) ?? 0);
 
             if ($giaPhong <= 0) {
-                throw new \Exception('Không tìm thấy giá phòng');
+                throw new \Exception('KhÃ´ng tÃ¬m tháº¥y giÃ¡ phÃ²ng');
             }
 
             $donGia = $giaPhong * $soDem;
@@ -386,7 +394,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 SHOW
+    // ðŸ”¹ SHOW
     // =========================
     public function show($id)
     {
@@ -397,31 +405,32 @@ class DatPhongController extends Controller
             'chiTietDatPhong.phong.loaiPhong.khuyenMai',
         ])->find($id);
         if (!$data) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
         return $this->success($data);
     }
 
     // =========================
-    // 🔹 CONFIRM BOOKING
+    // ðŸ”¹ CONFIRM BOOKING
     // =========================
     public function confirm($id)
     {
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
 
         if ($datPhong->TinhTrang != 0) {
-            return $this->error('Không hợp lệ', 400);
+            return $this->error('KhÃ´ng há»£p lá»‡', 400);
         }
 
         DB::beginTransaction();
         try {
             $datPhong->update(['TinhTrang' => 1]);
+            $this->updateBookingDetailsStatus((int) $id, ChiTietDatPhong::BOOKED);
             HoaDon::where('MaDatPhong', $id)->update(['TrangThai' => 1]);
             DB::commit();
-            return $this->success(null, 'Xác nhận thành công');
+            return $this->success(null, 'XÃ¡c nháº­n thÃ nh cÃ´ng');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
@@ -429,27 +438,121 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 CHECK-IN
+    // ðŸ”¹ CHECK-IN
     // =========================
-    public function checkIn($id)
+    public function checkIn(Request $request, $id)
     {
+        $data = $request->validate([
+            'MaPhong' => [
+                'required',
+                Rule::exists('Phong', 'MaPhong'),
+            ],
+            'KhachLuuTru' => ['required', 'array', 'min:1'],
+            'KhachLuuTru.*.TenKhach' => ['nullable', 'string', 'max:100'],
+            'KhachLuuTru.*.NgaySinh' => ['nullable', 'date', 'before_or_equal:today'],
+            'KhachLuuTru.*.CCCD' => ['nullable', 'string', 'regex:/^\d{12}$/'],
+            'KhachLuuTru.*.SoDienThoai' => ['nullable', 'string', 'regex:/^0\d{9}$/'],
+            'KhachLuuTru.*.VaiTro' => ['nullable', Rule::in(['adult', 'child'])],
+        ]);
+
+        $guests = collect($data['KhachLuuTru'])
+            ->filter(function ($guest) {
+                return collect($guest)->contains(function ($value) {
+                    return $value !== null && trim((string) $value) !== '';
+                });
+            })
+            ->values();
+
+        foreach ($guests as $index => $guest) {
+            $guestNumber = $index + 1;
+
+            if (
+                empty(trim((string) ($guest['TenKhach'] ?? '')))
+                || empty($guest['NgaySinh'])
+                || empty(trim((string) ($guest['CCCD'] ?? '')))
+            ) {
+                return $this->error("Vui lòng nhập đầy đủ họ tên, ngày sinh và CCCD cho khách {$guestNumber}.", 422);
+            }
+
+            if (Carbon::parse($guest['NgaySinh'])->age >= 18 && empty(trim((string) ($guest['SoDienThoai'] ?? '')))) {
+                return $this->error("Vui lòng nhập số điện thoại cho khách người lớn {$guestNumber}.", 422);
+            }
+            if (($guest['VaiTro'] ?? 'adult') === 'child' && Carbon::parse($guest['NgaySinh'])->age >= 12) {
+                return $this->error("Trẻ em phải dưới 12 tuổi cho khách {$guestNumber}.", 422);
+            }
+        }
+
+        $hasAdultGuest = $guests->contains(function ($guest) {
+            if (empty($guest['NgaySinh'])) {
+                return false;
+            }
+
+            return Carbon::parse($guest['NgaySinh'])->age >= 18;
+        });
+
+        if (!$hasAdultGuest) {
+            return $this->error('Cần có ít nhất một khách đủ 18 tuổi trở lên để check-in.', 422);
+        }
+
         $datPhong = DatPhong::with('chiTietDatPhong')->find($id);
         if (!$datPhong) {
             return $this->error('Không tìm thấy', 404);
         }
 
-        if ($datPhong->TinhTrang != 1) {
-            return $this->error('Chưa xác nhận', 400);
+        if ((int) $datPhong->TinhTrang !== DatPhong::CONFIRMED) {
+            return $this->error('Đặt phòng chưa được xác nhận hoặc đã nhận phòng', 400);
+        }
+
+        $roomDetail = $datPhong->chiTietDatPhong
+            ->first(fn ($detail) => (int) $detail->MaPhong === (int) $data['MaPhong']);
+
+        if (!$roomDetail) {
+            return $this->error('Phòng không thuộc đặt phòng này', 422);
+        }
+
+        if ((int) $roomDetail->TrangThai !== ChiTietDatPhong::BOOKED) {
+            return $this->error('Phòng này không còn ở trạng thái chờ nhận', 422);
+        }
+
+        if (LuuTru::where('MaDatPhong', $datPhong->MaDatPhong)->where('MaPhong', $data['MaPhong'])->exists()) {
+            return $this->error('Phòng này đã được nhận trước đó', 409);
         }
 
         DB::beginTransaction();
         try {
-            $datPhong->update(['TinhTrang' => 2]);
-            foreach ($datPhong->chiTietDatPhong as $ct) {
-                Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 2]);
+            foreach ($guests as $guest) {
+                LuuTru::create([
+                    'TenKhach' => trim((string) ($guest['TenKhach'] ?? '')) ?: 'Khách lưu trú',
+                    'NgaySinh' => $guest['NgaySinh'],
+                    'CCCD' => trim((string) $guest['CCCD']),
+                    'SoDienThoai' => $guest['SoDienThoai'] ?? null,
+                    'MaPhong' => $data['MaPhong'],
+                    'MaDatPhong' => $datPhong->MaDatPhong,
+                ]);
             }
+
+            $roomDetail->update(['TrangThai' => ChiTietDatPhong::CHECKED_IN]);
+
+            Phong::where('MaPhong', $data['MaPhong'])->update(['TinhTrang' => 2]);
+
+            $checkedInRoomCount = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+                ->count();
+            $totalRoomCount = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+                ->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED)
+                ->count();
+
+            if ($checkedInRoomCount >= $totalRoomCount) {
+                $datPhong->update(['TinhTrang' => DatPhong::CHECKED_IN]);
+            }
+
             DB::commit();
-            return $this->success($datPhong, 'Check-in thành công');
+
+            return $this->success([
+                'datPhong' => $datPhong->fresh('chiTietDatPhong.phong'),
+                'checkedInRoomCount' => $checkedInRoomCount,
+                'totalRoomCount' => $totalRoomCount,
+            ], 'Check-in thành công');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
@@ -457,41 +560,42 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 CHECK-OUT
+    // ðŸ”¹ CHECK-OUT
     // =========================
     public function checkOut(Request $request, $id)
     {
         $datPhong = DatPhong::with('chiTietDatPhong')->find($id);
         if (!$datPhong) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
 
         if ($datPhong->TinhTrang != 2) {
-            return $this->error('Chưa check-in', 400);
+            return $this->error('ChÆ°a check-in', 400);
         }
 
         DB::beginTransaction();
         try {
             $hoaDon = HoaDon::where('MaDatPhong', $id)->first();
             if (!$hoaDon) {
-                return $this->error('Không có hóa đơn', 404);
+                return $this->error('KhÃ´ng cÃ³ hÃ³a Ä‘Æ¡n', 404);
             }
 
             $hoaDon->update(['TrangThai' => 2]);
             $datPhong->update(['TinhTrang' => 3]);
             
             foreach ($datPhong->chiTietDatPhong as $ct) {
+                $ct->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
                 Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 0]);
             }
 
             DB::commit();
-            return $this->success(null, 'Check-out thành công');
+            return $this->success(null, 'Check-out thÃ nh cÃ´ng');
         } catch (\Exception $e) {
             DB::rollBack();
             return $this->error($e->getMessage(), 500);
         }
     }
-    //hủy booking
+    //há»§y booking
     
 
     public function cancel($id)
@@ -499,26 +603,33 @@ class DatPhongController extends Controller
         $datPhong = DatPhong::find($id);
 
         if (!$datPhong) {
-            return $this->error('Không tìm thấy booking', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y booking', 404);
         }
 
-        // Chỉ được hủy khi đang HOLD hoặc CONFIRMED
+        // Chá»‰ Ä‘Æ°á»£c há»§y khi Ä‘ang HOLD hoáº·c CONFIRMED
         if (!in_array($datPhong->TinhTrang, [0, 1])) {
-            return $this->error('Không thể hủy booking này', 400);
+            return $this->error('KhÃ´ng thá»ƒ há»§y booking nÃ y', 400);
+        }
+
+        if (ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->exists()) {
+            return $this->error('Khong the huy booking da co phong nhan.', 400);
         }
 
         DB::beginTransaction();
         try {
-            // Cập nhật booking
+            // Cáº­p nháº­t booking
             $datPhong->update(['TinhTrang' => 4]); // Cancelled
+            $this->updateBookingDetailsStatus((int) $id, ChiTietDatPhong::CANCELLED);
 
-            // Cập nhật hóa đơn
+            // Cáº­p nháº­t hÃ³a Ä‘Æ¡n
             HoaDon::where('MaDatPhong', $id)
                 ->update(['TrangThai' => 3]); // Cancelled
 
             DB::commit();
 
-            return $this->success(null, 'Đã hủy booking thành công');
+            return $this->success(null, 'ÄÃ£ há»§y booking thÃ nh cÃ´ng');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -527,7 +638,7 @@ class DatPhongController extends Controller
     }
 
     // =========================
-    // 🔹 CHANGE ROOM
+    // ðŸ”¹ CHANGE ROOM
     // =========================
     public function changeRoom(Request $request, $id)
     {
@@ -535,30 +646,29 @@ class DatPhongController extends Controller
             'oldPhong' => 'required|exists:Phong,MaPhong',
             'newPhong' => [
                 'required',
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
         ]);
 
         if (!Phong::where('MaPhong', $request->newPhong)
-            ->whereHas('loaiPhong', function ($query) {
-                $query->whereNull('LoaiPhong.deleted_at');
-            })
+            ->whereHas('loaiPhong')
             ->exists()) {
-            return $this->error('PhÃ²ng má»›i khÃ´ng kháº£ dá»¥ng', 422);
+            return $this->error('PhÃƒÂ²ng mÃ¡Â»â€ºi khÃƒÂ´ng khÃ¡ÂºÂ£ dÃ¡Â»Â¥ng', 422);
         }
 
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
 
         if ($datPhong->TinhTrang != 2) {
-            return $this->error('Chỉ được đổi khi đang ở', 400);
+            return $this->error('Chá»‰ Ä‘Æ°á»£c Ä‘á»•i khi Ä‘ang á»Ÿ', 400);
         }
 
         $isBusy = DB::table('ChiTietDatPhong')
             ->join('DatPhong', 'DatPhong.MaDatPhong', '=', 'ChiTietDatPhong.MaDatPhong')
             ->where('ChiTietDatPhong.MaPhong', $request->newPhong)
+            ->where('ChiTietDatPhong.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
             ->where(function ($q) use ($datPhong) {
                 $q->where('NgayNhanPhong', '<', $datPhong->NgayTraPhong)
                   ->where('NgayTraPhong', '>', $datPhong->NgayNhanPhong);
@@ -567,7 +677,7 @@ class DatPhongController extends Controller
             ->exists();
 
         if ($isBusy) {
-            return $this->error('Phòng mới đã được đặt', 400);
+            return $this->error('PhÃ²ng má»›i Ä‘Ã£ Ä‘Æ°á»£c Ä‘áº·t', 400);
         }
 
         $ct = ChiTietDatPhong::where('MaDatPhong', $id)
@@ -575,7 +685,7 @@ class DatPhongController extends Controller
             ->first();
 
         if (!$ct) {
-            return $this->error('Không tìm thấy phòng cũ', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y phÃ²ng cÅ©', 404);
         }
 
         DB::transaction(function () use ($ct, $request) {
@@ -584,41 +694,40 @@ class DatPhongController extends Controller
             $ct->update(['MaPhong' => $request->newPhong]);
         });
 
-        return $this->success($ct, 'Đổi phòng thành công');
+        return $this->success($ct, 'Äá»•i phÃ²ng thÃ nh cÃ´ng');
     }
 
     // =========================
-    // 🔹 ADD ROOM
+    // ðŸ”¹ ADD ROOM
     // =========================
     public function addRoom(Request $request, $id)
     {
         $request->validate([
             'MaPhong' => [
                 'required',
-                Rule::exists('Phong', 'MaPhong')->whereNull('deleted_at'),
+                Rule::exists('Phong', 'MaPhong'),
             ],
         ]);
 
         if (!Phong::where('MaPhong', $request->MaPhong)
-            ->whereHas('loaiPhong', function ($query) {
-                $query->whereNull('LoaiPhong.deleted_at');
-            })
+            ->whereHas('loaiPhong')
             ->exists()) {
-            return $this->error('PhÃ²ng khÃ´ng kháº£ dá»¥ng', 422);
+            return $this->error('PhÃƒÂ²ng khÃƒÂ´ng khÃ¡ÂºÂ£ dÃ¡Â»Â¥ng', 422);
         }
 
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
 
         if ($datPhong->TinhTrang != 2) {
-            return $this->error('Chỉ được thêm khi đang ở', 400);
+            return $this->error('Chá»‰ Ä‘Æ°á»£c thÃªm khi Ä‘ang á»Ÿ', 400);
         }
 
         $isBusy = DB::table('ChiTietDatPhong')
             ->join('DatPhong', 'DatPhong.MaDatPhong', '=', 'ChiTietDatPhong.MaDatPhong')
             ->where('ChiTietDatPhong.MaPhong', $request->MaPhong)
+            ->where('ChiTietDatPhong.TrangThai', '!=', ChiTietDatPhong::CANCELLED)
             ->where(function ($q) use ($datPhong) {
                 $q->where('NgayNhanPhong', '<', $datPhong->NgayTraPhong)
                   ->where('NgayTraPhong', '>', $datPhong->NgayNhanPhong);
@@ -627,37 +736,38 @@ class DatPhongController extends Controller
             ->exists();
 
         if ($isBusy) {
-            return $this->error('Phòng đã được đặt', 400);
+            return $this->error('PhÃ²ng Ä‘Ã£ Ä‘Æ°á»£c Ä‘áº·t', 400);
         }
 
         DB::transaction(function () use ($request, $id, $datPhong) {
             ChiTietDatPhong::create([
                 'MaDatPhong' => $id,
-                'MaPhong' => $request->MaPhong
+                'MaPhong' => $request->MaPhong,
+                'TrangThai' => ChiTietDatPhong::CHECKED_IN,
             ]);
             $datPhong->increment('SoLuong');
             Phong::where('MaPhong', $request->MaPhong)->update(['TinhTrang' => 2]);
         });
 
-        return $this->success(null, 'Thêm phòng thành công');
+        return $this->success(null, 'ThÃªm phÃ²ng thÃ nh cÃ´ng');
     }
 
     // =========================
-    // 🔹 REMOVE ROOM
+    // ðŸ”¹ REMOVE ROOM
     // =========================
     public function removeRoom($id, $maPhong)
     {
         $datPhong = DatPhong::find($id);
         if (!$datPhong) {
-            return $this->error('Không tìm thấy', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
         }
 
         if ($datPhong->TinhTrang != 2) {
-            return $this->error('Chỉ được xóa khi đang ở', 400);
+            return $this->error('Chá»‰ Ä‘Æ°á»£c xÃ³a khi Ä‘ang á»Ÿ', 400);
         }
 
         if ($datPhong->SoLuong <= 1) {
-            return $this->error('Không thể xóa hết phòng', 400);
+            return $this->error('KhÃ´ng thá»ƒ xÃ³a háº¿t phÃ²ng', 400);
         }
 
         $ct = ChiTietDatPhong::where('MaDatPhong', $id)
@@ -665,7 +775,7 @@ class DatPhongController extends Controller
             ->first();
 
         if (!$ct) {
-            return $this->error('Không tìm thấy phòng', 404);
+            return $this->error('KhÃ´ng tÃ¬m tháº¥y phÃ²ng', 404);
         }
 
         DB::transaction(function () use ($ct, $datPhong) {
@@ -674,7 +784,7 @@ class DatPhongController extends Controller
             $datPhong->decrement('SoLuong');
         });
 
-        return $this->success(null, 'Đã xóa phòng');
+        return $this->success(null, 'ÄÃ£ xÃ³a phÃ²ng');
     }
 
     /**

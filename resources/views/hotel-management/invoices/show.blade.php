@@ -1,1012 +1,548 @@
-<style>
-    .hm-invoice-sheet {
-        display: flex;
-        flex-direction: column;
-        gap: 1.2rem;
-        margin-bottom: 2rem;
-    }
+@php
+    $booking = $invoice?->datPhong;
+    $customer = $booking?->khachHang;
+    $employee = $invoice?->nhanVien;
+    $promotion = $invoice?->khuyenMai;
+    $details = collect($invoice?->chiTietHoaDons ?? []);
+    $roomDetails = $details->filter(fn ($detail) => !empty($detail->MaLoaiPhong));
+    $serviceDetails = $details->filter(fn ($detail) => !empty($detail->MaSuDung));
+    $damageDetails = $details->filter(fn ($detail) => !empty($detail->MaDenBu));
+    $roomNumbersByType = collect($booking?->chiTietDatPhong ?? [])
+        ->filter(fn ($detail) => $detail?->phong?->MaLoaiPhong)
+        ->groupBy(fn ($detail) => (string) $detail->phong->MaLoaiPhong)
+        ->map(fn ($items) => $items
+            ->map(fn ($detail) => $detail?->phong?->SoPhong)
+            ->filter()
+            ->values()
+            ->implode(', ')
+        );
+    $formatDate = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '--';
+    $formatDateTime = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y H:i:s') : '--';
+    $formatMoney = fn ($amount) => is_numeric($amount) ? number_format((float) $amount, 0, ',', '.') . ' VNĐ' : '--';
+    $paid = (float) ($invoice->DaThanhToan ?? $invoice->thanhToans->sum('SoTien') ?? 0);
+    $total = (float) ($invoice->TongTien ?? 0);
+    $remaining = max($total - $paid, 0);
+    $roomTotal = $roomDetails->sum(fn ($detail) => (float) ($detail->SoLuong ?? 1) * (float) ($detail->DonGia ?? 0));
+    $serviceTotal = $serviceDetails->sum(fn ($detail) => (float) ($detail->SoLuong ?? 1) * (float) ($detail->DonGia ?? 0));
+    $damageTotal = $damageDetails->sum(fn ($detail) => (float) ($detail->SoLuong ?? 1) * (float) ($detail->DonGia ?? 0));
+    $status = match ((int) $invoice->TrangThai) {
+        0 => ['label' => 'Chưa thanh toán', 'class' => 'warning'],
+        1 => ['label' => 'Đã thanh toán', 'class' => 'success'],
+        2 => ['label' => 'Đã xuất hóa đơn', 'class' => 'info'],
+        3 => ['label' => 'Đã hủy', 'class' => 'danger'],
+        default => ['label' => 'Không xác định', 'class' => 'muted'],
+    };
+@endphp
 
-    .hm-invoice-grid {
-        display: grid;
-        gap: 1.2rem;
-    }
-
-    .hm-invoice-grid--top {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .hm-invoice-grid--double {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .hm-invoice-card {
-        padding: 1.3rem;
-        border: 1px solid #f1dfd0;
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.96);
-        box-shadow: 0 18px 40px -38px rgba(120, 65, 26, 0.35);
-    }
-
-    .hm-invoice-card-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 0.8rem;
-        margin-bottom: 1rem;
-    }
-
-    .hm-invoice-card-title {
-        margin: 0;
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .hm-invoice-card-note {
-        font-size: 0.86rem;
-        color: #9a3412;
-    }
-
-    .hm-invoice-info-grid {
-        display: grid;
-        gap: 0.9rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .hm-invoice-info-item {
-        padding: 1rem;
-        border: 1px solid #f7e6d7;
-        border-radius: 18px;
-        background: #fffdfa;
-        min-height: 86px;
-    }
-
-    .hm-invoice-label {
-        margin-bottom: 0.45rem;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #b45309;
-    }
-
-    .hm-invoice-value {
-        font-size: 1rem;
-        font-weight: 500;
-        line-height: 1.5;
-        color: #0f172a;
-        word-break: break-word;
-    }
-
-    .hm-invoice-status {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.45rem 0.82rem;
-        border-radius: 999px;
-        font-size: 0.76rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-        text-transform: uppercase;
-    }
-
-    .hm-invoice-status--warning { background: #fef3c7; color: #9a3412; }
-    .hm-invoice-status--success { background: #dcfce7; color: #166534; }
-    .hm-invoice-status--danger { background: #fee2e2; color: #b91c1c; }
-    .hm-invoice-status--muted { background: #eceff3; color: #475569; }
-
-    .hm-invoice-room-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.55rem;
-    }
-
-    .hm-invoice-room-tag {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.52rem 0.78rem;
-        border-radius: 999px;
-        background: #fff1e7;
-        border: 1px solid #f7d6bd;
-        color: #9a3412;
-        font-size: 0.82rem;
-        font-weight: 700;
-    }
-
-    .hm-invoice-summary {
-        display: flex;
-        flex-direction: column;
-        gap: 0.85rem;
-    }
-
-    .hm-invoice-summary-row {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        font-size: 0.95rem;
-        color: #334155;
-    }
-
-    .hm-invoice-summary-row strong {
-        color: #0f172a;
-        text-align: right;
-    }
-
-    .hm-invoice-summary-row--accent {
-        color: #9a3412;
-    }
-
-    .hm-invoice-summary-row--accent strong {
-        color: #9a3412;
-    }
-
-    .hm-invoice-summary-row--grand {
-        padding-top: 0.9rem;
-        border-top: 1px dashed #e7cdb8;
-        font-size: 1.05rem;
-        font-weight: 700;
-    }
-
-    .hm-invoice-summary-row--grand strong {
-        font-size: 1.25rem;
-    }
-
-    .hm-invoice-table-wrap {
-        overflow-x: auto;
-    }
-
-    .hm-invoice-table {
-        width: 100%;
-        border-collapse: separate;
-        border-spacing: 0;
-        min-width: 860px;
-        table-layout: fixed;
-    }
-
-    .hm-invoice-table thead th {
-        padding: 0.9rem 0.95rem;
-        border-bottom: 1px solid #f1dfd0;
-        background: #fff8f2;
-        color: #9a3412;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        white-space: nowrap;
-    }
-
-    .hm-invoice-table thead th.hm-invoice-th-num {
-        text-align: right;
-    }
-
-    .hm-invoice-table tbody td {
-        padding: 0.95rem;
-        border-bottom: 1px solid #f8eadd;
-        vertical-align: top;
-        color: #0f172a;
-    }
-
-    .hm-invoice-table tbody tr:last-child td {
-        border-bottom: 0;
-    }
-
-    .hm-invoice-item-title {
-        margin: 0;
-        font-size: 0.96rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .hm-invoice-item-meta {
-        margin-top: 0.28rem;
-        font-size: 0.85rem;
-        line-height: 1.45;
-        color: #64748b;
-        word-break: break-word;
-    }
-
-    .hm-invoice-room-cell {
-        min-width: 0;
-    }
-
-    .hm-invoice-num {
-        text-align: right;
-        white-space: nowrap;
-        font-weight: 600;
-    }
-
-    .hm-invoice-list {
-        display: grid;
-        gap: 0.85rem;
-    }
-
-    .hm-invoice-list-item {
-        padding: 1rem;
-        border: 1px solid #f5e5d8;
-        border-radius: 18px;
-        background: #fffdfa;
-    }
-
-    .hm-invoice-list-head {
-        display: flex;
-        justify-content: space-between;
-        gap: 0.9rem;
-        align-items: flex-start;
-    }
-
-    .hm-invoice-list-title {
-        margin: 0;
-        font-size: 0.96rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .hm-invoice-list-total {
-        white-space: nowrap;
-        font-size: 1rem;
-        font-weight: 700;
-        color: #0f172a;
-    }
-
-    .hm-invoice-list-meta {
-        margin-top: 0.45rem;
-        display: grid;
-        gap: 0.35rem;
-        color: #64748b;
-        font-size: 0.86rem;
-        line-height: 1.45;
-    }
-
-    .hm-invoice-empty {
-        padding: 1rem;
-        border-radius: 18px;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
-        color: #64748b;
-        text-align: center;
-    }
-
-    .main-content .content-inner {
-        padding-bottom: 1.5rem;
-    }
-
-    .main-content .footer {
-        position: relative;
-        z-index: 2;
-        margin-top: 0.5rem;
-    }
-
-    @media (max-width: 1199.98px) {
-        .hm-invoice-grid--top,
-        .hm-invoice-grid--double {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 767.98px) {
-        .hm-invoice-info-grid {
-            grid-template-columns: 1fr;
+<x-app-layout :assets="['animation']">
+    <style>
+        .invoice-detail-page {
+            color: #211816;
+            padding-top: 56px;
+            margin-bottom: 20px;
         }
 
-        .hm-invoice-list-head {
-            flex-direction: column;
+        .invoice-detail-hero,
+        .invoice-detail-section {
+            background: #fffefa;
+            border: 1px solid rgba(151, 64, 26, 0.15);
+            box-shadow: 0 20px 50px rgba(122, 39, 12, 0.14);
+            /* margin-bottom: 20px; */
         }
-    }
-</style>
 
-<x-hotel-management.show-page
-    title="Chi tiết hóa đơn"
-    subtitle="Thông tin chi tiết hóa đơn"
-    :index-route="route('hotel.invoices.index')"
->
-    <div class="col-12">
-        <div id="invoice-show-alert" class="alert d-none mb-4" role="alert"></div>
+        .invoice-detail-hero {
+            border-radius: 28px;
+            padding: 26px 28px;
+        }
 
-        <div class="hm-invoice-sheet">
-            <div class="hm-invoice-grid hm-invoice-grid--top">
-                <div class="hm-invoice-card">
-                    <div class="hm-invoice-card-head">
-                        <h3 class="hm-invoice-card-title">Thông tin hóa đơn</h3>
-                        <span class="hm-invoice-card-note">Thông tin cơ bản</span>
+        .invoice-detail-title {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .invoice-detail-title h1 {
+            margin: 0;
+            color: #090706;
+            font-size: 30px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .invoice-detail-subtitle {
+            margin: 8px 0 0;
+            color: #6b5a54;
+            font-size: 16px;
+        }
+
+        .invoice-detail-badge {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 5px 13px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .invoice-detail-badge--success { background: #dcfce7; color: #166534; }
+        .invoice-detail-badge--info { background: #e0f2fe; color: #0369a1; }
+        .invoice-detail-badge--warning { background: #fef3c7; color: #92400e; }
+        .invoice-detail-badge--danger { background: #fee2e2; color: #991b1b; }
+        .invoice-detail-badge--muted { background: #eceff3; color: #475569; }
+
+        .invoice-detail-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .invoice-detail-actions .btn {
+            border-radius: 5px;
+            min-height: 42px;
+            padding: 10px 18px;
+            font-weight: 600;
+        }
+
+        .invoice-detail-actions .btn-primary {
+            background: #7a270c;
+            border-color: #6f1d01;
+            color: #fff;
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+        }
+
+        .invoice-detail-actions .btn-primary:hover {
+            background: #5f1b08;
+            border-color: #5f1b08;
+        }
+
+        .invoice-detail-section {
+            border-radius: 24px;
+            height: 100%;
+            padding: 22px;
+            /* margin-bottom: 20px; */
+        }
+
+        .invoice-detail-section h2 {
+            margin: 0 0 18px;
+            color: #100d0c;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0;
+        }
+
+        .invoice-detail-info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .invoice-detail-info-grid--compact {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .invoice-detail-card {
+            min-height: 82px;
+            padding: 15px 16px;
+            border: 1px solid rgba(151, 64, 26, 0.13);
+            border-radius: 13px;
+            background: #fffefa;
+            box-shadow: 0 12px 28px rgba(122, 39, 12, 0.09);
+        }
+
+        .invoice-detail-card--accent {
+            background: linear-gradient(180deg, #fff7ef 0%, #fffefa 100%);
+        }
+
+        .invoice-detail-label {
+            margin-bottom: 9px;
+            color: #8b3a1d;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        .invoice-detail-value {
+            color: #1e1715;
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .invoice-detail-table-wrap {
+            overflow-x: auto;
+            border: 1px solid rgba(151, 64, 26, 0.13);
+            border-radius: 13px;
+            box-shadow: 0 12px 28px rgba(122, 39, 12, 0.08);
+        }
+
+        .invoice-detail-table {
+            min-width: 760px;
+            margin: 0;
+            color: #271b18;
+        }
+
+        .invoice-detail-table thead th {
+            background: #fffaf6;
+            border-bottom: 1px solid rgba(151, 64, 26, 0.13);
+            color: #8b3a1d;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0;
+            padding: 15px 16px;
+            text-transform: uppercase;
+        }
+
+        .invoice-detail-table tbody td {
+            border-bottom: 1px solid rgba(151, 64, 26, 0.1);
+            color: #241917;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 15px 16px;
+            vertical-align: middle;
+        }
+
+        .invoice-detail-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .invoice-detail-table tfoot td {
+            background: #fff7ef;
+            border-top: 1px solid rgba(151, 64, 26, 0.18);
+            color: #7a270c;
+            font-size: 15px;
+            font-weight: 800;
+            padding: 15px 16px;
+        }
+
+        .invoice-detail-empty {
+            color: #7a675f !important;
+            font-weight: 500 !important;
+        }
+
+        .invoice-bill {
+            width: 100%;
+            height: 100%;
+            border: 1px solid rgba(151, 64, 26, 0.18);
+            border-radius: 18px;
+            background: linear-gradient(180deg, #fff7ef 0%, #fffefa 100%);
+            box-shadow: 0 18px 42px rgba(122, 39, 12, 0.14);
+            overflow: hidden;
+        }
+
+        .invoice-bill__header {
+            padding: 18px 20px;
+            border-bottom: 1px dashed rgba(151, 64, 26, 0.25);
+        }
+
+        .invoice-bill__header h3 {
+            margin: 0;
+            color: #100d0c;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .invoice-bill__body {
+            padding: 8px 20px 20px;
+        }
+
+        .invoice-bill__row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(151, 64, 26, 0.1);
+            color: #5a2a1b;
+            font-weight: 700;
+        }
+
+        .invoice-bill__row:last-child {
+            border-bottom: 0;
+        }
+
+        .invoice-bill__row strong {
+            color: #1e1715;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+
+        .invoice-bill__row--total {
+            margin-top: 4px;
+            padding-top: 16px;
+            color: #7a270c;
+            font-size: 17px;
+        }
+
+        .invoice-bill__row--total strong {
+            color: #7a270c;
+            font-size: 20px;
+        }
+
+        @media (max-width: 991.98px) {
+            .invoice-detail-actions {
+                justify-content: flex-start;
+            }
+
+            .invoice-detail-info-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .invoice-detail-info-grid--compact {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .invoice-detail-page {
+                padding-top: 42px;
+            }
+
+            .invoice-detail-hero,
+            .invoice-detail-section {
+                border-radius: 18px;
+                padding: 18px;
+            }
+
+            .invoice-detail-title h1 {
+                font-size: 24px;
+            }
+
+            .invoice-detail-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <div class="invoice-detail-page">
+        <div class="invoice-detail-hero mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-8">
+                    <div class="invoice-detail-title">
+                        <h1>Chi tiết hóa đơn</h1>
+                        <span class="invoice-detail-badge invoice-detail-badge--{{ $status['class'] }}">{{ $status['label'] }}</span>
                     </div>
+                    <p class="invoice-detail-subtitle">Thông tin hóa đơn, phòng đã đặt, dịch vụ sử dụng và đền bù</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="invoice-detail-actions">
+                        <a href="{{ route('hotel.invoices.index') }}" class="btn btn-primary">Quay Lại</a>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="hm-invoice-info-grid">
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Mã hóa đơn</div>
-                            <div class="hm-invoice-value" id="invoice-info-id">Đang tải...</div>
+        <section class="invoice-detail-section mb-4">
+            <div class="row g-4 align-items-stretch">
+                <div class="col-xl-8">
+                    <h2>Thông tin hóa đơn</h2>
+                    <div class="invoice-detail-info-grid invoice-detail-info-grid--compact">
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Mã hóa đơn</div>
+                            <div class="invoice-detail-value">#{{ $invoice->MaHD ?? '--' }}</div>
                         </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Mã đặt phòng</div>
-                            <div class="hm-invoice-value" id="invoice-info-booking">Đang tải...</div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Mã đặt phòng</div>
+                            <div class="invoice-detail-value">{{ $invoice->MaDatPhong ? '#' . $invoice->MaDatPhong : '--' }}</div>
                         </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Ngày lập</div>
-                            <div class="hm-invoice-value" id="invoice-info-date">Đang tải...</div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Ngày lập</div>
+                            <div class="invoice-detail-value">{{ $formatDate($invoice->NgayLapHD) }}</div>
                         </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Nhân viên phụ trách</div>
-                            <div class="hm-invoice-value" id="invoice-info-employee">Đang tải...</div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Khách hàng</div>
+                            <div class="invoice-detail-value">{{ $customer->TenKH ?? '--' }}</div>
+                        </div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Số điện thoại</div>
+                            <div class="invoice-detail-value">{{ $customer->SoDienThoai ?? '--' }}</div>
+                        </div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Nhân viên lập</div>
+                            <div class="invoice-detail-value">{{ $employee->TenNV ?? '--' }}</div>
+                        </div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Ngày nhận phòng</div>
+                            <div class="invoice-detail-value">{{ $formatDate($booking?->NgayNhanPhong) }}</div>
+                        </div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Ngày trả phòng</div>
+                            <div class="invoice-detail-value">{{ $formatDate($booking?->NgayTraPhong) }}</div>
+                        </div>
+                        <div class="invoice-detail-card">
+                            <div class="invoice-detail-label">Khuyến mãi</div>
+                            <div class="invoice-detail-value">{{ $promotion->TenKM ?? $invoice->MaKM ?? '--' }}</div>
                         </div>
                     </div>
                 </div>
-
-                <div class="hm-invoice-card">
-                    <div class="hm-invoice-card-head">
-                        <h3 class="hm-invoice-card-title">Thông tin lưu trú</h3>
-                        <span class="hm-invoice-card-note">Theo đặt phòng</span>
-                    </div>
-
-                    <div class="hm-invoice-info-grid">
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Ngày nhận phòng</div>
-                            <div class="hm-invoice-value" id="invoice-check-in">Đang tải...</div>
+                <div class="col-xl-4">
+                    <div class="invoice-bill">
+                        <div class="invoice-bill__header">
+                            <h3>Tổng kết thanh toán</h3>
                         </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Ngày trả phòng</div>
-                            <div class="hm-invoice-value" id="invoice-check-out">Đang tải...</div>
-                        </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Số đêm</div>
-                            <div class="hm-invoice-value" id="invoice-stay-duration">Đang tải...</div>
-                        </div>
-                        <div class="hm-invoice-info-item">
-                            <div class="hm-invoice-label">Khuyến mãi</div>
-                            <div class="hm-invoice-value" id="invoice-promotion">Đang tải...</div>
-                        </div>
-                        <div class="hm-invoice-info-item" style="grid-column: 1 / -1;">
-                            <div class="hm-invoice-label">Loại phòng trong hóa đơn</div>
-                            <div class="hm-invoice-room-tags" id="invoice-room-tags">
-                                <span class="hm-invoice-room-tag">Đang tải...</span>
+                        <div class="invoice-bill__body">
+                            <div class="invoice-bill__row">
+                                <span>Tổng tiền phòng</span>
+                                <strong>{{ $formatMoney($roomTotal) }}</strong>
+                            </div>
+                            <div class="invoice-bill__row">
+                                <span>Tổng tiền dịch vụ</span>
+                                <strong>{{ $formatMoney($serviceTotal) }}</strong>
+                            </div>
+                            <div class="invoice-bill__row">
+                                <span>Tổng đền bù</span>
+                                <strong>{{ $formatMoney($damageTotal) }}</strong>
+                            </div>
+                            <div class="invoice-bill__row invoice-bill__row--total">
+                                <span>Tổng tiền</span>
+                                <strong>{{ $formatMoney($total) }}</strong>
+                            </div>
+                            <div class="invoice-bill__row">
+                                <span>Đã thanh toán</span>
+                                <strong>{{ $formatMoney($paid) }}</strong>
+                            </div>
+                            <div class="invoice-bill__row">
+                                <span>Còn lại</span>
+                                <strong>{{ $formatMoney($remaining) }}</strong>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="hm-invoice-card">
-                    <div class="hm-invoice-card-head">
-                        <h3 class="hm-invoice-card-title">Tổng kết thanh toán</h3>
-                    </div>
-
-                    <div class="hm-invoice-summary">
-                        <div class="hm-invoice-summary-row">
-                            <span>Trạng thái</span>
-                            <strong><span id="invoice-status-badge" class="hm-invoice-status hm-invoice-status--muted">Đang tải</span></strong>
-                        </div>
-                        <div class="hm-invoice-summary-row">
-                            <span>Tạm tính</span>
-                            <strong id="invoice-subtotal">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row">
-                            <span>Tiền phòng</span>
-                            <strong id="invoice-room-subtotal">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row">
-                            <span>Dịch vụ</span>
-                            <strong id="invoice-service-subtotal">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row">
-                            <span>Đền bù / phát sinh</span>
-                            <strong id="invoice-compensation-subtotal">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row hm-invoice-summary-row--accent">
-                            <span>Giảm giá</span>
-                            <strong id="invoice-discount">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row">
-                            <span>Đã thanh toán</span>
-                            <strong id="invoice-paid-total">--</strong>
-                        </div>
-                        <div class="hm-invoice-summary-row hm-invoice-summary-row--grand">
-                            <span>Còn lại</span>
-                            <strong id="invoice-remaining-total">--</strong>
-                        </div>
-                    </div>
-
-                </div>
             </div>
+        </section>
 
-            <div class="hm-invoice-card">
-                <div class="hm-invoice-card-head">
-                    <h3 class="hm-invoice-card-title">Chi tiết tính tiền</h3>
-                </div>
-
-                <div class="hm-invoice-table-wrap">
-                    <table class="hm-invoice-table">
-                        <colgroup>
-                            <col style="width: 30%;">
-                            <col style="width: 24%;">
-                            <col style="width: 8%;">
-                            <col style="width: 19%;">
-                            <col style="width: 19%;">
-                        </colgroup>
-                        <thead>
+        <section class="invoice-detail-section mb-4">
+            <h2>Thông tin loại phòng đã đặt</h2>
+            <div class="invoice-detail-table-wrap">
+                <table class="table invoice-detail-table">
+                    <thead>
+                        <tr>
+                            <th>Loại phòng</th>
+                            <th>Số phòng</th>
+                            <th>Số lượng</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($roomDetails as $detail)
+                            @php
+                                $quantity = (int) ($detail->SoLuong ?? 1);
+                                $unitPrice = (float) ($detail->DonGia ?? 0);
+                                $roomNumbers = $roomNumbersByType->get((string) $detail->MaLoaiPhong, '--');
+                            @endphp
                             <tr>
-                                <th>Nội dung</th>
-                                <th>Số phòng</th>
-                                <th class="hm-invoice-th-num">SL</th>
-                                <th class="hm-invoice-th-num">Đơn giá</th>
-                                <th class="hm-invoice-th-num">Thành tiền</th>
+                                <td>{{ $detail?->loaiPhong?->TenLoaiPhong ?? $detail->MoTa ?? 'Tiền phòng' }}</td>
+                                <td>{{ $roomNumbers ?: '--' }}</td>
+                                <td>{{ $quantity }}</td>
+                                <td>{{ $formatMoney($unitPrice) }}</td>
+                                <td>{{ $formatMoney($quantity * $unitPrice) }}</td>
                             </tr>
-                        </thead>
-                        <tbody id="invoice-line-items">
+                        @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">Đang tải chi tiết hóa đơn...</td>
+                                <td colspan="5" class="text-center invoice-detail-empty py-4">Chưa có thông tin loại phòng.</td>
                             </tr>
-                        </tbody>
-                    </table>
-                </div>
+                        @endforelse
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4">Tổng tiền phòng</td>
+                            <td>{{ $formatMoney($roomTotal) }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <div class="col-xl-6">
+                <section class="invoice-detail-section">
+                    <h2>Thông tin dịch vụ sử dụng</h2>
+                    <div class="invoice-detail-table-wrap">
+                        <table class="table invoice-detail-table">
+                            <thead>
+                                <tr>
+                                    <th>Dịch vụ</th>
+                                    <th>Loại dịch vụ</th>
+                                    <th>Số lượng</th>
+                                    <th>Thời gian</th>
+                                    <th>Đơn giá</th>
+                                    <th>Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($serviceDetails as $detail)
+                                    @php
+                                        $quantity = (int) ($detail->SoLuong ?? $detail?->suDung?->SoLuong ?? 1);
+                                        $unitPrice = (float) ($detail->DonGia ?? $detail?->suDung?->dichVu?->GiaDV ?? 0);
+                                        $serviceType = $detail?->suDung?->dichVu?->LoaiDVText ?? '--';
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $detail?->suDung?->dichVu?->TenDV ?? $detail->MoTa ?? 'Dịch vụ' }}</td>
+                                        <td>{{ $serviceType }}</td>
+                                        <td>{{ $quantity }}</td>
+                                        <td>{{ $formatDateTime($detail?->suDung?->ThoiGian) }}</td>
+                                        <td>{{ $formatMoney($unitPrice) }}</td>
+                                        <td>{{ $formatMoney($quantity * $unitPrice) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center invoice-detail-empty py-4">Chưa có dịch vụ sử dụng.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5">Tổng tiền dịch vụ</td>
+                                    <td>{{ $formatMoney($serviceTotal) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </section>
             </div>
 
-            <div class="hm-invoice-grid hm-invoice-grid--double">
-                <div class="hm-invoice-card">
-                    <div class="hm-invoice-card-head">
-                        <h3 class="hm-invoice-card-title">Dịch vụ sử dụng</h3>
+            <div class="col-xl-6">
+                <section class="invoice-detail-section">
+                    <h2>Thông tin đền bù</h2>
+                    <div class="invoice-detail-table-wrap">
+                        <table class="table invoice-detail-table">
+                            <thead>
+                                <tr>
+                                    <th>Mô tả</th>
+                                    <th>Số lượng</th>
+                                    <th>Đơn giá</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($damageDetails as $detail)
+                                    @php
+                                        $quantity = (int) ($detail->SoLuong ?? 1);
+                                        $unitPrice = (float) ($detail->DonGia ?? $detail?->denBu?->TienDenBu ?? 0);
+                                    @endphp
+                                    <tr>
+                                        <td>{{ $detail?->denBu?->MoTa ?? $detail->MoTa ?? 'Đền bù hư hỏng' }}</td>
+                                        <td>{{ $quantity }}</td>
+                                        <td>{{ $formatMoney($unitPrice) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center invoice-detail-empty py-4">Chưa có khoản đền bù.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="2">Tổng tiền đền bù</td>
+                                    <td>{{ $formatMoney($damageTotal) }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
-
-                    <div id="invoice-service-items" class="hm-invoice-list">
-                        <div class="hm-invoice-empty">Chưa có dịch vụ sử dụng.</div>
-                    </div>
-                </div>
-
-                <div class="hm-invoice-card">
-                    <div class="hm-invoice-card-head">
-                        <h3 class="hm-invoice-card-title">Đền bù / hư hỏng</h3>
-                    </div>
-
-                    <div id="invoice-compensation-items" class="hm-invoice-list">
-                        <div class="hm-invoice-empty">Chưa có khoản đền bù phát sinh.</div>
-                    </div>
-                </div>
+                </section>
             </div>
-
         </div>
-
-        <div id="invoice-show-config" data-invoice-id="{{ request()->route('recordId') }}" hidden></div>
     </div>
-
-    @push('scripts')
-        <script>
-            document.addEventListener('DOMContentLoaded', async function () {
-                const config = document.getElementById('invoice-show-config');
-                const invoiceId = config ? config.dataset.invoiceId : '';
-                const alertBox = document.getElementById('invoice-show-alert');
-
-                const setAlert = function (type, message) {
-                    if (!alertBox) {
-                        return;
-                    }
-
-                    alertBox.className = 'alert alert-' + type + ' mb-4';
-                    alertBox.textContent = message;
-                };
-
-                const clearAlert = function () {
-                    if (!alertBox) {
-                        return;
-                    }
-
-                    alertBox.className = 'alert d-none mb-4';
-                    alertBox.textContent = '';
-                };
-
-                const setText = function (id, value) {
-                    const element = document.getElementById(id);
-                    if (element) {
-                        element.textContent = value;
-                    }
-                };
-
-                const escapeHtml = function (value) {
-                    return String(value === null || value === undefined ? '' : value)
-                        .replace(/&/g, '&amp;')
-                        .replace(/</g, '&lt;')
-                        .replace(/>/g, '&gt;')
-                        .replace(/"/g, '&quot;')
-                        .replace(/'/g, '&#39;');
-                };
-
-                const getRelation = function (record) {
-                    if (!record) {
-                        return null;
-                    }
-
-                    for (let index = 1; index < arguments.length; index += 1) {
-                        const key = arguments[index];
-                        if (record[key]) {
-                            return record[key];
-                        }
-                    }
-
-                    return null;
-                };
-
-                const getArrayRelation = function (record) {
-                    const relation = getRelation.apply(null, arguments);
-                    return Array.isArray(relation) ? relation : [];
-                };
-
-                const getRoomDetailsByType = function (invoice) {
-                    const booking = getRelation(invoice, 'datPhong', 'dat_phong');
-                    const bookingDetails = getArrayRelation(booking, 'chiTietDatPhong', 'chi_tiet_dat_phong');
-                    const roomsByType = {};
-
-                    bookingDetails.forEach(function (detail) {
-                        const room = getRelation(detail, 'phong', 'phong');
-
-                        if (!room || !room.MaLoaiPhong) {
-                            return;
-                        }
-
-                        const roomTypeId = String(room.MaLoaiPhong);
-                        const roomNumber = room.SoPhong ? String(room.SoPhong) : (room.MaPhong ? 'Phòng #' + String(room.MaPhong) : '--');
-
-                        if (!roomsByType[roomTypeId]) {
-                            roomsByType[roomTypeId] = [];
-                        }
-
-                        if (!roomsByType[roomTypeId].includes(roomNumber)) {
-                            roomsByType[roomTypeId].push(roomNumber);
-                        }
-                    });
-
-                    return roomsByType;
-                };
-
-                const formatDate = function (value) {
-                    if (!value) {
-                        return '--';
-                    }
-
-                    const normalized = String(value).split(/[ T]/)[0];
-                    const parts = normalized.split('-');
-                    return parts.length === 3 ? (parts[2] + '/' + parts[1] + '/' + parts[0]) : String(value);
-                };
-
-                const formatDateTime = function (value) {
-                    if (!value) {
-                        return '--';
-                    }
-
-                    const segments = String(value).split(' ');
-                    const formattedDate = formatDate(segments[0]);
-                    return segments[1] ? (formattedDate + ' ' + segments[1]) : formattedDate;
-                };
-
-                const formatCurrency = function (value) {
-                    const number = Number(value);
-                    if (Number.isNaN(number)) {
-                        return '--';
-                    }
-
-                    return number.toLocaleString('vi-VN') + ' VNĐ';
-                };
-
-                const getNightCount = function (checkIn, checkOut) {
-                    if (!checkIn || !checkOut) {
-                        return '--';
-                    }
-
-                    const start = new Date(checkIn);
-                    const end = new Date(checkOut);
-                    const diff = end.getTime() - start.getTime();
-
-                    if (!Number.isFinite(diff) || diff <= 0) {
-                        return '--';
-                    }
-
-                    return Math.round(diff / (1000 * 60 * 60 * 24)) + ' đêm';
-                };
-
-                const mapInvoiceStatus = function (value) {
-                    switch (Number(value)) {
-                        case 0:
-                            return { label: 'Chưa thanh toán', className: 'warning' };
-                        case 1:
-                            return { label: 'Đã thanh toán', className: 'success' };
-                        case 3:
-                            return { label: 'Đã hủy', className: 'danger' };
-                        default:
-                            return { label: 'Không xác định', className: 'muted' };
-                    }
-                };
-
-                const mapServiceType = function (service) {
-                    if (!service) {
-                        return 'Khác';
-                    }
-
-                    if (service.LoaiDVText) {
-                        return service.LoaiDVText;
-                    }
-
-                    switch (Number(service.LoaiDV)) {
-                        case 1:
-                            return 'Dịch vụ ăn uống';
-                        case 2:
-                            return 'Dịch vụ phòng';
-                        case 3:
-                            return 'Dịch vụ giải trí';
-                        default:
-                            return 'Khác';
-                    }
-                };
-
-                const buildLineItems = function (invoice) {
-                    const detailLines = getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons');
-                    const roomsByType = getRoomDetailsByType(invoice);
-                    const roomBuckets = {};
-                    const otherItems = [];
-
-                    detailLines.forEach(function (line) {
-                        const quantity = Math.max(1, Number(line && line.SoLuong ? line.SoLuong : 1));
-                        const unitPrice = Number(line && line.DonGia ? line.DonGia : 0);
-                        const total = quantity * unitPrice;
-
-                        if (line && line.MaLoaiPhong && !line.MaSuDung && !line.MaDenBu) {
-                            const roomType = getRelation(line, 'loaiPhong', 'loai_phong');
-                            const roomTypeId = String(line.MaLoaiPhong);
-                            const bucketKey = roomTypeId + '-' + unitPrice;
-
-                            if (!roomBuckets[bucketKey]) {
-                                roomBuckets[bucketKey] = {
-                                    categoryLabel: 'Phòng',
-                                    categoryClass: 'room',
-                                    description: roomType && roomType.TenLoaiPhong ? roomType.TenLoaiPhong : 'Tiền phòng',
-                                    meta: '--',
-                                    roomLabel: (roomsByType[roomTypeId] || []).join(', ') || '--',
-                                    roomMeta: '',
-                                    quantity: 0,
-                                    unitPrice: unitPrice,
-                                    total: 0,
-                                };
-                            }
-
-                            roomBuckets[bucketKey].quantity += quantity;
-                            roomBuckets[bucketKey].total += total;
-                            return;
-                        }
-
-                        if (line && line.MaSuDung) {
-                            const usage = getRelation(line, 'suDung', 'su_dung');
-                            const service = getRelation(usage, 'dichVu', 'dich_vu');
-                            const metaParts = [];
-
-                            if (usage && usage.ThoiGian) {
-                                metaParts.push('Thời gian sử dụng: ' + formatDateTime(usage.ThoiGian));
-                            }
-
-                            if (line.MoTa) {
-                                metaParts.push('Ghi chú: ' + String(line.MoTa));
-                            }
-
-                            otherItems.push({
-                                categoryLabel: 'Dịch vụ',
-                                categoryClass: 'service',
-                                description: service && service.TenDV ? service.TenDV : 'Dịch vụ phát sinh',
-                                meta: metaParts.join(' • ') || 'Chi phí dịch vụ',
-                                roomLabel: '--',
-                                roomMeta: '--',
-                                quantity: quantity,
-                                unitPrice: unitPrice,
-                                total: total,
-                            });
-                            return;
-                        }
-
-                        if (line && line.MaDenBu) {
-                            const compensation = getRelation(line, 'denBu', 'den_bu');
-                            const metaParts = [];
-
-                            if (compensation && compensation.MoTa) {
-                                metaParts.push('Mô tả: ' + String(compensation.MoTa));
-                            }
-
-                            if (line.MoTa) {
-                                metaParts.push('Ghi chú: ' + String(line.MoTa));
-                            }
-
-                            otherItems.push({
-                                categoryLabel: 'Đền bù',
-                                categoryClass: 'compensation',
-                                description: 'Khoản đền bù / hư hỏng',
-                                meta: metaParts.join(' • ') || 'Phát sinh trong quá trình lưu trú',
-                                roomLabel: '--',
-                                roomMeta: '--',
-                                quantity: quantity,
-                                unitPrice: unitPrice,
-                                total: total,
-                            });
-                            return;
-                        }
-
-                        otherItems.push({
-                            categoryLabel: 'Khác',
-                            categoryClass: 'other',
-                            description: line && line.MoTa ? String(line.MoTa) : 'Hạng mục khác',
-                            meta: 'Chi tiết hóa đơn',
-                            roomLabel: '--',
-                            roomMeta: '--',
-                            quantity: quantity,
-                            unitPrice: unitPrice,
-                            total: total,
-                        });
-                    });
-
-                    return Object.keys(roomBuckets).map(function (key) {
-                        return roomBuckets[key];
-                    }).concat(otherItems);
-                };
-
-                const buildServiceItems = function (invoice) {
-                    return getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons')
-                        .filter(function (line) {
-                            return line && line.MaSuDung;
-                        })
-                        .map(function (line) {
-                            const usage = getRelation(line, 'suDung', 'su_dung');
-                            const service = getRelation(usage, 'dichVu', 'dich_vu');
-                            const quantity = Math.max(1, Number(line.SoLuong || 1));
-                            const unitPrice = Number(line.DonGia || 0);
-
-                            return {
-                                id: line.MaCTHD || '--',
-                                usageId: line.MaSuDung || '--',
-                                name: service && service.TenDV ? service.TenDV : 'Dịch vụ phát sinh',
-                                serviceType: mapServiceType(service),
-                                usedAt: usage && usage.ThoiGian ? formatDateTime(usage.ThoiGian) : '--',
-                                quantity: quantity,
-                                unitPrice: unitPrice,
-                                total: quantity * unitPrice,
-                                note: line.MoTa || '--',
-                            };
-                        });
-                };
-
-                const buildCompensationItems = function (invoice) {
-                    return getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons')
-                        .filter(function (line) {
-                            return line && line.MaDenBu;
-                        })
-                        .map(function (line) {
-                            const compensation = getRelation(line, 'denBu', 'den_bu');
-                            const quantity = Math.max(1, Number(line.SoLuong || 1));
-                            const unitPrice = Number(line.DonGia || 0);
-
-                            return {
-                                id: line.MaCTHD || '--',
-                                compensationId: line.MaDenBu || '--',
-                                description: compensation && compensation.MoTa ? compensation.MoTa : 'Khoản đền bù / hư hỏng',
-                                quantity: quantity,
-                                unitPrice: unitPrice,
-                                total: quantity * unitPrice,
-                                note: line.MoTa || '--',
-                            };
-                        });
-                };
-
-                const renderRoomTags = function (invoice) {
-                    const detailLines = getArrayRelation(invoice, 'chiTietHoaDons', 'chi_tiet_hoa_dons');
-                    const container = document.getElementById('invoice-room-tags');
-                    const roomTypeNames = [];
-
-                    detailLines.forEach(function (line) {
-                        if (!line || !line.MaLoaiPhong || line.MaSuDung || line.MaDenBu) {
-                            return;
-                        }
-
-                        const roomType = getRelation(line, 'loaiPhong', 'loai_phong');
-                        const roomTypeName = roomType && roomType.TenLoaiPhong ? String(roomType.TenLoaiPhong) : 'Phòng';
-
-                        if (!roomTypeNames.includes(roomTypeName)) {
-                            roomTypeNames.push(roomTypeName);
-                        }
-                    });
-
-                    if (container) {
-                        if (!roomTypeNames.length) {
-                            container.innerHTML = '<span class="hm-invoice-room-tag">Chưa có thông tin loại phòng</span>';
-                        } else {
-                            container.innerHTML = roomTypeNames.map(function (name) {
-                                return '<span class="hm-invoice-room-tag">' + escapeHtml(name) + '</span>';
-                            }).join('');
-                        }
-                    }
-
-                    return roomTypeNames;
-                };
-
-                const renderLineItems = function (items) {
-                    const tableBody = document.getElementById('invoice-line-items');
-
-                    if (!tableBody) {
-                        return;
-                    }
-
-                    if (!items.length) {
-                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Hóa đơn chưa có dòng chi tiết.</td></tr>';
-                        return;
-                    }
-
-                    tableBody.innerHTML = items.map(function (item) {
-                        const descriptionMeta = item.meta && item.meta !== '--'
-                            ? '<div class="hm-invoice-item-meta">' + escapeHtml(item.meta) + '</div>'
-                            : '';
-                        const roomMeta = item.roomMeta && item.roomMeta !== '--'
-                            ? '<div class="hm-invoice-item-meta">' + escapeHtml(item.roomMeta) + '</div>'
-                            : '';
-
-                        return '<tr>' +
-                            '<td>' +
-                                '<p class="hm-invoice-item-title">' + escapeHtml(item.description) + '</p>' +
-                                descriptionMeta +
-                            '</td>' +
-                            '<td class="hm-invoice-room-cell">' +
-                                '<p class="hm-invoice-item-title">' + escapeHtml(item.roomLabel || '--') + '</p>' +
-                                roomMeta +
-                            '</td>' +
-                            '<td class="hm-invoice-num">' + escapeHtml(String(item.quantity)) + '</td>' +
-                            '<td class="hm-invoice-num">' + escapeHtml(formatCurrency(item.unitPrice)) + '</td>' +
-                            '<td class="hm-invoice-num">' + escapeHtml(formatCurrency(item.total)) + '</td>' +
-                        '</tr>';
-                    }).join('');
-                };
-
-                const renderServiceItems = function (items) {
-                    const container = document.getElementById('invoice-service-items');
-
-                    if (!container) {
-                        return;
-                    }
-
-                    if (!items.length) {
-                        container.innerHTML = '<div class="hm-invoice-empty">Chưa có dịch vụ sử dụng.</div>';
-                        return;
-                    }
-
-                    container.innerHTML = items.map(function (item) {
-                        return '<div class="hm-invoice-list-item">' +
-                            '<div class="hm-invoice-list-head">' +
-                                '<div>' +
-                                    '<p class="hm-invoice-list-title">' + escapeHtml(item.name) + '</p>' +
-                                    '<div class="hm-invoice-item-meta">Mã sử dụng: ' + escapeHtml(String(item.usageId)) + ' · Loại: ' + escapeHtml(item.serviceType) + '</div>' +
-                                '</div>' +
-                                '<div class="hm-invoice-list-total">' + escapeHtml(formatCurrency(item.total)) + '</div>' +
-                            '</div>' +
-                            '<div class="hm-invoice-list-meta">' +
-                                '<div>Thời gian: ' + escapeHtml(item.usedAt) + '</div>' +
-                                '<div>Số lượng: ' + escapeHtml(String(item.quantity)) + ' · Đơn giá: ' + escapeHtml(formatCurrency(item.unitPrice)) + '</div>' +
-                                '<div>Ghi chú: ' + escapeHtml(item.note) + '</div>' +
-                            '</div>' +
-                        '</div>';
-                    }).join('');
-                };
-
-                const renderCompensationItems = function (items) {
-                    const container = document.getElementById('invoice-compensation-items');
-
-                    if (!container) {
-                        return;
-                    }
-
-                    if (!items.length) {
-                        container.innerHTML = '<div class="hm-invoice-empty">Chưa có khoản đền bù phát sinh.</div>';
-                        return;
-                    }
-
-                    container.innerHTML = items.map(function (item) {
-                        return '<div class="hm-invoice-list-item">' +
-                            '<div class="hm-invoice-list-head">' +
-                                '<div>' +
-                                    '<p class="hm-invoice-list-title">' + escapeHtml(item.description) + '</p>' +
-                                    '<div class="hm-invoice-item-meta">Mã đền bù: ' + escapeHtml(String(item.compensationId)) + ' · Mã chi tiết: ' + escapeHtml(String(item.id)) + '</div>' +
-                                '</div>' +
-                                '<div class="hm-invoice-list-total">' + escapeHtml(formatCurrency(item.total)) + '</div>' +
-                            '</div>' +
-                            '<div class="hm-invoice-list-meta">' +
-                                '<div>Số lượng: ' + escapeHtml(String(item.quantity)) + ' · Đơn giá: ' + escapeHtml(formatCurrency(item.unitPrice)) + '</div>' +
-                                '<div>Ghi chú: ' + escapeHtml(item.note) + '</div>' +
-                            '</div>' +
-                        '</div>';
-                    }).join('');
-                };
-
-                const renderInvoice = function (payload) {
-                    const invoice = payload && payload.hoaDon ? payload.hoaDon : null;
-
-                    if (!invoice) {
-                        throw new Error('Không tìm thấy hóa đơn.');
-                    }
-
-                    const booking = getRelation(invoice, 'datPhong', 'dat_phong');
-                    const employee = getRelation(invoice, 'nhanVien', 'nhan_vien');
-                    const promotion = getRelation(invoice, 'khuyenMai', 'khuyen_mai');
-                    const lineItems = buildLineItems(invoice);
-                    const serviceItems = buildServiceItems(invoice);
-                    const compensationItems = buildCompensationItems(invoice);
-                    const roomTypeNames = renderRoomTags(invoice);
-                    const subtotal = lineItems.reduce(function (sum, item) {
-                        return sum + Number(item.total || 0);
-                    }, 0);
-                    const roomSubtotal = lineItems.reduce(function (sum, item) {
-                        return item.categoryClass === 'room' ? sum + Number(item.total || 0) : sum;
-                    }, 0);
-                    const serviceSubtotal = lineItems.reduce(function (sum, item) {
-                        return item.categoryClass === 'service' ? sum + Number(item.total || 0) : sum;
-                    }, 0);
-                    const compensationSubtotal = lineItems.reduce(function (sum, item) {
-                        return item.categoryClass === 'compensation' ? sum + Number(item.total || 0) : sum;
-                    }, 0);
-                    const grandTotal = Number(payload.TongTien !== undefined ? payload.TongTien : (invoice.TongTien || 0));
-                    const paidTotal = Number(payload.DaThanhToan || 0);
-                    const remainingTotal = Number(payload.ConNo !== undefined ? payload.ConNo : (grandTotal - paidTotal));
-                    const discountValue = Math.max(0, subtotal - grandTotal);
-                    const status = mapInvoiceStatus(invoice.TrangThai);
-
-                    clearAlert();
-
-                    setText('invoice-info-id', invoice.MaHD || '--');
-                    setText('invoice-info-booking', booking && booking.MaDatPhong ? booking.MaDatPhong : '--');
-                    setText('invoice-info-date', formatDate(invoice.NgayLapHD));
-                    setText('invoice-info-employee', employee && employee.TenNV ? employee.TenNV : '--');
-
-                    setText('invoice-check-in', booking ? formatDate(booking.NgayNhanPhong) : '--');
-                    setText('invoice-check-out', booking ? formatDate(booking.NgayTraPhong) : '--');
-                    setText('invoice-stay-duration', booking ? getNightCount(booking.NgayNhanPhong, booking.NgayTraPhong) : '--');
-                    setText(
-                        'invoice-promotion',
-                        promotion && promotion.TenKM
-                            ? promotion.TenKM + (promotion.PhanTramGiamGia ? ' (' + Number(promotion.PhanTramGiamGia) + '%)' : '')
-                            : 'Không áp dụng'
-                    );
-
-                    renderLineItems(lineItems);
-                    renderServiceItems(serviceItems);
-                    renderCompensationItems(compensationItems);
-
-                    setText('invoice-subtotal', formatCurrency(subtotal));
-                    setText('invoice-room-subtotal', formatCurrency(roomSubtotal));
-                    setText('invoice-service-subtotal', formatCurrency(serviceSubtotal));
-                    setText('invoice-compensation-subtotal', formatCurrency(compensationSubtotal));
-                    setText('invoice-discount', discountValue > 0 ? '- ' + formatCurrency(discountValue) : '0 VNĐ');
-                    setText('invoice-paid-total', formatCurrency(paidTotal));
-                    setText('invoice-remaining-total', formatCurrency(remainingTotal));
-                    const statusBadge = document.getElementById('invoice-status-badge');
-                    if (statusBadge) {
-                        statusBadge.className = 'hm-invoice-status hm-invoice-status--' + status.className;
-                        statusBadge.textContent = status.label;
-                    }
-                };
-
-                try {
-                    clearAlert();
-
-                    const response = await fetch('/api/hoa-don/' + invoiceId, {
-                        headers: { 'Accept': 'application/json' }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Không thể tải chi tiết hóa đơn.');
-                    }
-
-                    const payload = await response.json();
-                    renderInvoice(payload);
-                } catch (error) {
-                    setAlert('danger', error.message);
-
-                    const statusBadge = document.getElementById('invoice-status-badge');
-                    if (statusBadge) {
-                        statusBadge.className = 'hm-invoice-status hm-invoice-status--danger';
-                        statusBadge.textContent = 'Lỗi tải dữ liệu';
-                    }
-
-                    document.getElementById('invoice-line-items').innerHTML =
-                        '<tr><td colspan="5" class="text-center text-danger py-4">' + escapeHtml(error.message) + '</td></tr>';
-                    document.getElementById('invoice-service-items').innerHTML =
-                        '<div class="hm-invoice-empty">' + escapeHtml(error.message) + '</div>';
-                    document.getElementById('invoice-compensation-items').innerHTML =
-                        '<div class="hm-invoice-empty">' + escapeHtml(error.message) + '</div>';
-                }
-            });
-        </script>
-    @endpush
-</x-hotel-management.show-page>
+</x-app-layout>

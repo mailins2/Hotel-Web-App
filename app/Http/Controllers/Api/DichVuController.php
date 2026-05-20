@@ -4,13 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DichVu;
-use App\Services\Guards\DichVuSoftDeleteGuard;
+use App\Services\Guards\DichVuDeletionGuard;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class DichVuController extends Controller
 {
     public function __construct(
-        private DichVuSoftDeleteGuard $guard
+        private DichVuDeletionGuard $guard
     ) {
     }
 
@@ -34,14 +35,6 @@ class DichVuController extends Controller
     public function index()
     {
         return $this->success(DichVu::all(), 'Lấy danh sách dịch vụ thành công');
-    }
-
-    public function trash()
-    {
-        return $this->success(
-            DichVu::onlyTrashed()->get(),
-            'Lấy danh sách dịch vụ trong thùng rác thành công'
-        );
     }
 
     public function show($id)
@@ -95,44 +88,19 @@ class DichVuController extends Controller
             return $this->error('Không tìm thấy dịch vụ', 404);
         }
 
-        $decision = $this->guard->canSoftDelete($dv);
+        $decision = $this->guard->canDelete($dv);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
-        $dv->delete();
+        DB::transaction(function () use ($dv) {
+            DB::table('Hinh')
+                ->where('MaDV', $dv->MaDV)
+                ->delete();
 
-        return $this->success(null, 'Đã chuyển dịch vụ vào thùng rác');
-    }
+            $dv->delete();
+        });
 
-    public function restore($id)
-    {
-        $dv = DichVu::onlyTrashed()->find($id);
-
-        if (!$dv) {
-            return $this->error('Không tìm thấy dịch vụ trong thùng rác', 404);
-        }
-
-        $dv->restore();
-
-        return $this->success($dv->fresh(), 'Khôi phục dịch vụ thành công');
-    }
-
-    public function forceDelete($id)
-    {
-        $dv = DichVu::onlyTrashed()->find($id);
-
-        if (!$dv) {
-            return $this->error('Không tìm thấy dịch vụ trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($dv);
-        if (!$decision['allowed']) {
-            return $this->error($decision['message'], 409);
-        }
-
-        $dv->forceDelete();
-
-        return $this->success(null, 'Xóa vĩnh viễn dịch vụ thành công');
+        return $this->success(null, 'Xóa dịch vụ thành công');
     }
 }

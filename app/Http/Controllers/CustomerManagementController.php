@@ -51,15 +51,20 @@ class CustomerManagementController extends Controller
 
     private function mapPayload(array $validated): array
     {
-        return [
-            'MaTK' => $validated['account_id'] ?? null,
+        $payload = [
             'TenKH' => $validated['full_name'],
             'SoDienThoai' => $validated['phone'],
-            'CCCD' => $validated['cccd'],
+            'CCCD' => !empty($validated['cccd']) ? $validated['cccd'] : null,
             'NgaySinh' => $validated['birthday'],
             'GioiTinh' => $validated['gender'],
             'DiaChi' => !empty($validated['address']) ? trim($validated['address']) : null,
         ];
+
+        if (array_key_exists('account_id', $validated)) {
+            $payload['MaTK'] = $validated['account_id'];
+        }
+
+        return $payload;
     }
 
     private function buildApiRequest(array $payload, string $method): Request

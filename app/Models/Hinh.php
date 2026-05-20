@@ -13,10 +13,10 @@ class Hinh extends Model
 
     public function loaiPhongs()
     {
-        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong')->withTrashed();
+        return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong');
     }
     public function dichVus()
     {
-        return $this->belongsTo(DichVu::class, 'MaDV')->withTrashed();
+        return $this->belongsTo(DichVu::class, 'MaDV');
     }
 }

@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\KhuyenMai;
-use App\Services\Guards\KhuyenMaiSoftDeleteGuard;
+use App\Services\Guards\KhuyenMaiDeletionGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Validator;
 class KhuyenMaiController extends Controller
 {
     public function __construct(
-        private KhuyenMaiSoftDeleteGuard $guard
+        private KhuyenMaiDeletionGuard $guard
     ) {
     }
 
@@ -43,14 +43,6 @@ class KhuyenMaiController extends Controller
     public function index()
     {
         return $this->success(KhuyenMai::all(), 'Lấy danh sách khuyến mãi thành công');
-    }
-
-    public function trash()
-    {
-        return $this->success(
-            KhuyenMai::onlyTrashed()->with('khoKhuyenMai')->get(),
-            'Lấy danh sách khuyến mãi trong thùng rác thành công'
-        );
     }
 
     public function store(Request $request)
@@ -149,48 +141,14 @@ class KhuyenMaiController extends Controller
             return $this->error('Không tìm thấy khuyến mãi', 404);
         }
 
-        $decision = $this->guard->canSoftDelete($khuyenMai);
+        $decision = $this->guard->canDelete($khuyenMai);
         if (!$decision['allowed']) {
             return $this->error($decision['message'], 409);
         }
 
         $khuyenMai->delete();
 
-        return $this->success(null, 'Đã chuyển khuyến mãi vào thùng rác');
-    }
-
-    public function restore($id)
-    {
-        $khuyenMai = KhuyenMai::onlyTrashed()->find($id);
-
-        if (!$khuyenMai) {
-            return $this->error('Không tìm thấy khuyến mãi trong thùng rác', 404);
-        }
-
-        $khuyenMai->restore();
-
-        return $this->success(
-            KhuyenMai::with('khoKhuyenMai')->find($id),
-            'Khôi phục khuyến mãi thành công'
-        );
-    }
-
-    public function forceDelete($id)
-    {
-        $khuyenMai = KhuyenMai::onlyTrashed()->find($id);
-
-        if (!$khuyenMai) {
-            return $this->error('Không tìm thấy khuyến mãi trong thùng rác', 404);
-        }
-
-        $decision = $this->guard->canForceDelete($khuyenMai);
-        if (!$decision['allowed']) {
-            return $this->error($decision['message'], 409);
-        }
-
-        $khuyenMai->forceDelete();
-
-        return $this->success(null, 'Xóa vĩnh viễn khuyến mãi thành công');
+        return $this->success(null, 'Xóa khuyến mãi thành công');
     }
 
     public function getActivePromotions()
