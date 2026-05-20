@@ -8,7 +8,6 @@ use App\Models\Phong;
 use App\Services\Guards\PhongDeletionGuard;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 class PhongController extends Controller
 {
