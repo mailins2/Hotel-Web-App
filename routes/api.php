@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\HinhController;
 use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 use App\Http\Controllers\Api\AuthMobileController;
+use App\Http\Controllers\Api\ForgotPasswordController;
 
 Route::apiResource('tien-nghi', TienNghiController::class);
 
@@ -140,3 +141,7 @@ Route::get('/vnpay/check-status/{txnRef}', function ($txnRef) {
 Route::post('/dat-phong/{id}/cancel', [DatPhongController::class, 'cancel']);
 
 Route::get('danh-gia/kiem-tra/{maDatPhong}', [DanhGiaController::class, 'kiemTraDanhGia']);
+// Quên mật khẩu
+Route::post('quen-mat-khau/gui-otp', [ForgotPasswordController::class, 'sendOTP']);
+Route::post('quen-mat-khau/xac-nhan-otp', [ForgotPasswordController::class, 'verifyOTP']);
+Route::post('quen-mat-khau/dat-lai-mat-khau', [ForgotPasswordController::class, 'resetPassword']);

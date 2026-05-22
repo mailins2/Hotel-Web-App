@@ -794,24 +794,44 @@ class DatPhongController extends Controller
     public function lichSuDatPhong($maKH)
 {
     $datPhongs = DatPhong::with([
-            'chiTietDatPhong.phong.loaiPhong', // Không cần bangGias
-            'hoaDon',
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai', // 👈 THÊM khuyenMai
+            'hoaDon.khuyenMai', // 👈 THÊM khuyenMai của hóa đơn
         ])
         ->where('MaKH', $maKH)
         ->orderBy('NgayDat', 'desc')
         ->get()
         ->map(function ($dp) {
-            $tongTien = 0;
+            $tongTienGoc = 0;
+            $tongTienSauGiam = 0;
             $daThanhToan = 0;
             $trangThaiHD = null;
             $maHD = null;
+            $maKM = null;
+            $phanTramGiam = 0;
+            $tenKM = null;
             
             if ($dp->hoaDon) {
-                $tongTien = (float) $dp->hoaDon->TongTien;
+                $maHD = $dp->hoaDon->MaHD;
                 $daThanhToan = (float) $dp->hoaDon->DaThanhToan;
                 $trangThaiHD = (int) $dp->hoaDon->TrangThai;
-                $maHD = $dp->hoaDon->MaHD;
+                $maKM = $dp->hoaDon->MaKM;
+                
+                // 🔥 Tính tổng tiền gốc (chưa giảm)
+                $tongTienGoc = (float) $dp->hoaDon->TongTien;
+                
+                // 🔥 Nếu có khuyến mãi, tính tiền sau giảm
+                if ($dp->hoaDon->khuyenMai) {
+                    $phanTramGiam = (float) $dp->hoaDon->khuyenMai->PhanTramGiamGia;
+                    $tenKM = $dp->hoaDon->khuyenMai->TenKM;
+                    $tongTienSauGiam = $tongTienGoc * (1 - $phanTramGiam / 100);
+                } else {
+                    $tongTienSauGiam = $tongTienGoc;
+                }
             }
+
+            // Tính số tiền còn lại
+            $conLai = $tongTienSauGiam - $daThanhToan;
+            if ($conLai < 0) $conLai = 0;
 
             return [
                 'MaDatPhong' => $dp->MaDatPhong,
@@ -824,17 +844,19 @@ class DatPhongController extends Controller
                 'TinhTrangText' => $this->getTinhTrangText($dp->TinhTrang),
                 'hoa_don' => [
                     'MaHD' => $maHD,
-                    'TongTien' => $tongTien,
+                    'TongTien' => $tongTienSauGiam, // 👈 Tiền sau giảm
+                    'TongTienGoc' => $tongTienGoc,   // 👈 Tiền gốc (chưa giảm)
                     'DaThanhToan' => $daThanhToan,
-                    'ConLai' => $tongTien - $daThanhToan,
+                    'ConLai' => $conLai,
                     'TrangThai' => $trangThaiHD,
                     'TrangThaiText' => $this->getTrangThaiHDText($trangThaiHD),
+                    'MaKM' => $maKM,
+                    'PhanTramGiam' => $phanTramGiam, // 👈 % giảm
+                    'TenKM' => $tenKM,               // 👈 Tên khuyến mãi
                 ],
                 'phongs' => $dp->chiTietDatPhong->map(function ($ct) {
                     $phong = $ct->phong;
                     $loaiPhong = $phong?->loaiPhong;
-                    
-                    // 🔥 Dùng GiaPhong từ LoaiPhong (cột có sẵn)
                     $giaPhong = $loaiPhong ? (float) $loaiPhong->GiaPhong : 0;
                     
                     return [

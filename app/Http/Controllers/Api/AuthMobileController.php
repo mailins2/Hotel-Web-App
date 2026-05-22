@@ -148,47 +148,66 @@ class AuthMobileController extends Controller
             'message' => 'Email này đã được sử dụng.'
         ], 422);
     }
-
-    //  Kiểm tra SĐT và CCCD
-    $khachHangExists = \App\Models\KhachHang::where('SoDienThoai', $request->phone)
-        ->orWhere('CCCD', $request->cccd)
-        ->first();
-    
-    if ($khachHangExists) {
-        $message = $khachHangExists->SoDienThoai === $request->phone 
-            ? 'Số điện thoại này đã được sử dụng.' 
-            : 'CCCD này đã được sử dụng.';
+     $khachHangByCCCD = \App\Models\KhachHang::where('CCCD', $request->cccd)->first();
+    if ($khachHangByCCCD) {
         return response()->json([
             'status' => 'error',
-            'message' => $message
+            'message' => 'CCCD này đã được sử dụng.'
         ], 422);
     }
+
+    $phone = preg_replace('/\D+/', '', $request->phone);
 
     try {
         DB::beginTransaction();
 
-        //  BƯỚC 1: Tạo KhachHang TRƯỚC
-        $khachHang = \App\Models\KhachHang::create([
-            'TenKH' => $request->full_name,
-            'SoDienThoai' => $request->phone,
-            'CCCD' => $request->cccd,
-            'NgaySinh' => $request->birthday,
-            'GioiTinh' => $request->gender,
-            'DiaChi' => $request->address ?? '',
-        ]);
+        // 🔥 TÌM KhachHang vãng lai (tạo từ booking trước đó)
+        $khachHang = \App\Models\KhachHang::where('SoDienThoai', $phone)
+            ->first();
 
-        //  BƯỚC 2: Tạo TaiKhoan SAU (với MaKH đã có)
+        if ($khachHang) {
+            // 🔥 KIỂM TRA: KhachHang này đã có TaiKhoan chưa?
+            $existingTaiKhoan = TaiKhoan::where('MaKH', $khachHang->MaKH)->first();
+            
+            if ($existingTaiKhoan) {
+                DB::rollBack();
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.'
+                ], 422);
+            }
+
+            // 🔥 CẬP NHẬT thông tin KhachHang vãng lai
+            $khachHang->update([
+                'TenKH' => $request->full_name,
+                'CCCD' => $request->cccd,
+                'NgaySinh' => $request->birthday,
+                'GioiTinh' => $request->gender,
+                'DiaChi' => $request->address ?? '',
+            ]);
+        } else {
+            // 🔥 TẠO MỚI KhachHang
+            $khachHang = \App\Models\KhachHang::create([
+                'TenKH' => $request->full_name,
+                'SoDienThoai' => $phone,
+                'CCCD' => $request->cccd,
+                'NgaySinh' => $request->birthday,
+                'GioiTinh' => $request->gender,
+                'DiaChi' => $request->address ?? '',
+            ]);
+        }
+
+        // 🔥 TẠO TaiKhoan gắn với KhachHang
         $taiKhoan = TaiKhoan::create([
             'Email' => $request->email,
             'MatKhau' => Hash::make($request->password),
             'LoaiTaiKhoan' => 0,
             'TrangThai' => 1,
-            'MaKH' => $khachHang->MaKH, // 👈 GÁN MaKH NGAY
+            'MaKH' => $khachHang->MaKH,
         ]);
 
         DB::commit();
 
-        // Tạo token
         $token = $taiKhoan->createToken('mobile-token')->plainTextToken;
 
         return response()->json([
@@ -206,9 +225,7 @@ class AuthMobileController extends Controller
 
     } catch (\Exception $e) {
         DB::rollBack();
-        
         \Log::error('Đăng ký thất bại: ' . $e->getMessage());
-        
         return response()->json([
             'status' => 'error',
             'message' => 'Đăng ký thất bại. Vui lòng thử lại.'
