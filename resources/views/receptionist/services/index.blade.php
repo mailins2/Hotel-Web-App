@@ -1,5 +1,7 @@
 @php
     $serviceRoomOptions = collect($serviceRoomOptions ?? []);
+    $serviceUsageItems = collect($serviceUsageItems ?? []);
+    $formatDateTime = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y H:i') : '--';
 @endphp
 
 <x-app-layout :assets="['animation']">
@@ -98,6 +100,7 @@
                         <tr>
                             <th>Mã sử dụng</th>
                             <th>Tên khách hàng</th>
+                            <th>Phòng</th>
                             <th>Mã dịch vụ</th>
                             <th>Tên dịch vụ</th>
                             <th>Loại dịch vụ</th>
@@ -107,54 +110,34 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>SD001</td>
-                            <td>Trần Bảo Ngọc</td>
-                            <td>DV010</td>
-                            <td>Mini bar</td>
-                            <td>Dịch vụ ăn uống</td>
-                            <td>2</td>
-                            <td>07/04/2026 18:20</td>
-                            <td>
-                                @include('hotel-management.partials.action-icons', [
-                                    'showUrl' => route('reception.services.show', ['serviceUsageId' => 'SD001']),
-                                    'editUrl' => null,
-                                    'showDelete' => false,
-                                ])
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>SD002</td>
-                            <td>Trần Bảo Ngọc</td>
-                            <td>DV021</td>
-                            <td>Nước suối Evian</td>
-                            <td>Dịch vụ ăn uống</td>
-                            <td>1</td>
-                            <td>08/04/2026 09:15</td>
-                            <td>
-                                @include('hotel-management.partials.action-icons', [
-                                    'showUrl' => route('reception.services.show', ['serviceUsageId' => 'SD002']),
-                                    'editUrl' => null,
-                                    'showDelete' => false,
-                                ])
-                            </td>
-                        </tr>
-                        <tr> 
-                            <td>SD003</td>
-                            <td>Đỗ Thanh Tùng</td>
-                            <td>DV018</td>
-                            <td>Giặt ủi</td>
-                            <td>Dịch vụ phòng</td>
-                            <td>3</td>
-                            <td>09/04/2026 20:45</td>
-                            <td>
-                                @include('hotel-management.partials.action-icons', [
-                                    'showUrl' => route('reception.services.show', ['serviceUsageId' => 'SD003']),
-                                    'editUrl' => null,
-                                    'showDelete' => false,
-                                ])
-                            </td>
-                        </tr>
+                        @forelse($serviceUsageItems as $usage)
+                            @php
+                                $bookingDetail = $usage->chiTietDatPhong;
+                                $booking = $bookingDetail?->datPhong;
+                                $service = $usage->dichVu;
+                            @endphp
+                            <tr>
+                                <td>SD{{ $usage->MaSuDung }}</td>
+                                <td>{{ $booking?->khachHang?->TenKH ?? '--' }}</td>
+                                <td>{{ $bookingDetail?->phong?->SoPhong ? 'Phòng ' . $bookingDetail->phong->SoPhong : '--' }}</td>
+                                <td>{{ $service?->MaDV ? 'DV' . $service->MaDV : '--' }}</td>
+                                <td>{{ $service?->TenDV ?? 'Dịch vụ' }}</td>
+                                <td>{{ $service?->LoaiDVText ?? 'Dịch vụ' }}</td>
+                                <td>{{ $usage->SoLuong ?? 0 }}</td>
+                                <td>{{ $formatDateTime($usage->ThoiGian) }}</td>
+                                <td>
+                                    @include('hotel-management.partials.action-icons', [
+                                        'showUrl' => route('reception.services.show', ['serviceUsageId' => $usage->MaSuDung]),
+                                        'editUrl' => null,
+                                        'showDelete' => false,
+                                    ])
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">Chưa có dịch vụ nào đang sử dụng.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

@@ -1,5 +1,11 @@
 @php
     $paymentData = $paymentData ?? [];
+    $authAccount = session('auth_account', []);
+    $currentEmployeeId = $authAccount['MaNV'] ?? null;
+
+    if (!$currentEmployeeId && !empty($authAccount['MaTK'])) {
+        $currentEmployeeId = \App\Models\TaiKhoan::where('MaTK', $authAccount['MaTK'])->value('MaNV');
+    }
 @endphp
 
 <x-app-layout :assets="['animation']">
@@ -122,6 +128,20 @@
         .rp-table-total td {
             font-weight: 700;
             background: #fffaf3;
+        }
+        .rp-service-table .rp-service-room-row td {
+            padding-top: 1rem;
+            padding-bottom: 0.75rem;
+            color: #8b3b12;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-align: left;
+            text-transform: uppercase;
+            background: #fff7ef;
+            white-space: normal;
+        }
+        .rp-service-room-row + tr td {
+            border-top: 1px solid rgba(166, 98, 43, 0.12);
         }
         .rp-modal {
             border: 1px solid rgba(166, 98, 43, 0.15);
@@ -388,8 +408,9 @@
                                     <thead>
                                         <tr>
                                             <th>Tên dịch vụ</th>
-                                            <th>Loại dịch vụ</th>
-                                            <th>Giá</th>
+                                            <th>Số lượng</th>
+                                            <th>Đơn giá</th>
+                                            <th>Thành tiền</th>
                                         </tr>
                                     </thead>
                                     <tbody id="paymentServiceTableBody">
@@ -454,15 +475,15 @@
                         </div>
                     </div>
 
-                    <h5 class="mt-4 mb-3">Chọn hình thức thanh toán</h5>
-                    <div class="rp-method-grid">
+                    <h5 id="paymentMethodTitle" class="mt-4 mb-3">Chọn hình thức thanh toán</h5>
+                    <div id="paymentMethodGrid" class="rp-method-grid">
                         <!-- <label class="rp-method-option is-selected">
                             <input type="radio" name="paymentMethod" value="cash" checked>
                             <div class="rp-method-title">Tiền mặt</div>
                             <div class="rp-method-note">Thanh toán trực tiếp tại quầy lễ tân</div>
                         </label> -->
-                        <label class="rp-method-option">
-                            <input type="radio" name="paymentMethod" value="bank_transfer">
+                        <label class="rp-method-option is-selected">
+                            <input type="radio" name="paymentMethod" value="bank_transfer" checked>
                             <div class="rp-method-title">Thanh toán với mã QR</div>
                         </label>
                         <label class="rp-method-option">
@@ -476,7 +497,7 @@
                     </div>
 
                     <div class="rp-actions">
-                        <button type="button" class="btn btn-primary">Xác nhận thanh toán</button>
+                        <button id="confirmPaymentButton" type="button" class="btn btn-primary">Xác nhận thanh toán</button>
                         <a href="{{ route('reception.check-outs.create') }}" class="btn btn-light">Quay lại xác nhận trả phòng</a>
                     </div>
                 </div>
@@ -520,6 +541,13 @@
 
     <script>
         const paymentMethodOptions = document.querySelectorAll('.rp-method-option');
+        const zaloPayPaymentUrl = @json(url('/api/zalopay-payment'));
+        const vnPayPaymentUrl = @json(url('/api/vnpay-payment'));
+        const paymentRedirectUrl = @json(route('reception.check-outs.create'));
+        const currentEmployeeId = @json($currentEmployeeId ? (int) $currentEmployeeId : null);
+        const paymentMethodTitle = document.getElementById('paymentMethodTitle');
+        const paymentMethodGrid = document.getElementById('paymentMethodGrid');
+        const confirmPaymentButton = document.getElementById('confirmPaymentButton');
 
         function parseJsonValue(value, fallback = null) {
             try {
@@ -613,17 +641,59 @@
                 return;
             }
 
-            body.innerHTML = `${serviceItems.map((item) => `
-                <tr>
-                    <td>${escapeHtml(item.name || 'Dịch vụ')}</td>
-                    <td>${escapeHtml(item.type || 'Dịch vụ')}</td>
-                    <td>${formatMoney(item.price ?? (Number(item.unitPrice || 0) * Number(item.quantity || 1)))}</td>
+            const groupedServices = groupServiceItemsByRoom(serviceItems);
+            const serviceRows = groupedServices.map((group) => `
+                <tr class="rp-service-room-row">
+                    <td colspan="4">${escapeHtml(group.label)}</td>
                 </tr>
-            `).join('')}
+                ${group.items.map((item) => `
+                    <tr>
+                        <td>${escapeHtml(item.displayName || 'Dịch vụ')}</td>
+                        <td>${Number(item.quantity || 1)}</td>
+                        <td>${formatMoney(item.unitPrice)}</td>
+                        <td>${formatMoney(item.price ?? (Number(item.unitPrice || 0) * Number(item.quantity || 1)))}</td>
+                    </tr>
+                `).join('')}
+            `).join('');
+
+            body.innerHTML = `${serviceRows}
                 <tr class="rp-table-total">
-                    <td colspan="2">Phí tổng dịch vụ</td>
+                    <td colspan="3">Phí tổng dịch vụ</td>
                     <td>${formatMoney(serviceAmount)}</td>
                 </tr>`;
+        }
+
+        function normalizeServiceItem(item) {
+            const rawName = String(item.name || 'Dịch vụ').trim();
+            const roomMatch = rawName.match(/\s+-\s+Phòng\s+(.+)$/i);
+            const roomNumber = String(item.roomNumber || item.room || item.roomName || '').trim() || (roomMatch ? roomMatch[1].trim() : '');
+            const displayName = roomMatch ? rawName.slice(0, roomMatch.index).trim() : rawName;
+
+            return {
+                ...item,
+                displayName: displayName || 'Dịch vụ',
+                roomNumber,
+            };
+        }
+
+        function groupServiceItemsByRoom(serviceItems) {
+            const groups = new Map();
+
+            serviceItems.map(normalizeServiceItem).forEach((item) => {
+                const key = item.roomNumber || 'unknown';
+                const label = item.roomNumber ? `Phòng ${item.roomNumber}` : 'Dịch vụ chưa gắn phòng';
+
+                if (!groups.has(key)) {
+                    groups.set(key, {
+                        label,
+                        items: [],
+                    });
+                }
+
+                groups.get(key).items.push(item);
+            });
+
+            return Array.from(groups.values());
         }
 
         function renderCompensationItems(payload) {
@@ -668,18 +738,201 @@
             renderRoomItems(payload);
             renderServiceItems(payload);
             renderCompensationItems(payload);
+            updateCheckoutActionMode(payload);
         }
 
-        function readErrorMessage(data) {
+        function updateCheckoutActionMode(payload) {
+            const amountDue = Math.max(Number(payload?.amountDue || 0), 0);
+            const isAlreadyPaid = amountDue <= 0;
+
+            if (paymentMethodTitle) paymentMethodTitle.hidden = isAlreadyPaid;
+            if (paymentMethodGrid) paymentMethodGrid.hidden = isAlreadyPaid;
+            if (confirmPaymentButton) {
+                confirmPaymentButton.textContent = isAlreadyPaid ? 'Xác nhận trả phòng' : 'Xác nhận thanh toán';
+            }
+        }
+
+        function readErrorMessage(data, fallback = 'Không thể xử lý yêu cầu. Vui lòng thử lại.') {
             if (data?.message) {
                 return data.message;
+            }
+
+            if (data?.sub_message) {
+                return data.sub_message;
             }
 
             if (data?.errors) {
                 return Object.values(data.errors).flat().join('\n');
             }
 
-            return 'Không thể lưu tiền đền bù. Vui lòng thử lại.';
+            return fallback;
+        }
+
+        function getSelectedPaymentMethod() {
+            return document.querySelector('input[name="paymentMethod"]:checked')?.value || 'bank_transfer';
+        }
+
+        function getCheckoutPaymentAmount() {
+            return Math.max(Math.round(Number(currentPaymentPayload?.amountDue || 0)), 0);
+        }
+
+        function getCheckoutBookingId() {
+            const bookingId = String(currentPaymentPayload?.bookingId || '').replace(/\D+/g, '');
+            return bookingId ? Number(bookingId) : 0;
+        }
+
+        function buildCheckoutPaymentDescription() {
+            const bookingId = currentPaymentPayload?.bookingId || '';
+            const customer = currentPaymentPayload?.customer || 'khach hang';
+
+            return `Peach Valley thanh toan checkout dat phong ${bookingId} - ${customer}`;
+        }
+
+        function getPaymentAppUser() {
+            return String(currentPaymentPayload?.phone || currentPaymentPayload?.customer || currentPaymentPayload?.bookingId || 'reception')
+                .replace(/[^\p{L}\p{N}_-]+/gu, '_')
+                .slice(0, 50) || 'reception';
+        }
+
+        function buildCheckoutReturnUrl(params = {}) {
+            const url = new URL(paymentRedirectUrl, window.location.origin);
+            const bookingId = getCheckoutBookingId();
+
+            if (bookingId) {
+                url.searchParams.set('booking', bookingId);
+            }
+
+            Object.entries(params).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    url.searchParams.set(key, value);
+                }
+            });
+
+            return url.toString();
+        }
+
+        async function createZaloPayCheckoutPayment(amount, bookingId) {
+            const response = await fetch(zaloPayPaymentUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount,
+                    app_user: getPaymentAppUser(),
+                    description: buildCheckoutPaymentDescription(),
+                    redirect_url: buildCheckoutReturnUrl({ checkout: 'success' }),
+                    dat_phong_ids: [bookingId],
+                    payment_type: 'checkout',
+                    ma_nv: currentEmployeeId,
+                }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || data.status !== 'success' || !data.order_url) {
+                throw new Error(readErrorMessage(data, 'Không thể tạo thanh toán ZaloPay.'));
+            }
+
+            window.location.href = data.order_url;
+        }
+
+        async function createVnPayCheckoutPayment(amount, bookingId, bankCode) {
+            const response = await fetch(vnPayPaymentUrl, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount,
+                    description: buildCheckoutPaymentDescription(),
+                    redirect_url: buildCheckoutReturnUrl(),
+                    dat_phong_ids: [bookingId],
+                    bank_code: bankCode,
+                    payment_type: 'checkout',
+                    ma_nv: currentEmployeeId,
+                }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || data.status !== 'success' || !data.payment_url) {
+                throw new Error(readErrorMessage(data, 'Không thể tạo thanh toán VNPAY.'));
+            }
+
+            window.location.href = data.payment_url;
+        }
+
+        async function confirmDirectCheckout(bookingId) {
+            const response = await fetch(`/api/dat-phong/${bookingId}/check-out`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    MaNV: currentEmployeeId,
+                }),
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok || data.success === false) {
+                throw new Error(readErrorMessage(data, 'Không thể xác nhận trả phòng.'));
+            }
+
+            window.location.href = buildCheckoutReturnUrl({ checkout: 'success' });
+        }
+
+        async function confirmCheckoutPayment(event) {
+            const button = event.currentTarget;
+            const method = getSelectedPaymentMethod();
+            const amount = getCheckoutPaymentAmount();
+            const bookingId = getCheckoutBookingId();
+
+            if (!bookingId) {
+                alert('Không xác định được mã đặt phòng để thanh toán.');
+                return;
+            }
+
+            if (!currentEmployeeId) {
+                alert('Tài khoản đang đăng nhập chưa được gắn mã nhân viên. Vui lòng kiểm tra lại tài khoản lễ tân.');
+                return;
+            }
+
+            button.disabled = true;
+            const originalText = button.textContent;
+            button.textContent = amount <= 0 ? 'Đang xác nhận trả phòng...' : 'Đang tạo thanh toán...';
+
+            try {
+                if (amount <= 0) {
+                    await confirmDirectCheckout(bookingId);
+                    return;
+                }
+
+                if (method === 'bank_transfer') {
+                    await createZaloPayCheckoutPayment(amount, bookingId);
+                    return;
+                }
+
+                if (method === 'card') {
+                    await createVnPayCheckoutPayment(amount, bookingId, 'VNBANK');
+                    return;
+                }
+
+                if (method === 'international_card') {
+                    await createVnPayCheckoutPayment(amount, bookingId, 'INTCARD');
+                    return;
+                }
+
+                throw new Error('Vui lòng chọn hình thức thanh toán.');
+            } catch (error) {
+                alert(error.message || 'Không thể tạo thanh toán. Vui lòng thử lại.');
+                button.disabled = false;
+                button.textContent = originalText;
+            }
         }
 
         function hideCompensationModal() {
@@ -783,9 +1036,33 @@
 
         const serverPaymentPayload = @json($paymentData);
         const sessionPaymentPayload = parseJsonValue(sessionStorage.getItem('receptionCheckoutPayment'), null);
+        const isValidSessionPaymentPayload = (payload) => {
+            if (!payload || Number(payload.payloadVersion || 0) < 2 || !payload.bookingId) {
+                return false;
+            }
+
+            const generatedAt = Number(payload.generatedAt || 0);
+            const maxAge = 10 * 60 * 1000;
+
+            return generatedAt > 0 && Date.now() - generatedAt <= maxAge;
+        };
+        const validSessionPaymentPayload = isValidSessionPaymentPayload(sessionPaymentPayload)
+            ? sessionPaymentPayload
+            : null;
+
+        if (sessionPaymentPayload && !validSessionPaymentPayload) {
+            sessionStorage.removeItem('receptionCheckoutPayment');
+        }
+
         const mergedPaymentPayload = {
             ...serverPaymentPayload,
-            ...(sessionPaymentPayload || {}),
+            ...(validSessionPaymentPayload || {}),
+            serviceItems: Array.isArray(validSessionPaymentPayload?.serviceItems)
+                ? validSessionPaymentPayload.serviceItems
+                : (serverPaymentPayload.serviceItems || []),
+            serviceAmount: validSessionPaymentPayload
+                ? validSessionPaymentPayload.serviceAmount
+                : serverPaymentPayload.serviceAmount,
         };
 
         let currentPaymentPayload = fillMissingRoomNumbers(mergedPaymentPayload, serverPaymentPayload);
@@ -826,7 +1103,7 @@
                 const data = await response.json().catch(() => ({}));
 
                 if (!response.ok || data.success === false) {
-                    throw new Error(readErrorMessage(data));
+                    throw new Error(readErrorMessage(data, 'Không thể lưu tiền đền bù. Vui lòng thử lại.'));
                 }
 
                 currentPaymentPayload = updatePaymentAfterCompensation(
@@ -845,6 +1122,8 @@
                 button.disabled = false;
             }
         });
+
+        confirmPaymentButton?.addEventListener('click', confirmCheckoutPayment);
 
         paymentMethodOptions.forEach((option) => {
             option.addEventListener('click', () => {

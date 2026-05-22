@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
+use App\Models\Phong;
 use App\Models\ThanhToan;
 use App\Services\CustomerPointService;
 use Illuminate\Http\Request;
@@ -27,6 +28,8 @@ class PaymentController extends Controller
                 'app_trans_id' => ['nullable', 'string', 'max:40'],
                 'dat_phong_ids' => ['required', 'array', 'min:1'],
                 'dat_phong_ids.*' => ['integer', 'exists:DatPhong,MaDatPhong'],
+                'payment_type' => ['nullable', 'in:deposit,checkout'],
+                'ma_nv' => ['required_if:payment_type,checkout', 'nullable', 'integer', 'exists:NhanVien,MaNV'],
             ]);
 
             $appId = config('services.zalopay.app_id');
@@ -43,12 +46,15 @@ class PaymentController extends Controller
             $appTime = (int) round(microtime(true) * 1000);
             $appTransId = $data['app_trans_id'] ?? date('ymd') . '_' . uniqid();
             $datPhongIds = array_values(array_unique($data['dat_phong_ids']));
+            $paymentType = $data['payment_type'] ?? 'deposit';
 
             $embedData = json_encode([
                 'redirecturl' => $data['redirect_url'] ?? url('/customer/my-bookings'),
                 'preferred_payment_method' => ['vietqr'],
                 'dat_phong_ids' => $datPhongIds,
                 'amount' => $data['amount'],
+                'payment_type' => $paymentType,
+                'ma_nv' => $data['ma_nv'] ?? null,
             ], JSON_UNESCAPED_SLASHES);
             $item = json_encode([], JSON_UNESCAPED_SLASHES);
             $callbackUrl = config('services.zalopay.callback_url') ?: url('/api/zalopay-callback');
@@ -82,6 +88,8 @@ class PaymentController extends Controller
                 'dat_phong_ids' => $datPhongIds,
                 'amount' => $data['amount'],
                 'callback_url' => $callbackUrl,
+                'payment_type' => $paymentType,
+                'ma_nv' => $data['ma_nv'] ?? null,
             ], now()->addHours(2));
 
             $response = Http::withHeaders(['Content-Type' => 'application/json'])
@@ -225,6 +233,11 @@ class PaymentController extends Controller
                 $remainingAmount = (float) ($mapping['amount'] ?? 0);
 
                 foreach ($datPhongIds as $id) {
+                    $paymentType = $mapping['payment_type'] ?? 'deposit';
+                    $allowedStatuses = $paymentType === 'checkout'
+                        ? [DatPhong::CHECKED_IN]
+                        : [DatPhong::HOLD, DatPhong::CONFIRMED];
+
                     $datPhong = DatPhong::with('khachHang.taiKhoan')
                         ->lockForUpdate()
                         ->find($id);
@@ -233,8 +246,8 @@ class PaymentController extends Controller
                         throw new \RuntimeException("Booking {$id} not found");
                     }
 
-                    if (!in_array((int) $datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) {
-                        throw new \RuntimeException("Booking {$id} is not hold");
+                    if (!in_array((int) $datPhong->TinhTrang, $allowedStatuses, true)) {
+                        throw new \RuntimeException("Booking {$id} is not payable");
                     }
 
                     $hoaDon = HoaDon::where('MaDatPhong', $id)
@@ -266,7 +279,7 @@ class PaymentController extends Controller
                             'MaHD' => $hoaDon->MaHD,
                             'SoTien' => $paymentAmount,
                             'PhuongThuc' => 2,
-                            'LoaiThanhToan' => 0,
+                            'LoaiThanhToan' => $paymentType === 'checkout' ? 1 : 0,
                             'NhaCungCap' => 'ZaloPay',
                             'DinhDanhNguoiThanhToan' => $data['merchant_user_id']
                                 ?? $data['zp_user_id']
@@ -287,9 +300,12 @@ class PaymentController extends Controller
                     $hoaDon->update([
                         'DaThanhToan' => $newPaidAmount,
                         'TrangThai' => $newPaidAmount >= (float) $hoaDon->TongTien ? 1 : 0,
+                        'MaNV' => $mapping['ma_nv'] ?? $hoaDon->MaNV,
                     ]);
 
-                    if ((int) $datPhong->TinhTrang === DatPhong::HOLD) {
+                    if ($paymentType === 'checkout' && $newPaidAmount >= (float) $hoaDon->TongTien) {
+                        $this->confirmCheckout($datPhong);
+                    } elseif ($paymentType !== 'checkout' && (int) $datPhong->TinhTrang === DatPhong::HOLD) {
                         $datPhong->update(['TinhTrang' => DatPhong::CONFIRMED]);
                         ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
                             ->update(['TrangThai' => ChiTietDatPhong::BOOKED]);
@@ -319,5 +335,24 @@ class PaymentController extends Controller
             'return_code' => 1,
             'return_message' => 'success',
         ]);
+    }
+
+    private function confirmCheckout(DatPhong $datPhong): void
+    {
+        $checkedInRoomIds = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->pluck('MaPhong')
+            ->filter()
+            ->values();
+
+        ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
+
+        if ($checkedInRoomIds->isNotEmpty()) {
+            Phong::whereIn('MaPhong', $checkedInRoomIds)->update(['TinhTrang' => 3]);
+        }
+
+        $datPhong->update(['TinhTrang' => DatPhong::CHECKED_OUT]);
     }
 }

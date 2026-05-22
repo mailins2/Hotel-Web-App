@@ -1,7 +1,15 @@
 @php
     $checkOutBookings = $checkOutBookings ?? collect();
     $checkOutStats = $checkOutStats ?? ['upcoming' => 0, 'today' => 0, 'roomsFreeing' => 0];
+    $checkOutFilters = $checkOutFilters ?? [
+        'date' => now()->toDateString(),
+        'search' => '',
+        'minDate' => now()->toDateString(),
+    ];
     $formatDate = fn ($value) => $value ? \Carbon\Carbon::parse($value)->format('d/m/Y') : '--';
+    $checkoutDateDisplay = $checkOutFilters['date']
+        ? \Carbon\Carbon::parse($checkOutFilters['date'])->format('d/m/Y')
+        : now()->format('d/m/Y');
     $formatMoneyValue = fn ($value) => (float) ($value ?? 0);
     $getNights = function ($booking) {
         if (!$booking?->NgayNhanPhong || !$booking?->NgayTraPhong) {
@@ -11,22 +19,22 @@
         return max(1, \Carbon\Carbon::parse($booking->NgayNhanPhong)->diffInDays(\Carbon\Carbon::parse($booking->NgayTraPhong)));
     };
     $getServiceItems = function ($booking) use ($formatMoneyValue) {
-        $invoiceDetails = $booking->hoaDon?->chiTietHoaDons ?? collect();
-
-        return $invoiceDetails
-            ->filter(fn ($detail) => $detail->MaSuDung)
-            ->map(function ($detail) use ($formatMoneyValue) {
-                $service = $detail->suDung?->dichVu;
-                $roomNumber = $detail->suDung?->chiTietDatPhong?->phong?->SoPhong;
-                $quantity = max(1, (int) ($detail->SoLuong ?? $detail->suDung?->SoLuong ?? 1));
-                $unitPrice = $formatMoneyValue($detail->DonGia ?? $service?->GiaDV);
+        return ($booking->chiTietDatPhong ?? collect())
+            ->flatMap(fn ($detail) => ($detail->suDungDichVu ?? collect())->map(function ($usage) use ($detail, $formatMoneyValue) {
+                $service = $usage->dichVu;
+                $roomNumber = $detail->phong?->SoPhong;
+                $quantity = max(1, (int) ($usage->SoLuong ?? 1));
+                $unitPrice = $formatMoneyValue($service?->GiaDV);
 
                 return [
-                    'name' => trim(($detail->MoTa ?: ($service?->TenDV ?? 'Dịch vụ')) . ($roomNumber ? " - Phòng {$roomNumber}" : '')),
+                    'name' => trim($service?->TenDV ?? 'Dịch vụ'),
+                    'roomNumber' => $roomNumber ? (string) $roomNumber : '',
                     'type' => $service?->LoaiDVText ?? 'Dịch vụ',
+                    'quantity' => $quantity,
+                    'unitPrice' => $unitPrice,
                     'price' => $unitPrice * $quantity,
                 ];
-            })
+            }))
             ->values();
     };
     $getRoomItems = function ($booking) use ($getNights, $formatMoneyValue) {
@@ -124,7 +132,112 @@
             background: linear-gradient(180deg, #fff7ef 0%, #fff 55%, #f8fbff 100%);
         }
         .co-card { padding: 1.4rem; height: 100%; }
-        .co-booking-list { display: flex; flex-direction: column; gap: 0.85rem; }
+        .co-list-card {
+            display: flex;
+            flex-direction: column;
+            min-height: 980px;
+        }
+        .co-filter-form {
+            display: grid;
+            grid-template-columns: 210px minmax(0, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        .co-filter-form .form-label {
+            color: #8b5e3c;
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .co-filter-form .form-control {
+            width: 100%;
+            min-height: 44px;
+            border-color: rgba(166, 98, 43, 0.18);
+            color: #6f1d01;
+        }
+        .co-date-field {
+            position: relative;
+        }
+        .co-date-field .co-date-native {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .co-date-field .co-date-display {
+            cursor: pointer;
+            background: #fff;
+            padding-right: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+        .co-date-icon {
+            position: absolute;
+            top: 50%;
+            right: 1rem;
+            width: 1.25rem;
+            height: 1.25rem;
+            transform: translateY(-50%);
+            color: #2f1d12;
+            pointer-events: none;
+            z-index: 3;
+        }
+        .co-booking-list {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            gap: 0.85rem;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 0 0.35rem 0.2rem 0;
+        }
+        .co-booking-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .co-booking-list::-webkit-scrollbar-track {
+            background: rgba(166, 98, 43, 0.08);
+            border-radius: 999px;
+        }
+        .co-booking-list::-webkit-scrollbar-thumb {
+            background: rgba(166, 98, 43, 0.35);
+            border-radius: 999px;
+        }
+        .co-booking-list-wrap {
+            position: relative;
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 120px;
+        }
+        .co-loading-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 18px;
+            background: rgba(255, 253, 250, 0.82);
+            backdrop-filter: blur(1px);
+        }
+        .co-loading-overlay[hidden] {
+            display: none;
+        }
+        .co-spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid rgba(166, 98, 43, 0.16);
+            border-top-color: #8b3b12;
+            border-radius: 999px;
+            animation: co-spin 0.8s linear infinite;
+        }
+        @keyframes co-spin {
+            to { transform: rotate(360deg); }
+        }
         .co-booking-card {
             width: 100%;
             border: 1px solid rgba(166, 98, 43, 0.12);
@@ -234,6 +347,11 @@
             margin-top: 0.9rem;
         }
         @media (max-width: 767.98px) {
+            .co-list-card {
+                min-height: 720px;
+                max-height: 70vh;
+            }
+            .co-filter-form,
             .co-detail-grid,
             .co-room-list,
             .co-guest-grid { grid-template-columns: 1fr; }
@@ -262,52 +380,95 @@
 
         <div class="row g-4">
             <div class="col-xl-5">
-                <div class="co-card">
+                <div class="co-card co-list-card">
                     <h5 class="mb-3">Danh sách đang lưu trú</h5>
-                    <div class="co-booking-list">
-                        @forelse($checkOutBookings as $booking)
-                            @php
-                                $customer = $booking->khachHang;
-                                $customerName = $customer?->TenKH ?? 'Khách chưa có tên';
-                                $nights = $getNights($booking);
-                                $guestCount = max((int) ($booking->luuTrus?->count() ?? 0), (int) ($booking->SoLuong ?? 0));
-                                $stayText = $nights . ' đêm - ' . $guestCount . ' khách';
-                                $serviceItems = $getServiceItems($booking);
-                                $serviceTotal = $serviceItems->sum('price');
-                                $roomItems = $getRoomItems($booking);
-                                $roomSummaryItems = $getRoomSummaryItems($booking);
+                    <form class="co-filter-form" method="GET" action="{{ route('reception.check-outs.create') }}">
+                        <div>
+                            <label for="checkoutDateFilter" class="form-label">Ngày trả</label>
+                            <div class="co-date-field">
+                                <input
+                                    id="checkoutDateFilter"
+                                    type="text"
+                                    class="form-control co-date-display"
+                                    value="{{ $checkoutDateDisplay }}"
+                                    placeholder="dd/mm/yyyy"
+                                    readonly
+                                    aria-hidden="true"
+                                >
+                                <input
+                                    id="checkoutDateValue"
+                                    name="checkout_date"
+                                    type="date"
+                                    class="co-date-native"
+                                    value="{{ $checkOutFilters['date'] }}"
+                                    min="{{ $checkOutFilters['minDate'] }}"
+                                    aria-label="Ngày trả"
+                                >
+                                <svg class="co-date-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M8 2V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M16 2V5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M3.5 9H20.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+                                    <path d="M5.5 4H18.5C19.6046 4 20.5 4.89543 20.5 6V19C20.5 20.1046 19.6046 21 18.5 21H5.5C4.39543 21 3.5 20.1046 3.5 19V6C3.5 4.89543 4.39543 4 5.5 4Z" stroke="currentColor" stroke-width="2"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="checkoutSearchFilter" class="form-label">Tìm kiếm</label>
+                            <input
+                                id="checkoutSearchFilter"
+                                name="checkout_search"
+                                type="search"
+                                class="form-control"
+                                value="{{ $checkOutFilters['search'] }}"
+                                placeholder="Tên khách hoặc mã đặt phòng"
+                            >
+                        </div>
+                    </form>
+                    <div class="co-booking-list-wrap">
+                        <div id="checkoutListLoading" class="co-loading-overlay" hidden aria-live="polite" aria-label="Đang tải danh sách trả phòng">
+                            <div class="co-spinner"></div>
+                        </div>
+                        <div class="co-booking-list">
+                            @forelse($checkOutBookings as $booking)
+                                @php
+                                    $customer = $booking->khachHang;
+                                    $customerName = $customer?->TenKH ?? 'Khách chưa có tên';
+                                    $nights = $getNights($booking);
+                                    $guestCount = max((int) ($booking->luuTrus?->count() ?? 0), (int) ($booking->SoLuong ?? 0));
+                                    $stayText = $nights . ' đêm - ' . $guestCount . ' khách';
                                 $invoice = $booking->hoaDon;
-                                $paidAmount = (float) ($invoice?->DaThanhToan ?? $invoice?->thanhToans?->sum('SoTien') ?? 0);
-                                $totalAmount = (float) ($invoice?->TongTien ?? $roomItems->sum('total') + $serviceTotal);
+                                $paidAmount = (float) ($invoice?->DaThanhToan ?? 0);
+                                $totalAmount = (float) ($invoice?->TongTien ?? 0);
                                 $amountDue = max($totalAmount - $paidAmount, 0);
                                 $activeClass = $loop->first ? 'is-active' : '';
-                            @endphp
-                            <button
-                                type="button"
-                                class="co-booking-card {{ $activeClass }}"
-                                data-checkout-card
-                                data-booking-id="{{ $booking->MaDatPhong }}"
-                                data-invoice-id="{{ $invoice?->MaHD ? 'HD' . $invoice->MaHD : 'HD' . $booking->MaDatPhong }}"
-                                data-customer="{{ $customerName }}"
-                                data-phone="{{ $customer?->SoDienThoai ?? '' }}"
-                                data-stay="{{ $stayText }}"
-                                data-stay-period="{{ $formatDate($booking->NgayNhanPhong) }} - {{ $formatDate($booking->NgayTraPhong) }}"
-                                data-service-total="{{ $serviceTotal }}"
-                                data-services='@json($serviceItems)'
-                                data-room-summary-items='@json($roomSummaryItems)'
-                                data-room-items='@json($roomItems)'
-                                data-paid-amount="{{ $paidAmount }}"
-                                data-total-amount="{{ $totalAmount }}"
-                                data-amount-due="{{ $amountDue }}"
-                                aria-pressed="{{ $loop->first ? 'true' : 'false' }}"
-                            >
-                                <div class="small text-uppercase text-muted fw-bold mb-1">Trả phòng #{{ $booking->MaDatPhong }}</div>
-                                <div class="fw-semibold">{{ $customerName }}</div>
-                                <div class="text-muted small">{{ $formatDate($booking->NgayNhanPhong) }} đến {{ $formatDate($booking->NgayTraPhong) }}</div>
-                            </button>
-                        @empty
-                            <div class="co-empty">Chưa có đặt phòng nào đang ở để trả phòng.</div>
-                        @endforelse
+                                @endphp
+                                <button
+                                    type="button"
+                                    class="co-booking-card {{ $activeClass }}"
+                                    data-checkout-card
+                                    data-booking-id="{{ $booking->MaDatPhong }}"
+                                    data-search="{{ \Illuminate\Support\Str::lower($booking->MaDatPhong . ' ' . $customerName) }}"
+                                    data-invoice-id="{{ $invoice?->MaHD ? 'HD' . $invoice->MaHD : 'HD' . $booking->MaDatPhong }}"
+                                    data-customer="{{ $customerName }}"
+                                    data-phone="{{ $customer?->SoDienThoai ?? '' }}"
+                                    data-stay="{{ $stayText }}"
+                                    data-stay-period="{{ $formatDate($booking->NgayNhanPhong) }} - {{ $formatDate($booking->NgayTraPhong) }}"
+                                    data-paid-amount="{{ $paidAmount }}"
+                                    data-total-amount="{{ $totalAmount }}"
+                                    data-amount-due="{{ $amountDue }}"
+                                    aria-pressed="{{ $loop->first ? 'true' : 'false' }}"
+                                >
+                                    <div class="small text-uppercase text-muted fw-bold mb-1">Trả phòng #{{ $booking->MaDatPhong }}</div>
+                                    <div class="fw-semibold">{{ $customerName }}</div>
+                                    <div class="text-muted small">{{ $formatDate($booking->NgayNhanPhong) }} đến {{ $formatDate($booking->NgayTraPhong) }}</div>
+                                </button>
+                            @empty
+                                <div class="co-empty" data-checkout-empty>Chưa có đặt phòng nào đang ở để trả phòng.</div>
+                            @endforelse
+                            @if($checkOutBookings->isNotEmpty())
+                                <div class="co-empty" data-checkout-filter-empty hidden>Không tìm thấy đặt phòng phù hợp.</div>
+                            @endif
+                        </div>
                     </div>
                 </div>
             </div>
@@ -380,6 +541,20 @@
         </div>
     </dialog>
 
+    <dialog id="checkoutSuccessDialog" class="co-dialog">
+        <div class="co-dialog-body">
+            <h3 class="co-dialog-title">Trả phòng thành công</h3>
+            <p class="co-dialog-text">Thanh toán checkout đã hoàn tất. Các phòng vừa trả đã chuyển sang trạng thái đang dọn.</p>
+            <div class="co-dialog-info mb-3">
+                <div class="co-dialog-label">Mã đặt phòng</div>
+                <div class="co-dialog-value">#{{ request('booking') ?? '--' }}</div>
+            </div>
+            <div class="co-dialog-actions">
+                <button id="closeCheckoutSuccessDialogButton" type="button" class="btn btn-primary">Đóng</button>
+            </div>
+        </div>
+    </dialog>
+
     <script>
         const checkoutCards = document.querySelectorAll('[data-checkout-card]');
         const roomGuestCards = document.querySelectorAll('[data-room-guest-card]');
@@ -390,6 +565,17 @@
         const closeRoomGuestDialogButton = document.getElementById('closeRoomGuestDialogButton');
         const processCheckoutButton = document.getElementById('processCheckoutButton');
         const paymentPageUrl = "{{ route('reception.payments.create') }}";
+        const checkoutSuccessDialog = document.getElementById('checkoutSuccessDialog');
+        const closeCheckoutSuccessDialogButton = document.getElementById('closeCheckoutSuccessDialogButton');
+        const shouldShowCheckoutSuccess = @json(request('checkout') === 'success' || request('vnpay') === 'success');
+        const checkoutFilterForm = document.querySelector('.co-filter-form');
+        const checkoutDateField = document.querySelector('.co-date-field');
+        const checkoutDateFilter = document.getElementById('checkoutDateFilter');
+        const checkoutDateValue = document.getElementById('checkoutDateValue');
+        const checkoutSearchFilter = document.getElementById('checkoutSearchFilter');
+        const checkoutListLoading = document.getElementById('checkoutListLoading');
+        let checkoutSearchTimer;
+        let isComposingCheckoutSearch = false;
 
         function getActiveCheckoutCard() {
             return document.querySelector('[data-checkout-card].is-active') || checkoutCards[0];
@@ -432,6 +618,7 @@
             if (!activeCard) {
                 checkoutCustomerName.textContent = '--';
                 checkoutStay.textContent = '--';
+                syncRoomCards(null);
                 return;
             }
 
@@ -445,6 +632,37 @@
             checkoutStay.textContent = activeCard.dataset.stay || '--';
 
             syncRoomCards(activeCard);
+        }
+
+        function normalizeSearchText(value) {
+            return String(value || '')
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function filterCheckoutCards() {
+            const keyword = normalizeSearchText(checkoutSearchFilter?.value);
+            const cards = Array.from(document.querySelectorAll('[data-checkout-card]'));
+            const empty = document.querySelector('[data-checkout-filter-empty]');
+            let firstVisibleCard = null;
+
+            cards.forEach((card) => {
+                const searchText = normalizeSearchText(card.dataset.search || '');
+                const isVisible = !keyword || searchText.includes(keyword);
+
+                card.hidden = !isVisible;
+                if (isVisible && !firstVisibleCard) {
+                    firstVisibleCard = card;
+                }
+            });
+
+            if (empty) {
+                empty.hidden = Boolean(firstVisibleCard);
+            }
+
+            syncCheckoutDetails(firstVisibleCard);
         }
 
         function escapeHtml(value) {
@@ -497,14 +715,12 @@
             const activeCard = getActiveCheckoutCard();
             const currentDateTime = new Date();
             const amountDue = Number(activeCard?.dataset.amountDue || 0);
-            const serviceItems = parseJsonDataset(activeCard?.dataset.services);
-            const roomSummaryItems = parseJsonDataset(activeCard?.dataset.roomSummaryItems);
-            const roomItems = parseJsonDataset(activeCard?.dataset.roomItems);
-            const serviceAmount = serviceItems.reduce((total, item) => total + Number(item.price || 0), 0);
             const totalAmount = Number(activeCard?.dataset.totalAmount || amountDue);
             const paidAmount = Number(activeCard?.dataset.paidAmount || 0);
 
             return {
+                payloadVersion: 2,
+                generatedAt: Date.now(),
                 invoiceId: activeCard?.dataset.invoiceId || `HD${activeCard?.dataset.bookingId || '0000'}`,
                 bookingId: activeCard?.dataset.bookingId || '',
                 customer: activeCard?.dataset.customer || '',
@@ -513,10 +729,6 @@
                 stayPeriod: activeCard?.dataset.stayPeriod || '',
                 checkoutDate: formatDisplayDate(currentDateTime),
                 checkoutTime: formatDisplayTime(currentDateTime),
-                roomSummaryItems,
-                roomItems,
-                serviceItems,
-                serviceAmount,
                 totalAmount,
                 paidAmount,
                 amountDue,
@@ -536,7 +748,16 @@
 
             const payload = buildCheckoutPaymentPayload();
             sessionStorage.setItem('receptionCheckoutPayment', JSON.stringify(payload));
-            window.location.href = paymentPageUrl;
+
+            const paymentUrl = new URL(paymentPageUrl, window.location.origin);
+            if (payload.bookingId) {
+                paymentUrl.searchParams.set('booking', payload.bookingId);
+            }
+            if (payload.invoiceId) {
+                paymentUrl.searchParams.set('invoice', String(payload.invoiceId).replace(/^HD/i, ''));
+            }
+
+            window.location.href = paymentUrl.toString();
         }
 
         checkoutCards.forEach((card) => {
@@ -555,8 +776,72 @@
             roomGuestDialog.close();
         });
 
+        closeCheckoutSuccessDialogButton?.addEventListener('click', () => {
+            checkoutSuccessDialog?.close();
+        });
+
         processCheckoutButton?.addEventListener('click', processCheckoutPayment);
 
+        function formatDateForDisplay(value) {
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            return match ? `${match[3]}/${match[2]}/${match[1]}` : '';
+        }
+
+        function submitDateFilter() {
+            if (!checkoutDateValue?.value) {
+                return;
+            }
+
+            if (checkoutDateFilter) {
+                checkoutDateFilter.value = formatDateForDisplay(checkoutDateValue.value);
+            }
+
+            if (checkoutListLoading) {
+                checkoutListLoading.hidden = false;
+            }
+
+            checkoutFilterForm?.submit();
+        }
+
+        checkoutDateValue?.addEventListener('change', submitDateFilter);
+
+        checkoutDateField?.addEventListener('click', () => {
+            if (!checkoutDateValue) return;
+
+            if (typeof checkoutDateValue.showPicker === 'function') {
+                checkoutDateValue.showPicker();
+                return;
+            }
+
+            checkoutDateValue.focus();
+            checkoutDateValue.click();
+        });
+
+        checkoutSearchFilter?.addEventListener('compositionstart', () => {
+            isComposingCheckoutSearch = true;
+        });
+
+        checkoutSearchFilter?.addEventListener('compositionend', () => {
+            isComposingCheckoutSearch = false;
+            clearTimeout(checkoutSearchTimer);
+            checkoutSearchTimer = setTimeout(() => {
+                filterCheckoutCards();
+            }, 450);
+        });
+
+        checkoutSearchFilter?.addEventListener('input', () => {
+            if (isComposingCheckoutSearch) return;
+            clearTimeout(checkoutSearchTimer);
+            checkoutSearchTimer = setTimeout(() => {
+                filterCheckoutCards();
+            }, 450);
+        });
+
         syncCheckoutDetails(getActiveCheckoutCard());
+        filterCheckoutCards();
+
+        if (shouldShowCheckoutSuccess && checkoutSuccessDialog) {
+            checkoutSuccessDialog.showModal();
+        }
     </script>
 </x-app-layout>

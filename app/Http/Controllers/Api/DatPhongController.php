@@ -564,6 +564,10 @@ class DatPhongController extends Controller
     // =========================
     public function checkOut(Request $request, $id)
     {
+        $data = $request->validate([
+            'MaNV' => ['required', 'integer', 'exists:NhanVien,MaNV'],
+        ]);
+
         $datPhong = DatPhong::with('chiTietDatPhong')->find($id);
         if (!$datPhong) {
             return $this->error('KhÃ´ng tÃ¬m tháº¥y', 404);
@@ -580,12 +584,15 @@ class DatPhongController extends Controller
                 return $this->error('KhÃ´ng cÃ³ hÃ³a Ä‘Æ¡n', 404);
             }
 
-            $hoaDon->update(['TrangThai' => 2]);
+            $hoaDon->update([
+                'TrangThai' => 1,
+                'MaNV' => $data['MaNV'] ?? $hoaDon->MaNV,
+            ]);
             $datPhong->update(['TinhTrang' => 3]);
             
             foreach ($datPhong->chiTietDatPhong as $ct) {
                 $ct->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
-                Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 0]);
+                Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 3]);
             }
 
             DB::commit();

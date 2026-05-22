@@ -187,6 +187,37 @@ class PhongController extends Controller
         return $this->success($phong, 'Cập nhật phòng thành công');
     }
 
+    // POST /api/phong/{id}/mark-cleaned
+    public function markCleaned($id)
+    {
+        $phong = Phong::find($id);
+
+        if (!$phong) {
+            return $this->error('Khong tim thay phong', 404);
+        }
+
+        if ((int) $phong->TinhTrang !== 3) {
+            return $this->error('Chi co the chuyen phong dang don dep ve trang thai trong.', 422);
+        }
+
+        $hasCheckedInStay = ChiTietDatPhong::where('MaPhong', $phong->MaPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->exists();
+
+        if ($hasCheckedInStay) {
+            return $this->error('Phong nay van co luu tru dang su dung, khong the chuyen ve trong.', 409);
+        }
+
+        $phong->update(['TinhTrang' => 0]);
+
+        return $this->success([
+            'MaPhong' => $phong->MaPhong,
+            'SoPhong' => $phong->SoPhong,
+            'TinhTrang' => 0,
+            'TinhTrangText' => 'Trong',
+        ], 'Da chuyen phong ve trang thai trong');
+    }
+
     // DELETE /api/phong/{id}
     public function destroy($id)
     {

@@ -38,6 +38,7 @@ Route::delete('/loai-phong/{id}/tien-nghi/{tienNghiId}', [LoaiPhongController::c
 
 
 Route::get('/phong/tim-kiem', [PhongController::class, 'timKiemPhong']);
+Route::post('/phong/{id}/mark-cleaned', [PhongController::class, 'markCleaned']);
 Route::apiResource('phong', PhongController::class);
 
 // Lịch sử đặt phòng của khách hàng
