@@ -91,4 +91,16 @@ class DanhGiaController extends Controller
         $danhGia->delete();
         return response()->json(['message' => 'Đã xóa đánh giá'], 200);
     }
+
+    // 6. Kiểm tra xem khách đã đánh giá cho đặt phòng chưa
+    public function kiemTraDanhGia($maDatPhong)
+    {
+        $danhGia = DanhGia::where('MaDatPhong', $maDatPhong)->first();
+        
+        return response()->json([
+            'da_danh_gia' => $danhGia != null,
+            'danh_gia' => $danhGia
+        ]);
+    }
+
 }

@@ -9,6 +9,7 @@ use App\Models\Phong;
 use App\Models\HoaDon;
 use App\Models\ChiTietHoaDon;
 use App\Models\KhachHang;
+use App\Models\KhuyenMai;
 use App\Models\LuuTru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,10 @@ class DatPhongController extends Controller
                 
                 // 5. Load phÃ²ng vÃ  tÃ­nh tiá»n
                 $datPhong->load('chiTietDatPhong.phong');
+                if (isset($bookingData['MaKM'])) {
+                    $hoaDon->update(['MaKM' => $bookingData['MaKM']]);
+                }
+
                 $this->addTienPhong($datPhong, $hoaDon);
 
                 DB::commit();
@@ -241,6 +246,7 @@ class DatPhongController extends Controller
        if ($request->has('LoaiPhongs')) {
            $data = $request->validate([
                 'MaKH' => 'nullable|exists:KhachHang,MaKH',
+                'MaKM' => 'nullable|string|exists:KhuyenMai,MaKM', 
                 'TenKH' => 'required_without:MaKH|string|max:100',
                 'SoDienThoai' => 'required_without:MaKH|string|max:15',
                 'NgayNhanPhong' => [
@@ -330,7 +336,8 @@ class DatPhongController extends Controller
             'NgayNhanPhong' => $data['NgayNhanPhong'],
             'NgayTraPhong' => $data['NgayTraPhong'],
             'SoLuong' => $data['SoLuong'],
-            'TinhTrang' => 0
+            'TinhTrang' => 0,
+            'MaKM' => $data['MaKM'] ?? null,
         ]);
     }
 
@@ -343,7 +350,8 @@ class DatPhongController extends Controller
             'MaDatPhong' => $datPhong->MaDatPhong,
             'NgayLapHD' => now(),
             'TongTien' => 0,
-            'TrangThai' => 0
+            'TrangThai' => 0,
+            'MaKM' => $datPhong->MaKM ?? null,
         ]);
     }
 
@@ -387,8 +395,16 @@ class DatPhongController extends Controller
                 'DonGia' => $donGia
             ]);
 
+           
+
             $tongTien += $soLuong * $donGia;
         }
+         if ($hoaDon->MaKM) {
+                $voucher = \App\Models\KhuyenMai::find($hoaDon->MaKM);
+                if ($voucher && $voucher->PhanTramGiamGia > 0) {
+                    $tongTien = $tongTien * (1 - $voucher->PhanTramGiamGia / 100);
+                }
+            }
 
         $hoaDon->update(['TongTien' => $tongTien]);
     }
@@ -798,11 +814,15 @@ class DatPhongController extends Controller
      * Lấy lịch sử đặt phòng của khách hàng
      * GET /api/khach-hang/{maKH}/dat-phong
      */
-    public function lichSuDatPhong($maKH)
+   public function lichSuDatPhong($maKH)
 {
     $datPhongs = DatPhong::with([
-            'chiTietDatPhong.phong.loaiPhong.khuyenMai', // 👈 THÊM khuyenMai
-            'hoaDon.khuyenMai', // 👈 THÊM khuyenMai của hóa đơn
+            'danhGia',
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai',
+            'hoaDon.khuyenMai',
+            'hoaDon.chiTietHoaDons.loaiPhong',
+            'hoaDon.chiTietHoaDons.suDungDichVu.dichVu',
+            'hoaDon.thanhToans',
         ])
         ->where('MaKH', $maKH)
         ->orderBy('NgayDat', 'desc')
@@ -816,6 +836,8 @@ class DatPhongController extends Controller
             $maKM = null;
             $phanTramGiam = 0;
             $tenKM = null;
+            $chiTietTien = [];
+            $dichVuSuDung = [];
             
             if ($dp->hoaDon) {
                 $maHD = $dp->hoaDon->MaHD;
@@ -823,10 +845,51 @@ class DatPhongController extends Controller
                 $trangThaiHD = (int) $dp->hoaDon->TrangThai;
                 $maKM = $dp->hoaDon->MaKM;
                 
-                // 🔥 Tính tổng tiền gốc (chưa giảm)
-                $tongTienGoc = (float) $dp->hoaDon->TongTien;
+                foreach ($dp->hoaDon->chiTietHoaDons as $cthd) {
+                    // Tiền phòng
+                    if ($cthd->MaLoaiPhong && $cthd->loaiPhong) {
+                        $giaGocPhong = (float) $cthd->loaiPhong->GiaPhong;
+                        $giaSauKM = (float) $cthd->DonGia;
+                        $soLuong = (int) $cthd->SoLuong;
+                        
+                        $tongTienGoc += $giaSauKM * $soLuong;
+                        
+                        $chiTietTien[] = [
+                            'loai' => 'phong',
+                            'ten' => $cthd->loaiPhong->TenLoaiPhong,
+                            'giaGoc' => $giaGocPhong,
+                            'giaSauKM' => $giaSauKM,
+                            'soLuong' => $soLuong,
+                            'thanhTien' => $giaSauKM * $soLuong,
+                            'kmPhong' => $cthd->loaiPhong->khuyenMai ? [
+                                'ten' => $cthd->loaiPhong->khuyenMai->TenKM,
+                                'phanTram' => (float) $cthd->loaiPhong->khuyenMai->PhanTramGiamGia,
+                            ] : null,
+                        ];
+                    }
+                    
+                    // Dịch vụ
+                    if ($cthd->MaSuDung && $cthd->suDungDichVu && $cthd->suDungDichVu->dichVu) {
+                        $dv = $cthd->suDungDichVu->dichVu;
+                        $dichVuSuDung[] = [
+                            'ten' => $dv->TenDV,
+                            'gia' => (float) $dv->GiaDV,
+                            'soLuong' => (int) $cthd->SoLuong,
+                            'thanhTien' => (float) $cthd->DonGia,
+                            'thoiGian' => $cthd->suDungDichVu->ThoiGian,
+                        ];
+                        
+                        $chiTietTien[] = [
+                            'loai' => 'dichvu',
+                            'ten' => $dv->TenDV,
+                            'gia' => (float) $dv->GiaDV,
+                            'soLuong' => (int) $cthd->SoLuong,
+                            'thanhTien' => (float) $cthd->DonGia,
+                        ];
+                    }
+                }
                 
-                // 🔥 Nếu có khuyến mãi, tính tiền sau giảm
+                // Tính tiền sau giảm KM voucher
                 if ($dp->hoaDon->khuyenMai) {
                     $phanTramGiam = (float) $dp->hoaDon->khuyenMai->PhanTramGiamGia;
                     $tenKM = $dp->hoaDon->khuyenMai->TenKM;
@@ -836,9 +899,7 @@ class DatPhongController extends Controller
                 }
             }
 
-            // Tính số tiền còn lại
-            $conLai = $tongTienSauGiam - $daThanhToan;
-            if ($conLai < 0) $conLai = 0;
+            $conLai = max(0, $tongTienSauGiam - $daThanhToan);
 
             return [
                 'MaDatPhong' => $dp->MaDatPhong,
@@ -849,34 +910,37 @@ class DatPhongController extends Controller
                 'SoLuong' => $dp->SoLuong,
                 'TinhTrang' => (int) $dp->TinhTrang,
                 'TinhTrangText' => $this->getTinhTrangText($dp->TinhTrang),
+                'soDem' => max(1, Carbon::parse($dp->NgayNhanPhong)->diffInDays(Carbon::parse($dp->NgayTraPhong))),
+                'da_danh_gia' => $dp->danhGia != null,
+                'SaoDanhGia' => $dp->danhGia->Sao ?? null,
+                'chi_tiet_tien' => $chiTietTien,
+                'dich_vu' => $dichVuSuDung,
                 'hoa_don' => [
                     'MaHD' => $maHD,
-                    'TongTien' => $tongTienSauGiam, // 👈 Tiền sau giảm
-                    'TongTienGoc' => $tongTienGoc,   // 👈 Tiền gốc (chưa giảm)
+                    'TongTienGoc' => $tongTienGoc,
+                    'TongTien' => $tongTienSauGiam,
                     'DaThanhToan' => $daThanhToan,
                     'ConLai' => $conLai,
                     'TrangThai' => $trangThaiHD,
                     'TrangThaiText' => $this->getTrangThaiHDText($trangThaiHD),
                     'MaKM' => $maKM,
-                    'PhanTramGiam' => $phanTramGiam, // 👈 % giảm
-                    'TenKM' => $tenKM,               // 👈 Tên khuyến mãi
+                    'PhanTramGiam' => $phanTramGiam,
+                    'TenKM' => $tenKM,
                 ],
                 'phongs' => $dp->chiTietDatPhong->map(function ($ct) {
                     $phong = $ct->phong;
                     $loaiPhong = $phong?->loaiPhong;
-                    $giaPhong = $loaiPhong ? (float) $loaiPhong->GiaPhong : 0;
-                    
                     return [
                         'MaCTDP' => $ct->MaCTDP,
                         'MaPhong' => $phong->MaPhong ?? 0,
                         'SoPhong' => $phong->SoPhong ?? '',
                         'TenLoaiPhong' => $loaiPhong->TenLoaiPhong ?? '',
-                        'GiaPhong' => $giaPhong,
+                        'GiaGoc' => (float) ($loaiPhong->GiaPhong ?? 0),
+                        'GiaSauKM' => $loaiPhong ? $loaiPhong->giaSauKhuyenMai() : 0,
                         'MaLoaiPhong' => $loaiPhong->MaLoaiPhong ?? 0,
                     ];
                 })->values(),
                 'tongPhong' => $dp->chiTietDatPhong->count(),
-                'soDem' => max(1, Carbon::parse($dp->NgayNhanPhong)->diffInDays(Carbon::parse($dp->NgayTraPhong))),
             ];
         });
 

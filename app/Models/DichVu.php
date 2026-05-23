@@ -25,6 +25,12 @@ class DichVu extends Model
         'GiaDVFormatted'
     ];
 
+    protected static function booted()
+    {
+        static::addGlobalScope('withoutSoftDeletes', function ($query) {
+            // Không làm gì - bỏ qua SoftDeletes
+        });
+    }
     public function suDungs()
     {
         return $this->hasMany(SuDungDichVu::class, 'MaDV');

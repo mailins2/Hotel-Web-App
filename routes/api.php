@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\ZaloPay\PaymentController;
 use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 use App\Http\Controllers\Api\AuthMobileController;
 use App\Http\Controllers\Api\ForgotPasswordController;
+use App\Http\Controllers\Api\DoiMatKhauController;
 
 Route::apiResource('tien-nghi', TienNghiController::class);
 
@@ -146,3 +147,5 @@ Route::get('danh-gia/kiem-tra/{maDatPhong}', [DanhGiaController::class, 'kiemTra
 Route::post('quen-mat-khau/gui-otp', [ForgotPasswordController::class, 'sendOTP']);
 Route::post('quen-mat-khau/xac-nhan-otp', [ForgotPasswordController::class, 'verifyOTP']);
 Route::post('quen-mat-khau/dat-lai-mat-khau', [ForgotPasswordController::class, 'resetPassword']);
+// Đổi mật khẩu (mobile app)
+Route::post('doi-mat-khau', [DoiMatKhauController::class, 'doiMatKhau'])->middleware('auth:sanctum');
