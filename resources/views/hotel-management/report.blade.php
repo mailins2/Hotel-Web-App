@@ -86,15 +86,16 @@
             position: absolute;
             z-index: 25;
             display: none;
-            min-width: 240px;
-            max-width: 280px;
-            padding: 0.8rem 0.9rem;
+            min-width: 220px;
+            max-width: 260px;
+            padding: 0;
             border: 1px solid rgba(111, 29, 1, 0.12);
-            border-radius: 10px;
+            border-radius: 3px;
             background: #fff;
             box-shadow: 0 18px 40px -24px rgba(111, 29, 1, 0.45);
             color: #49120f;
             pointer-events: none;
+            overflow: hidden;
         }
 
         .report-main-tooltip.is-visible {
@@ -102,15 +103,43 @@
         }
 
         .report-main-tooltip-title {
+            padding: 1rem 1rem 0.9rem;
+            font-size: 0.94rem;
             font-weight: 800;
-            margin-bottom: 0.4rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(111, 29, 1, 0.06);
         }
 
         .report-main-tooltip-line {
-            color: #8a4b2a;
-            font-size: 0.88rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            padding: 0.78rem 1rem;
+            color: #49120f;
+            font-size: 0.78rem;
             font-weight: 600;
             white-space: nowrap;
+            border-bottom: 1px solid rgba(111, 29, 1, 0.06);
+        }
+
+        .report-main-tooltip-line:last-child {
+            border-bottom: 0;
+        }
+
+        .report-main-tooltip-line.is-total {
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .report-main-tooltip-value {
+            color: #8a4b2a;
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .report-main-tooltip-value.is-discount {
+            color: #f1657c;
         }
 
         .report-chart-empty {
@@ -119,7 +148,7 @@
             display: grid;
             place-items: center;
             color: #8a4b2a;
-            font-weight: 500;
+            font-weight: 400;
             text-align: center;
             padding: 1rem;
         }
@@ -127,12 +156,20 @@
         .report-chart-xaxis {
             display: grid;
             grid-template-columns: repeat(6, minmax(0, 1fr));
-            gap: 0.5rem;
-            padding: 0.85rem 0 0;
+            gap: 0.35rem;
+            padding: 0.85rem 0.15rem 0;
             color: #8b5e45;
-            font-size: 0.8rem;
+            font-size: 0.74rem;
             font-weight: 600;
             text-align: center;
+        }
+
+        .report-chart-xaxis span {
+            min-width: 0;
+            white-space: nowrap;
+            line-height: 1.15;
+            overflow: hidden;
+            text-overflow: clip;
         }
 
         .report-date-input {
@@ -530,8 +567,8 @@
                         </div>
                         <div class="fw-bold text-uppercase mb-0 report-summary-title">Đánh giá trung bình</div>
                     </div>
-                    <h3 class="mb-2 text-center">4.6 / 5</h3>
-                    <p class="report-stat-description">Điểm đánh giá trung bình từ khách lưu trú</p>
+                    <h3 class="mb-2 text-center">{{ number_format($averageRating ?? 0, 1) }} / 5</h3>
+                    <p class="report-stat-description">Điểm đánh giá trong 1 tháng gần nhất</p>
                 </div>
             </div>
         </div>
@@ -565,11 +602,11 @@
                             </div>
                             <div class="report-date-field">
                                 <label>Từ ngày</label>
-                                <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Tu ngay" data-main-report-from>
+                                <input class="form-control report-date-input" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay" data-main-report-from>
                             </div>
                             <div class="report-date-field">
                                 <label>Đến ngày</label>
-                                <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Den ngay" data-main-report-to>
+                                <input class="form-control report-date-input" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay" data-main-report-to>
                             </div>
                         </div>
                     </div>
@@ -629,11 +666,11 @@
                             <div class="report-date-controls report-date-controls--compact">
                                 <div class="report-date-field">
                                     <label>Từ ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Tu ngay doanh thu dich vu" data-service-revenue-from>
+                                    <input class="form-control report-date-input" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay doanh thu dich vu" data-service-revenue-from>
                                 </div>
                                 <div class="report-date-field">
                                     <label>Đến ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Den ngay doanh thu dich vu" data-service-revenue-to>
+                                    <input class="form-control report-date-input" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay doanh thu dich vu" data-service-revenue-to>
                                 </div>
                             </div>
                         </div>
@@ -683,37 +720,27 @@
                 <div class="card-header">
                     <div class="report-card-toolbar">
                         <div class="header-title">
-                            <h4 class="card-title mb-0">Xuất báo cáo Excel</h4>
+                            <h4 class="card-title mb-0">Xuất báo cáo</h4>
                         </div>
-                        <button type="button" class="btn btn-primary">
-                            Xuất tất cả
-                        </button>
                     </div>
                 </div>
                 <div class="card-body">
                     <div class="row g-3 mb-4">
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Từ ngày</label>
-                            <input class="form-control" type="date" value="2026-01-01" aria-label="Tu ngay bao cao Excel">
+                            <input class="form-control" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay bao cao Excel" data-export-report-from>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Đến ngày</label>
-                            <input class="form-control" type="date" value="2026-06-30" aria-label="Den ngay bao cao Excel">
+                            <input class="form-control" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay bao cao Excel" data-export-report-to>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Chu kỳ</label>
-                            <select class="form-select" aria-label="Chu ky bao cao">
-                                <option selected>Theo tháng</option>
-                                <option>Theo ngày</option>
-                                <option>Theo quý</option>
-                                <option>Theo năm</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Định dạng</label>
-                            <select class="form-select" aria-label="Dinh dang bao cao">
-                                <option selected>Excel (.xlsx)</option>
-                                <option>CSV (.csv)</option>
+                            <select class="form-select" aria-label="Chu ky bao cao" data-export-report-period>
+                                <option value="month">Theo tháng</option>
+                                <option value="day" selected>Theo ngày</option>
+                                <option value="quarter">Theo quý</option>
+                                <option value="year">Theo năm</option>
                             </select>
                         </div>
                     </div>
@@ -724,15 +751,14 @@
                                 <div class="card-body">
                                     <div>
                                         <h5 class="report-export-title mb-2">Báo cáo doanh thu</h5>
-                                        <p class="report-export-description">Tổng doanh thu phòng, dịch vụ, giảm giá và doanh thu ròng theo thời gian.</p>
+                                        <p class="report-export-description">Tổng doanh thu phòng, dịch vụ, giảm giá và doanh thu theo thời gian.</p>
                                     </div>
                                     <div class="report-export-meta">
                                         <span class="report-export-chip">Doanh thu</span>
                                         <span class="report-export-chip">Tổng hợp</span>
                                     </div>
                                     <div class="report-export-actions">
-                                        <button type="button" class="btn btn-sm btn-primary">Xuất Excel</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">Xem mẫu</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-export-report-button data-export-report-url="{{ route('hotel.reports.export.revenue') }}">Xuất Excel</button>
                                     </div>
                                 </div>
                             </div>
@@ -742,16 +768,15 @@
                             <div class="card report-export-card mb-0">
                                 <div class="card-body">
                                     <div>
-                                        <h5 class="report-export-title mb-2">Báo cáo booking</h5>
-                                        <p class="report-export-description">Danh sách đặt phòng, ngày nhận trả, trạng thái booking và thông tin khách hàng.</p>
+                                        <h5 class="report-export-title mb-2">Báo cáo đặt phòng</h5>
+                                        <p class="report-export-description">Danh sách đặt phòng, ngày nhận trả, trạng thái đặt phòng.</p>
                                     </div>
                                     <div class="report-export-meta">
-                                        <span class="report-export-chip">Booking</span>
+                                        <span class="report-export-chip">Đặt phòng</span>
                                         <span class="report-export-chip">Khách hàng</span>
                                     </div>
                                     <div class="report-export-actions">
-                                        <button type="button" class="btn btn-sm btn-primary">Xuất Excel</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">Xem mẫu</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-export-report-button data-export-report-url="{{ route('hotel.reports.export.bookings') }}">Xuất Excel</button>
                                     </div>
                                 </div>
                             </div>
@@ -762,15 +787,14 @@
                                 <div class="card-body">
                                     <div>
                                         <h5 class="report-export-title mb-2">Báo cáo phòng</h5>
-                                        <p class="report-export-description">Số lượng phòng theo trạng thái, loại phòng, công suất và lượt sử dụng.</p>
+                                        <p class="report-export-description">Số lượng phòng theo trạng thái, loại phòng, công suất.</p>
                                     </div>
                                     <div class="report-export-meta">
                                         <span class="report-export-chip">Phòng</span>
                                         <span class="report-export-chip">Công suất</span>
                                     </div>
                                     <div class="report-export-actions">
-                                        <button type="button" class="btn btn-sm btn-primary">Xuất Excel</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">Xem mẫu</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-export-report-button data-export-report-url="{{ route('hotel.reports.export.rooms') }}">Xuất Excel</button>
                                     </div>
                                 </div>
                             </div>
@@ -788,8 +812,7 @@
                                         <span class="report-export-chip">Giao dịch</span>
                                     </div>
                                     <div class="report-export-actions">
-                                        <button type="button" class="btn btn-sm btn-primary">Xuất Excel</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">Xem mẫu</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-export-report-button data-export-report-url="{{ route('hotel.reports.export.payments') }}">Xuất Excel</button>
                                     </div>
                                 </div>
                             </div>
@@ -800,15 +823,13 @@
                                 <div class="card-body">
                                     <div>
                                         <h5 class="report-export-title mb-2">Báo cáo dịch vụ</h5>
-                                        <p class="report-export-description">Doanh thu từng dịch vụ, số lượt sử dụng và tỷ trọng theo nhóm dịch vụ.</p>
+                                        <p class="report-export-description">Doanh thu từng dịch vụ, số lượt sử dụng.</p>
                                     </div>
                                     <div class="report-export-meta">
                                         <span class="report-export-chip">Dịch vụ</span>
-                                        <span class="report-export-chip">Tỷ trọng</span>
                                     </div>
                                     <div class="report-export-actions">
-                                        <button type="button" class="btn btn-sm btn-primary">Xuất Excel</button>
-                                        <button type="button" class="btn btn-sm btn-outline-primary">Xem mẫu</button>
+                                        <button type="button" class="btn btn-sm btn-primary" data-export-report-button data-export-report-url="{{ route('hotel.reports.export.services') }}">Xuất Excel</button>
                                     </div>
                                 </div>
                             </div>
@@ -819,12 +840,37 @@
         </div>
     </div>
 
+    <script type="application/json" id="service-revenue-items-data">@json($serviceRevenueItems ?? [])</script>
+    <script type="application/json" id="revenue-items-data">@json($revenueItems ?? [])</script>
+    <script type="application/json" id="room-status-items-data">@json($roomStatusItems ?? [])</script>
+    <script type="application/json" id="room-capacity-items-data">@json($roomCapacityItems ?? [])</script>
+    <script type="application/json" id="room-occupancy-items-data">@json($roomOccupancyItems ?? [])</script>
+    <script type="application/json" id="room-type-choices-data">@json(($roomTypeOptions ?? collect())->map(fn ($roomType) => [
+        'value' => (string) $roomType->MaLoaiPhong,
+        'label' => $roomType->TenLoaiPhong,
+    ])->values())</script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const serviceRevenueItems = @json($serviceRevenueItems ?? []);
-            const roomStatusItems = @json($roomStatusItems ?? []);
-            const roomCapacityItems = @json($roomCapacityItems ?? []);
-            const roomOccupancyItems = @json($roomOccupancyItems ?? []);
+            const readJsonData = function (id, fallback) {
+                const source = document.getElementById(id);
+
+                if (!source) {
+                    return fallback;
+                }
+
+                try {
+                    return JSON.parse(source.textContent || '');
+                } catch (error) {
+                    return fallback;
+                }
+            };
+
+            const serviceRevenueItems = readJsonData('service-revenue-items-data', []);
+            const revenueItems = readJsonData('revenue-items-data', []);
+            const roomStatusItems = readJsonData('room-status-items-data', []);
+            const roomCapacityItems = readJsonData('room-capacity-items-data', []);
+            const roomOccupancyItems = readJsonData('room-occupancy-items-data', []);
             const mainReportTypeSelect = document.querySelector('[data-main-report-type]');
             const mainReportDetailSelect = document.querySelector('[data-main-report-detail]');
             const mainReportTitle = document.querySelector('[data-main-report-title]');
@@ -835,10 +881,7 @@
             const mainReportYAxis = document.querySelector('[data-main-report-yaxis]');
             const mainReportTooltip = document.querySelector('[data-main-report-tooltip]');
             const mainReportEmpty = document.querySelector('[data-main-report-empty]');
-            const roomTypeChoices = @json(($roomTypeOptions ?? collect())->map(fn ($roomType) => [
-                'value' => (string) $roomType->MaLoaiPhong,
-                'label' => $roomType->TenLoaiPhong,
-            ])->values());
+            const roomTypeChoices = readJsonData('room-type-choices-data', []);
             const typeSelect = document.querySelector('[data-service-revenue-type]');
             const fromInput = document.querySelector('[data-service-revenue-from]');
             const toInput = document.querySelector('[data-service-revenue-to]');
@@ -848,6 +891,10 @@
             const roomStatusTypeSelect = document.querySelector('[data-room-status-type]');
             const roomStatusChart = document.querySelector('[data-room-status-chart]');
             const roomStatusLegend = document.querySelector('[data-room-status-legend]');
+            const exportReportFromInput = document.querySelector('[data-export-report-from]');
+            const exportReportToInput = document.querySelector('[data-export-report-to]');
+            const exportReportPeriodSelect = document.querySelector('[data-export-report-period]');
+            const exportReportButtons = document.querySelectorAll('[data-export-report-button]');
             const colors = ['#F75270', '#FAE251', '#8CC0EB', '#5DD3B6', '#9B7EDE', '#F59E0B', '#38BDF8', '#84CC16'];
             const typeLabels = {
                 '1': 'Dịch ăn uống',
@@ -867,6 +914,13 @@
                 { value: 'discount', label: 'Giảm giá' },
                 { value: 'compensation', label: 'Đền bù' }
             ];
+            const mainRevenueValueLabels = {
+                all: 'Tổng doanh thu',
+                room: 'Tiền phòng',
+                service: 'Dịch vụ',
+                discount: 'Giảm giá',
+                compensation: 'Đền bù'
+            };
             const chartHeight = 300;
             const chartTop = 20;
             const chartBottom = 335;
@@ -899,6 +953,24 @@
                 }
 
                 return new Date(parts[0], parts[1] - 1, parts[2]);
+            };
+
+            const syncDateRange = function (fromElement, toElement) {
+                if (!fromElement || !toElement) {
+                    return;
+                }
+
+                if (fromElement.value) {
+                    toElement.min = fromElement.value;
+                }
+
+                if (toElement.value) {
+                    fromElement.max = toElement.value;
+                }
+
+                if (fromElement.value && toElement.value && toElement.value < fromElement.value) {
+                    toElement.value = fromElement.value;
+                }
             };
 
             const toDateKey = function (date) {
@@ -1041,11 +1113,71 @@
                     return {
                         label: bucket.label,
                         tooltipLabel: bucket.tooltipLabel,
+                        reportType: 'occupancy',
+                        valueLabel: 'Tiá»n phĂ²ng',
+                        value: roomRevenue,
                         soldRooms: soldRoomNights,
                         occupancyRate: capacityRoomNights > 0 ? soldRoomNights / capacityRoomNights * 100 : 0,
                         roomRevenue: roomRevenue
                     };
                 });
+            };
+
+            const aggregateMainRevenueBuckets = function (buckets, detailType) {
+                const selectedDetail = detailType || 'all';
+
+                return buckets.map(function (bucket) {
+                    const summary = {
+                        label: bucket.label,
+                        tooltipLabel: bucket.tooltipLabel,
+                        reportType: 'revenue',
+                        detailType: selectedDetail,
+                        valueLabel: mainRevenueValueLabels[selectedDetail] || mainRevenueValueLabels.all,
+                        value: 0,
+                        soldRooms: 0,
+                        occupancyRate: 0,
+                        roomRevenue: 0,
+                        total: 0,
+                        room: 0,
+                        service: 0,
+                        discount: 0,
+                        compensation: 0
+                    };
+
+                    revenueItems.forEach(function (item) {
+                        const paymentDate = parseDate(item.date);
+
+                        if (!paymentDate || paymentDate < bucket.start || paymentDate >= bucket.end) {
+                            return;
+                        }
+
+                        summary.total += Number(item.total) || 0;
+                        summary.room += Number(item.room) || 0;
+                        summary.service += Number(item.service) || 0;
+                        summary.discount += Number(item.discount) || 0;
+                        summary.compensation += Number(item.compensation) || 0;
+                    });
+
+                    summary.value = selectedDetail === 'all'
+                        ? summary.total
+                        : Number(summary[selectedDetail]) || 0;
+                    summary.roomRevenue = summary.value;
+
+                    return summary;
+                });
+            };
+
+            const formatTooltipMoney = function (amount) {
+                return new Intl.NumberFormat('vi-VN').format(Math.round(Number(amount) || 0));
+            };
+
+            const buildMainTooltipLine = function (label, value, className) {
+                return [
+                    '<div class="report-main-tooltip-line' + (className ? ' ' + className : '') + '">',
+                    '<span>' + escapeHtml(label) + '</span>',
+                    '<span class="report-main-tooltip-value' + (className === 'is-discount' ? ' is-discount' : '') + '">' + formatTooltipMoney(value) + '</span>',
+                    '</div>'
+                ].join('');
             };
 
             const showMainTooltip = function (event, item) {
@@ -1059,6 +1191,25 @@
                     '<div class="report-main-tooltip-line">Công suất: ' + item.occupancyRate.toFixed(1) + '%</div>',
                     '<div class="report-main-tooltip-line">Tiền phòng: ' + formatMoney(item.roomRevenue) + '</div>'
                 ].join('');
+                if (item.reportType === 'revenue') {
+                    const isAllRevenue = item.detailType === 'all';
+                    const revenueRows = isAllRevenue
+                        ? [
+                            buildMainTooltipLine('Tiền phòng', item.room),
+                            buildMainTooltipLine('Dịch vụ', item.service),
+                            buildMainTooltipLine('Đền bù', item.compensation),
+                            buildMainTooltipLine('Giảm giá', item.discount, 'is-discount'),
+                            buildMainTooltipLine('Tổng cộng', item.total, 'is-total')
+                        ]
+                        : [
+                            buildMainTooltipLine(item.valueLabel, item.value, item.detailType === 'discount' ? 'is-discount' : '')
+                        ];
+
+                    mainReportTooltip.innerHTML = [
+                        '<div class="report-main-tooltip-title">' + escapeHtml(item.tooltipLabel) + '</div>'
+                    ].concat(revenueRows).join('');
+                }
+
                 mainReportTooltip.classList.add('is-visible');
 
                 const board = mainReportTooltip.closest('.report-chart-board');
@@ -1067,10 +1218,13 @@
                 const tooltipHeight = mainReportTooltip.offsetHeight || 110;
                 const maxLeft = Math.max(8, bounds.width - tooltipWidth - 8);
                 const left = Math.min(maxLeft, Math.max(8, event.clientX - bounds.left - (tooltipWidth / 2)));
-                const top = event.clientY - bounds.top - tooltipHeight - 22;
+                const preferredTop = event.clientY - bounds.top - tooltipHeight - 16;
+                const fallbackTop = event.clientY - bounds.top + 16;
+                const maxTop = Math.max(8, bounds.height - tooltipHeight - 8);
+                const top = preferredTop < 8 ? fallbackTop : preferredTop;
 
                 mainReportTooltip.style.left = left + 'px';
-                mainReportTooltip.style.top = Math.min(-8, top) + 'px';
+                mainReportTooltip.style.top = Math.min(maxTop, Math.max(8, top)) + 'px';
             };
 
             const hideMainTooltip = function () {
@@ -1092,7 +1246,7 @@
                     mainReportTitle.textContent = isOccupancy ? 'Thống kê công suất phòng' : 'Thống kê doanh thu';
                 }
 
-                if (!isOccupancy || !fromDate || !toDate || fromDate > toDate) {
+                if (!fromDate || !toDate || fromDate > toDate) {
                     mainReportChart.querySelectorAll('[data-main-chart-bar]').forEach(function (bar) {
                         bar.remove();
                     });
@@ -1109,9 +1263,11 @@
                 }
 
                 const buckets = buildMainReportBuckets(fromDate, toDate);
-                const groups = aggregateMainOccupancyBuckets(buckets, mainReportDetailSelect.value);
+                const groups = isOccupancy
+                    ? aggregateMainOccupancyBuckets(buckets, mainReportDetailSelect.value)
+                    : aggregateMainRevenueBuckets(buckets, mainReportDetailSelect.value);
                 const maxRevenue = Math.max.apply(null, groups.map(function (item) {
-                    return item.roomRevenue;
+                    return item.value;
                 }).concat([0]));
                 const axisMax = maxRevenue > 0 ? Math.ceil(maxRevenue / 1000000) * 1000000 : 1000000;
                 const barWidth = groups.length > 12 ? 18 : 26;
@@ -1129,13 +1285,15 @@
 
                 if (mainReportEmpty) {
                     mainReportEmpty.classList.toggle('d-none', groups.some(function (item) {
-                        return item.roomRevenue > 0 || item.soldRooms > 0;
+                        return item.value > 0 || item.soldRooms > 0;
                     }));
-                    mainReportEmpty.textContent = 'Chưa có công suất phòng trong khoảng thời gian này';
+                    mainReportEmpty.textContent = isOccupancy
+                        ? 'Chưa có công suất phòng trong khoảng thời gian này'
+                        : 'Chưa có doanh thu checkout trong khoảng thời gian này';
                 }
 
                 groups.forEach(function (item, index) {
-                    const barHeight = item.roomRevenue > 0 && axisMax > 0 ? Math.max(8, item.roomRevenue / axisMax * chartHeight) : 0;
+                    const barHeight = item.value > 0 && axisMax > 0 ? Math.max(8, item.value / axisMax * chartHeight) : 0;
                     const x = (slotWidth * index) + ((slotWidth - barWidth) / 2);
                     const y = chartBottom - barHeight;
                     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1155,7 +1313,8 @@
                         mainReportChart.appendChild(path);
                     }
 
-                    label.textContent = item.label;
+                    label.textContent = groups.length > 18 && index % 2 === 1 ? '' : item.label;
+                    label.title = item.tooltipLabel;
                     mainReportXAxis.appendChild(label);
                 });
             };
@@ -1427,7 +1586,43 @@
                 );
             };
 
-            [typeSelect, fromInput, toInput].forEach(function (input) {
+            const bindDateRange = function (fromElement, toElement, onChange) {
+                syncDateRange(fromElement, toElement);
+
+                [fromElement, toElement].forEach(function (input) {
+                    if (!input) {
+                        return;
+                    }
+
+                    input.addEventListener('change', function () {
+                        syncDateRange(fromElement, toElement);
+
+                        if (typeof onChange === 'function') {
+                            onChange();
+                        }
+                    });
+                });
+            };
+
+            bindDateRange(mainReportFromInput, mainReportToInput, renderMainReportChart);
+            bindDateRange(fromInput, toInput, renderServiceRevenueChart);
+            bindDateRange(exportReportFromInput, exportReportToInput);
+
+            exportReportButtons.forEach(function (button) {
+                button.addEventListener('click', function () {
+                    syncDateRange(exportReportFromInput, exportReportToInput);
+
+                    const exportUrl = new URL(button.dataset.exportReportUrl, window.location.origin);
+                    exportUrl.searchParams.set('from', exportReportFromInput ? exportReportFromInput.value : '');
+                    exportUrl.searchParams.set('to', exportReportToInput ? exportReportToInput.value : '');
+                    exportUrl.searchParams.set('period', exportReportPeriodSelect ? exportReportPeriodSelect.value : 'day');
+                    exportUrl.searchParams.set('format', 'xlsx');
+
+                    window.location.href = exportUrl.toString();
+                });
+            });
+
+            [typeSelect].forEach(function (input) {
                 if (input) {
                     input.addEventListener('change', renderServiceRevenueChart);
                 }
@@ -1444,7 +1639,7 @@
                 });
             }
 
-            [mainReportDetailSelect, mainReportFromInput, mainReportToInput].forEach(function (input) {
+            [mainReportDetailSelect].forEach(function (input) {
                 if (input) {
                     input.addEventListener('change', renderMainReportChart);
                 }

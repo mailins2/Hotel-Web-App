@@ -3,6 +3,11 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountManagementController;
 use App\Http\Controllers\CustomerManagementController;
+use App\Exports\BookingReportExport;
+use App\Exports\PaymentReportExport;
+use App\Exports\RoomReportExport;
+use App\Exports\RevenueReportExport;
+use App\Exports\ServiceRevenueReportExport;
 use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\DanhGia;
@@ -17,8 +22,12 @@ use App\Models\SuDungDichVu;
 use App\Models\TaiKhoan;
 use App\Models\ThanhToan;
 use App\Models\TienNghi;
+use App\Services\Reports\RevenueReportService;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 
 /*
 |--------------------------------------------------------------------------
@@ -309,7 +318,11 @@ Route::redirect('/', '/dashboard');
 Route::redirect('/dashboard', '/customer')->name('dashboard');
 
 $buildReportData = function () {
-    $serviceRevenueToday = Carbon::today()->toDateString();
+    $reportDefaultTo = Carbon::today();
+    $reportDefaultFrom = $reportDefaultTo->copy()->subMonth();
+    $serviceRevenueToday = $reportDefaultTo->toDateString();
+    $reportDefaultFromDate = $reportDefaultFrom->toDateString();
+    $reportDefaultToDate = $reportDefaultTo->toDateString();
     $serviceRevenueItems = SuDungDichVu::with('dichVu')
         ->whereHas('dichVu')
         ->get()
@@ -331,11 +344,16 @@ $buildReportData = function () {
         })
         ->filter(fn (array $item) => $item['date'] !== null)
         ->values();
+    $revenueItems = app(RevenueReportService::class)->invoiceItems();
 
     $customerCount = DatPhong::whereNotNull('MaKH')
         ->whereHas('khachHang')
         ->distinct()
         ->count('MaKH');
+    $averageRating = round((float) DanhGia::whereBetween('NgayDanhGia', [
+        $reportDefaultFrom->copy()->startOfDay(),
+        $reportDefaultTo->copy()->endOfDay(),
+    ])->avg('Sao'), 1);
     $roomUsingCount = Phong::where('TinhTrang', 2)->count();
     $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
     $roomStatusItems = Phong::with('loaiPhong')
@@ -382,15 +400,33 @@ $buildReportData = function () {
 
     return [
         'customerCount' => $customerCount,
+        'averageRating' => $averageRating,
         'roomUsingCount' => $roomUsingCount,
         'roomEmptyCount' => $roomEmptyCount,
         'serviceRevenueItems' => $serviceRevenueItems,
         'serviceRevenueToday' => $serviceRevenueToday,
+        'reportDefaultFromDate' => $reportDefaultFromDate,
+        'reportDefaultToDate' => $reportDefaultToDate,
+        'revenueItems' => $revenueItems,
         'roomStatusItems' => $roomStatusItems,
         'roomTypeOptions' => $roomTypeOptions,
         'roomCapacityItems' => $roomCapacityItems,
         'roomOccupancyItems' => $roomOccupancyItems,
     ];
+};
+
+$reportExporterName = function (): string {
+    $authAccount = session('auth_account', []);
+
+    if (!empty($authAccount['MaNV'])) {
+        $employee = NhanVien::find($authAccount['MaNV']);
+
+        if ($employee?->TenNV) {
+            return $employee->TenNV;
+        }
+    }
+
+    return $authAccount['Ten'] ?? 'Admin';
 };
 
 /*
@@ -411,10 +447,87 @@ Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(func
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () use ($buildReportData) {
+Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () use ($buildReportData, $reportExporterName) {
     Route::get('/reports', function () use ($buildReportData) {
         return view('hotel-management.report', $buildReportData());
     })->name('reports.index');
+    Route::get('/reports/export/revenue', function (Request $request) use ($reportExporterName) {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'period' => ['nullable', 'in:day,month,quarter,year'],
+            'format' => ['nullable', 'in:xlsx,csv'],
+        ]);
+
+        $from = Carbon::parse($validated['from'])->toDateString();
+        $to = Carbon::parse($validated['to'])->toDateString();
+        $period = $validated['period'] ?? 'day';
+        $format = $validated['format'] ?? 'xlsx';
+        $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
+        $filename = sprintf('bao-cao-doanh-thu-%s-%s.%s', $from, $to, $format);
+
+        return Excel::download(new RevenueReportExport($from, $to, $period, $reportExporterName()), $filename, $writerType);
+    })->name('reports.export.revenue');
+    Route::get('/reports/export/bookings', function (Request $request) use ($reportExporterName) {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'format' => ['nullable', 'in:xlsx,csv'],
+        ]);
+
+        $from = Carbon::parse($validated['from'])->toDateString();
+        $to = Carbon::parse($validated['to'])->toDateString();
+        $format = $validated['format'] ?? 'xlsx';
+        $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
+        $filename = sprintf('bao-cao-booking-%s-%s.%s', $from, $to, $format);
+
+        return Excel::download(new BookingReportExport($from, $to, $reportExporterName()), $filename, $writerType);
+    })->name('reports.export.bookings');
+    Route::get('/reports/export/rooms', function (Request $request) use ($reportExporterName) {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'format' => ['nullable', 'in:xlsx,csv'],
+        ]);
+
+        $from = Carbon::parse($validated['from'])->toDateString();
+        $to = Carbon::parse($validated['to'])->toDateString();
+        $format = $validated['format'] ?? 'xlsx';
+        $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
+        $filename = sprintf('bao-cao-phong-%s-%s.%s', $from, $to, $format);
+
+        return Excel::download(new RoomReportExport($from, $to, $reportExporterName()), $filename, $writerType);
+    })->name('reports.export.rooms');
+    Route::get('/reports/export/payments', function (Request $request) use ($reportExporterName) {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'format' => ['nullable', 'in:xlsx,csv'],
+        ]);
+
+        $from = Carbon::parse($validated['from'])->toDateString();
+        $to = Carbon::parse($validated['to'])->toDateString();
+        $format = $validated['format'] ?? 'xlsx';
+        $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
+        $filename = sprintf('bao-cao-thanh-toan-%s-%s.%s', $from, $to, $format);
+
+        return Excel::download(new PaymentReportExport($from, $to, $reportExporterName()), $filename, $writerType);
+    })->name('reports.export.payments');
+    Route::get('/reports/export/services', function (Request $request) use ($reportExporterName) {
+        $validated = $request->validate([
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date', 'after_or_equal:from'],
+            'format' => ['nullable', 'in:xlsx,csv'],
+        ]);
+
+        $from = Carbon::parse($validated['from'])->toDateString();
+        $to = Carbon::parse($validated['to'])->toDateString();
+        $format = $validated['format'] ?? 'xlsx';
+        $writerType = $format === 'csv' ? ExcelWriter::CSV : ExcelWriter::XLSX;
+        $filename = sprintf('bao-cao-dich-vu-%s-%s.%s', $from, $to, $format);
+
+        return Excel::download(new ServiceRevenueReportExport($from, $to, $reportExporterName()), $filename, $writerType);
+    })->name('reports.export.services');
     Route::get('/room-amenities', function () {
         $amenities = TienNghi::orderByDesc('MaTienNghi')->get();
 
