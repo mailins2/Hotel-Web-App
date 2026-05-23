@@ -2,6 +2,11 @@
     $customer = $booking?->khachHang;
     $invoice = $booking?->hoaDon;
     $details = collect($booking?->chiTietDatPhong ?? []);
+    $detailIds = $details
+        ->pluck('MaCTDP')
+        ->filter()
+        ->map(fn ($id) => (string) $id)
+        ->implode(', ');
     $paidAmount = (float) ($invoice?->DaThanhToan ?? $invoice?->thanhToans?->sum('SoTien') ?? 0);
     $formatDate = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y') : '--';
     $formatDateTime = fn ($date) => $date ? \Carbon\Carbon::parse($date)->format('d/m/Y H:i:s') : '--';
@@ -121,6 +126,9 @@
             font-size: 16px;
             font-weight: 500;
             line-height: 1.45;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .booking-detail-section {
@@ -148,6 +156,7 @@
             border: 1px solid rgba(151, 64, 26, 0.13);
             border-radius: 13px;
             min-height: 78px;
+            min-width: 0;
             padding: 15px 16px;
             background: #fffefa;
             box-shadow: 0 12px 28px rgba(122, 39, 12, 0.09);
@@ -277,6 +286,7 @@
                             <thead>
                                 <tr>
                                     <th>Số phòng</th>
+                                    <th>Mã CTĐP</th>
                                     <th>Loại phòng</th>
                                     <th>Sức chứa</th>
                                     <th>Giá phòng</th>
@@ -294,13 +304,14 @@
                                     @endphp
                                     <tr>
                                         <td>{{ $room->SoPhong ?? '--' }}</td>
+                                        <td>{{ $detail->MaCTDP ?? '--' }}</td>
                                         <td>{{ $roomType->TenLoaiPhong ?? '--' }}</td>
                                         <td>{{ $capacity }}</td>
                                         <td>{{ $roomPrice !== null ? $formatMoney($roomPrice) . ' / đêm' : '--' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">Chưa có phòng được gán cho đặt phòng này.</td>
+                                        <td colspan="5" class="text-center text-muted py-4">Chưa có phòng được gán cho đặt phòng này.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -317,6 +328,12 @@
                     <div class="booking-detail-info-card">
                         <div class="booking-detail-label">Mã đặt phòng</div>
                         <div class="booking-detail-value">#{{ $booking->MaDatPhong ?? '--' }}</div>
+                    </div>
+                </div>
+                <div class="col-md-6 col-xl-3">
+                    <div class="booking-detail-info-card">
+                        <div class="booking-detail-label">Mã chi tiết đặt phòng</div>
+                        <div class="booking-detail-value">{{ $detailIds ?: '--' }}</div>
                     </div>
                 </div>
                 <div class="col-md-6 col-xl-3">
@@ -351,7 +368,7 @@
                 </div>
                 <div class="col-md-6 col-xl-3">
                     <div class="booking-detail-info-card">
-                        <div class="booking-detail-label">Trạng thái booking</div>
+                        <div class="booking-detail-label">Trạng thái đặt phòng</div>
                         <div class="booking-detail-value">{{ $status['label'] }}</div>
                     </div>
                 </div>

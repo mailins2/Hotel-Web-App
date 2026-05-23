@@ -60,7 +60,9 @@
             font-size: 1.05rem;
             font-weight: 600;
             margin-top: 0.35rem;
+            min-width: 0;
             overflow-wrap: anywhere;
+            word-break: break-word;
         }
         .bd-badge {
             display: inline-flex;
@@ -84,6 +86,7 @@
         .bd-list-item,
         .bd-guest-card {
             border-radius: 18px;
+            min-width: 0;
             background: #fff;
             padding: 1rem;
         }
