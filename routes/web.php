@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AccountManagementController;
 use App\Http\Controllers\CustomerManagementController;
+use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\DanhGia;
 use App\Models\DichVu;
@@ -12,6 +13,7 @@ use App\Models\KhuyenMai;
 use App\Models\LoaiPhong;
 use App\Models\NhanVien;
 use App\Models\Phong;
+use App\Models\SuDungDichVu;
 use App\Models\TaiKhoan;
 use App\Models\ThanhToan;
 use App\Models\TienNghi;
@@ -306,26 +308,100 @@ Route::redirect('/sign-in', '/login')->name('auth.signin');
 Route::redirect('/', '/dashboard');
 Route::redirect('/dashboard', '/customer')->name('dashboard');
 
+$buildReportData = function () {
+    $serviceRevenueToday = Carbon::today()->toDateString();
+    $serviceRevenueItems = SuDungDichVu::with('dichVu')
+        ->whereHas('dichVu')
+        ->get()
+        ->map(function (SuDungDichVu $usage) {
+            $service = $usage->dichVu;
+            $quantity = max(0, (int) ($usage->SoLuong ?? 0));
+            $unitPrice = (float) ($service?->GiaDV ?? 0);
+
+            return [
+                'date' => $usage->ThoiGian ? Carbon::parse($usage->ThoiGian)->toDateString() : null,
+                'type' => (string) ((int) ($service?->LoaiDV ?? 0)),
+                'type_label' => $service?->LoaiDVText ?? 'Khác',
+                'service_id' => $service?->MaDV,
+                'service_name' => $service?->TenDV ?? 'Dịch vụ',
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'revenue' => $quantity * $unitPrice,
+            ];
+        })
+        ->filter(fn (array $item) => $item['date'] !== null)
+        ->values();
+
+    $customerCount = DatPhong::whereNotNull('MaKH')
+        ->whereHas('khachHang')
+        ->distinct()
+        ->count('MaKH');
+    $roomUsingCount = Phong::where('TinhTrang', 2)->count();
+    $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
+    $roomStatusItems = Phong::with('loaiPhong')
+        ->get()
+        ->map(fn (Phong $room) => [
+            'room_id' => $room->MaPhong,
+            'room_number' => $room->SoPhong,
+            'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+            'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
+            'status' => (int) ($room->TinhTrang ?? 0),
+        ])
+        ->values();
+    $roomTypeOptions = LoaiPhong::orderBy('TenLoaiPhong')
+        ->get(['MaLoaiPhong', 'TenLoaiPhong']);
+    $roomCapacityItems = Phong::select('MaPhong', 'MaLoaiPhong')
+        ->get()
+        ->map(fn (Phong $room) => [
+            'room_id' => $room->MaPhong,
+            'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+        ])
+        ->values();
+    $roomOccupancyItems = ChiTietDatPhong::with(['datPhong', 'phong.loaiPhong.khuyenMai'])
+        ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+        ->whereHas('datPhong')
+        ->whereHas('phong.loaiPhong')
+        ->get()
+        ->map(function (ChiTietDatPhong $detail) {
+            $booking = $detail->datPhong;
+            $room = $detail->phong;
+            $roomType = $room?->loaiPhong;
+
+            return [
+                'detail_id' => $detail->MaCTDP,
+                'room_id' => $detail->MaPhong,
+                'room_type_id' => $room?->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+                'room_type_name' => $roomType?->TenLoaiPhong ?? 'Loại phòng',
+                'check_in' => $booking?->NgayNhanPhong ? Carbon::parse($booking->NgayNhanPhong)->toDateString() : null,
+                'check_out' => $booking?->NgayTraPhong ? Carbon::parse($booking->NgayTraPhong)->toDateString() : null,
+                'nightly_price' => (float) ($roomType?->giaSauKhuyenMai($booking?->NgayNhanPhong) ?? 0),
+            ];
+        })
+        ->filter(fn (array $item) => $item['check_in'] !== null && $item['check_out'] !== null)
+        ->values();
+
+    return [
+        'customerCount' => $customerCount,
+        'roomUsingCount' => $roomUsingCount,
+        'roomEmptyCount' => $roomEmptyCount,
+        'serviceRevenueItems' => $serviceRevenueItems,
+        'serviceRevenueToday' => $serviceRevenueToday,
+        'roomStatusItems' => $roomStatusItems,
+        'roomTypeOptions' => $roomTypeOptions,
+        'roomCapacityItems' => $roomCapacityItems,
+        'roomOccupancyItems' => $roomOccupancyItems,
+    ];
+};
+
 /*
 |--------------------------------------------------------------------------
 | Home admin UI
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        $customerCount = DatPhong::whereNotNull('MaKH')
-            ->whereHas('khachHang')
-            ->distinct()
-            ->count('MaKH');
-        $roomUsingCount = Phong::where('TinhTrang', 2)->count();
-        $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
-
-        return view('hotel-management.report', [
-            'customerCount' => $customerCount,
-            'roomUsingCount' => $roomUsingCount,
-            'roomEmptyCount' => $roomEmptyCount,
-        ]);
+Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(function () use ($buildReportData) {
+    Route::get('/dashboard', function () use ($buildReportData) {
+        return view('hotel-management.report', $buildReportData());
     })->name('dashboard');
 });
 
@@ -335,20 +411,9 @@ Route::middleware('account.role:2')->prefix('admin')->name('admin.')->group(func
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () {
-    Route::get('/reports', function () {
-        $customerCount = DatPhong::whereNotNull('MaKH')
-            ->whereHas('khachHang')
-            ->distinct()
-            ->count('MaKH');
-        $roomUsingCount = Phong::where('TinhTrang', 2)->count();
-        $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
-
-        return view('hotel-management.report', [
-            'customerCount' => $customerCount,
-            'roomUsingCount' => $roomUsingCount,
-            'roomEmptyCount' => $roomEmptyCount,
-        ]);
+Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(function () use ($buildReportData) {
+    Route::get('/reports', function () use ($buildReportData) {
+        return view('hotel-management.report', $buildReportData());
     })->name('reports.index');
     Route::get('/room-amenities', function () {
         $amenities = TienNghi::orderByDesc('MaTienNghi')->get();
@@ -371,7 +436,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
     });
     Route::prefix('bookings')->name('bookings.')->group(function () {
         Route::get('/', function () {
-            $bookings = DatPhong::with('khachHang')
+            $bookings = DatPhong::with(['khachHang', 'chiTietDatPhong'])
                 ->orderByDesc('MaDatPhong')
                 ->get();
 

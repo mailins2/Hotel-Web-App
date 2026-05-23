@@ -6,7 +6,7 @@
     <x-slot:filters>
         <div class="col-lg-4">
             <label class="form-label">Tìm kiếm</label>
-            <input type="text" class="form-control" placeholder="Tìm theo mã đặt, tên khách hàng, SĐT" data-booking-search>
+            <input type="text" class="form-control" placeholder="Tìm theo mã đặt, mã CTĐP, tên khách hàng, SĐT" data-booking-search>
         </div>
         <div class="col-md-4 col-lg-3">
             <label class="form-label">Tình trạng</label>
@@ -26,7 +26,8 @@
     <table class="table table-striped align-middle">
         <thead>
             <tr>
-                <th>Mã</th>
+                <th>Mã đặt phòng</th>
+                <th>Mã CTĐP</th>
                 <th>Tên khách hàng</th>
                 <th>Ngày đặt</th>
                 <th>Ngày nhận</th>
@@ -133,6 +134,21 @@
                     return customer && customer.SoDienThoai ? customer.SoDienThoai : '';
                 };
 
+                const getBookingDetailIds = function (booking) {
+                    const details = booking && (booking.chiTietDatPhong || booking.chi_tiet_dat_phong)
+                        ? (booking.chiTietDatPhong || booking.chi_tiet_dat_phong)
+                        : [];
+
+                    return Array.isArray(details)
+                        ? details
+                            .map(function (detail) {
+                                return detail && detail.MaCTDP ? String(detail.MaCTDP) : '';
+                            })
+                            .filter(Boolean)
+                            .join(', ')
+                        : '';
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Không có đặt phòng phù hợp.</td></tr>';
@@ -146,6 +162,7 @@
                         return `
                             <tr class="hm-clickable-row" data-hm-row-link="${showUrl}" tabindex="0">
                                 <td>${booking.MaDatPhong || '--'}</td>
+                                <td>${getBookingDetailIds(booking) || '--'}</td>
                                 <td>${getCustomerName(booking)}</td>
                                 <td>${formatDateTime(booking.NgayDat)}</td>
                                 <td>${formatDate(booking.NgayNhanPhong)}</td>
@@ -173,6 +190,7 @@
                         const customerName = getCustomerName(booking);
                         const matchesKeyword = !keyword
                             || String(booking && booking.MaDatPhong ? booking.MaDatPhong : '').toLowerCase().includes(keyword)
+                            || String(getBookingDetailIds(booking)).toLowerCase().includes(keyword)
                             || String(customerName).toLowerCase().includes(keyword)
                             || String(getCustomerPhone(booking)).toLowerCase().includes(keyword);
 

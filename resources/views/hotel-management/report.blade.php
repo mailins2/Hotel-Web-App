@@ -5,7 +5,7 @@
         }
 
         .report-revenue-chart {
-            min-height: 320px;
+            min-height: 430px;
             margin-bottom: 1.5rem;
             border: 1px dashed rgba(111, 29, 1, 0.18);
             border-radius: 16px;
@@ -27,7 +27,7 @@
             grid-template-columns: 72px minmax(0, 1fr);
             gap: 1rem;
             align-items: stretch;
-            min-height: 270px;
+            min-height: 370px;
         }
 
         .report-chart-yaxis {
@@ -50,7 +50,7 @@
         .report-chart-board {
             position: relative;
             flex: 1;
-            min-height: 220px;
+            min-height: 320px;
             border-radius: 18px;
             background:
                 linear-gradient(to bottom, rgba(194, 120, 55, 0.06), rgba(194, 120, 55, 0.01)),
@@ -61,7 +61,7 @@
                     transparent 1px,
                     transparent 52px
                 );
-            overflow: hidden;
+            overflow: visible;
         }
 
         .report-chart-board svg {
@@ -69,6 +69,59 @@
             inset: 0;
             width: 100%;
             height: 100%;
+        }
+
+        .report-chart-board [data-main-chart-bar] {
+            cursor: pointer;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            transform-box: fill-box;
+            transform-origin: center;
+        }
+
+        .report-chart-board [data-main-chart-bar]:hover {
+            opacity: 0.88;
+        }
+
+        .report-main-tooltip {
+            position: absolute;
+            z-index: 25;
+            display: none;
+            min-width: 240px;
+            max-width: 280px;
+            padding: 0.8rem 0.9rem;
+            border: 1px solid rgba(111, 29, 1, 0.12);
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 18px 40px -24px rgba(111, 29, 1, 0.45);
+            color: #49120f;
+            pointer-events: none;
+        }
+
+        .report-main-tooltip.is-visible {
+            display: block;
+        }
+
+        .report-main-tooltip-title {
+            font-weight: 800;
+            margin-bottom: 0.4rem;
+        }
+
+        .report-main-tooltip-line {
+            color: #8a4b2a;
+            font-size: 0.88rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .report-chart-empty {
+            position: absolute;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            color: #8a4b2a;
+            font-weight: 500;
+            text-align: center;
+            padding: 1rem;
         }
 
         .report-chart-xaxis {
@@ -98,6 +151,15 @@
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 1rem;
             width: min(100%, 380px);
+        }
+
+        .report-main-filter-controls {
+            display: grid;
+            grid-template-columns: minmax(150px, 180px) minmax(190px, 240px) repeat(2, minmax(150px, 180px));
+            gap: 1rem;
+            align-items: end;
+            max-width: 820px;
+            width: 100%;
         }
 
         .report-date-controls--compact {
@@ -135,16 +197,28 @@
             width: 190px;
         }
 
+        .report-room-type-control {
+            width: min(100%, 240px);
+        }
+
         .report-pie-card .card-body {
             display: grid;
             grid-template-columns: minmax(180px, 240px) minmax(0, 1fr);
             gap: 1.5rem;
             align-items: center;
+            position: relative;
         }
 
         .report-pie-card {
             border-radius: 14px;
-            overflow: hidden;
+            overflow: visible;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .report-pie-card .card-body {
+            flex: 1;
         }
 
         .report-card-toolbar {
@@ -169,6 +243,13 @@
             stroke-width: 1.5;
             stroke-linejoin: round;
             stroke-linecap: round;
+            cursor: pointer;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            transform-origin: center;
+        }
+
+        .report-pie-chart path:hover {
+            opacity: 0.86;
         }
 
         .report-pie-legend {
@@ -205,6 +286,41 @@
         .report-pie-legend-value {
             color: #454040;
             white-space: nowrap;
+        }
+
+        .report-service-tooltip {
+            position: absolute;
+            z-index: 30;
+            display: none;
+            min-width: 190px;
+            padding: 0.75rem 0.85rem;
+            border: 1px solid rgba(111, 29, 1, 0.12);
+            border-radius: 10px;
+            background: #fff;
+            box-shadow: 0 18px 40px -24px rgba(111, 29, 1, 0.45);
+            color: #49120f;
+            pointer-events: none;
+        }
+
+        .report-service-tooltip.is-visible {
+            display: block;
+        }
+
+        .report-service-tooltip-title {
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+        }
+
+        .report-service-tooltip-line {
+            color: #8a4b2a;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .report-service-empty {
+            color: #8a4b2a;
+            font-weight: 700;
+            text-align: center;
         }
 
         .report-summary-title {
@@ -303,6 +419,11 @@
                 width: 100%;
             }
 
+            .report-main-filter-controls {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                max-width: 100%;
+            }
+
             .report-date-controls--compact {
                 grid-template-columns: 1fr;
             }
@@ -317,7 +438,17 @@
                 width: 100%;
             }
 
+            .report-room-type-control {
+                width: 100%;
+            }
+
             .report-pie-card .card-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .report-main-filter-controls {
                 grid-template-columns: 1fr;
             }
         }
@@ -412,16 +543,33 @@
                 <div class="card-header">
                     <div class="report-revenue-toolbar">
                         <div class="header-title">
-                            <h4 class="card-title mb-0">Thống kê doanh thu</h4>
+                            <h4 class="card-title mb-0" data-main-report-title>Thống kê công suất phòng</h4>
                         </div>
-                        <div class="report-date-controls">
+                        <div class="report-main-filter-controls">
+                            <div class="report-date-field">
+                                <label>Nội dung xem</label>
+                                <select class="form-select report-date-input" aria-label="Noi dung thong ke" data-main-report-type>
+                                    <option value="occupancy" selected>Công suất phòng</option>
+                                    <option value="revenue">Doanh thu</option>
+                                </select>
+                            </div>
+                            <div class="report-date-field">
+                                <label>Chi tiết</label>
+                                <select class="form-select report-date-input" aria-label="Chi tiet thong ke" data-main-report-detail>
+                                    <option value="all" selected>Tất cả</option>
+                                    <option value="room">Tiền phòng</option>
+                                    <option value="service">Dịch vụ</option>
+                                    <option value="discount">Giảm giá</option>
+                                    <option value="compensation">Đền bù</option>
+                                </select>
+                            </div>
                             <div class="report-date-field">
                                 <label>Từ ngày</label>
-                                <input class="form-control report-date-input" type="date" value="2026-01-01" aria-label="Tu ngay">
+                                <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Tu ngay" data-main-report-from>
                             </div>
                             <div class="report-date-field">
                                 <label>Đến ngày</label>
-                                <input class="form-control report-date-input" type="date" value="2026-06-30" aria-label="Den ngay">
+                                <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Den ngay" data-main-report-to>
                             </div>
                         </div>
                     </div>
@@ -429,7 +577,7 @@
                 <div class="card-body">
                     <div class="report-revenue-chart">
                         <div class="report-chart-shell">
-                            <div class="report-chart-yaxis">
+                            <div class="report-chart-yaxis" data-main-report-yaxis>
                                 <span>40 triệu</span>
                                 <span>35 triệu</span>
                                 <span>30 triệu</span>
@@ -438,29 +586,19 @@
                             </div>
                             <div class="report-chart-stage">
                                 <div class="report-chart-board">
-                                    <svg viewBox="0 0 640 260" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                                    <svg viewBox="0 0 640 360" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" data-main-report-chart>
                                         <defs>
                                             <linearGradient id="reportRevenueFill" x1="0" y1="0" x2="0" y2="1">
                                                 <stop offset="0%" stop-color="#c97a3e" stop-opacity="0.94"/>
                                                 <stop offset="100%" stop-color="#6f1d01" stop-opacity="0.88"/>
                                             </linearGradient>
                                         </defs>
-                                        <rect x="48" y="94" width="26" height="126" rx="12" fill="url(#reportRevenueFill)"/>
-                                        <rect x="154" y="76" width="26" height="144" rx="12" fill="url(#reportRevenueFill)"/>
-                                        <rect x="260" y="58" width="26" height="162" rx="12" fill="url(#reportRevenueFill)"/>
-                                        <rect x="366" y="48" width="26" height="172" rx="12" fill="url(#reportRevenueFill)"/>
-                                        <rect x="472" y="34" width="26" height="186" rx="12" fill="url(#reportRevenueFill)"/>
-                                        <rect x="578" y="22" width="26" height="198" rx="12" fill="url(#reportRevenueFill)"/>
                                     </svg>
+                                    <div class="report-chart-empty d-none" data-main-report-empty>Chưa có dữ liệu trong khoảng thời gian này</div>
+                                    <div class="report-main-tooltip" data-main-report-tooltip></div>
                                 </div>
 
-                                <div class="report-chart-xaxis">
-                                    <span>Tháng 1</span>
-                                    <span>Tháng 2</span>
-                                    <span>Tháng 3</span>
-                                    <span>Tháng 4</span>
-                                    <span>Tháng 5</span>
-                                    <span>Tháng 6</span>
+                                <div class="report-chart-xaxis" data-main-report-xaxis>
                                 </div>
                             </div>
                         </div>
@@ -470,133 +608,69 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card report-pie-card">
+    <div class="row align-items-stretch">
+        <div class="col-md-6 d-flex">
+            <div class="card report-pie-card w-100">
                 <div class="card-header">
                     <div class="report-card-toolbar">
                         <div class="header-title">
-                            <h4 class="card-title mb-0">Doanh thu dịch vụ</h4>
+                            <h4 class="card-title mb-0">Dịch vụ đã được đặt</h4>
                         </div>
                         <div class="report-service-controls">
                             <div class="report-date-field report-service-type">
                                 <label>Loại dịch vụ</label>
-                                <select class="form-select report-date-input" aria-label="Loai dich vu">
-                                    <option selected>Tất cả</option>
-                                    <option>Dịch ăn uống</option>
-                                    <option>Dịch vụ phòng</option>
-                                    <option>Dịch vụ giải trí</option>
+                                <select class="form-select report-date-input" aria-label="Loai dich vu" data-service-revenue-type>
+                                    <option value="all" selected>Tất cả</option>
+                                    <option value="1">Dịch ăn uống</option>
+                                    <option value="2">Dịch vụ phòng</option>
+                                    <option value="3">Dịch vụ giải trí</option>
                                 </select>
                             </div>
                             <div class="report-date-controls report-date-controls--compact">
                                 <div class="report-date-field">
                                     <label>Từ ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="2026-01-01" aria-label="Tu ngay doanh thu dich vu">
+                                    <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Tu ngay doanh thu dich vu" data-service-revenue-from>
                                 </div>
                                 <div class="report-date-field">
                                     <label>Đến ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="2026-06-30" aria-label="Den ngay doanh thu dich vu">
+                                    <input class="form-control report-date-input" type="date" value="{{ $serviceRevenueToday ?? now()->toDateString() }}" aria-label="Den ngay doanh thu dich vu" data-service-revenue-to>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <svg class="report-pie-chart" viewBox="0 0 100 100" aria-hidden="true">
-                        <path d="M50 50 L50 4 A46 46 0 0 1 72.11 90.35 Z" fill="#F75270"/>
-                        <path d="M50 50 L72.11 90.35 A46 46 0 0 1 4.91 59.57 Z" fill="#FAE251"/>
-                        <path d="M50 50 L4.91 59.57 A46 46 0 0 1 23.17 12.62 Z" fill="#8CC0EB"/>
-                        <path d="M50 50 L23.17 12.62 A46 46 0 0 1 50 4 Z" fill="#5DD3B6"/>
+                    <svg class="report-pie-chart" viewBox="0 0 100 100" aria-hidden="true" data-service-revenue-chart>
                     </svg>
-                    <ul class="report-pie-legend">
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #F75270;"></span>
-                                Nhà hàng
-                            </span>
-                            <span class="report-pie-legend-value">42%</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #FAE251;"></span>
-                                Spa
-                            </span>
-                            <span class="report-pie-legend-value">28%</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #8CC0EB;"></span>
-                                Giặt ủi
-                            </span>
-                            <span class="report-pie-legend-value">18%</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #5DD3B6;"></span>
-                                Đưa đón
-                            </span>
-                            <span class="report-pie-legend-value">12%</span>
-                        </li>
+                    <ul class="report-pie-legend" data-service-revenue-legend>
                     </ul>
+                    <div class="report-service-tooltip" data-service-revenue-tooltip></div>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <div class="card report-pie-card">
+        <div class="col-md-6 d-flex">
+            <div class="card report-pie-card w-100">
                 <div class="card-header">
                     <div class="report-card-toolbar">
                         <div class="header-title">
-                            <h4 class="card-title mb-0">Tình trạng phòng</h4>
+                            <h4 class="card-title mb-0">Tình trạng phòng trong hôm nay</h4>
                         </div>
-                        <div class="report-date-controls report-date-controls--compact">
-                            <div class="report-date-field">
-                                <label>Từ ngày</label>
-                                <input class="form-control report-date-input" type="date" value="2026-01-01" aria-label="Tu ngay tinh trang phong">
-                            </div>
-                            <div class="report-date-field">
-                                <label>Đến ngày</label>
-                                <input class="form-control report-date-input" type="date" value="2026-06-30" aria-label="Den ngay tinh trang phong">
-                            </div>
+                        <div class="report-date-field report-room-type-control">
+                            <label>Loại phòng</label>
+                            <select class="form-select report-date-input" aria-label="Loai phong" data-room-status-type>
+                                <option value="all" selected>Tất cả</option>
+                                @foreach (($roomTypeOptions ?? collect()) as $roomType)
+                                    <option value="{{ $roomType->MaLoaiPhong }}">{{ $roomType->TenLoaiPhong }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <svg class="report-pie-chart" viewBox="0 0 100 100" aria-hidden="true">
-                        <path d="M50 50 L50 4 A46 46 0 0 1 95.91 52.89 Z" fill="#F75270"/>
-                        <path d="M50 50 L95.91 52.89 A46 46 0 0 1 83.17 81.89 Z" fill="#FAE251"/>
-                        <path d="M50 50 L83.17 81.89 A46 46 0 1 1 26.98 10.16 Z" fill="#8CC0EB"/>
-                        <path d="M50 50 L26.98 10.16 A46 46 0 0 1 50 4 Z" fill="#5DD3B6"/>
+                    <svg class="report-pie-chart" viewBox="0 0 100 100" aria-hidden="true" data-room-status-chart>
                     </svg>
-                    <ul class="report-pie-legend">
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #F75270;"></span>
-                                Trống
-                            </span>
-                            <span class="report-pie-legend-value">24</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #FAE251;"></span>
-                                Đã đặt
-                            </span>
-                            <span class="report-pie-legend-value">12</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #8CC0EB;"></span>
-                                Đang sử dụng
-                            </span>
-                            <span class="report-pie-legend-value">56</span>
-                        </li>
-                        <li>
-                            <span class="report-pie-legend-label">
-                                <span class="report-pie-legend-dot" style="background: #5DD3B6;"></span>
-                                Đang dọn dẹp
-                            </span>
-                            <span class="report-pie-legend-value">8</span>
-                        </li>
+                    <ul class="report-pie-legend" data-room-status-legend>
                     </ul>
                 </div>
             </div>
@@ -744,4 +818,642 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const serviceRevenueItems = @json($serviceRevenueItems ?? []);
+            const roomStatusItems = @json($roomStatusItems ?? []);
+            const roomCapacityItems = @json($roomCapacityItems ?? []);
+            const roomOccupancyItems = @json($roomOccupancyItems ?? []);
+            const mainReportTypeSelect = document.querySelector('[data-main-report-type]');
+            const mainReportDetailSelect = document.querySelector('[data-main-report-detail]');
+            const mainReportTitle = document.querySelector('[data-main-report-title]');
+            const mainReportFromInput = document.querySelector('[data-main-report-from]');
+            const mainReportToInput = document.querySelector('[data-main-report-to]');
+            const mainReportChart = document.querySelector('[data-main-report-chart]');
+            const mainReportXAxis = document.querySelector('[data-main-report-xaxis]');
+            const mainReportYAxis = document.querySelector('[data-main-report-yaxis]');
+            const mainReportTooltip = document.querySelector('[data-main-report-tooltip]');
+            const mainReportEmpty = document.querySelector('[data-main-report-empty]');
+            const roomTypeChoices = @json(($roomTypeOptions ?? collect())->map(fn ($roomType) => [
+                'value' => (string) $roomType->MaLoaiPhong,
+                'label' => $roomType->TenLoaiPhong,
+            ])->values());
+            const typeSelect = document.querySelector('[data-service-revenue-type]');
+            const fromInput = document.querySelector('[data-service-revenue-from]');
+            const toInput = document.querySelector('[data-service-revenue-to]');
+            const chart = document.querySelector('[data-service-revenue-chart]');
+            const legend = document.querySelector('[data-service-revenue-legend]');
+            const tooltip = document.querySelector('[data-service-revenue-tooltip]');
+            const roomStatusTypeSelect = document.querySelector('[data-room-status-type]');
+            const roomStatusChart = document.querySelector('[data-room-status-chart]');
+            const roomStatusLegend = document.querySelector('[data-room-status-legend]');
+            const colors = ['#F75270', '#FAE251', '#8CC0EB', '#5DD3B6', '#9B7EDE', '#F59E0B', '#38BDF8', '#84CC16'];
+            const typeLabels = {
+                '1': 'Dịch ăn uống',
+                '2': 'Dịch vụ phòng',
+                '3': 'Dịch vụ giải trí'
+            };
+            const roomStatusConfig = [
+                { status: 0, label: 'Trống', color: '#F75270' },
+                { status: 1, label: 'Đã đặt', color: '#FAE251' },
+                { status: 2, label: 'Đang sử dụng', color: '#8CC0EB' },
+                { status: 3, label: 'Đang dọn dẹp', color: '#5DD3B6' }
+            ];
+            const mainRevenueDetailOptions = [
+                { value: 'all', label: 'Tất cả' },
+                { value: 'room', label: 'Tiền phòng' },
+                { value: 'service', label: 'Dịch vụ' },
+                { value: 'discount', label: 'Giảm giá' },
+                { value: 'compensation', label: 'Đền bù' }
+            ];
+            const chartHeight = 300;
+            const chartTop = 20;
+            const chartBottom = 335;
+            const dayMs = 24 * 60 * 60 * 1000;
+
+            const renderMainReportDetailOptions = function () {
+                if (!mainReportTypeSelect || !mainReportDetailSelect) {
+                    return;
+                }
+
+                const options = mainReportTypeSelect.value === 'occupancy'
+                    ? [{ value: 'all', label: 'Tất cả loại phòng' }].concat(roomTypeChoices)
+                    : mainRevenueDetailOptions;
+
+                mainReportDetailSelect.innerHTML = '';
+
+                options.forEach(function (item) {
+                    const option = document.createElement('option');
+                    option.value = item.value;
+                    option.textContent = item.label;
+                    mainReportDetailSelect.appendChild(option);
+                });
+            };
+
+            const parseDate = function (value) {
+                const parts = String(value || '').split('-').map(Number);
+
+                if (parts.length !== 3 || parts.some(Number.isNaN)) {
+                    return null;
+                }
+
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            };
+
+            const toDateKey = function (date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+
+                return [year, month, day].join('-');
+            };
+
+            const addDays = function (date, days) {
+                const nextDate = new Date(date);
+                nextDate.setDate(nextDate.getDate() + days);
+
+                return nextDate;
+            };
+
+            const addMonths = function (date, months) {
+                const nextDate = new Date(date);
+                nextDate.setMonth(nextDate.getMonth() + months);
+
+                return nextDate;
+            };
+
+            const startOfMonth = function (date) {
+                return new Date(date.getFullYear(), date.getMonth(), 1);
+            };
+
+            const diffDays = function (start, end) {
+                return Math.max(0, Math.round((end - start) / dayMs));
+            };
+
+            const maxDate = function (left, right) {
+                return left > right ? left : right;
+            };
+
+            const minDate = function (left, right) {
+                return left < right ? left : right;
+            };
+
+            const formatShortDate = function (date) {
+                return String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0');
+            };
+
+            const formatFullDate = function (date) {
+                return formatShortDate(date) + '/' + date.getFullYear();
+            };
+
+            const formatMonth = function (date) {
+                return 'Tháng ' + (date.getMonth() + 1) + '/' + date.getFullYear();
+            };
+
+            const formatCompactMoney = function (amount) {
+                const value = Number(amount) || 0;
+
+                if (value >= 1000000) {
+                    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 }).format(value / 1000000) + ' triệu';
+                }
+
+                if (value >= 1000) {
+                    return new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(value / 1000) + ' nghìn';
+                }
+
+                return new Intl.NumberFormat('vi-VN').format(value);
+            };
+
+            const buildMainReportBuckets = function (fromDate, toDate) {
+                const endExclusive = addDays(toDate, 1);
+                const totalDays = diffDays(fromDate, endExclusive);
+                const buckets = [];
+
+                if (totalDays <= 31) {
+                    for (let cursor = new Date(fromDate); cursor < endExclusive; cursor = addDays(cursor, 1)) {
+                        buckets.push({
+                            key: toDateKey(cursor),
+                            label: formatShortDate(cursor),
+                            tooltipLabel: formatFullDate(cursor),
+                            start: new Date(cursor),
+                            end: addDays(cursor, 1)
+                        });
+                    }
+
+                    return buckets;
+                }
+
+                for (let cursor = startOfMonth(fromDate); cursor < endExclusive; cursor = addMonths(cursor, 1)) {
+                    const monthEnd = addMonths(cursor, 1);
+
+                    buckets.push({
+                        key: cursor.getFullYear() + '-' + String(cursor.getMonth() + 1).padStart(2, '0'),
+                        label: 'Tháng ' + (cursor.getMonth() + 1),
+                        tooltipLabel: formatMonth(cursor),
+                        start: maxDate(cursor, fromDate),
+                        end: minDate(monthEnd, endExclusive)
+                    });
+                }
+
+                return buckets;
+            };
+
+            const getMainRoomCapacity = function (roomTypeId) {
+                return roomCapacityItems.filter(function (room) {
+                    return roomTypeId === 'all' || String(room.room_type_id) === roomTypeId;
+                }).length;
+            };
+
+            const aggregateMainOccupancyBuckets = function (buckets, roomTypeId) {
+                const roomCapacity = getMainRoomCapacity(roomTypeId);
+
+                return buckets.map(function (bucket) {
+                    const daysInBucket = diffDays(bucket.start, bucket.end);
+                    const capacityRoomNights = roomCapacity * daysInBucket;
+                    let soldRoomNights = 0;
+                    let roomRevenue = 0;
+
+                    roomOccupancyItems.forEach(function (item) {
+                        if (roomTypeId !== 'all' && String(item.room_type_id) !== roomTypeId) {
+                            return;
+                        }
+
+                        const checkIn = parseDate(item.check_in);
+                        const checkOut = parseDate(item.check_out);
+
+                        if (!checkIn || !checkOut) {
+                            return;
+                        }
+
+                        const overlapStart = maxDate(checkIn, bucket.start);
+                        const overlapEnd = minDate(checkOut, bucket.end);
+                        const overlapDays = diffDays(overlapStart, overlapEnd);
+
+                        if (overlapDays <= 0) {
+                            return;
+                        }
+
+                        soldRoomNights += overlapDays;
+                        roomRevenue += overlapDays * (Number(item.nightly_price) || 0);
+                    });
+
+                    return {
+                        label: bucket.label,
+                        tooltipLabel: bucket.tooltipLabel,
+                        soldRooms: soldRoomNights,
+                        occupancyRate: capacityRoomNights > 0 ? soldRoomNights / capacityRoomNights * 100 : 0,
+                        roomRevenue: roomRevenue
+                    };
+                });
+            };
+
+            const showMainTooltip = function (event, item) {
+                if (!mainReportTooltip) {
+                    return;
+                }
+
+                mainReportTooltip.innerHTML = [
+                    '<div class="report-main-tooltip-title">' + escapeHtml(item.tooltipLabel) + '</div>',
+                    '<div class="report-main-tooltip-line">Số phòng được bán: ' + item.soldRooms + '</div>',
+                    '<div class="report-main-tooltip-line">Công suất: ' + item.occupancyRate.toFixed(1) + '%</div>',
+                    '<div class="report-main-tooltip-line">Tiền phòng: ' + formatMoney(item.roomRevenue) + '</div>'
+                ].join('');
+                mainReportTooltip.classList.add('is-visible');
+
+                const board = mainReportTooltip.closest('.report-chart-board');
+                const bounds = board ? board.getBoundingClientRect() : { left: 0, top: 0 };
+                const tooltipWidth = mainReportTooltip.offsetWidth || 240;
+                const tooltipHeight = mainReportTooltip.offsetHeight || 110;
+                const maxLeft = Math.max(8, bounds.width - tooltipWidth - 8);
+                const left = Math.min(maxLeft, Math.max(8, event.clientX - bounds.left - (tooltipWidth / 2)));
+                const top = event.clientY - bounds.top - tooltipHeight - 22;
+
+                mainReportTooltip.style.left = left + 'px';
+                mainReportTooltip.style.top = Math.min(-8, top) + 'px';
+            };
+
+            const hideMainTooltip = function () {
+                if (mainReportTooltip) {
+                    mainReportTooltip.classList.remove('is-visible');
+                }
+            };
+
+            const renderMainReportChart = function () {
+                if (!mainReportChart || !mainReportXAxis || !mainReportYAxis || !mainReportTypeSelect || !mainReportDetailSelect) {
+                    return;
+                }
+
+                const isOccupancy = mainReportTypeSelect.value === 'occupancy';
+                const fromDate = parseDate(mainReportFromInput ? mainReportFromInput.value : '');
+                const toDate = parseDate(mainReportToInput ? mainReportToInput.value : '');
+
+                if (mainReportTitle) {
+                    mainReportTitle.textContent = isOccupancy ? 'Thống kê công suất phòng' : 'Thống kê doanh thu';
+                }
+
+                if (!isOccupancy || !fromDate || !toDate || fromDate > toDate) {
+                    mainReportChart.querySelectorAll('[data-main-chart-bar]').forEach(function (bar) {
+                        bar.remove();
+                    });
+                    mainReportXAxis.innerHTML = '';
+                    mainReportYAxis.innerHTML = ['40 triệu', '30 triệu', '20 triệu', '10 triệu', '0'].map(function (label) {
+                        return '<span>' + label + '</span>';
+                    }).join('');
+                    if (mainReportEmpty) {
+                        mainReportEmpty.textContent = 'Chưa có dữ liệu biểu đồ cho lựa chọn này';
+                        mainReportEmpty.classList.remove('d-none');
+                    }
+                    hideMainTooltip();
+                    return;
+                }
+
+                const buckets = buildMainReportBuckets(fromDate, toDate);
+                const groups = aggregateMainOccupancyBuckets(buckets, mainReportDetailSelect.value);
+                const maxRevenue = Math.max.apply(null, groups.map(function (item) {
+                    return item.roomRevenue;
+                }).concat([0]));
+                const axisMax = maxRevenue > 0 ? Math.ceil(maxRevenue / 1000000) * 1000000 : 1000000;
+                const barWidth = groups.length > 12 ? 18 : 26;
+                const slotWidth = 640 / Math.max(groups.length, 1);
+
+                mainReportChart.querySelectorAll('[data-main-chart-bar]').forEach(function (bar) {
+                    bar.remove();
+                });
+                mainReportXAxis.innerHTML = '';
+                mainReportXAxis.style.gridTemplateColumns = 'repeat(' + Math.max(groups.length, 1) + ', minmax(0, 1fr))';
+                mainReportYAxis.innerHTML = [1, 0.75, 0.5, 0.25, 0].map(function (ratio) {
+                    return '<span>' + formatCompactMoney(axisMax * ratio) + '</span>';
+                }).join('');
+                hideMainTooltip();
+
+                if (mainReportEmpty) {
+                    mainReportEmpty.classList.toggle('d-none', groups.some(function (item) {
+                        return item.roomRevenue > 0 || item.soldRooms > 0;
+                    }));
+                    mainReportEmpty.textContent = 'Chưa có công suất phòng trong khoảng thời gian này';
+                }
+
+                groups.forEach(function (item, index) {
+                    const barHeight = item.roomRevenue > 0 && axisMax > 0 ? Math.max(8, item.roomRevenue / axisMax * chartHeight) : 0;
+                    const x = (slotWidth * index) + ((slotWidth - barWidth) / 2);
+                    const y = chartBottom - barHeight;
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    const label = document.createElement('span');
+
+                    if (barHeight > 0) {
+                        path.setAttribute('d', describeTopRoundedBar(x, y, barWidth, barHeight, 12));
+                        path.setAttribute('fill', 'url(#reportRevenueFill)');
+                        path.setAttribute('data-main-chart-bar', 'true');
+                        path.addEventListener('mouseenter', function (event) {
+                            showMainTooltip(event, item);
+                        });
+                        path.addEventListener('mousemove', function (event) {
+                            showMainTooltip(event, item);
+                        });
+                        path.addEventListener('mouseleave', hideMainTooltip);
+                        mainReportChart.appendChild(path);
+                    }
+
+                    label.textContent = item.label;
+                    mainReportXAxis.appendChild(label);
+                });
+            };
+
+            const formatMoney = function (amount) {
+                return new Intl.NumberFormat('vi-VN').format(Math.round(Number(amount) || 0)) + ' VNĐ';
+            };
+
+            const escapeHtml = function (value) {
+                return String(value ?? '').replace(/[&<>"']/g, function (char) {
+                    return {
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#039;'
+                    }[char];
+                });
+            };
+
+            const polarToCartesian = function (centerX, centerY, radius, angleInDegrees) {
+                const angleInRadians = (angleInDegrees - 90) * Math.PI / 180;
+
+                return {
+                    x: centerX + (radius * Math.cos(angleInRadians)),
+                    y: centerY + (radius * Math.sin(angleInRadians))
+                };
+            };
+
+            const describeSlice = function (startAngle, endAngle) {
+                const start = polarToCartesian(50, 50, 46, endAngle);
+                const end = polarToCartesian(50, 50, 46, startAngle);
+                const largeArcFlag = endAngle - startAngle <= 180 ? 0 : 1;
+
+                return [
+                    'M', 50, 50,
+                    'L', start.x.toFixed(2), start.y.toFixed(2),
+                    'A', 46, 46, 0, largeArcFlag, 0, end.x.toFixed(2), end.y.toFixed(2),
+                    'Z'
+                ].join(' ');
+            };
+
+            const describeTopRoundedBar = function (x, y, width, height, radius) {
+                const bottom = y + height;
+                const corner = Math.min(radius, width / 2, height);
+                const right = x + width;
+
+                return [
+                    'M', x.toFixed(2), bottom.toFixed(2),
+                    'L', x.toFixed(2), (y + corner).toFixed(2),
+                    'Q', x.toFixed(2), y.toFixed(2), (x + corner).toFixed(2), y.toFixed(2),
+                    'L', (right - corner).toFixed(2), y.toFixed(2),
+                    'Q', right.toFixed(2), y.toFixed(2), right.toFixed(2), (y + corner).toFixed(2),
+                    'L', right.toFixed(2), bottom.toFixed(2),
+                    'Z'
+                ].join(' ');
+            };
+
+            const getFilteredItems = function () {
+                const selectedType = typeSelect ? typeSelect.value : 'all';
+                const fromDate = fromInput ? fromInput.value : '';
+                const toDate = toInput ? toInput.value : '';
+
+                return serviceRevenueItems.filter(function (item) {
+                    if (selectedType !== 'all' && String(item.type) !== selectedType) {
+                        return false;
+                    }
+
+                    if (fromDate && item.date < fromDate) {
+                        return false;
+                    }
+
+                    if (toDate && item.date > toDate) {
+                        return false;
+                    }
+
+                    return true;
+                });
+            };
+
+            const aggregateItems = function (items) {
+                const selectedType = typeSelect ? typeSelect.value : 'all';
+                const groups = new Map();
+
+                items.forEach(function (item) {
+                    const key = selectedType === 'all'
+                        ? String(item.type || 'other')
+                        : String(item.service_id || item.service_name);
+                    const name = selectedType === 'all'
+                        ? (typeLabels[String(item.type)] || item.type_label || 'Khác')
+                        : (item.service_name || 'Dịch vụ');
+
+                    if (!groups.has(key)) {
+                        groups.set(key, {
+                            name: name,
+                            quantity: 0,
+                            revenue: 0
+                        });
+                    }
+
+                    const group = groups.get(key);
+                    group.quantity += Number(item.quantity) || 0;
+                    group.revenue += Number(item.revenue) || 0;
+                });
+
+                return Array.from(groups.values())
+                    .filter(function (item) {
+                        return item.revenue > 0 || item.quantity > 0;
+                    })
+                    .sort(function (left, right) {
+                        return right.revenue - left.revenue;
+                    });
+            };
+
+            const showTooltip = function (event, item) {
+                if (!tooltip) {
+                    return;
+                }
+
+                tooltip.innerHTML = [
+                    '<div class="report-service-tooltip-title">' + escapeHtml(item.name) + '</div>',
+                    '<div class="report-service-tooltip-line">Số lượng bán: ' + item.quantity + '</div>',
+                    '<div class="report-service-tooltip-line">Doanh thu: ' + formatMoney(item.revenue) + '</div>'
+                ].join('');
+                tooltip.classList.add('is-visible');
+
+                const cardBody = tooltip.closest('.card-body');
+                const bounds = cardBody ? cardBody.getBoundingClientRect() : { left: 0, top: 0 };
+                const tooltipWidth = tooltip.offsetWidth || 190;
+                const tooltipHeight = tooltip.offsetHeight || 90;
+                const left = event.clientX - bounds.left - (tooltipWidth / 2);
+                const top = event.clientY - bounds.top - tooltipHeight - 14;
+
+                tooltip.style.left = Math.max(8, left) + 'px';
+                tooltip.style.top = Math.max(8, top) + 'px';
+            };
+
+            const hideTooltip = function () {
+                if (tooltip) {
+                    tooltip.classList.remove('is-visible');
+                }
+            };
+
+            const renderServiceRevenueChart = function () {
+                if (!chart || !legend) {
+                    return;
+                }
+
+                const groups = aggregateItems(getFilteredItems());
+                const totalRevenue = groups.reduce(function (sum, item) {
+                    return sum + item.revenue;
+                }, 0);
+
+                chart.innerHTML = '';
+                legend.innerHTML = '';
+                hideTooltip();
+
+                if (!groups.length || totalRevenue <= 0) {
+                    chart.innerHTML = '<circle cx="50" cy="50" r="44" fill="#f7eee9"></circle>';
+                    legend.innerHTML = '<li class="report-service-empty">Chưa có doanh thu dịch vụ trong khoảng thời gian này</li>';
+                    return;
+                }
+
+                let currentAngle = 0;
+
+                groups.forEach(function (item, index) {
+                    const sliceAngle = item.revenue / totalRevenue * 360;
+                    const endAngle = groups.length === 1
+                        ? 359.99
+                        : (index === groups.length - 1 ? 360 : currentAngle + sliceAngle);
+                    const color = colors[index % colors.length];
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+                    path.setAttribute('d', describeSlice(currentAngle, endAngle));
+                    path.setAttribute('fill', color);
+                    path.addEventListener('mouseenter', function (event) {
+                        showTooltip(event, item);
+                    });
+                    path.addEventListener('mousemove', function (event) {
+                        showTooltip(event, item);
+                    });
+                    path.addEventListener('mouseleave', hideTooltip);
+                    chart.appendChild(path);
+
+                    const legendItem = document.createElement('li');
+                    legendItem.innerHTML = [
+                        '<span class="report-pie-legend-label">',
+                        '<span class="report-pie-legend-dot" style="background: ' + color + ';"></span>',
+                        escapeHtml(item.name),
+                        '</span>',
+                        '<span class="report-pie-legend-value">' + formatMoney(item.revenue) + '</span>'
+                    ].join('');
+                    legend.appendChild(legendItem);
+
+                    currentAngle = endAngle;
+                });
+            };
+
+            const renderPieChart = function (targetChart, targetLegend, groups, emptyMessage, valueFormatter) {
+                if (!targetChart || !targetLegend) {
+                    return;
+                }
+
+                const total = groups.reduce(function (sum, item) {
+                    return sum + item.value;
+                }, 0);
+
+                targetChart.innerHTML = '';
+                targetLegend.innerHTML = '';
+
+                if (!groups.length || total <= 0) {
+                    targetChart.innerHTML = '<circle cx="50" cy="50" r="44" fill="#f7eee9"></circle>';
+                    targetLegend.innerHTML = '<li class="report-service-empty">' + emptyMessage + '</li>';
+                    return;
+                }
+
+                let currentAngle = 0;
+
+                groups.forEach(function (item, index) {
+                    const sliceAngle = item.value / total * 360;
+                    const endAngle = groups.length === 1
+                        ? 359.99
+                        : (index === groups.length - 1 ? 360 : currentAngle + sliceAngle);
+                    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+
+                    path.setAttribute('d', describeSlice(currentAngle, endAngle));
+                    path.setAttribute('fill', item.color || colors[index % colors.length]);
+                    targetChart.appendChild(path);
+
+                    const legendItem = document.createElement('li');
+                    legendItem.innerHTML = [
+                        '<span class="report-pie-legend-label">',
+                        '<span class="report-pie-legend-dot" style="background: ' + (item.color || colors[index % colors.length]) + ';"></span>',
+                        escapeHtml(item.name),
+                        '</span>',
+                        '<span class="report-pie-legend-value">' + valueFormatter(item.value) + '</span>'
+                    ].join('');
+                    targetLegend.appendChild(legendItem);
+
+                    currentAngle = endAngle;
+                });
+            };
+
+            const renderRoomStatusChart = function () {
+                const selectedRoomType = roomStatusTypeSelect ? roomStatusTypeSelect.value : 'all';
+                const filteredRooms = roomStatusItems.filter(function (room) {
+                    return selectedRoomType === 'all' || String(room.room_type_id) === selectedRoomType;
+                });
+                const groups = roomStatusConfig.map(function (config) {
+                    return {
+                        name: config.label,
+                        color: config.color,
+                        value: filteredRooms.filter(function (room) {
+                            return Number(room.status) === config.status;
+                        }).length
+                    };
+                }).filter(function (item) {
+                    return item.value > 0;
+                });
+
+                renderPieChart(
+                    roomStatusChart,
+                    roomStatusLegend,
+                    groups,
+                    'Chưa có phòng thuộc loại phòng này',
+                    function (value) {
+                        return value;
+                    }
+                );
+            };
+
+            [typeSelect, fromInput, toInput].forEach(function (input) {
+                if (input) {
+                    input.addEventListener('change', renderServiceRevenueChart);
+                }
+            });
+
+            if (roomStatusTypeSelect) {
+                roomStatusTypeSelect.addEventListener('change', renderRoomStatusChart);
+            }
+
+            if (mainReportTypeSelect) {
+                mainReportTypeSelect.addEventListener('change', function () {
+                    renderMainReportDetailOptions();
+                    renderMainReportChart();
+                });
+            }
+
+            [mainReportDetailSelect, mainReportFromInput, mainReportToInput].forEach(function (input) {
+                if (input) {
+                    input.addEventListener('change', renderMainReportChart);
+                }
+            });
+
+            renderMainReportDetailOptions();
+            renderMainReportChart();
+            renderServiceRevenueChart();
+            renderRoomStatusChart();
+        });
+    </script>
 </x-app-layout>

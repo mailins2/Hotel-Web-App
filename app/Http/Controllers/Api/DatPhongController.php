@@ -838,6 +838,7 @@ class DatPhongController extends Controller
                     $giaPhong = $loaiPhong ? (float) $loaiPhong->GiaPhong : 0;
                     
                     return [
+                        'MaCTDP' => $ct->MaCTDP,
                         'MaPhong' => $phong->MaPhong ?? 0,
                         'SoPhong' => $phong->SoPhong ?? '',
                         'TenLoaiPhong' => $loaiPhong->TenLoaiPhong ?? '',
