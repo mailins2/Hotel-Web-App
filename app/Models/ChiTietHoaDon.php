@@ -38,4 +38,8 @@ class ChiTietHoaDon extends Model
     {
         return $this->belongsTo(LoaiPhong::class, 'MaLoaiPhong');
     }
+    public function suDungDichVu()
+    {
+        return $this->belongsTo(SuDungDichVu::class, 'MaSuDung', 'MaSuDung');
+    }
 }

@@ -14,6 +14,8 @@ class Phong extends Model
         'MaLoaiPhong',
         'TinhTrang'
     ];
+    
+    public static function bootSoftDeletes() {}
 
     public function loaiPhong()
     {

@@ -61,5 +61,6 @@ class DatPhong extends Model
     {
         return $this->hasMany(LuuTru::class, 'MaDatPhong');
     }
+    
 
 }

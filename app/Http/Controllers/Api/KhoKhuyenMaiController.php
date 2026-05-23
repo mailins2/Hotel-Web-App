@@ -102,7 +102,7 @@ class KhoKhuyenMaiController extends Controller
                 'required',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
             'MaKH' => 'required|exists:KhachHang,MaKH',
         ]);
@@ -162,22 +162,21 @@ class KhoKhuyenMaiController extends Controller
             ], 400);
         }
 
-        // 🔥 Kiểm tra đã có mã này chưa
+        // Kiểm tra đã có mã này chưa
         $exists = KhoKhuyenMai::where('MaKM', $request->MaKM)
             ->where('MaKH', $request->MaKH)
             ->first();
 
         if ($exists) {
-            $message = match((int) $exists->TrangThai) {
-                0 => 'Bạn đã có mã này trong kho rồi (chưa sử dụng)',
-                1 => 'Bạn đã sử dụng mã này rồi',
-                2 => 'Mã này đã hết hạn',
-                default => 'Bạn đã đổi mã này rồi'
-            };
-            return response()->json([
-                'success' => false,
-                'message' => $message
-            ], 400);
+            // Nếu đã sử dụng hoặc hết hạn -> cho đổi lại
+            if ((int) $exists->TrangThai === 1 || (int) $exists->TrangThai === 2) {
+                $exists->delete();
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bạn đã có mã này trong kho rồi (chưa sử dụng)'
+                ], 400);
+            }
         }
 
         // 🔥 Thực hiện đổi mã trong transaction
@@ -231,7 +230,7 @@ class KhoKhuyenMaiController extends Controller
                 'required',
                 'string',
                 'max:10',
-                Rule::exists('KhuyenMai', 'MaKM')->whereNull('deleted_at'),
+                Rule::exists('KhuyenMai', 'MaKM'),
             ],
             'MaKH' => 'required|exists:KhachHang,MaKH',
         ]);

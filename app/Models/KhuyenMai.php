@@ -13,6 +13,12 @@ class KhuyenMai extends Model
     public $timestamps = false;
     protected $guarded = [];
 
+    // 👈 THAY BẰNG CÁCH NÀY
+    public static function bootSoftDeletes()
+    {
+        // Override rỗng - không cho SoftDeletes chạy
+    }
+
     public function khoKhuyenMai()
     {
         return $this->hasMany(KhoKhuyenMai::class, 'MaKM');
