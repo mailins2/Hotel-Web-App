@@ -6,9 +6,20 @@
 <x-app-layout :assets="['animation']">
     <style>
         .hm-readonly-input {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            border-color: #cbd5e1;
+            background-color: #eef0f3 !important;
+            color: #6b7280 !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .hm-readonly-input:disabled,
+        .hm-readonly-input[readonly],
+        .form-control:disabled.hm-readonly-input,
+        .form-select:disabled.hm-readonly-input {
+            background-color: #eef0f3 !important;
+            color: #6b7280 !important;
+            border-color: #cbd5e1 !important;
+            opacity: 1 !important;
+            cursor: not-allowed;
         }
     </style>
 

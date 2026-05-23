@@ -116,7 +116,7 @@
         </tbody>
     </table>
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" data-invoice-pagination-wrap>
+    <div class="d-flex flex-column align-items-center justify-content-center gap-2 mt-3" data-invoice-pagination-wrap>
         <div class="text-muted small" data-invoice-pagination-info></div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-light btn-sm" data-invoice-pagination-prev>Trước</button>

@@ -634,13 +634,18 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 
-        $rooms = Phong::with([
-            'loaiPhong',
+        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong', 'TinhTrang'])
+            ->with([
+            'loaiPhong:MaLoaiPhong,TenLoaiPhong',
             'chiTietDatPhong' => function ($query) {
-                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                $query
+                    ->select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
+                    ->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
             },
             'chiTietDatPhong.datPhong' => function ($query) use ($today) {
-                $query->where('NgayNhanPhong', '<=', $today)
+                $query
+                    ->select(['MaDatPhong', 'MaKH', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang'])
+                    ->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
                     ->whereIn('TinhTrang', [
                         DatPhong::HOLD,
@@ -648,7 +653,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                         DatPhong::CHECKED_IN,
                     ]);
             },
-            'chiTietDatPhong.datPhong.khachHang',
+            'chiTietDatPhong.datPhong.khachHang:MaKH,TenKH',
         ])
             ->orderBy('SoPhong')
             ->get()
@@ -706,6 +711,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/booking-details/{bookingDetailId}', function ($bookingDetailId) {
         $bookingDetail = \App\Models\ChiTietDatPhong::with([
             'phong.loaiPhong',
+            'suDungDichVu.dichVu',
             'datPhong.khachHang.taiKhoan',
             'datPhong.hoaDon.khuyenMai',
             'datPhong.hoaDon.thanhToans',
@@ -713,8 +719,6 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'datPhong.hoaDon.chiTietHoaDons.suDung.dichVu',
             'datPhong.hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
             'datPhong.hoaDon.chiTietHoaDons.denBu',
-            'datPhong.suDungDichVu.dichVu',
-            'datPhong.suDungDichVu.chiTietDatPhong.phong',
             'datPhong.luuTrus',
         ])->findOrFail($bookingDetailId);
 
@@ -723,9 +727,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $booking->setRelation('luuTrus', ($booking->luuTrus ?? collect())
             ->where('MaPhong', (int) $bookingDetail->MaPhong)
             ->values());
-        $booking->setRelation('suDungDichVu', ($booking->suDungDichVu ?? collect())
-            ->where('MaCTDP', (int) $bookingDetail->MaCTDP)
-            ->values());
+        $booking->setRelation('suDungDichVu', ($bookingDetail->suDungDichVu ?? collect())->values());
 
         return view('receptionist.booking-detail', [
             'booking' => $booking,
@@ -734,7 +736,8 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     })->name('booking-detail');
 
     Route::get('/customers', function () {
-        $customers = KhachHang::with('taiKhoan')
+        $customers = KhachHang::select(['MaKH', 'TenKH', 'SoDienThoai', 'CCCD', 'NgaySinh', 'GioiTinh'])
+            ->with('taiKhoan:MaTK,MaKH,Email,TrangThai')
             ->orderByDesc('MaKH')
             ->get();
 
@@ -747,9 +750,12 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::view('/customers/{customerId}', 'receptionist.customers.show')->name('customers.show');
 
     Route::get('/bookings', function () {
-        $bookings = DatPhong::with([
-            'khachHang',
-            'chiTietDatPhong.phong.loaiPhong',
+        $bookings = DatPhong::select(['MaDatPhong', 'MaKH', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang'])
+            ->with([
+            'khachHang:MaKH,TenKH,SoDienThoai',
+            'chiTietDatPhong:MaCTDP,MaDatPhong,MaPhong,TrangThai',
+            'chiTietDatPhong.phong:MaPhong,SoPhong,MaLoaiPhong',
+            'chiTietDatPhong.phong.loaiPhong:MaLoaiPhong,TenLoaiPhong',
         ])
             ->orderByDesc('MaDatPhong')
             ->get();
@@ -763,9 +769,11 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
 
     Route::get('/services', function () {
-        $serviceRoomOptions = \App\Models\ChiTietDatPhong::with([
-            'phong',
-            'datPhong.khachHang',
+        $serviceRoomOptions = \App\Models\ChiTietDatPhong::select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
+            ->with([
+            'phong:MaPhong,SoPhong',
+            'datPhong:MaDatPhong,MaKH,TinhTrang',
+            'datPhong.khachHang:MaKH,TenKH',
         ])
             ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN)
             ->orderBy('MaDatPhong')
@@ -791,23 +799,43 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             })
             ->values();
 
+        $serviceUsageItems = \App\Models\SuDungDichVu::select(['MaSuDung', 'MaCTDP', 'MaDV', 'SoLuong', 'ThoiGian'])
+            ->with([
+            'dichVu:MaDV,TenDV,LoaiDV,GiaDV',
+            'chiTietDatPhong:MaCTDP,MaDatPhong,MaPhong,TrangThai',
+            'chiTietDatPhong.phong:MaPhong,SoPhong',
+            'chiTietDatPhong.datPhong:MaDatPhong,MaKH,TinhTrang',
+            'chiTietDatPhong.datPhong.khachHang:MaKH,TenKH',
+        ])
+            ->whereHas('chiTietDatPhong.datPhong', function ($query) {
+                $query->where('TinhTrang', DatPhong::CHECKED_IN);
+            })
+            ->orderByDesc('ThoiGian')
+            ->orderByDesc('MaSuDung')
+            ->get();
+
         return view('receptionist.services.index', [
             'serviceRoomOptions' => $serviceRoomOptions,
+            'serviceUsageItems' => $serviceUsageItems,
         ]);
     })->name('services.index');
     Route::view('/services/{serviceUsageId}', 'receptionist.services.show')->name('services.show');
     Route::get('/check-ins/create', function () {
         $today = Carbon::today();
 
-        $checkInBookings = DatPhong::with([
-            'khachHang',
+        $checkInBookings = DatPhong::select(['MaDatPhong', 'MaKH', 'NgayNhanPhong', 'NgayTraPhong', 'SoLuong', 'TinhTrang'])
+            ->with([
+            'khachHang:MaKH,TenKH,SoDienThoai',
             'chiTietDatPhong' => function ($query) {
-                $query->whereIn('TrangThai', [
+                $query
+                    ->select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
+                    ->whereIn('TrangThai', [
                     \App\Models\ChiTietDatPhong::BOOKED,
                     \App\Models\ChiTietDatPhong::CHECKED_IN,
                 ]);
             },
-            'chiTietDatPhong.phong.loaiPhong',
+            'chiTietDatPhong.phong:MaPhong,SoPhong,MaLoaiPhong',
+            'chiTietDatPhong.phong.loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm',
         ])
             ->where('TinhTrang', DatPhong::CONFIRMED)
             ->whereDate('NgayNhanPhong', '<=', $today->toDateString())
@@ -838,25 +866,64 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     })->name('check-ins.create');
     Route::get('/check-outs/create', function () {
         $today = Carbon::today();
+        try {
+            $selectedDate = request('checkout_date')
+                ? Carbon::parse(request('checkout_date'))->startOfDay()
+                : $today->copy();
+        } catch (\Throwable $e) {
+            $selectedDate = $today->copy();
+        }
+        if ($selectedDate->lt($today)) {
+            $selectedDate = $today->copy();
+        }
+        $searchKeyword = trim((string) request('checkout_search', ''));
+        $searchBookingId = preg_replace('/\D+/', '', $searchKeyword);
+        $checkedInRoomDetailsFilter = function ($query) {
+            $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+        };
+        $activeCheckOutBookingFilter = function ($query) use ($checkedInRoomDetailsFilter) {
+            $query
+                ->where(function ($statusQuery) use ($checkedInRoomDetailsFilter) {
+                    $statusQuery
+                        ->where('TinhTrang', DatPhong::CHECKED_IN)
+                        ->orWhereHas('chiTietDatPhong', $checkedInRoomDetailsFilter);
+                })
+                ->whereHas('chiTietDatPhong', $checkedInRoomDetailsFilter);
+        };
 
-        $checkOutBookings = DatPhong::with([
-            'khachHang',
-            'chiTietDatPhong' => function ($query) {
-                $query->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
-            },
-            'chiTietDatPhong.phong.loaiPhong.khuyenMai',
-            'hoaDon.chiTietHoaDons.loaiPhong.khuyenMai',
-            'hoaDon.chiTietHoaDons.suDung.dichVu',
-            'hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
-            'hoaDon.chiTietHoaDons.denBu',
-            'hoaDon.thanhToans',
-            'luuTrus',
+        $checkOutBookings = DatPhong::select([
+            'MaDatPhong',
+            'MaKH',
+            'NgayNhanPhong',
+            'NgayTraPhong',
+            'SoLuong',
+            'TinhTrang',
         ])
-            ->where(function ($query) {
-                $query->where('TinhTrang', DatPhong::CHECKED_IN)
-                    ->orWhereHas('chiTietDatPhong', function ($detailQuery) {
-                        $detailQuery->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+            ->with([
+            'khachHang:MaKH,TenKH,SoDienThoai',
+            'chiTietDatPhong' => function ($query) {
+                $query
+                    ->select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
+                    ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+            },
+            'chiTietDatPhong.phong:MaPhong,SoPhong,MaLoaiPhong',
+            'chiTietDatPhong.phong.loaiPhong:MaLoaiPhong,TenLoaiPhong,GiaPhong,MaKM',
+            'chiTietDatPhong.phong.loaiPhong.khuyenMai:MaKM,NgayBatDau,NgayKetThuc,PhanTramGiamGia',
+            'hoaDon:MaHD,MaDatPhong,TongTien,DaThanhToan',
+            'luuTrus:MaLuuTru,MaDatPhong,MaPhong,TenKhach,NgaySinh,SoDienThoai,CCCD',
+        ])
+            ->where($activeCheckOutBookingFilter)
+            ->whereDate('NgayTraPhong', $selectedDate->toDateString())
+            ->when($searchKeyword !== '', function ($query) use ($searchKeyword, $searchBookingId) {
+                $query->where(function ($searchQuery) use ($searchKeyword, $searchBookingId) {
+                    $searchQuery->whereHas('khachHang', function ($customerQuery) use ($searchKeyword) {
+                        $customerQuery->where('TenKH', 'like', '%' . $searchKeyword . '%');
                     });
+
+                    if ($searchBookingId !== '') {
+                        $searchQuery->orWhere('MaDatPhong', 'like', '%' . $searchBookingId . '%');
+                    }
+                });
             })
             ->orderBy('NgayTraPhong')
             ->orderBy('MaDatPhong')
@@ -871,22 +938,56 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             ->filter(fn (DatPhong $booking) => $booking->chiTietDatPhong->isNotEmpty())
             ->values();
 
+        $upcomingCheckOutCount = DatPhong::where($activeCheckOutBookingFilter)
+            ->whereDate('NgayTraPhong', '>=', $today->toDateString())
+            ->count();
+
+        $todayCheckOutBookings = DatPhong::select(['MaDatPhong', 'NgayTraPhong', 'TinhTrang'])
+            ->with([
+            'chiTietDatPhong' => function ($query) {
+                $query
+                    ->select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
+                    ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN);
+            },
+        ])
+            ->where($activeCheckOutBookingFilter)
+            ->whereDate('NgayTraPhong', $today->toDateString())
+            ->get()
+            ->filter(fn (DatPhong $booking) => $booking->chiTietDatPhong->isNotEmpty())
+            ->values();
+
         return view('receptionist.check-out-form', [
             'checkOutBookings' => $checkOutBookings,
+            'checkOutFilters' => [
+                'date' => $selectedDate->toDateString(),
+                'search' => $searchKeyword,
+                'minDate' => $today->toDateString(),
+            ],
             'checkOutStats' => [
-                'upcoming' => $checkOutBookings->count(),
-                'today' => $checkOutBookings
-                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayTraPhong)->isSameDay($today))
-                    ->count(),
-                'roomsFreeing' => $checkOutBookings
-                    ->filter(fn (DatPhong $booking) => Carbon::parse($booking->NgayTraPhong)->isSameDay($today))
-                    ->sum(fn (DatPhong $booking) => $booking->chiTietDatPhong->count()),
+                'upcoming' => $upcomingCheckOutCount,
+                'today' => $todayCheckOutBookings->count(),
+                'roomsFreeing' => $todayCheckOutBookings->sum(fn (DatPhong $booking) => $booking->chiTietDatPhong->count()),
             ],
         ]);
     })->name('check-outs.create');
     Route::get('/payments', function () {
-        $payments = ThanhToan::with([
-            'hoaDon.datPhong.khachHang',
+        $payments = ThanhToan::select([
+            'MaTT',
+            'MaHD',
+            'SoTien',
+            'PhuongThuc',
+            'LoaiThanhToan',
+            'NgayThanhToan',
+            'NhaCungCap',
+            'DinhDanhNguoiThanhToan',
+            'MaGiaoDich',
+            'MaGiaoDichCongThanhToan',
+            'TrangThaiGiaoDich',
+        ])
+            ->with([
+            'hoaDon:MaHD,MaDatPhong,TrangThai',
+            'hoaDon.datPhong:MaDatPhong,MaKH',
+            'hoaDon.datPhong.khachHang:MaKH,TenKH',
         ])
             ->orderByDesc('MaTT')
             ->get();
@@ -913,6 +1014,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $query = DatPhong::with([
             'khachHang',
             'chiTietDatPhong.phong.loaiPhong.khuyenMai',
+            'chiTietDatPhong.suDungDichVu.dichVu',
             'hoaDon.chiTietHoaDons.loaiPhong.khuyenMai',
             'hoaDon.chiTietHoaDons.suDung.dichVu',
             'hoaDon.chiTietHoaDons.suDung.chiTietDatPhong.phong',
@@ -1042,22 +1144,29 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     ->values();
             }
 
-            $serviceItems = $details
+            $invoiceDetailsByUsage = $details
                 ->filter(fn ($detail) => $detail->MaSuDung)
-                ->map(function ($detail) use ($moneyValue, $formatDate) {
-                    $service = $detail->suDung?->dichVu;
-                    $roomNumber = $detail->suDung?->chiTietDatPhong?->phong?->SoPhong;
-                    $quantity = max(1, (int) ($detail->SoLuong ?? $detail->suDung?->SoLuong ?? 1));
-                    $unitPrice = $moneyValue($detail->DonGia ?? $service?->GiaDV);
+                ->keyBy(fn ($detail) => (string) $detail->MaSuDung);
 
-                    return [
-                        'name' => trim(($detail->MoTa ?: ($service?->TenDV ?? 'Dịch vụ')) . ($roomNumber ? " - Phòng {$roomNumber}" : '')),
-                        'type' => $service?->LoaiDVText ?? 'Dịch vụ',
-                        'quantity' => $quantity,
-                        'unitPrice' => $unitPrice,
-                        'price' => $unitPrice * $quantity,
-                        'time' => $detail->suDung?->ThoiGian ? Carbon::parse($detail->suDung->ThoiGian)->format('d/m/Y H:i') : '--',
-                    ];
+            $serviceItems = $booking->chiTietDatPhong
+                ->flatMap(function ($roomDetail) use ($invoiceDetailsByUsage, $moneyValue) {
+                    return ($roomDetail->suDungDichVu ?? collect())->map(function ($usage) use ($roomDetail, $invoiceDetailsByUsage, $moneyValue) {
+                        $service = $usage->dichVu;
+                        $invoiceDetail = $invoiceDetailsByUsage->get((string) $usage->MaSuDung);
+                        $roomNumber = $roomDetail->phong?->SoPhong;
+                        $quantity = max(1, (int) ($usage->SoLuong ?? $invoiceDetail?->SoLuong ?? 1));
+                        $unitPrice = $moneyValue($invoiceDetail?->DonGia ?? $service?->GiaDV);
+
+                        return [
+                            'name' => trim($invoiceDetail?->MoTa ?: ($service?->TenDV ?? 'Dịch vụ')),
+                            'roomNumber' => $roomNumber ? (string) $roomNumber : '',
+                            'type' => $service?->LoaiDVText ?? 'Dịch vụ',
+                            'quantity' => $quantity,
+                            'unitPrice' => $unitPrice,
+                            'price' => $unitPrice * $quantity,
+                            'time' => $usage->ThoiGian ? Carbon::parse($usage->ThoiGian)->format('d/m/Y H:i') : '--',
+                        ];
+                    });
                 })
                 ->values();
 
@@ -1105,10 +1214,11 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     })->name('payments.create');
     Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
     Route::get('/invoices', function () {
-        $invoices = HoaDon::with([
-            'datPhong.khachHang',
-            'nhanVien',
-            'thanhToans',
+        $invoices = HoaDon::select(['MaHD', 'MaDatPhong', 'NgayLapHD', 'TongTien', 'DaThanhToan', 'MaNV', 'TrangThai'])
+            ->with([
+            'datPhong:MaDatPhong,MaKH',
+            'datPhong.khachHang:MaKH,TenKH',
+            'nhanVien:MaNV,TenNV',
         ])
             ->orderByDesc('MaHD')
             ->get();

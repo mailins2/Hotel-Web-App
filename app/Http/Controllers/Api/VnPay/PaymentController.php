@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
+use App\Models\Phong;
 use App\Models\ThanhToan;
 use App\Services\CustomerPointService;
 use Illuminate\Http\Request;
@@ -25,6 +26,8 @@ class PaymentController extends Controller
             'dat_phong_ids' => ['required', 'array', 'min:1'],
             'dat_phong_ids.*' => ['integer', 'exists:DatPhong,MaDatPhong'],
             'bank_code' => ['required', 'string', Rule::in(['VNBANK', 'INTCARD'])],
+            'payment_type' => ['nullable', 'in:deposit,checkout'],
+            'ma_nv' => ['required_if:payment_type,checkout', 'nullable', 'integer', 'exists:NhanVien,MaNV'],
         ]);
 
         $tmnCode = config('services.vnpay.tmn_code');
@@ -68,6 +71,8 @@ class PaymentController extends Controller
             'dat_phong_ids' => $datPhongIds,
             'amount' => $data['amount'],
             'redirect_url' => $data['redirect_url'] ?? url('/customer'),
+            'payment_type' => $data['payment_type'] ?? 'deposit',
+            'ma_nv' => $data['ma_nv'] ?? null,
         ], now()->addHours(2));
 
         return response()->json([
@@ -239,6 +244,12 @@ class PaymentController extends Controller
             'txn_ref' => $txnRef,
         ]);
 
+        if (($mapping['payment_type'] ?? null) === 'checkout') {
+            $separator = str_contains($redirectUrl, '?') ? '&' : '?';
+
+            return redirect()->to($redirectUrl . $separator . $query);
+        }
+
         // ✅ Trả về trang web có script tự mở app
         return view('payment.vnpay-result', [
             'status' => $status,
@@ -253,15 +264,20 @@ class PaymentController extends Controller
         DB::transaction(function () use ($mapping, $data, $txnRef) {
             $datPhongIds = $mapping['dat_phong_ids'];
             $remainingAmount = (float) ($mapping['amount'] ?? 0);
+            $paymentType = $mapping['payment_type'] ?? 'deposit';
 
             foreach ($datPhongIds as $id) {
+                $allowedStatuses = $paymentType === 'checkout'
+                    ? [DatPhong::CHECKED_IN]
+                    : [DatPhong::HOLD, DatPhong::CONFIRMED];
+
                 $datPhong = DatPhong::lockForUpdate()->find($id);
 
                 if (!$datPhong) {
                     throw new \RuntimeException("Booking {$id} not found");
                 }
 
-                if (!in_array((int) $datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) {
+                if (!in_array((int) $datPhong->TinhTrang, $allowedStatuses, true)) {
                     throw new \RuntimeException("Booking {$id} is not payable");
                 }
 
@@ -292,7 +308,7 @@ class PaymentController extends Controller
                         'MaHD' => $hoaDon->MaHD,
                         'SoTien' => $paymentAmount,
                         'PhuongThuc' => 1,
-                        'LoaiThanhToan' => 0,
+                        'LoaiThanhToan' => $paymentType === 'checkout' ? 1 : 0,
                         'NhaCungCap' => 'VNPAY',
                         'DinhDanhNguoiThanhToan' => $data['vnp_BankCode'] ?? null,
                         'MaGiaoDich' => $maGiaoDich,
@@ -309,15 +325,37 @@ class PaymentController extends Controller
                 $hoaDon->update([
                     'DaThanhToan' => $newPaidAmount,
                     'TrangThai' => $newPaidAmount >= (float) $hoaDon->TongTien ? 1 : 0,
+                    'MaNV' => $mapping['ma_nv'] ?? $hoaDon->MaNV,
                 ]);
 
-                if ((int) $datPhong->TinhTrang === DatPhong::HOLD) {
+                if ($paymentType === 'checkout' && $newPaidAmount >= (float) $hoaDon->TongTien) {
+                    $this->confirmCheckout($datPhong);
+                } elseif ($paymentType !== 'checkout' && (int) $datPhong->TinhTrang === DatPhong::HOLD) {
                     $datPhong->update(['TinhTrang' => DatPhong::CONFIRMED]);
                     ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
                         ->update(['TrangThai' => ChiTietDatPhong::BOOKED]);
                 }
             }
         });
+    }
+
+    private function confirmCheckout(DatPhong $datPhong): void
+    {
+        $checkedInRoomIds = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->pluck('MaPhong')
+            ->filter()
+            ->values();
+
+        ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
+            ->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
+
+        if ($checkedInRoomIds->isNotEmpty()) {
+            Phong::whereIn('MaPhong', $checkedInRoomIds)->update(['TinhTrang' => 3]);
+        }
+
+        $datPhong->update(['TinhTrang' => DatPhong::CHECKED_OUT]);
     }
 
     private function makeTxnRef(int $bookingId): string

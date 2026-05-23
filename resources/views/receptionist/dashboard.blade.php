@@ -81,6 +81,10 @@
             transition: transform 0.18s ease, box-shadow 0.18s ease;
         }
 
+        .fd-room {
+            position: relative;
+        }
+
         .fd-room-link.fd-booked,
         .fd-room-link.fd-booked:hover,
         .fd-room-link.fd-booked:focus,
@@ -104,6 +108,32 @@
         .fd-booked { background: #fef3c7; color: #92400e; }
         .fd-using { background: #dbeafe; color: #1d4ed8; }
         .fd-cleaning { background: #f3e8ff; color: #7e22ce; }
+
+        .fd-cleaning-action {
+            width: 100%;
+            margin-top: 0.65rem;
+            padding: 0.42rem 0.65rem;
+            border: 1px solid rgba(126, 34, 206, 0.24);
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            color: #6b21a8;
+            font-size: 0.78rem;
+            font-weight: 700;
+            line-height: 1.15;
+            transition: background 0.18s ease, border-color 0.18s ease, opacity 0.18s ease;
+        }
+
+        .fd-cleaning-action:hover,
+        .fd-cleaning-action:focus {
+            background: #fff;
+            border-color: rgba(126, 34, 206, 0.42);
+            outline: none;
+        }
+
+        .fd-room.is-updating {
+            opacity: 0.72;
+            pointer-events: none;
+        }
 
         .fd-legend {
             display: flex;
@@ -233,14 +263,17 @@
                             @php
                                 $roomClass = 'fd-' . $room['status'];
                                 $roomBody = '<div class="fw-bold">' . e($room['number']) . '</div>'
-                                    . '<div>' . e($room['statusLabel']) . '</div>'
-                                    . ($room['type'] ? '<div class="text-muted small mt-1">' . e($room['type']) . '</div>' : '');
+                                    . '<div data-room-status-label>' . e($room['statusLabel']) . '</div>'
+                                    . ($room['type'] ? '<div class="text-muted small mt-1">' . e($room['type']) . '</div>' : '')
+                                    . ($room['status'] === 'cleaning'
+                                        ? '<button type="button" class="fd-cleaning-action" data-mark-room-cleaned data-room-id="' . e($room['id']) . '">Đã dọn xong</button>'
+                                        : '');
                             @endphp
 
                             @if($room['bookingDetailId'] && in_array($room['status'], ['booked', 'using'], true))
-                                <a href="{{ route('reception.booking-detail', ['bookingDetailId' => $room['bookingDetailId']]) }}" class="fd-room-link {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</a>
+                                <a href="{{ route('reception.booking-detail', ['bookingDetailId' => $room['bookingDetailId']]) }}" class="fd-room-link {{ $roomClass }}" data-room-status="{{ $room['status'] }}" data-room-id="{{ $room['id'] }}">{!! $roomBody !!}</a>
                             @else
-                                <div class="fd-room {{ $roomClass }}" data-room-status="{{ $room['status'] }}">{!! $roomBody !!}</div>
+                                <div class="fd-room {{ $roomClass }}" data-room-status="{{ $room['status'] }}" data-room-id="{{ $room['id'] }}">{!! $roomBody !!}</div>
                             @endif
                         @endforeach
                     </div>
@@ -307,12 +340,35 @@
             const allButton = document.querySelector('[data-room-status-filter=""]');
             const floors = document.querySelectorAll('[data-room-floor]');
             const emptyState = document.querySelector('[data-room-filter-empty]');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+            function refreshRoomFilter() {
+                const activeFilterButton = filterButtons.find((button) => button.classList.contains('is-active'));
+                const currentFilter = activeFilterButton?.dataset.roomStatusFilter || '';
+                let visibleRoomCount = 0;
+
+                floors.forEach((floor) => {
+                    let floorHasVisibleRoom = false;
+
+                    floor.querySelectorAll('[data-room-status]').forEach((room) => {
+                        const isVisible = !currentFilter || room.dataset.roomStatus === currentFilter;
+                        room.classList.toggle('d-none', !isVisible);
+                        floorHasVisibleRoom = floorHasVisibleRoom || isVisible;
+                        visibleRoomCount += isVisible ? 1 : 0;
+                    });
+
+                    floor.classList.toggle('d-none', !floorHasVisibleRoom);
+                });
+
+                if (emptyState) {
+                    emptyState.classList.toggle('d-none', visibleRoomCount > 0);
+                }
+            }
 
             filterButtons.forEach((button) => {
                 button.addEventListener('click', () => {
                     const selectedStatus = button.dataset.roomStatusFilter || '';
                     const currentFilter = button.classList.contains('is-active') && selectedStatus ? '' : selectedStatus;
-                    let visibleRoomCount = 0;
 
                     filterButtons.forEach((item) => {
                         const itemStatus = item.dataset.roomStatusFilter || '';
@@ -323,20 +379,48 @@
                         allButton.classList.add('is-active');
                     }
 
-                    floors.forEach((floor) => {
-                        let floorHasVisibleRoom = false;
-                        floor.querySelectorAll('[data-room-status]').forEach((room) => {
-                            const isVisible = !currentFilter || room.dataset.roomStatus === currentFilter;
-                            room.classList.toggle('d-none', !isVisible);
-                            floorHasVisibleRoom = floorHasVisibleRoom || isVisible;
-                            visibleRoomCount += isVisible ? 1 : 0;
+                    refreshRoomFilter();
+                });
+            });
+
+            document.querySelectorAll('[data-mark-room-cleaned]').forEach((button) => {
+                button.addEventListener('click', async () => {
+                    const roomId = button.dataset.roomId;
+                    const roomCard = button.closest('[data-room-status]');
+
+                    if (!roomId || !roomCard) {
+                        return;
+                    }
+
+                    button.disabled = true;
+                    button.textContent = 'Đang chuyển...';
+                    roomCard.classList.add('is-updating');
+
+                    try {
+                        const response = await fetch(`/api/phong/${encodeURIComponent(roomId)}/mark-cleaned`, {
+                            method: 'POST',
+                            headers: {
+                                Accept: 'application/json',
+                                'X-CSRF-TOKEN': csrfToken,
+                            },
                         });
+                        const result = await response.json().catch(() => ({}));
 
-                        floor.classList.toggle('d-none', !floorHasVisibleRoom);
-                    });
+                        if (!response.ok || result.success === false) {
+                            throw new Error(result.message || 'Không thể chuyển trạng thái phòng.');
+                        }
 
-                    if (emptyState) {
-                        emptyState.classList.toggle('d-none', visibleRoomCount > 0);
+                        roomCard.dataset.roomStatus = 'empty';
+                        roomCard.classList.remove('fd-cleaning', 'is-updating');
+                        roomCard.classList.add('fd-empty');
+                        roomCard.querySelector('[data-room-status-label]').textContent = 'Trống';
+                        button.remove();
+                        refreshRoomFilter();
+                    } catch (error) {
+                        alert(error.message || 'Không thể chuyển trạng thái phòng.');
+                        button.disabled = false;
+                        button.textContent = 'Đã dọn xong';
+                        roomCard.classList.remove('is-updating');
                     }
                 });
             });

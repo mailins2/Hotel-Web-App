@@ -5,6 +5,12 @@
     create-label="Thêm khách hàng"
     table-title="Danh sách thông tin khách hàng"
 >
+    <style>
+        tr[data-customer-row] {
+            cursor: pointer;
+        }
+    </style>
+
     <x-slot:filters>
         <div class="col-md-3">
             <label class="form-label">Tìm kiếm</label>
@@ -25,13 +31,13 @@
     <table class="table align-middle">
         <thead>
             <tr>
-                <th>Mã khách hàng</th>
+                <th>Mã</th>
                 <th>Tên khách hàng</th>
                 <th>CCCD</th>
                 <th>Ngày sinh</th>
                 <th>Giới tính</th>
                 <th>Trạng thái</th>
-                <th style="min-width: 180px;">Thao tác</th>
+                <th></th>
                 <th></th>
             </tr>
         </thead>
@@ -57,7 +63,12 @@
                         $customer->taiKhoan?->Email,
                     ])->filter()->implode(' ');
                 @endphp
-                <tr data-customer-row data-status="{{ $isActive ? 'active' : 'inactive' }}" data-search="{{ \Illuminate\Support\Str::lower($searchText) }}">
+                <tr
+                    data-customer-row
+                    data-detail-url="{{ route('reception.customers.show', ['customerId' => $customer->MaKH]) }}"
+                    data-status="{{ $isActive ? 'active' : 'inactive' }}"
+                    data-search="{{ \Illuminate\Support\Str::lower($searchText) }}"
+                >
                     <td>{{ $customer->MaKH }}</td>
                     <td>{{ $customer->TenKH ?? '--' }}</td>
                     <td>{{ $customer->CCCD ?? '--' }}</td>
@@ -111,7 +122,7 @@
         </tbody>
     </table>
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" data-customer-pagination-wrap>
+    <div class="d-flex flex-column align-items-center justify-content-center gap-2 mt-3" data-customer-pagination-wrap>
         <div class="text-muted small" data-customer-pagination-info></div>
         <div class="d-flex align-items-center gap-2">
             <button type="button" class="btn btn-light btn-sm" data-customer-pagination-prev>Trước</button>
@@ -225,6 +236,19 @@
             });
 
             applyFilters();
+
+            rows.forEach((row) => {
+                row.addEventListener('click', (event) => {
+                    if (event.target.closest('a, button, .dropdown, [data-bs-toggle="dropdown"]')) {
+                        return;
+                    }
+
+                    const detailUrl = row.dataset.detailUrl;
+                    if (detailUrl) {
+                        window.location.href = detailUrl;
+                    }
+                });
+            });
         });
     </script>
 </x-receptionist.index-page>
