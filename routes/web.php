@@ -9,6 +9,7 @@ use App\Exports\RoomReportExport;
 use App\Exports\RevenueReportExport;
 use App\Exports\ServiceRevenueReportExport;
 use App\Models\ChiTietDatPhong;
+use App\Http\Controllers\Customer\PromotionController;
 use App\Models\DatPhong;
 use App\Models\DanhGia;
 use App\Models\DichVu;
@@ -37,7 +38,7 @@ use Maatwebsite\Excel\Excel as ExcelWriter;
 
 Route::prefix('customer')->name('customer.')->group(function () {
     Route::view('/', 'customer.index')->name('home');
-    Route::view('/promotion', 'customer.promotion')->name('promotion');
+    Route::get('/promotion', [PromotionController::class, 'index'])->name('promotion');
     Route::view('/blog-single', 'customer.blog-single')->name('blog-single');
     Route::get('/services', function () {
         $services = DichVu::with('hinhs')
@@ -631,7 +632,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                             ->get(),
                     ],
                     'promotions' => [
-                        'promotions' => KhuyenMai::orderByDesc('MaKM')->get(),
+                        'promotions' => KhuyenMai::with('hinhs')->orderByDesc('MaKM')->get(),
                     ],
                     'invoices' => [
                         'invoices' => HoaDon::with(['nhanVien', 'datPhong.khachHang'])
@@ -704,7 +705,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'service' => DichVu::with('hinhs')->findOrFail($recordId),
                     ],
                     'promotions' => [
-                        'promotion' => KhuyenMai::findOrFail($recordId),
+                        'promotion' => KhuyenMai::with('hinhs')->findOrFail($recordId),
                     ],
                     'invoices' => [
                         'invoice' => HoaDon::with([
@@ -743,7 +744,66 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('account.role:1')->prefix('reception')->name('reception.')->group(function () {
+$loadReceptionAddressData = function (): array {
+    $cacheKey = 'address-kit.2025-07-01.all';
+
+    if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+        return \Illuminate\Support\Facades\Cache::get($cacheKey);
+    }
+
+    try {
+        $provincesResponse = \Illuminate\Support\Facades\Http::timeout(8)
+            ->retry(2, 200)
+            ->get('https://production.cas.so/address-kit/2025-07-01/provinces');
+
+        $provinces = collect($provincesResponse->json('provinces', []))
+            ->map(fn ($province) => [
+                'code' => $province['code'],
+                'name' => $province['name'],
+            ])
+            ->toArray();
+
+        $communeResponses = \Illuminate\Support\Facades\Http::pool(fn ($pool) => collect($provinces)
+            ->map(fn ($province) => $pool
+                ->as($province['code'])
+                ->timeout(8)
+                ->get("https://production.cas.so/address-kit/2025-07-01/provinces/{$province['code']}/communes"))
+            ->all());
+
+        $communes = [];
+
+        foreach ($provinces as $province) {
+            $response = $communeResponses[$province['code']] ?? null;
+
+            $communes[$province['code']] = collect($response?->json('communes', []) ?? [])
+                ->map(fn ($commune) => [
+                    'code' => $commune['code'],
+                    'name' => $commune['name'],
+                ])
+                ->toArray();
+        }
+
+        $addressData = [
+            'provinces' => $provinces,
+            'communes' => $communes,
+        ];
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $addressData, now()->addDays(30));
+
+        return $addressData;
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Address data fetch failed in reception customer form', [
+            'message' => $e->getMessage(),
+        ]);
+
+        return [
+            'provinces' => [],
+            'communes' => [],
+        ];
+    }
+};
+
+Route::middleware('account.role:1')->prefix('reception')->name('reception.')->group(function () use ($loadReceptionAddressData) {
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 
@@ -858,9 +918,31 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'customers' => $customers,
         ]);
     })->name('customers.index');
-    Route::view('/customers/create', 'receptionist.customers.form')->name('customers.create');
-    Route::view('/customers/{customerId}/edit', 'receptionist.customers.form')->name('customers.edit');
-    Route::view('/customers/{customerId}', 'receptionist.customers.show')->name('customers.show');
+    Route::get('/customers/create', function () use ($loadReceptionAddressData) {
+        $addressData = $loadReceptionAddressData();
+
+        return view('receptionist.customers.form', [
+            'provinces' => $addressData['provinces'],
+            'communes' => $addressData['communes'],
+        ]);
+    })->name('customers.create');
+    Route::get('/customers/{customerId}/edit', function ($customerId) use ($loadReceptionAddressData) {
+        $customer = KhachHang::with('taiKhoan:MaTK,MaKH,Email,TrangThai')->findOrFail($customerId);
+        $addressData = $loadReceptionAddressData();
+
+        return view('receptionist.customers.form', [
+            'customer' => $customer,
+            'provinces' => $addressData['provinces'],
+            'communes' => $addressData['communes'],
+        ]);
+    })->name('customers.edit');
+    Route::get('/customers/{customerId}', function ($customerId) {
+        $customer = KhachHang::with('taiKhoan:MaTK,MaKH,Email,TrangThai')->findOrFail($customerId);
+
+        return view('receptionist.customers.show', [
+            'customer' => $customer,
+        ]);
+    })->name('customers.show');
 
     Route::get('/bookings', function () {
         $bookings = DatPhong::select(['MaDatPhong', 'MaKH', 'NgayNhanPhong', 'NgayTraPhong', 'TinhTrang'])

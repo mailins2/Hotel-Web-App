@@ -341,6 +341,89 @@
                     }
                 };
 
+                const compressImage = function (file, delay) {
+                    return new Promise(function (resolve, reject) {
+                        if (!file.type.startsWith('image/')) {
+                            reject(new Error('File is not an image'));
+                            return;
+                        }
+
+                        const originalName = String(file.name || 'image.jpg')
+                            .replace(/\.[^.]+$/, '')
+                            .substring(0, 50) + '.jpg';
+
+                        const processImage = function () {
+                            const reader = new FileReader();
+                            reader.onload = function (event) {
+                                const img = new Image();
+                                img.onload = function () {
+                                    try {
+                                        const canvas = document.createElement('canvas');
+                                        let width = img.width;
+                                        let height = img.height;
+                                        const maxWidth = 1200;
+                                        const maxHeight = 900;
+
+                                        if (width > maxWidth || height > maxHeight) {
+                                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                                            width = Math.round(width * ratio);
+                                            height = Math.round(height * ratio);
+                                        }
+
+                                        canvas.width = width;
+                                        canvas.height = height;
+                                        const ctx = canvas.getContext('2d');
+                                        if (!ctx) {
+                                            reject(new Error('Cannot get canvas context'));
+                                            return;
+                                        }
+
+                                        ctx.drawImage(img, 0, 0, width, height);
+
+                                        canvas.toBlob(function (blob) {
+                                            if (!blob) {
+                                                reject(new Error('Failed to compress image'));
+                                                return;
+                                            }
+
+                                            const compressedFile = new File([blob], originalName, {
+                                                type: 'image/jpeg',
+                                                lastModified: Date.now(),
+                                            });
+
+                                            resolve(compressedFile);
+                                        }, 'image/jpeg', 0.65);
+                                    } catch (error) {
+                                        reject(error);
+                                    }
+                                };
+
+                                img.onerror = function () {
+                                    reject(new Error('Failed to load image'));
+                                };
+
+                                img.onabort = function () {
+                                    reject(new Error('Image loading aborted'));
+                                };
+
+                                img.src = event.target.result;
+                            };
+
+                            reader.onerror = function () {
+                                reject(new Error('Failed to read file'));
+                            };
+
+                            reader.readAsDataURL(file);
+                        };
+
+                        if (delay) {
+                            setTimeout(processImage, delay);
+                        } else {
+                            processImage();
+                        }
+                    });
+                };
+
                 const setRowPreview = function (preview, meta, src, metaText) {
                     if (preview) {
                         preview.src = src || '';
@@ -388,14 +471,34 @@
                         input.className = 'form-control';
                         input.setAttribute('data-room-type-image-file', '1');
 
-                        input.addEventListener('change', function (event) {
+                        input.addEventListener('change', async function (event) {
                             const file = event.target.files && event.target.files[0] ? event.target.files[0] : null;
                             if (!file) {
                                 setRowPreview(preview, meta, '', '');
                                 return;
                             }
 
-                            setRowPreview(preview, meta, URL.createObjectURL(file), file.name);
+                            try {
+                                let processedFile = file;
+                                const compressionThreshold = 1024 * 1024;
+
+                                if (file.size > compressionThreshold) {
+                                    processedFile = await compressImage(file);
+                                }
+
+                                try {
+                                    const dataTransfer = new DataTransfer();
+                                    dataTransfer.items.add(processedFile);
+                                    input.files = dataTransfer.files;
+                                } catch (error) {
+                                    console.warn('DataTransfer error, file stored locally:', error);
+                                }
+
+                                setRowPreview(preview, meta, URL.createObjectURL(processedFile), processedFile.name);
+                            } catch (error) {
+                                input.value = '';
+                                setRowPreview(preview, meta, '', '');
+                            }
                         });
 
                         body.appendChild(input);

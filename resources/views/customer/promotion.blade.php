@@ -36,108 +36,78 @@
           </div>
         </div>
 
+        @if ($promotions->count() > 0)
         <div class="promotion-card-grid">
+          @foreach ($promotions as $promotion)
           <article class="promotion-card ftco-animate">
             <div class="promotion-card-media">
+              @if ($promotion->hinhs && $promotion->hinhs->count() > 0)
               <div class="promotion-card-slider single-slider owl-carousel">
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen1.png') }}"></div>
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen2.png') }}"></div>
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
+                @foreach ($promotion->hinhs as $image)
+                <div class="promotion-card-slide" data-bg-image="{{ $image->Url }}"></div>
+                @endforeach
               </div>
-              <span class="promotion-card-discount">-15%</span>
-            </div>
-
-            <div class="promotion-card-body">
-              <div class="promotion-card-code">PEACH01</div>
-              <h3>Giảm 15% cho kỳ nghỉ cuối tuần</h3>
-              <p class="promotion-card-description">
-                Ưu đãi cho khách đặt phòng Deluxe và Suite trong thời gian cuối tuần.
-              </p>
-
-              <div class="promotion-card-actions">
-                <span class="promotion-card-points">
-                  <i aria-hidden="true"></i>
-                  80 điểm
-                </span>
-                <button type="button" class="promotion-card-save">Lưu mã</button>
-              </div>
-
-              <div class="promotion-card-date">
-                01/04/2026
-                -
-                31/05/2026
-              </div>
-            </div>
-          </article>
-
-          <article class="promotion-card ftco-animate">
-            <div class="promotion-card-media">
+              @else
               <div class="promotion-card-slider single-slider owl-carousel">
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen2.png') }}"></div>
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
                 <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen.png') }}"></div>
               </div>
-              <span class="promotion-card-discount">-20%</span>
+              @endif
+              @if ($promotion->PhanTramGiamGia)
+              <span class="promotion-card-discount">-{{ $promotion->PhanTramGiamGia }}%</span>
+              @endif
             </div>
 
             <div class="promotion-card-body">
-              <div class="promotion-card-code">PEACH02</div>
-              <h3>Combo Spa và Breakfast</h3>
+              <div class="promotion-card-code">{{ $promotion->MaKM }}</div>
+              <h3>{{ $promotion->TenKM }}</h3>
               <p class="promotion-card-description">
-                Tăng trải nghiệm thư giãn và bữa sáng tại nhà hàng cho khách lưu trú.
+                {{ $promotion->MoTa ?: 'Không có mô tả' }}
               </p>
 
               <div class="promotion-card-actions">
+                @if ($promotion->Diem)
                 <span class="promotion-card-points">
                   <i aria-hidden="true"></i>
-                  100 điểm
+                  {{ $promotion->Diem }} điểm
                 </span>
-                <button type="button" class="promotion-card-save">Lưu mã</button>
+                @endif
+                <button type="button" class="promotion-card-save" onclick="copyToClipboard('{{ $promotion->MaKM }}')">Lưu mã</button>
               </div>
 
+              @if ($promotion->NgayBatDau || $promotion->NgayKetThuc)
               <div class="promotion-card-date">
-                10/04/2026
+                {{ $promotion->NgayBatDau ? \Carbon\Carbon::parse($promotion->NgayBatDau)->format('d/m/Y') : '' }}
+                @if ($promotion->NgayBatDau && $promotion->NgayKetThuc)
                 -
-                15/06/2026
+                @endif
+                {{ $promotion->NgayKetThuc ? \Carbon\Carbon::parse($promotion->NgayKetThuc)->format('d/m/Y') : '' }}
               </div>
+              @endif
             </div>
           </article>
-
-          <article class="promotion-card ftco-animate">
-            <div class="promotion-card-media">
-              <div class="promotion-card-slider single-slider owl-carousel">
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen3.png') }}"></div>
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen.png') }}"></div>
-                <div class="promotion-card-slide" data-bg-image="{{ asset('customers/images/screen1.png') }}"></div>
-              </div>
-              <span class="promotion-card-discount">-10%</span>
-            </div>
-
-            <div class="promotion-card-body">
-              <div class="promotion-card-code">PEACH03</div>
-              <h3>Đặt sớm tiết kiệm hơn</h3>
-              <p class="promotion-card-description">
-                Áp dụng cho đặt phòng sớm trước 14 ngày với các hạng phòng tiêu chuẩn.
-              </p>
-
-              <div class="promotion-card-actions">
-                <span class="promotion-card-points">
-                  <i aria-hidden="true"></i>
-                  60 điểm
-                </span>
-                <button type="button" class="promotion-card-save">Lưu mã</button>
-              </div>
-
-              <div class="promotion-card-date">
-                15/04/2026
-                -
-                01/07/2026
-              </div>
-            </div>
-          </article>
+          @endforeach
         </div>
+        @else
+        <div class="row justify-content-center">
+          <div class="col-md-8 text-center">
+            <p class="text-muted">Hiện tại không có khuyến mãi nào.</p>
+          </div>
+        </div>
+        @endif
       </div>
     </section>
+
+    @push('scripts')
+    <script>
+      function copyToClipboard(text) {
+        navigator.clipboard.writeText(text).then(function () {
+          alert('Mã khuyến mãi đã được sao chép: ' + text);
+        }).catch(function (err) {
+          console.error('Lỗi khi sao chép: ', err);
+        });
+      }
+    </script>
+    @endpush
 
     @include('customer.partials.footer')
 
