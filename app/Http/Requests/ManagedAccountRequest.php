@@ -28,7 +28,7 @@ class ManagedAccountRequest extends FormRequest
                 'string',
                 'min:6',
             ],
-            'LoaiTaiKhoan' => ['required', 'in:0,1,2,3,4'],
+            'LoaiTaiKhoan' => ['required', $accountId ? 'in:0,1,2,3,4' : 'in:0,1,2'],
             'TrangThai' => ['required', 'in:0,1'],
             'customer_id' => [
                 'nullable',
