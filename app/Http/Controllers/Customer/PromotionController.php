@@ -11,7 +11,7 @@ class PromotionController extends Controller
     {
         $promotions = KhuyenMai::with('hinhs')
             ->where('LoaiKM', 1)
-            ->orderByDesc('NgayBatDau')
+            ->orderBy('NgayBatDau', 'desc')
             ->get();
 
         return view('customer.promotion', [

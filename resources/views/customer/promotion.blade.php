@@ -1,4 +1,24 @@
 <!DOCTYPE html>
+@php
+  $authAccount = session('auth_account');
+  $isLoggedIn = filled($authAccount) && (int) ($authAccount['LoaiTaiKhoan'] ?? -1) === 0;
+  $customerId = $authAccount['MaKH'] ?? null;
+  $customerPoints = null;
+
+  if ($isLoggedIn && blank($customerId) && !empty($authAccount['MaTK'])) {
+    $customerId = \App\Models\TaiKhoan::where('MaTK', $authAccount['MaTK'])->value('MaKH');
+  }
+
+  if ($isLoggedIn && filled($customerId)) {
+    $customerPoints = (int) \App\Models\KhachHang::where('MaKH', $customerId)->value('DIEM');
+  }
+
+  $promotionAuthPayload = [
+    'isLoggedIn' => $isLoggedIn,
+    'customerId' => $customerId,
+    'customerPoints' => $customerPoints,
+  ];
+@endphp
 <html lang="en">
   <head>
     <title>Peach Valley</title>
@@ -71,7 +91,11 @@
                   {{ $promotion->Diem }} điểm
                 </span>
                 @endif
-                <button type="button" class="promotion-card-save" onclick="copyToClipboard('{{ $promotion->MaKM }}')">Lưu mã</button>
+                <button
+                  type="button"
+                  class="promotion-card-save"
+                  onclick="copyToClipboard('{{ $promotion->MaKM }}', {{ (int) ($promotion->Diem ?? 0) }})"
+                >Lưu mã</button>
               </div>
 
               @if ($promotion->NgayBatDau || $promotion->NgayKetThuc)
@@ -97,17 +121,155 @@
       </div>
     </section>
 
-    @push('scripts')
+    <div class="promotion-login-modal" data-promotion-login-modal hidden>
+      <div class="promotion-login-modal-backdrop" data-promotion-login-close></div>
+      <div class="promotion-login-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-login-title">
+        <h3 id="promotion-login-title">Bạn cần đăng nhập</h3>
+        <p>Vui lòng đăng nhập để lưu mã khuyến mãi vào tài khoản của bạn.</p>
+        <div class="promotion-login-modal-actions">
+          <button type="button" class="promotion-login-modal-secondary" data-promotion-login-close>Đã hiểu</button>
+          <a href="{{ route('login') }}" class="promotion-login-modal-primary">Đăng nhập</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="promotion-feedback-modal" data-promotion-feedback-modal hidden>
+      <div class="promotion-feedback-modal-backdrop" data-promotion-feedback-close></div>
+      <div class="promotion-feedback-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="promotion-feedback-title">
+        <h3 id="promotion-feedback-title" data-promotion-feedback-title></h3>
+        <p data-promotion-feedback-message></p>
+        <div class="promotion-feedback-modal-actions">
+          <button type="button" class="promotion-feedback-modal-primary" data-promotion-feedback-close>Đã hiểu</button>
+        </div>
+      </div>
+    </div>
+
     <script>
-      function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(function () {
-          alert('Mã khuyến mãi đã được sao chép: ' + text);
-        }).catch(function (err) {
-          console.error('Lỗi khi sao chép: ', err);
-        });
+      window.PeachPromotionAuth = {{ \Illuminate\Support\Js::from($promotionAuthPayload) }};
+
+      function openPromotionLoginModal() {
+        const modal = document.querySelector('[data-promotion-login-modal]');
+        if (!modal) return;
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-open');
       }
+
+      function closePromotionLoginModal() {
+        const modal = document.querySelector('[data-promotion-login-modal]');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+
+      function openPromotionFeedbackModal(title, message) {
+        const modal = document.querySelector('[data-promotion-feedback-modal]');
+        if (!modal) return;
+
+        const titleElement = modal.querySelector('[data-promotion-feedback-title]');
+        const messageElement = modal.querySelector('[data-promotion-feedback-message]');
+
+        if (titleElement) titleElement.textContent = title;
+        if (messageElement) messageElement.textContent = message;
+
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-open');
+      }
+
+      function closePromotionFeedbackModal() {
+        const modal = document.querySelector('[data-promotion-feedback-modal]');
+        if (!modal) return;
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+
+      async function copyToClipboard(text, pointsRequired) {
+        if (!window.PeachPromotionAuth || !window.PeachPromotionAuth.isLoggedIn) {
+          openPromotionLoginModal();
+          return;
+        }
+
+        if (!window.PeachPromotionAuth.customerId) {
+          openPromotionFeedbackModal('Không thể lưu mã', 'Không tìm thấy thông tin khách hàng của tài khoản hiện tại.');
+          return;
+        }
+
+        const currentPoints = Number(window.PeachPromotionAuth.customerPoints);
+        const neededPoints = Math.max(0, Number(pointsRequired) || 0);
+
+        if (Number.isFinite(currentPoints) && currentPoints < neededPoints) {
+          openPromotionFeedbackModal(
+            'Điểm không đủ',
+            `Bạn cần ${neededPoints} điểm để đổi mã này. Hiện bạn có ${currentPoints} điểm, còn thiếu ${neededPoints - currentPoints} điểm.`,
+          );
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/kho-khuyen-mai/doi-bang-diem', {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              MaKM: text,
+              MaKH: window.PeachPromotionAuth.customerId,
+            }),
+          });
+          const result = await response.json();
+
+          if (response.ok && result.success) {
+            const data = result.data || {};
+            if (Number.isInteger(data.diemConLai)) {
+              window.PeachPromotionAuth.customerPoints = data.diemConLai;
+            }
+            const diemConLai = Number.isInteger(data.diemConLai) ? ` Bạn còn ${data.diemConLai} điểm.` : '';
+            openPromotionFeedbackModal('Lưu mã thành công', `Mã ${text} đã được lưu vào kho khuyến mãi của bạn.${diemConLai}`);
+            return;
+          }
+
+          const data = result.data || {};
+          if (data.diemThieu !== undefined) {
+            openPromotionFeedbackModal(
+              'Điểm không đủ',
+              `Bạn cần ${data.diemCan} điểm để đổi mã này. Hiện bạn có ${data.diemHienTai} điểm, còn thiếu ${data.diemThieu} điểm.`,
+            );
+            return;
+          }
+
+          openPromotionFeedbackModal('Không thể lưu mã', result.message || 'Vui lòng thử lại sau.');
+        } catch (error) {
+          console.error('Lỗi khi lưu mã khuyến mãi: ', error);
+          openPromotionFeedbackModal('Không thể lưu mã', 'Có lỗi xảy ra khi lưu mã. Vui lòng thử lại sau.');
+        }
+      }
+      document.addEventListener('DOMContentLoaded', function () {
+        const loginModal = document.querySelector('[data-promotion-login-modal]');
+        const feedbackModal = document.querySelector('[data-promotion-feedback-modal]');
+
+        loginModal?.querySelectorAll('[data-promotion-login-close]').forEach(function (button) {
+          button.addEventListener('click', closePromotionLoginModal);
+        });
+
+        feedbackModal?.querySelectorAll('[data-promotion-feedback-close]').forEach(function (button) {
+          button.addEventListener('click', closePromotionFeedbackModal);
+        });
+
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && loginModal?.classList.contains('is-open')) {
+            closePromotionLoginModal();
+          }
+
+          if (event.key === 'Escape' && feedbackModal?.classList.contains('is-open')) {
+            closePromotionFeedbackModal();
+          }
+        });
+      });
     </script>
-    @endpush
 
     @include('customer.partials.footer')
 

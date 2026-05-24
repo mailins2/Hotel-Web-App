@@ -126,22 +126,17 @@ class KhoKhuyenMaiController extends Controller
         }
 
         // 🔥 Kiểm tra mã có yêu cầu điểm không
-        if (!$khuyenMai->Diem || $khuyenMai->Diem <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mã này không cần đổi bằng điểm, bạn có thể lưu trực tiếp'
-            ], 400);
-        }
+        $diemCan = max(0, (int) ($khuyenMai->Diem ?? 0));
 
         // 🔥 Kiểm tra đủ điểm không
-        if ((int) $khachHang->DIEM < (int) $khuyenMai->Diem) {
+        if ((int) $khachHang->DIEM < $diemCan) {
             return response()->json([
                 'success' => false,
                 'message' => "Bạn cần {$khuyenMai->Diem} điểm để đổi mã này. Hiện bạn có {$khachHang->DIEM} điểm",
                 'data' => [
                     'diemHienTai' => (int) $khachHang->DIEM,
-                    'diemCan' => (int) $khuyenMai->Diem,
-                    'diemThieu' => (int) ($khuyenMai->Diem - $khachHang->DIEM)
+                    'diemCan' => $diemCan,
+                    'diemThieu' => (int) ($diemCan - $khachHang->DIEM)
                 ]
             ], 400);
         }
@@ -184,7 +179,7 @@ class KhoKhuyenMaiController extends Controller
             DB::beginTransaction();
 
             // Trừ điểm khách hàng
-            $khachHang->DIEM = (int) $khachHang->DIEM - (int) $khuyenMai->Diem;
+            $khachHang->DIEM = (int) $khachHang->DIEM - $diemCan;
             $khachHang->save();
 
             // Lưu vào kho
@@ -198,13 +193,13 @@ class KhoKhuyenMaiController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Đổi mã khuyến mãi thành công! Bạn đã dùng {$khuyenMai->Diem} điểm",
+                'message' => "Đổi mã khuyến mãi thành công! Bạn đã dùng {$diemCan} điểm",
                 'data' => [
                     'kho_khuyen_mai' => $khoKM,
                     'maKM' => $khuyenMai->MaKM,
                     'tenKM' => $khuyenMai->TenKM,
                     'phanTramGiamGia' => $khuyenMai->PhanTramGiamGia,
-                    'diemDaDung' => (int) $khuyenMai->Diem,
+                    'diemDaDung' => $diemCan,
                     'diemConLai' => (int) $khachHang->DIEM,
                     'ngayHetHan' => $khuyenMai->NgayKetThuc,
                 ]

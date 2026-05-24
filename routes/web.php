@@ -278,7 +278,40 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'message' => 'Đã hủy đặt phòng thành công.',
         ]);
     })->middleware('account.role:0')->name('my-bookings.cancel');
-    Route::view('/promotion-wallet', 'customer.promotion-wallet')->middleware('account.role:0')->name('promotion-wallet');
+    Route::get('/promotion-wallet', function () {
+        $authAccount = session('auth_account');
+        $customerId = $authAccount['MaKH'] ?? null;
+
+        if (empty($customerId) && !empty($authAccount['MaTK'])) {
+            $customerId = \App\Models\TaiKhoan::where('MaTK', $authAccount['MaTK'])->value('MaKH');
+        }
+
+        $customer = $customerId
+            ? \App\Models\KhachHang::select(['MaKH', 'DIEM'])->find($customerId)
+            : null;
+
+        $promotionWalletItems = $customerId
+            ? \App\Models\KhoKhuyenMai::with('khuyenMai')
+                ->where('MaKH', $customerId)
+                ->whereHas('khuyenMai')
+                ->get()
+                ->sort(function ($left, $right) {
+                    $statusCompare = ((int) ($left->TrangThai ?? 0)) <=> ((int) ($right->TrangThai ?? 0));
+
+                    if ($statusCompare !== 0) {
+                        return $statusCompare;
+                    }
+
+                    return strcmp((string) ($right->MaKM ?? ''), (string) ($left->MaKM ?? ''));
+                })
+                ->values()
+            : collect();
+
+        return view('customer.promotion-wallet', [
+            'customer' => $customer,
+            'promotionWalletItems' => $promotionWalletItems,
+        ]);
+    })->middleware('account.role:0')->name('promotion-wallet');
 
     Route::redirect('/room-single.html', '/customer/rooms-single');
     Route::redirect('/about', '/customer/promotion');
