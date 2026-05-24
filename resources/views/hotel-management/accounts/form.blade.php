@@ -36,8 +36,10 @@
             <option value="0">Khách hàng</option>
             <option value="1">Nhân viên</option>
             <option value="2">Quản lý</option>
-            <option value="3">Kế toán</option>
-            <option value="4">Nhân viên kinh doanh</option>
+            @if (request()->routeIs('hotel.accounts.edit'))
+                <option value="3">Kế toán</option>
+                <option value="4">Nhân viên kinh doanh</option>
+            @endif
         </select>
         <div class="invalid-feedback" id="account-type-error"></div>
     </div>

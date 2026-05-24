@@ -29,7 +29,7 @@ class TaiKhoanController extends Controller
         $validator = Validator::make($request->all(), [
             'Email' => 'required|email|unique:TaiKhoan,Email',
             'MatKhau' => 'required|min:6',
-            'LoaiTaiKhoan' => 'required|in:0,1,2,3,4',
+            'LoaiTaiKhoan' => 'required|in:0,1,2',
             'TrangThai' => 'nullable|in:0,1',
             'MaKH' => 'nullable|exists:KhachHang,MaKH|unique:TaiKhoan,MaKH',
             'MaNV' => 'nullable|exists:NhanVien,MaNV|unique:TaiKhoan,MaNV',
@@ -80,7 +80,7 @@ class TaiKhoanController extends Controller
         $validator = Validator::make($request->all(), [
             'Email' => 'sometimes|email|unique:TaiKhoan,Email,' . $id . ',MaTK',
             'MatKhau' => 'sometimes|nullable|min:6',
-            'LoaiTaiKhoan' => 'sometimes|in:0,1,2,3,4',
+            'LoaiTaiKhoan' => 'sometimes|in:0,1,2',
             'TrangThai' => 'sometimes|in:0,1',
             'MaKH' => 'sometimes|nullable|exists:KhachHang,MaKH|unique:TaiKhoan,MaKH,' . $id . ',MaTK',
             'MaNV' => 'sometimes|nullable|exists:NhanVien,MaNV|unique:TaiKhoan,MaNV,' . $id . ',MaTK',
