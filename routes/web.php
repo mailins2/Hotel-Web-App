@@ -153,9 +153,38 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 ->first();
         }
 
+        $bookingPromotions = collect();
+
+        if ($bookingCustomer) {
+            $today = Carbon::today()->toDateString();
+
+            $bookingPromotions = \App\Models\KhoKhuyenMai::with('khuyenMai')
+                ->where('MaKH', $bookingCustomer->MaKH)
+                ->where('TrangThai', 0)
+                ->whereHas('khuyenMai', function ($query) use ($today) {
+                    $query
+                        ->whereDate('NgayBatDau', '<=', $today)
+                        ->whereDate('NgayKetThuc', '>=', $today);
+                })
+                ->get()
+                ->map(function ($walletItem) {
+                    $promotion = $walletItem->khuyenMai;
+
+                    return [
+                        'code' => (string) $walletItem->MaKM,
+                        'name' => (string) ($promotion?->TenKM ?? $walletItem->MaKM),
+                        'discountPercent' => (float) ($promotion?->PhanTramGiamGia ?? 0),
+                        'expiresAt' => $promotion?->NgayKetThuc,
+                    ];
+                })
+                ->sortByDesc('discountPercent')
+                ->values();
+        }
+
         return view('customer.info-booking', [
             'bookingAccount' => $authAccount,
             'bookingCustomer' => $bookingCustomer,
+            'bookingPromotions' => $bookingPromotions,
         ]);
     })->name('info-booking');
     Route::get('/profile', function () {
@@ -209,6 +238,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
 
             $customerBookings = \App\Models\DatPhong::with([
                 'khachHang.taiKhoan',
+                'hoaDon.khuyenMai',
                 'hoaDon.chiTietHoaDons.loaiPhong',
                 'hoaDon.thanhToans',
                 'chiTietDatPhong.phong.loaiPhong',

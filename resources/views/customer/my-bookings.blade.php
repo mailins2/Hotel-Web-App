@@ -79,6 +79,11 @@
                     ];
                   })->values();
                   $summaryTitle = $rooms->pluck('TenPhong')->unique()->implode(', ') ?: 'Đặt phòng Peach Valley';
+                  $invoiceOriginalTotal = (float) $rooms->sum('ThanhTien');
+                  $invoiceFinalTotal = (float) ($invoice?->TongTien ?? $invoiceOriginalTotal);
+                  $voucherPercent = (float) ($invoice?->khuyenMai?->PhanTramGiamGia ?? 0);
+                  $voucherCode = $invoice?->MaKM;
+                  $voucherDiscount = max($invoiceOriginalTotal - $invoiceFinalTotal, 0);
                   $payload = [
                     'MaDatPhong' => $booking->MaDatPhong,
                     'MaKH' => $booking->MaKH,
@@ -94,7 +99,11 @@
                     'StatusLabel' => $statusLabel,
                     'SummaryTitle' => $summaryTitle,
                     'Rooms' => $rooms,
-                    'TongTien' => (float) ($invoice?->TongTien ?? 0),
+                    'TongTienGoc' => $invoiceOriginalTotal,
+                    'TongTien' => $invoiceFinalTotal,
+                    'MaKM' => $voucherCode,
+                    'PhanTramGiam' => $voucherPercent,
+                    'TienGiam' => $voucherDiscount,
                     'TienDatCoc' => (float) ($invoice?->DaThanhToan ?? 0),
                   ];
                 @endphp
@@ -144,8 +153,16 @@
 
                     <div class="customer-booking-money">
                       <span>Tổng tiền</span>
-                      <strong>{{ number_format((float) ($invoice?->TongTien ?? 0), 0, ',', '.') }} VND</strong>
+                      <strong>{{ number_format($invoiceFinalTotal, 0, ',', '.') }} VND</strong>
                     </div>
+
+                    @if($voucherCode && $voucherDiscount > 0)
+                      <div class="customer-booking-discount">
+                        <span>Mã {{ $voucherCode }}{{ $voucherPercent > 0 ? ' -' . rtrim(rtrim(number_format($voucherPercent, 2, ',', '.'), '0'), ',') . '%' : '' }}</span>
+                        <strong>-{{ number_format($voucherDiscount, 0, ',', '.') }} VND</strong>
+                        <small>Giá gốc: {{ number_format($invoiceOriginalTotal, 0, ',', '.') }} VND</small>
+                      </div>
+                    @endif
 
                     <div class="customer-booking-money">
                       <span>Đã thanh toán</span>
@@ -345,6 +362,8 @@
           <div><span>Ngày nhận phòng</span><strong data-booking-detail-checkin>--</strong></div>
           <div><span>Ngày trả phòng</span><strong data-booking-detail-checkout>--</strong></div>
           <div><span>Tổng số khách ở</span><strong data-booking-detail-guests>0 khách</strong></div>
+          <div data-booking-detail-original-row hidden><span>Giá gốc</span><strong data-booking-detail-original>0 VND</strong></div>
+          <div data-booking-detail-discount-row hidden><span data-booking-detail-discount-label>Khuyến mãi</span><strong data-booking-detail-discount>0 VND</strong></div>
           <div><span>Tổng tiền thanh toán</span><strong data-booking-detail-total>0 VND</strong></div>
           <div><span>Tiền đặt cọc</span><strong data-booking-detail-deposit>0 VND</strong></div>
         </div>
@@ -450,6 +469,23 @@
           document.querySelector('[data-booking-detail-checkin]').textContent = formatDate(booking.NgayNhanPhong);
           document.querySelector('[data-booking-detail-checkout]').textContent = formatDate(booking.NgayTraPhong);
           document.querySelector('[data-booking-detail-guests]').textContent = `${booking.TongSoKhach || 1} khách`;
+          const originalRow = document.querySelector('[data-booking-detail-original-row]');
+          const discountRow = document.querySelector('[data-booking-detail-discount-row]');
+          const discountAmount = Number(booking.TienGiam || 0);
+
+          if (originalRow && discountRow) {
+            originalRow.hidden = discountAmount <= 0;
+            discountRow.hidden = discountAmount <= 0;
+          }
+
+          if (discountAmount > 0) {
+            document.querySelector('[data-booking-detail-original]').textContent = formatCurrency(booking.TongTienGoc);
+            document.querySelector('[data-booking-detail-discount]').textContent = `-${formatCurrency(discountAmount)}`;
+            document.querySelector('[data-booking-detail-discount-label]').textContent = booking.MaKM
+              ? `Khuyến mãi ${booking.MaKM}${Number(booking.PhanTramGiam || 0) > 0 ? ` -${Number(booking.PhanTramGiam).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%` : ''}`
+              : 'Khuyến mãi';
+          }
+
           document.querySelector('[data-booking-detail-total]').textContent = formatCurrency(booking.TongTien);
           document.querySelector('[data-booking-detail-deposit]').textContent = formatCurrency(booking.TienDatCoc);
 

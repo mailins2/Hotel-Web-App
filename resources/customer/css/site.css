@@ -1652,7 +1652,8 @@ a:focus,
     background: #fff;
 }
 
-.booking-promo-control input {
+.booking-promo-control input,
+.booking-promo-control select {
     min-width: 0;
     height: 48px;
     border: none;
@@ -1660,6 +1661,17 @@ a:focus,
     color: #111827;
     font-size: 16px;
     outline: none;
+}
+
+.booking-promo-control select {
+    width: 100%;
+    background: #fff;
+    cursor: pointer;
+}
+
+.booking-promo-control select:disabled {
+    color: #9ca3af;
+    cursor: not-allowed;
 }
 
 .booking-promo-control button {
@@ -3209,6 +3221,28 @@ body.modal-open {
     color: var(--customer-accent);
     font-weight: 900;
     white-space: nowrap;
+}
+
+.customer-booking-discount {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    margin-top: 10px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.customer-booking-discount strong {
+    color: #15803d;
+    white-space: nowrap;
+}
+
+.customer-booking-discount small {
+    grid-column: 1 / -1;
+    color: #94a3b8;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .customer-empty {

@@ -10,6 +10,7 @@ use App\Models\HoaDon;
 use App\Models\ChiTietHoaDon;
 use App\Models\KhachHang;
 use App\Models\KhuyenMai;
+use App\Models\KhoKhuyenMai;
 use App\Models\LuuTru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,6 +69,10 @@ class DatPhongController extends Controller
                 $bookingData = $data;
                 $bookingData['MaKH'] = $this->resolveCustomerId($bookingData);
 
+                if (!empty($bookingData['MaKM'])) {
+                    $this->validatePromotionForCustomer((int) $bookingData['MaKH'], (string) $bookingData['MaKM']);
+                }
+
                 // 1. Tạo DatPhong trước
                 $datPhong = $this->createDatPhong($bookingData);
 
@@ -111,6 +116,10 @@ class DatPhongController extends Controller
 
             } catch (\Exception $e) {
                 DB::rollBack();
+
+                if ($e instanceof \InvalidArgumentException) {
+                    return $this->error($e->getMessage(), 422);
+                }
 
                 if ($attempt < $maxAttempts - 1 &&
                     (str_contains($e->getMessage(), 'Không đủ phòng') ||
@@ -275,6 +284,7 @@ class DatPhongController extends Controller
 
        return $request->validate([
             'MaKH' => 'nullable|exists:KhachHang,MaKH',
+            'MaKM' => 'nullable|string|exists:KhuyenMai,MaKM',
             'TenKH' => 'required_without:MaKH|string|max:100',
             'SoDienThoai' => 'required_without:MaKH|string|max:15',
             'NgayNhanPhong' => [
@@ -326,6 +336,29 @@ class DatPhongController extends Controller
             'GioiTinh' => 2,
             'DiaChi' => null,
         ])->MaKH;
+    }
+
+    private function validatePromotionForCustomer(int $customerId, string $promotionId): KhuyenMai
+    {
+        $promotion = KhuyenMai::where('MaKM', $promotionId)
+            ->whereDate('NgayBatDau', '<=', now()->toDateString())
+            ->whereDate('NgayKetThuc', '>=', now()->toDateString())
+            ->first();
+
+        if (!$promotion) {
+            throw new \InvalidArgumentException('Ma khuyen mai khong con han hoac khong hop le.');
+        }
+
+        $ownsPromotion = KhoKhuyenMai::where('MaKH', $customerId)
+            ->where('MaKM', $promotionId)
+            ->where('TrangThai', 0)
+            ->exists();
+
+        if (!$ownsPromotion) {
+            throw new \InvalidArgumentException('Ma khuyen mai khong thuoc kho cua khach hang hoac da duoc su dung.');
+        }
+
+        return $promotion;
     }
 
     private function createDatPhong($data)
