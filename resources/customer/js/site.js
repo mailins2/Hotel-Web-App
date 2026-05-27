@@ -444,7 +444,7 @@ const initHomeBookingSearchSync = () => {
             guestPicker?.querySelector('[data-guest-input="rooms"]')?.value || "1";
 
         if (!checkinDate || !checkoutDate || checkinDate >= checkoutDate) {
-            window.alert("Vui lÃ²ng chá»n ngÃ y nháº­n vÃ  ngÃ y tráº£ há»£p lá»‡.");
+            window.alert("Vui lòng chọn ngày nhận và ngày trả hợp lệ.");
             return;
         }
 

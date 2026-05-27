@@ -28,4 +28,9 @@ class KhuyenMai extends Model
     {
         return $this->hasMany(HoaDon::class, 'MaKM');
     }
+
+    public function hinhs()
+    {
+        return $this->hasMany(Hinh::class, 'MaKM', 'MaKM');
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
+use App\Models\KhoKhuyenMai;
 use App\Models\Phong;
 use App\Models\ThanhToan;
 use App\Services\CustomerPointService;
@@ -310,6 +311,10 @@ class PaymentController extends Controller
                         ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
                             ->update(['TrangThai' => ChiTietDatPhong::BOOKED]);
                     }
+
+                    if ($paymentAmount > 0 && $hoaDon->MaKM) {
+                        $this->markPromotionAsUsed($hoaDon, $datPhong);
+                    }
                 }
             });
 
@@ -335,6 +340,14 @@ class PaymentController extends Controller
             'return_code' => 1,
             'return_message' => 'success',
         ]);
+    }
+
+    private function markPromotionAsUsed(HoaDon $hoaDon, DatPhong $datPhong): void
+    {
+        KhoKhuyenMai::where('MaKH', $datPhong->MaKH)
+            ->where('MaKM', $hoaDon->MaKM)
+            ->where('TrangThai', 0)
+            ->update(['TrangThai' => 1]);
     }
 
     private function confirmCheckout(DatPhong $datPhong): void
