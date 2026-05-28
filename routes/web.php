@@ -155,6 +155,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 })
                 ->orderByDesc('MaDatPhong')
                 ->get()
+                ->filter(function (DatPhong $booking) {
+                    return \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->setTime(14, 0)->gte(now());
+                })
                 ->flatMap(function (DatPhong $booking) {
                     return $booking->chiTietDatPhong
                         ->map(function ($detail) use ($booking) {
@@ -1084,13 +1087,17 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $serviceRoomOptions = \App\Models\ChiTietDatPhong::select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
             ->with([
             'phong:MaPhong,SoPhong',
-            'datPhong:MaDatPhong,MaKH,TinhTrang',
+            'datPhong:MaDatPhong,MaKH,NgayNhanPhong,NgayTraPhong,TinhTrang',
             'datPhong.khachHang:MaKH,TenKH',
         ])
             ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN)
             ->orderBy('MaDatPhong')
             ->orderBy('MaPhong')
             ->get()
+            ->filter(function ($detail) {
+                return $detail->datPhong?->NgayTraPhong
+                    && \Illuminate\Support\Carbon::parse($detail->datPhong->NgayTraPhong)->setTime(14, 0)->gte(now());
+            })
             ->map(function ($detail) {
                 $booking = $detail->datPhong;
                 $roomNumber = $detail->phong?->SoPhong;
@@ -1102,6 +1109,8 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'roomId' => (string) $detail->MaPhong,
                     'roomNumber' => $roomNumber ? (string) $roomNumber : '',
                     'customerName' => $customerName ?: '',
+                    'checkIn' => $booking?->NgayNhanPhong ? \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString() : '',
+                    'checkOut' => $booking?->NgayTraPhong ? \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString() : '',
                     'label' => trim(
                         ($roomNumber ? "Phòng {$roomNumber}" : "Phòng #{$detail->MaPhong}")
                         . " - Đặt phòng #{$detail->MaDatPhong}"

@@ -5303,21 +5303,26 @@ body.modal-open {
 }
 
 .service-booking-time-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .service-booking-time-row select {
+    flex: 0 0 132px;
+    width: 132px;
+    min-width: 0;
     margin-bottom: 0;
 }
 
-.service-booking-time-divider {
-    color: #8c4a34;
-    font-size: 20px;
+.service-booking-time-divider,
+.service-booking-time-unit {
+    color: #8c4a34 !important;
+    font-size: 15px;
     font-weight: 900;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .service-booking-form select:focus,

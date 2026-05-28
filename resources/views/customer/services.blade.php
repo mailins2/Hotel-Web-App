@@ -419,12 +419,13 @@
                   <option value="{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $hour, 2, '0', STR_PAD_LEFT) }}</option>
                 @endfor
               </select>
-              <span class="service-booking-time-divider" aria-hidden="true">:</span>
+              <span class="service-booking-time-unit" aria-hidden="true">giờ</span>
               <select id="service_booking_minute" data-service-minute required>
                 @for($minute = 0; $minute <= 59; $minute++)
                   <option value="{{ str_pad((string) $minute, 2, '0', STR_PAD_LEFT) }}">{{ str_pad((string) $minute, 2, '0', STR_PAD_LEFT) }}</option>
                 @endfor
               </select>
+              <span class="service-booking-time-unit" aria-hidden="true">phút</span>
             </div>
           </div>
 
@@ -649,6 +650,40 @@
           const pad = (value) => String(value).padStart(2, '0');
           const now = new Date();
           const todayValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const toDateValue = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+          const parseLocalDateTime = (dateValue, hour = '00', minute = '00') => {
+            if (!dateValue) {
+              return null;
+            }
+
+            const [year, month, day] = dateValue.split('-').map(Number);
+
+            if (!year || !month || !day) {
+              return null;
+            }
+
+            return new Date(year, month - 1, day, Number(hour || 0), Number(minute || 0), 0, 0);
+          };
+          const getSelectedBooking = () => activeBookings.find((item) => String(item.id) === String(roomSelect?.value || ''));
+          const getServiceWindow = () => {
+            const booking = getSelectedBooking();
+
+            if (!booking?.checkOut) {
+              return null;
+            }
+
+            const start = new Date();
+            start.setSeconds(0, 0);
+
+            const checkInDate = parseLocalDateTime(booking.checkIn || todayValue, '00', '00');
+            const end = parseLocalDateTime(booking.checkOut, '14', '00');
+
+            if (checkInDate && checkInDate > start) {
+              start.setTime(checkInDate.getTime());
+            }
+
+            return { start, end };
+          };
 
           const openWarningModal = () => {
             if (! warningModal) {
@@ -712,14 +747,65 @@
             timeInput.value = `${dateInput.value}T${hourSelect.value}:${minuteSelect.value}`;
           };
 
+          const updateTimeOptions = () => {
+            const windowRange = getServiceWindow();
+
+            if (!windowRange || !dateInput || !hourSelect || !minuteSelect) {
+              syncServiceTime();
+              return;
+            }
+
+            const selectedDate = dateInput.value;
+            const minHour = selectedDate === toDateValue(windowRange.start) ? windowRange.start.getHours() : 0;
+            const minMinute = selectedDate === toDateValue(windowRange.start) ? windowRange.start.getMinutes() : 0;
+            const maxHour = selectedDate === toDateValue(windowRange.end) ? windowRange.end.getHours() : 23;
+            const maxMinute = selectedDate === toDateValue(windowRange.end) ? windowRange.end.getMinutes() : 59;
+
+            Array.from(hourSelect.options).forEach((option) => {
+              const hour = Number(option.value);
+              const isOutOfRange = hour < minHour || hour > maxHour;
+              option.disabled = isOutOfRange;
+              option.hidden = isOutOfRange;
+            });
+
+            if (hourSelect.selectedOptions[0]?.disabled || hourSelect.selectedOptions[0]?.hidden) {
+              const firstEnabledHour = Array.from(hourSelect.options).find((option) => !option.disabled && !option.hidden);
+              if (firstEnabledHour) {
+                hourSelect.value = firstEnabledHour.value;
+              }
+            }
+
+            const selectedHour = Number(hourSelect.value);
+
+            Array.from(minuteSelect.options).forEach((option) => {
+              const minute = Number(option.value);
+              const isOutOfRange = (selectedHour === minHour && minute < minMinute)
+                || (selectedHour === maxHour && minute > maxMinute);
+              option.disabled = isOutOfRange;
+              option.hidden = isOutOfRange;
+            });
+
+            if (minuteSelect.selectedOptions[0]?.disabled || minuteSelect.selectedOptions[0]?.hidden) {
+              const firstEnabledMinute = Array.from(minuteSelect.options).find((option) => !option.disabled && !option.hidden);
+              if (firstEnabledMinute) {
+                minuteSelect.value = firstEnabledMinute.value;
+              }
+            }
+
+            syncServiceTime();
+          };
+
           const syncBookingDateBounds = () => {
             if (! dateInput || ! roomSelect) {
               return;
             }
 
-            const booking = activeBookings.find((item) => String(item.id) === String(roomSelect.value));
-            const minDate = [booking?.checkIn, todayValue].filter(Boolean).sort().pop() || todayValue;
-            const maxDate = booking?.checkOut || minDate;
+            const windowRange = getServiceWindow();
+            const hasExpiredWindow = windowRange && windowRange.start > windowRange.end;
+            const minDate = hasExpiredWindow
+              ? toDateValue(windowRange.end)
+              : (windowRange ? toDateValue(windowRange.start) : todayValue);
+            const maxDate = windowRange ? toDateValue(windowRange.end) : minDate;
 
             dateInput.min = minDate;
             dateInput.max = maxDate;
@@ -728,7 +814,30 @@
               dateInput.value = minDate;
             }
 
-            syncServiceTime();
+            updateTimeOptions();
+          };
+
+          const validateServiceWindow = () => {
+            const windowRange = getServiceWindow();
+
+            if (!windowRange) {
+              return true;
+            }
+
+            if (windowRange.start > windowRange.end) {
+              setBookingStatus('Da qua thoi gian dat dich vu cho phong nay.');
+              return false;
+            }
+
+            const selectedTime = parseLocalDateTime(dateInput?.value || '', hourSelect?.value || '00', minuteSelect?.value || '00');
+
+            if (!selectedTime || selectedTime < windowRange.start || selectedTime > windowRange.end) {
+              setBookingStatus('Thoi gian su dung dich vu chi duoc tu luc check-in den 14:00 ngay tra phong.');
+              return false;
+            }
+
+            setBookingStatus('');
+            return true;
           };
 
           if (dateInput) {
@@ -744,8 +853,14 @@
           }
 
           [dateInput, hourSelect, minuteSelect].forEach((input) => {
-            input?.addEventListener('change', syncServiceTime);
-            input?.addEventListener('input', syncServiceTime);
+            input?.addEventListener('change', () => {
+              updateTimeOptions();
+              validateServiceWindow();
+            });
+            input?.addEventListener('input', () => {
+              updateTimeOptions();
+              validateServiceWindow();
+            });
           });
 
           const getServicesByType = (type) => services.filter((service) => String(service.type) === String(type));
@@ -924,6 +1039,7 @@
             updateBookingMode(typeSelect.value, trigger.dataset.serviceId || '');
             syncBookingDateBounds();
             syncServiceTime();
+            validateServiceWindow();
             modal.hidden = false;
             document.body.classList.add('service-booking-open');
             window.requestAnimationFrame(() => modal.classList.add('is-open'));
@@ -955,7 +1071,10 @@
           });
 
         typeSelect.addEventListener('change', () => updateBookingMode(typeSelect.value));
-        roomSelect?.addEventListener('change', syncBookingDateBounds);
+        roomSelect?.addEventListener('change', () => {
+          syncBookingDateBounds();
+          validateServiceWindow();
+        });
         nameSelect?.addEventListener('change', updatePriceSummary);
         quantityInput?.addEventListener('input', updatePriceSummary);
         quantityInput?.addEventListener('change', updatePriceSummary);
@@ -1032,6 +1151,10 @@
 
             if (! timeInput?.value) {
               dateInput?.focus();
+              return;
+            }
+
+            if (!validateServiceWindow()) {
               return;
             }
 
