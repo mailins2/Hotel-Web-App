@@ -1,6 +1,23 @@
 @php
     $isEditCustomer = request()->routeIs('reception.customers.edit');
-    $customerId = request()->route('customerId');
+    $customer = $customer ?? null;
+    $provinces = $provinces ?? [];
+    $communes = $communes ?? [];
+    $customerId = $customer?->MaKH ?? request()->route('customerId');
+    $birthdayValue = $customer?->NgaySinh ? \Carbon\Carbon::parse($customer->NgaySinh)->toDateString() : '';
+    $genderValue = $customer?->GioiTinh !== null ? (string) $customer->GioiTinh : '';
+    $accountStatusValue = $customer?->taiKhoan?->TrangThai !== null
+        ? (string) $customer->taiKhoan->TrangThai
+        : '1';
+    $addressParts = collect(explode(',', (string) ($customer?->DiaChi ?? '')))
+        ->map(fn ($part) => trim($part))
+        ->filter()
+        ->values();
+    $addressLineValue = $addressParts->get(0, '');
+    $districtNameValue = old('district', $addressParts->get(1, ''));
+    $provinceNameValue = old('province', $addressParts->get(2, ''));
+    $selectedProvinceCode = collect($provinces)->firstWhere('name', $provinceNameValue)['code'] ?? '';
+    $selectedDistrictCode = collect($communes[$selectedProvinceCode] ?? [])->firstWhere('name', $districtNameValue)['code'] ?? '';
 @endphp
 
 <x-receptionist.form-page
@@ -13,18 +30,18 @@
 
     <div class="form-group col-md-6">
         <label class="form-label">Mã khách hàng</label>
-        <input id="customerId" type="text" class="form-control hm-readonly-input" value="--" readonly disabled>
+        <input id="customerId" type="text" class="form-control hm-readonly-input" value="{{ $customer?->MaKH ?? '--' }}" readonly disabled>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Tên khách hàng</label>
-        <input id="customerName" type="text" class="form-control" placeholder="Nguyễn Minh An" required>
+        <input id="customerName" type="text" class="form-control" value="{{ old('TenKH', $customer?->TenKH) }}" placeholder="Nguyễn Minh An" required>
         <div id="customerNameError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Ngày sinh</label>
-        <input id="customerBirthday" type="date" class="form-control" max="{{ now()->toDateString() }}" required>
+        <input id="customerBirthday" type="date" class="form-control" value="{{ old('NgaySinh', $birthdayValue) }}" max="{{ now()->toDateString() }}" required>
         <div id="customerBirthdayError" class="invalid-feedback"></div>
     </div>
 
@@ -32,22 +49,22 @@
         <label class="form-label">Giới tính</label>
         <select id="customerGender" class="form-select" required>
             <option value="">Chọn giới tính</option>
-            <option value="1">Nam</option>
-            <option value="0">Nữ</option>
-            <option value="2">Khác</option>
+            <option value="1" @selected(old('GioiTinh', $genderValue) === '1')>Nam</option>
+            <option value="0" @selected(old('GioiTinh', $genderValue) === '0')>Nữ</option>
+            <option value="2" @selected(old('GioiTinh', $genderValue) === '2')>Khác</option>
         </select>
         <div id="customerGenderError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Số điện thoại</label>
-        <input id="customerPhone" type="text" class="form-control" placeholder="0901234567" inputmode="numeric" maxlength="10" required>
+        <input id="customerPhone" type="text" class="form-control" value="{{ old('SoDienThoai', $customer?->SoDienThoai) }}" placeholder="0901234567" inputmode="numeric" maxlength="10" required>
         <div id="customerPhoneError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">CCCD</label>
-        <input id="customerCccd" type="text" class="form-control" placeholder="079204000111" inputmode="numeric" maxlength="12">
+        <input id="customerCccd" type="text" class="form-control" value="{{ old('CCCD', $customer?->CCCD) }}" placeholder="079204000111" inputmode="numeric" maxlength="12">
         <div id="customerCccdError" class="invalid-feedback"></div>
     </div>
 
@@ -55,40 +72,37 @@
         <label class="form-label">Tỉnh/Thành phố</label>
         <select id="customerProvince" class="form-select">
             <option value="">Chọn tỉnh/thành phố</option>
-            <option value="TPHCM">TPHCM</option>
-            <option value="Bình Dương">Bình Dương</option>
-            <option value="Đà Lạt">Đà Lạt</option>
-            <option value="Hà Nội">Hà Nội</option>
+            @forelse ($provinces as $province)
+                <option value="{{ $province['code'] }}" @selected($selectedProvinceCode === $province['code'])>{{ $province['name'] }}</option>
+            @empty
+                <option disabled>Không thể tải danh sách tỉnh/thành phố</option>
+            @endforelse
         </select>
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Quận/Huyện</label>
-        <select id="customerDistrict" class="form-select">
-            <option value="">Chọn quận/huyện</option>
-            <option value="Quận 1">Quận 1</option>
-            <option value="Bến Cát">Bến Cát</option>
-            <option value="Đà Lạt">Đà Lạt</option>
-            <option value="Hoàn Kiếm">Hoàn Kiếm</option>
+        <label class="form-label">Phường/Xã</label>
+        <select id="customerDistrict" class="form-select" data-selected-district="{{ $selectedDistrictCode }}" @disabled(!$selectedProvinceCode)>
+            <option value="">Chọn phường/xã</option>
         </select>
     </div>
 
     <div class="form-group col-md-12">
         <label class="form-label">Số nhà, đường</label>
-        <input id="customerAddressLine" type="text" class="form-control" placeholder="12 Nguyễn Huệ">
+        <input id="customerAddressLine" type="text" class="form-control" value="{{ old('addressLine', $addressLineValue) }}" placeholder="12 Nguyễn Huệ">
         <div id="customerAddressLineError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Điểm tích lũy</label>
-        <input id="customerPoints" type="number" class="form-control hm-readonly-input" value="0" disabled>
+        <input id="customerPoints" type="number" class="form-control hm-readonly-input" value="{{ $customer?->DIEM ?? 0 }}" disabled>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Trạng thái</label>
         <select id="customerStatus" class="form-select hm-readonly-input" disabled>
-            <option value="1">Hoạt động</option>
-            <option value="0">Không hoạt động</option>
+            <option value="1" @selected($accountStatusValue === '1')>Hoạt động</option>
+            <option value="0" @selected($accountStatusValue === '0')>Không hoạt động</option>
         </select>
     </div>
 
@@ -96,9 +110,9 @@
         id="customerFormConfig"
         data-is-edit="{{ $isEditCustomer ? '1' : '0' }}"
         data-customer-id="{{ $customerId }}"
-        data-detail-url-template="{{ url('/api/khach-hang/__CUSTOMER_ID__') }}"
         data-store-url="{{ url('/api/khach-hang') }}"
         data-update-url-template="{{ url('/api/khach-hang/__CUSTOMER_ID__') }}"
+        data-communes='@json($communes)'
         data-index-url="{{ route('reception.customers.index') }}"
         data-csrf-token="{{ csrf_token() }}"
         hidden
@@ -114,13 +128,12 @@
                 const customerId = config?.dataset.customerId || '';
                 const csrfToken = config?.dataset.csrfToken || '';
                 const indexUrl = config?.dataset.indexUrl || '';
-                const detailUrlTemplate = config?.dataset.detailUrlTemplate || '';
                 const storeUrl = config?.dataset.storeUrl || '';
                 const updateUrlTemplate = config?.dataset.updateUrlTemplate || '';
+                const communesData = JSON.parse(config?.dataset.communes || '{}');
 
                 const alertBox = document.getElementById('customerFormAlert');
                 const fields = {
-                    id: document.getElementById('customerId'),
                     name: document.getElementById('customerName'),
                     birthday: document.getElementById('customerBirthday'),
                     gender: document.getElementById('customerGender'),
@@ -129,9 +142,9 @@
                     province: document.getElementById('customerProvince'),
                     district: document.getElementById('customerDistrict'),
                     addressLine: document.getElementById('customerAddressLine'),
-                    points: document.getElementById('customerPoints'),
-                    status: document.getElementById('customerStatus'),
                 };
+
+                let selectedDistrict = fields.district?.dataset.selectedDistrict || '';
 
                 const errorMap = {
                     TenKH: ['name', 'customerNameError'],
@@ -192,33 +205,37 @@
                     });
                 }
 
-                function splitAddress(address) {
-                    const parts = String(address || '').split(',').map((item) => item.trim()).filter(Boolean);
-                    fields.addressLine.value = parts[0] || '';
-                    fields.district.value = parts[1] || '';
-                    fields.province.value = parts[2] || '';
+                function optionText(select) {
+                    if (!select?.value) return '';
+                    return select.options[select.selectedIndex]?.textContent?.trim() || '';
                 }
 
                 function buildAddress() {
                     return [
                         fields.addressLine.value.trim(),
-                        fields.district.value,
-                        fields.province.value,
+                        optionText(fields.district),
+                        optionText(fields.province),
                     ].filter(Boolean).join(', ');
                 }
 
-                function populateCustomer(customer) {
-                    fields.id.value = customer?.MaKH || '--';
-                    fields.name.value = customer?.TenKH || '';
-                    fields.birthday.value = customer?.NgaySinh ? String(customer.NgaySinh).split(' ')[0] : '';
-                    fields.gender.value = customer?.GioiTinh !== undefined && customer?.GioiTinh !== null ? String(customer.GioiTinh) : '';
-                    fields.phone.value = customer?.SoDienThoai || '';
-                    fields.cccd.value = customer?.CCCD || '';
-                    fields.points.value = customer?.DIEM ?? 0;
-                    fields.status.value = customer?.taiKhoan?.TrangThai !== undefined && customer?.taiKhoan?.TrangThai !== null
-                        ? String(customer.taiKhoan.TrangThai)
-                        : '1';
-                    splitAddress(customer?.DiaChi || '');
+                function renderDistricts() {
+                    const provinceCode = fields.province.value;
+                    const items = communesData[provinceCode] || [];
+
+                    fields.district.innerHTML = '<option value="">Chọn phường/xã</option>';
+
+                    items.forEach((item) => {
+                        const option = document.createElement('option');
+                        option.value = item.code;
+                        option.textContent = item.name;
+                        fields.district.appendChild(option);
+                    });
+
+                    fields.district.disabled = !provinceCode || items.length === 0;
+
+                    if (selectedDistrict && items.some((item) => item.code === selectedDistrict)) {
+                        fields.district.value = selectedDistrict;
+                    }
                 }
 
                 function validatePayload() {
@@ -258,22 +275,18 @@
                     return valid;
                 }
 
-                async function loadCustomer() {
-                    if (!isEdit || !customerId) return;
-
-                    const response = await fetch(detailUrlTemplate.replace('__CUSTOMER_ID__', encodeURIComponent(customerId)), {
-                        headers: { Accept: 'application/json' },
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Không thể tải thông tin khách hàng.');
-                    }
-
-                    populateCustomer(await response.json());
-                }
-
                 normalizeDigits(fields.phone, 10);
                 normalizeDigits(fields.cccd, 12);
+                renderDistricts();
+
+                fields.province?.addEventListener('change', () => {
+                    selectedDistrict = '';
+                    renderDistricts();
+                });
+
+                fields.district?.addEventListener('change', () => {
+                    selectedDistrict = fields.district.value;
+                });
 
                 form?.addEventListener('submit', async (event) => {
                     event.preventDefault();
@@ -330,14 +343,6 @@
                         setLoading(false);
                     }
                 });
-
-                (async () => {
-                    try {
-                        await loadCustomer();
-                    } catch (error) {
-                        setAlert('danger', error.message || 'Không thể tải thông tin khách hàng.');
-                    }
-                })();
             });
         </script>
     @endpush

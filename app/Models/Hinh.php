@@ -19,4 +19,9 @@ class Hinh extends Model
     {
         return $this->belongsTo(DichVu::class, 'MaDV');
     }
+
+    public function khuyenMai()
+    {
+        return $this->belongsTo(KhuyenMai::class, 'MaKM', 'MaKM');
+    }
 }

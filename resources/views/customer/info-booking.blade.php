@@ -5,6 +5,7 @@
   $bookingCustomer = $bookingCustomer ?? null;
   $bookingCustomerName = old('fullName', $bookingCustomer?->TenKH ?? ($bookingAccount['Ten'] ?? ''));
   $bookingCustomerPhone = old('phone', $bookingCustomer?->SoDienThoai ?? '');
+  $bookingPromotions = collect($bookingPromotions ?? []);
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -162,7 +163,19 @@
               <div class="booking-promo">
                 <label for="promoCode">Nhập mã khuyến mại/ mã voucher</label>
                 <div class="booking-promo-control">
-                  <input type="text" id="promoCode" name="promoCode" value="" autocomplete="off">
+                  <select id="promoCode" name="promoCode" {{ $bookingPromotions->isEmpty() ? 'disabled' : '' }}>
+                    <option value="">Chọn mã khuyến mãi</option>
+                    @foreach($bookingPromotions as $promotion)
+                      <option
+                        value="{{ $promotion['code'] }}"
+                        data-discount-percent="{{ $promotion['discountPercent'] }}"
+                        data-promotion-name="{{ $promotion['name'] }}"
+                        data-expires-at="{{ $promotion['expiresAt'] }}"
+                      >
+                        {{ $promotion['code'] }} - giảm {{ rtrim(rtrim(number_format($promotion['discountPercent'], 2, ',', '.'), '0'), ',') }}%
+                      </option>
+                    @endforeach
+                  </select>
                   <button type="button" id="applyPromoBtn">ÁP DỤNG</button>
                 </div>
                 <div class="booking-promo-status" data-promo-status hidden></div>
@@ -218,12 +231,13 @@
         const vnPayPaymentUrl = @json(url('/api/vnpay-payment'));
         const datPhongStoreUrl = @json(url('/api/dat-phong'));
         const customerId = @json($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? null));
+        const promotionOptions = @json($bookingPromotions);
         const paymentRedirectUrl = customerId ? `${window.location.origin}/customer/my-bookings` : `${window.location.origin}/customer`;
         const customerCode = @json((string) ($bookingCustomer?->MaKH ?? ($bookingAccount['MaKH'] ?? $bookingAccount['MaTK'] ?? 'guest')));
         let bookingOriginalTotal = 0;
         let bookingFinalTotal = 0;
-        const bookingDiscountRate = 0.1;
-        let appliedPromoCode = promoInput.value.trim();
+        let appliedPromotion = null;
+        let appliedPromoCode = promoInput.value;
 
         // Validation functions
         function validateName(value) {
@@ -236,6 +250,10 @@
 
         function formatCurrency(value) {
           return `${Number(value || 0).toLocaleString('vi-VN')} VND`;
+        }
+
+        function formatPercent(value) {
+          return `${Number(value || 0).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`;
         }
 
         function formatUnitPrice(value) {
@@ -433,10 +451,12 @@
             ? `customer:${customerId}`
             : `phone:${phoneInput.value.replace(/\D+/g, '')}`;
           const storedHolds = JSON.parse(localStorage.getItem('peachBookingHolds') || 'null');
+          const activePromoCode = appliedPromotion?.code || '';
 
           if (
             storedHolds?.selectionSavedAt === booking.savedAt
             && storedHolds?.customerKey === bookingCustomerKey
+            && String(storedHolds?.promoCode || '') === String(activePromoCode)
             && Array.isArray(storedHolds.datPhongIds)
             && storedHolds.datPhongIds.length === 1
             && Number(storedHolds.total || 0) > 0
@@ -454,12 +474,34 @@
               MaLoaiPhong: room.id,
               SoLuong: Number(room.quantity || 0),
             })),
+            MaKM: activePromoCode || null,
           });
           const maDatPhong = result?.data?.datPhong?.MaDatPhong;
           const serverTotal = Number(result?.data?.hoaDon?.TongTien || 0);
+          const serverDiscount = Math.max(bookingOriginalTotal - serverTotal, 0);
 
           if (!result?.success || !maDatPhong || serverTotal <= 0) {
             throw new Error(result?.message || 'Khong the tao giu cho dat phong.');
+          }
+
+          bookingFinalTotal = serverTotal;
+
+          if (activePromoCode && serverDiscount > 0) {
+            if (discountSummary) {
+              discountSummary.hidden = false;
+            }
+
+            if (discountAmount) {
+              discountAmount.textContent = `-${formatCurrency(serverDiscount)}`;
+            }
+          }
+
+          if (total) {
+            total.textContent = formatCurrency(serverTotal);
+          }
+
+          if (deposit) {
+            deposit.textContent = formatCurrency(serverTotal);
           }
 
           const datPhongIds = [maDatPhong];
@@ -468,6 +510,7 @@
             customerKey: bookingCustomerKey,
             datPhongIds,
             total: serverTotal,
+            promoCode: activePromoCode,
             createdAt: new Date().toISOString(),
           };
 
@@ -476,9 +519,11 @@
           return holdData;
         }
 
-        function updateDiscountUI(promoCode) {
-          const hasPromo = false;
-          const discountValue = hasPromo ? Math.round(bookingOriginalTotal * bookingDiscountRate) : 0;
+        function updateDiscountUI() {
+          const discountPercent = Math.min(Math.max(Number(appliedPromotion?.discountPercent || 0), 0), 100);
+          const hasPromo = Boolean(appliedPromotion && discountPercent > 0);
+          const promoCode = appliedPromotion?.code || '';
+          const discountValue = hasPromo ? Math.round(bookingOriginalTotal * discountPercent / 100) : 0;
           const finalTotal = bookingOriginalTotal - discountValue;
           bookingFinalTotal = finalTotal;
 
@@ -488,7 +533,12 @@
 
           if (promoStatus) {
             promoStatus.hidden = !hasPromo;
-            promoStatus.textContent = hasPromo ? `Đã áp dụng mã ${promoCode}: giảm 10%` : '';
+            promoStatus.textContent = hasPromo ? `Đã áp dụng mã ${promoCode}: giảm ${formatPercent(discountPercent)}` : '';
+          }
+
+          if (promoStatus && hasPromo) {
+            promoStatus.textContent = `Đã áp dụng mã ${appliedPromotion.code}: giảm ${formatPercent(discountPercent)}`;
+            promoStatus.style.color = '';
           }
 
           if (originalTotal) {
@@ -674,22 +724,49 @@
         });
 
         applyPromoBtn.addEventListener('click', function() {
-          const promoCode = promoInput.value.trim();
+          const promoCode = promoInput.value;
 
           if (!promoCode) {
             appliedPromoCode = '';
+            appliedPromotion = null;
             localStorage.removeItem('peachBookingPromo');
-            updateDiscountUI('');
-            promoInput.focus();
+            updateDiscountUI();
+
+            if (promoStatus) {
+              promoStatus.hidden = false;
+              promoStatus.textContent = promotionOptions.length
+                ? 'Vui lòng chọn mã khuyến mãi.'
+                : 'Bạn chưa có mã khuyến mãi còn hạn.';
+              promoStatus.style.color = '#dc2626';
+            }
+
+            return;
+          }
+
+          const selectedPromotion = promotionOptions.find((promotion) => String(promotion.code) === String(promoCode));
+
+          if (!selectedPromotion) {
+            appliedPromoCode = '';
+            appliedPromotion = null;
+            updateDiscountUI();
+
+            if (promoStatus) {
+              promoStatus.hidden = false;
+              promoStatus.textContent = 'Mã khuyến mãi không hợp lệ.';
+              promoStatus.style.color = '#dc2626';
+            }
+
             return;
           }
 
           appliedPromoCode = promoCode;
-          const discountAmount = Math.round(bookingOriginalTotal * bookingDiscountRate);
-          updateDiscountUI(promoCode);
+          appliedPromotion = selectedPromotion;
+          const discountAmount = Math.round(bookingOriginalTotal * Number(selectedPromotion.discountPercent || 0) / 100);
+          updateDiscountUI();
 
           localStorage.setItem('peachBookingPromo', JSON.stringify({
             code: promoCode,
+            discountPercent: Number(selectedPromotion.discountPercent || 0),
             originalTotal: bookingOriginalTotal,
             discountAmount: discountAmount,
             finalTotal: bookingOriginalTotal - discountAmount
@@ -795,7 +872,7 @@
         }, true);
 
         renderStoredBooking();
-        updateDiscountUI(appliedPromoCode);
+        updateDiscountUI();
         syncSelectedPayment();
         requestAnimationFrame(syncSelectedPayment);
         window.setTimeout(syncSelectedPayment, 0);

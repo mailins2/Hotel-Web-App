@@ -33,7 +33,7 @@
             <tr>
                 <th>Mã</th>
                 <th>Tên khách hàng</th>
-                <th>CCCD</th>
+                <th>Số điện thoại</th>
                 <th>Ngày sinh</th>
                 <th>Giới tính</th>
                 <th>Trạng thái</th>
@@ -71,7 +71,7 @@
                 >
                     <td>{{ $customer->MaKH }}</td>
                     <td>{{ $customer->TenKH ?? '--' }}</td>
-                    <td>{{ $customer->CCCD ?? '--' }}</td>
+                    <td>{{ $customer->SoDienThoai ?? '--' }}</td>
                     <td>{{ $birthDate }}</td>
                     <td>{{ $gender }}</td>
                     <td>

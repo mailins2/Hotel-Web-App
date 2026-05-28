@@ -187,7 +187,7 @@ class LoaiPhongController extends Controller
         }
 
         if (!TienNghi::where('MaTienNghi', $tienNghiId)->exists()) {
-            return $this->error('KhÃ´ng tÃ¬m tháº¥y tiá»‡n nghi', 404);
+            return $this->error('Không tìm thấy tiện nghi', 404);
         }
 
         $loaiPhong->tienNghis()->attach($tienNghiId);
