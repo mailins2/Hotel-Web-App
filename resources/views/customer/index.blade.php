@@ -194,78 +194,51 @@
 		          		<span class="subheading">Đánh giá</span>
 			        </div>
 	            <div class="carousel-testimony owl-carousel ftco-animate">
-              <div class="item">
-                <a href="#customer-reviews" class="customer-review-slide-link">
+              @forelse(($homeCarouselReviews ?? collect()) as $review)
+                <div class="item">
+                  <a href="#customer-reviews" class="customer-review-slide-link">
+                    <div class="testimony-wrap pb-4">
+                      <div class="customer-review-stars mb-3" aria-label="{{ $review['rating'] }} sao">
+                        @for($star = 1; $star <= 5; $star++)
+                          <span class="{{ $star <= $review['rating'] ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
+                        @endfor
+                      </div>
+                      <div class="text">
+                        <p class="mb-3 customer-review-clamp">{{ $review['description'] }}</p>
+                        <span class="customer-review-room">Loại phòng: {{ $review['roomName'] }}</span>
+                      </div>
+                      <div class="d-flex align-items-center mt-4">
+                        <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
+                        <div class="pos ml-3">
+                          <p class="name">{{ $review['customerName'] }}</p>
+                          <span class="position">{{ $review['date'] ? $review['date']->format('d/m/Y') : '--' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                </div>
+              @empty
+                <div class="item">
                   <div class="testimony-wrap pb-4">
                     <div class="customer-review-stars mb-3" aria-label="5 sao">
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
+                      @for($star = 1; $star <= 5; $star++)
+                        <span class="ion-ios-star"></span>
+                      @endfor
                     </div>
                     <div class="text">
-                      <p class="mb-3 customer-review-clamp">Khach san co khong gian tinh te va sang trong. Nhan vien phuc vu chu dao, phong family rong rai va sach se.</p>
-                      <span class="customer-review-room">Loai phong: Family Room</span>
+                      <p class="mb-3 customer-review-clamp">Chưa có đánh giá nào từ khách hàng.</p>
+                      <span class="customer-review-room">Loại phòng: Peach Valley</span>
                     </div>
                     <div class="d-flex align-items-center mt-4">
                       <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
                       <div class="pos ml-3">
-                        <p class="name">Le Bao Chau</p>
-                        <span class="position">08/04/2026</span>
+                        <p class="name">Peach Valley</p>
+                        <span class="position">--</span>
                       </div>
                     </div>
                   </div>
-                </a>
-              </div>
-              <div class="item">
-                <a href="#customer-reviews" class="customer-review-slide-link">
-                  <div class="testimony-wrap pb-4">
-                    <div class="customer-review-stars mb-3" aria-label="5 sao">
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                    </div>
-                    <div class="text">
-                      <p class="mb-3 customer-review-clamp">Phong suite co view dep, giuong em va bua sang da dang. Dich vu phong phan hoi nhanh.</p>
-                      <span class="customer-review-room">Loai phong: Premium Suite</span>
-                    </div>
-                    <div class="d-flex align-items-center mt-4">
-                      <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
-                      <div class="pos ml-3">
-                        <p class="name">Pham Minh Khoa</p>
-                        <span class="position">07/04/2026</span>
-                      </div>
-                    </div>
-                  </div>
-                </a>
-              </div>
-              <div class="item">
-                <a href="#customer-reviews" class="customer-review-slide-link">
-                  <div class="testimony-wrap pb-4">
-                    <div class="customer-review-stars mb-3" aria-label="4 sao">
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star"></span>
-                      <span class="ion-ios-star-outline"></span>
-                    </div>
-                    <div class="text">
-                      <p class="mb-3 customer-review-clamp">Phong deluxe sach se, tien nghi day du va vi tri thuan tien cho ky nghi ngan ngay.</p>
-                      <span class="customer-review-room">Loai phong: Deluxe Room</span>
-                    </div>
-                    <div class="d-flex align-items-center mt-4">
-                      <span class="customer-review-user-icon"><i class="ion-ios-person"></i></span>
-                      <div class="pos ml-3">
-                        <p class="name">Tran Nhat Linh</p>
-                        <span class="position">06/04/2026</span>
-                      </div>
-                    </div>
-                  </div>
-                </a>
-              </div>
+                </div>
+              @endforelse
             </div>
           </div>
         </div>
@@ -521,44 +494,24 @@
           <aside class="customer-review-overview ftco-animate">
             <span>Tổng quan đánh giá</span>
             <div class="customer-review-score">
-              <strong>4.1</strong>
+              <strong>{{ number_format((float) ($homeReviewAverage ?? 0), 1, '.', '') }}</strong>
               <em>/ 5</em>
             </div>
-            <div class="customer-review-stars" aria-label="4.1 sao trung binh">
-              <span class="ion-ios-star"></span>
-              <span class="ion-ios-star"></span>
-              <span class="ion-ios-star"></span>
-              <span class="ion-ios-star"></span>
-              <span class="ion-ios-star-outline"></span>
+            <div class="customer-review-stars" aria-label="{{ number_format((float) ($homeReviewAverage ?? 0), 1, '.', '') }} sao trung bình">
+              @for($star = 1; $star <= 5; $star++)
+                <span class="{{ $star <= round((float) ($homeReviewAverage ?? 0)) ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
+              @endfor
             </div>
-            <p>Dua tren 10 danh gia tu khach hang thuc te</p>
+            <p>Dựa trên {{ ($homeReviews ?? collect())->count() }} đánh giá từ khách hàng thực tế</p>
 
             <div class="customer-review-bars">
-              <div class="customer-review-bar-row">
-                <span>5</span>
-                <div style="--review-percent: 40;"><i></i></div>
-                <strong>40%</strong>
-              </div>
-              <div class="customer-review-bar-row">
-                <span>4</span>
-                <div style="--review-percent: 40;"><i></i></div>
-                <strong>40%</strong>
-              </div>
-              <div class="customer-review-bar-row">
-                <span>3</span>
-                <div style="--review-percent: 10;"><i></i></div>
-                <strong>10%</strong>
-              </div>
-              <div class="customer-review-bar-row">
-                <span>2</span>
-                <div style="--review-percent: 10;"><i></i></div>
-                <strong>10%</strong>
-              </div>
-              <div class="customer-review-bar-row">
-                <span>1</span>
-                <div style="--review-percent: 0;"><i></i></div>
-                <strong>0%</strong>
-              </div>
+              @foreach(($homeReviewDistribution ?? collect()) as $star => $percent)
+                <div class="customer-review-bar-row">
+                  <span>{{ $star }}</span>
+                  <div style="--review-percent: {{ $percent }};"><i></i></div>
+                  <strong>{{ $percent }}%</strong>
+                </div>
+              @endforeach
             </div>
           </aside>
 
@@ -579,16 +532,54 @@
                 <span>Loại phòng</span>
                 <select data-review-room-filter>
                   <option value="">Tất cả loại phòng</option>
-                  <option value="Family Room">Family Room</option>
-                  <option value="Premium Suite">Premium Suite</option>
-                  <option value="Deluxe Room">Deluxe Room</option>
-                  <option value="Suite Room">Suite Room</option>
-                  <option value="Deluxe Garden">Deluxe Garden</option>
+                  @foreach(($homeReviewRooms ?? collect()) as $roomName)
+                    <option value="{{ $roomName }}">{{ $roomName }}</option>
+                  @endforeach
                 </select>
               </label>
             </div>
 
             <div class="customer-review-list" data-review-list>
+              @forelse(($homeReviews ?? collect()) as $review)
+                <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="{{ $review['rating'] }}" data-review-room="{{ $review['roomName'] }}">
+                  <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                  <div class="customer-review-list-body">
+                    <div class="customer-review-list-head">
+                      <div>
+                        <h3>{{ $review['customerName'] }}</h3>
+                        <time datetime="{{ $review['date'] ? $review['date']->toDateString() : '' }}">{{ $review['date'] ? $review['date']->format('d/m/Y') : '--' }}</time>
+                      </div>
+                      <div class="customer-review-stars" aria-label="{{ $review['rating'] }} sao">
+                        @for($star = 1; $star <= 5; $star++)
+                          <span class="{{ $star <= $review['rating'] ? 'ion-ios-star' : 'ion-ios-star-outline' }}"></span>
+                        @endfor
+                      </div>
+                    </div>
+                    <p class="customer-review-description" title="{{ $review['description'] }}">{{ $review['description'] }}</p>
+                    <span class="customer-review-room">Loại phòng: {{ $review['roomName'] }}</span>
+                  </div>
+                </article>
+              @empty
+                <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="" data-review-room="">
+                  <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
+                  <div class="customer-review-list-body">
+                    <div class="customer-review-list-head">
+                      <div>
+                        <h3>Peach Valley</h3>
+                        <time datetime="">--</time>
+                      </div>
+                      <div class="customer-review-stars" aria-label="5 sao">
+                        @for($star = 1; $star <= 5; $star++)
+                          <span class="ion-ios-star"></span>
+                        @endfor
+                      </div>
+                    </div>
+                    <p class="customer-review-description" title="Chưa có đánh giá nào từ khách hàng.">Chưa có đánh giá nào từ khách hàng.</p>
+                    <span class="customer-review-room">Loại phòng: Peach Valley</span>
+                  </div>
+                </article>
+              @endforelse
+              @if(false)
               <article class="customer-review-list-item ftco-animate" data-review-item data-review-rating="5" data-review-room="Family Room">
                 <div class="customer-review-avatar"><i class="ion-ios-person"></i></div>
                 <div class="customer-review-list-body">
@@ -789,6 +780,7 @@
                   <span class="customer-review-room">Loai phong: Deluxe Garden</span>
                 </div>
               </article>
+              @endif
             </div>
 
             <div class="customer-empty" data-review-empty hidden>Không có đánh giá phù hợp với bộ lọc.</div>
@@ -893,7 +885,7 @@
           const roomFilter = section.querySelector('[data-review-room-filter]');
           const emptyState = section.querySelector('[data-review-empty]');
           const pagination = section.querySelector('[data-review-pagination]');
-          const pageSize = 4;
+          const pageSize = 5;
           let currentPage = 1;
 
           const getFilteredItems = () => {

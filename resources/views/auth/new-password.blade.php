@@ -70,6 +70,7 @@
                   <p class="auth-reset-help mb-4">Nhập mật khẩu mới cho tài khoản của bạn.</p>
 
                   <form data-new-password-form>
+                     <input type="hidden" name="phone" value="{{ request('phone') }}" data-reset-phone>
                      <div class="row">
                         <div class="col-lg-12">
                            <div class="form-group">
@@ -109,7 +110,7 @@
                         </div>
                      </div>
 
-                     <button type="submit" class="btn btn-primary btn-block">Cập nhật mật khẩu</button>
+                     <button type="submit" class="btn btn-primary btn-block" data-reset-submit>Cập nhật mật khẩu</button>
                   </form>
                </div>
             </div>
@@ -135,32 +136,116 @@
                return;
             }
 
+            const phone = form.querySelector('[data-reset-phone]');
             const password = form.querySelector('[data-new-password]');
             const confirmation = form.querySelector('[data-new-password-confirm]');
             const matchError = form.querySelector('[data-password-match-error]');
+            const submitButton = form.querySelector('[data-reset-submit]');
+
+            const phoneFromStorage = sessionStorage.getItem('forgotPasswordPhone') || '';
+            const verifiedOtp = sessionStorage.getItem('forgotPasswordVerifiedOtp') || '';
+            const verifiedPhone = sessionStorage.getItem('forgotPasswordVerifiedPhone') || '';
+
+            if (!phone.value && phoneFromStorage) {
+               phone.value = phoneFromStorage;
+            }
+
+            if (!phone.value) {
+               window.location.href = @json(route('auth.recoverpw'));
+               return;
+            }
+
+            if (!verifiedOtp || verifiedPhone !== phone.value) {
+               window.location.href = `{{ route('auth.verify-otp') }}?phone=${encodeURIComponent(phone.value)}`;
+               return;
+            }
+
+            const validatePassword = function () {
+               if (!password.value) {
+                  password.classList.add('is-invalid');
+                  password.setCustomValidity('Vui lòng nhập mật khẩu mới.');
+                  return false;
+               }
+
+               if (password.value.length < 8) {
+                  password.classList.add('is-invalid');
+                  password.setCustomValidity('Mật khẩu mới phải có ít nhất 8 ký tự.');
+                  return false;
+               }
+
+               password.classList.remove('is-invalid');
+               password.setCustomValidity('');
+               return true;
+            };
 
             const validatePasswordMatch = function () {
                const isMismatch = confirmation.value.length > 0 && password.value !== confirmation.value;
 
                confirmation.classList.toggle('is-invalid', isMismatch);
-               confirmation.setCustomValidity(isMismatch ? 'Xac nhan mat khau khong khop.' : '');
+               confirmation.setCustomValidity(isMismatch ? 'Xác nhận mật khẩu không khớp.' : '');
 
                if (matchError) {
                   matchError.hidden = !isMismatch;
-                  matchError.textContent = 'Xac nhan mat khau khong khop.';
+                  matchError.textContent = 'Xác nhận mật khẩu không khớp.';
                }
 
                return !isMismatch;
             };
 
-            password.addEventListener('input', validatePasswordMatch);
+            password.addEventListener('input', function () {
+               validatePassword();
+               validatePasswordMatch();
+            });
             confirmation.addEventListener('input', validatePasswordMatch);
 
-            form.addEventListener('submit', function (event) {
+            form.addEventListener('submit', async function (event) {
                event.preventDefault();
 
-               if (!validatePasswordMatch() || !form.checkValidity()) {
-                  form.reportValidity();
+               const isValid = validatePassword() && validatePasswordMatch() && form.checkValidity();
+
+               if (!isValid) {
+                  const firstInvalid = form.querySelector('.is-invalid');
+                  if (firstInvalid) firstInvalid.focus();
+                  return;
+               }
+
+               const originalText = submitButton.textContent;
+               submitButton.disabled = true;
+               submitButton.textContent = 'Đang cập nhật...';
+
+               try {
+                  const response = await fetch('/api/quen-mat-khau/dat-lai-mat-khau', {
+                     method: 'POST',
+                     headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                     },
+                     body: JSON.stringify({
+                        phone: phone.value,
+                        otp: verifiedOtp,
+                        password: password.value,
+                        password_confirmation: confirmation.value,
+                     }),
+                  });
+                  const payload = await response.json().catch(() => ({}));
+
+                  if (!response.ok) {
+                     throw new Error(payload.message || 'Không thể cập nhật mật khẩu.');
+                  }
+
+                  sessionStorage.removeItem('forgotPasswordPhone');
+                  sessionStorage.removeItem('forgotPasswordOtpHint');
+                  sessionStorage.removeItem('forgotPasswordVerifiedOtp');
+                  sessionStorage.removeItem('forgotPasswordVerifiedPhone');
+                  window.location.href = @json(route('auth.signin')) + '?reset=success';
+               } catch (error) {
+                  sessionStorage.removeItem('forgotPasswordVerifiedOtp');
+                  sessionStorage.removeItem('forgotPasswordVerifiedPhone');
+                  alert(error.message || 'Không thể cập nhật mật khẩu. Vui lòng xác nhận OTP lại.');
+                  window.location.href = `{{ route('auth.verify-otp') }}?phone=${encodeURIComponent(phone.value)}`;
+               } finally {
+                  submitButton.disabled = false;
+                  submitButton.textContent = originalText;
                }
             });
          });
