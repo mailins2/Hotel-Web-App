@@ -57,6 +57,8 @@
                   $statusLabel = $statusLabels[(int) $booking->TinhTrang] ?? 'Đã đặt';
                   $canCancel = in_array((int) $booking->TinhTrang, [\App\Models\DatPhong::HOLD, \App\Models\DatPhong::CONFIRMED], true)
                     && $checkIn->copy()->startOfDay()->isFuture();
+                  $existingReview = $booking->danhGia;
+                  $canReview = (int) $booking->TinhTrang === \App\Models\DatPhong::CHECKED_OUT;
                   $rooms = $roomGroups->map(function ($items, $roomTypeId) use ($invoiceDetails, $nights) {
                     $first = $items->first();
                     $roomType = $first?->phong?->loaiPhong;
@@ -105,6 +107,8 @@
                     'PhanTramGiam' => $voucherPercent,
                     'TienGiam' => $voucherDiscount,
                     'TienDatCoc' => (float) ($invoice?->DaThanhToan ?? 0),
+                    'SaoDanhGia' => $existingReview?->Sao,
+                    'MoTaDanhGia' => $existingReview?->MoTa,
                   ];
                 @endphp
 
@@ -169,16 +173,31 @@
                       <strong>{{ number_format((float) ($invoice?->DaThanhToan ?? 0), 0, ',', '.') }} VND</strong>
                     </div>
 
-                    @if($canCancel)
+                    @if($canCancel || $canReview)
                       <div class="customer-booking-actions">
-                        <button
-                          type="button"
-                          class="customer-booking-cancel"
-                          data-cancel-booking
-                          data-booking-id="{{ $booking->MaDatPhong }}"
-                        >
-                          Hủy phòng
-                        </button>
+                        @if($canReview)
+                          <button
+                            type="button"
+                            class="customer-booking-review"
+                            data-review-booking
+                            data-booking-id="{{ $booking->MaDatPhong }}"
+                            data-booking-title="{{ $summaryTitle }}"
+                            @if($existingReview) disabled @endif
+                          >
+                            {{ $existingReview ? 'Đã đánh giá' : 'Đánh giá' }}
+                          </button>
+                        @endif
+
+                        @if($canCancel)
+                          <button
+                            type="button"
+                            class="customer-booking-cancel"
+                            data-cancel-booking
+                            data-booking-id="{{ $booking->MaDatPhong }}"
+                          >
+                            Hủy phòng
+                          </button>
+                        @endif
                       </div>
                     @endif
                   </div>
@@ -382,6 +401,34 @@
       </div>
     </div>
 
+    <div class="customer-review-modal" data-review-modal hidden>
+      <div class="customer-review-modal-backdrop" data-review-modal-close></div>
+      <div class="customer-review-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="reviewBookingTitle">
+        <h3 id="reviewBookingTitle">Đánh giá đặt phòng</h3>
+        <p data-review-booking-label></p>
+        <form data-review-form>
+          <label class="customer-review-field">
+            <span>Số sao</span>
+            <select name="Sao" required>
+              <option value="5">5 sao</option>
+              <option value="4">4 sao</option>
+              <option value="3">3 sao</option>
+              <option value="2">2 sao</option>
+              <option value="1">1 sao</option>
+            </select>
+          </label>
+          <label class="customer-review-field">
+            <span>Nội dung đánh giá</span>
+            <textarea name="MoTa" maxlength="200" rows="4" placeholder="Chia sẻ trải nghiệm của bạn"></textarea>
+          </label>
+          <div class="customer-review-modal-actions">
+            <button type="button" class="customer-review-modal-secondary" data-review-modal-close>Để sau</button>
+            <button type="submit" class="customer-review-modal-primary" data-review-submit>Gửi đánh giá</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div
       id="customer-bookings-config"
       data-cancel-url-template="{{ route('customer.my-bookings.cancel', ['booking' => '__BOOKING_ID__']) }}"
@@ -404,7 +451,12 @@
         const detailPerson = document.querySelector('[data-booking-detail-person]');
         const bookingFilter = document.querySelector('[data-booking-status-filter]');
         const bookingFilterEmpty = document.querySelector('[data-booking-filter-empty]');
+        const reviewModal = document.querySelector('[data-review-modal]');
+        const reviewForm = document.querySelector('[data-review-form]');
+        const reviewLabel = document.querySelector('[data-review-booking-label]');
+        const reviewSubmitButton = document.querySelector('[data-review-submit]');
         let selectedCancelBookingId = null;
+        let selectedReviewBookingId = null;
 
         const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')} VND`;
         const formatDate = (value) => {
@@ -423,6 +475,68 @@
           selectedCancelBookingId = null;
           cancelModal.classList.remove('is-open');
           cancelModal.hidden = true;
+        };
+
+        const openReviewModal = (bookingId, bookingTitle) => {
+          selectedReviewBookingId = bookingId;
+          if (reviewLabel) {
+            reviewLabel.textContent = bookingTitle
+              ? `Đặt phòng #${bookingId} - ${bookingTitle}`
+              : `Đặt phòng #${bookingId}`;
+          }
+          reviewForm?.reset();
+          reviewModal.hidden = false;
+          reviewModal.classList.add('is-open');
+        };
+
+        const closeReviewModal = () => {
+          selectedReviewBookingId = null;
+          reviewModal.classList.remove('is-open');
+          reviewModal.hidden = true;
+        };
+
+        const submitReview = async (event) => {
+          event.preventDefault();
+
+          if (!selectedReviewBookingId || !reviewForm || !reviewSubmitButton) {
+            return;
+          }
+
+          const formData = new FormData(reviewForm);
+          const originalText = reviewSubmitButton.textContent;
+          reviewSubmitButton.disabled = true;
+          reviewSubmitButton.textContent = 'Đang gửi...';
+
+          try {
+            const today = new Date();
+            const localDate = new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+            const response = await fetch('/api/danh-gia', {
+              method: 'POST',
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                MaDatPhong: selectedReviewBookingId,
+                Sao: Number(formData.get('Sao') || 5),
+                MoTa: String(formData.get('MoTa') || '').trim(),
+                NgayDanhGia: localDate,
+              }),
+            });
+            const payload = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+              const errors = payload.errors ? Object.values(payload.errors).flat().join('\n') : '';
+              throw new Error(errors || payload.message || 'Không thể gửi đánh giá.');
+            }
+
+            window.location.reload();
+          } catch (error) {
+            alert(error.message);
+          } finally {
+            reviewSubmitButton.disabled = false;
+            reviewSubmitButton.textContent = originalText;
+          }
         };
 
         const cancelBooking = async () => {
@@ -551,7 +665,7 @@
           };
 
           card.addEventListener('click', (event) => {
-            if (event.target.closest('[data-cancel-booking]')) {
+            if (event.target.closest('.customer-booking-actions')) {
               return;
             }
             openDetail();
@@ -568,14 +682,23 @@
           button.addEventListener('click', () => openCancelModal(button.dataset.bookingId || ''));
         });
 
+        document.querySelectorAll('[data-review-booking]').forEach((button) => {
+          button.addEventListener('click', () => openReviewModal(button.dataset.bookingId || '', button.dataset.bookingTitle || ''));
+        });
+
         document.querySelectorAll('[data-cancel-modal-close]').forEach((button) => {
           button.addEventListener('click', closeCancelModal);
         });
 
         cancelConfirmButton?.addEventListener('click', cancelBooking);
+        reviewForm?.addEventListener('submit', submitReview);
 
         document.querySelectorAll('[data-booking-detail-close]').forEach((button) => {
           button.addEventListener('click', closeDetailModal);
+        });
+
+        document.querySelectorAll('[data-review-modal-close]').forEach((button) => {
+          button.addEventListener('click', closeReviewModal);
         });
 
         document.addEventListener('keydown', (event) => {
@@ -585,6 +708,9 @@
             }
             if (!cancelModal.hidden) {
               closeCancelModal();
+            }
+            if (!reviewModal.hidden) {
+              closeReviewModal();
             }
           }
         });

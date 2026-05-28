@@ -3505,7 +3505,8 @@ body.modal-open {
 }
 
 .customer-profile-submit,
-.customer-booking-cancel {
+.customer-booking-cancel,
+.customer-booking-review {
     border: 0;
     border-radius: 6px;
     background: var(--customer-accent);
@@ -3521,7 +3522,9 @@ body.modal-open {
 .customer-profile-submit:hover,
 .customer-profile-submit:focus,
 .customer-booking-cancel:hover,
-.customer-booking-cancel:focus {
+.customer-booking-cancel:focus,
+.customer-booking-review:hover,
+.customer-booking-review:focus {
     background: var(--customer-accent-dark);
 }
 
@@ -3560,15 +3563,46 @@ body.modal-open {
 
 .customer-booking-actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
+    gap: 10px;
     margin-top: 18px;
 }
 
-.customer-booking-cancel {
+.customer-booking-cancel,
+.customer-booking-review {
     padding: 10px 18px;
 }
 
-.customer-cancel-modal {
+.customer-booking-review {
+    min-height: 42px;
+    border-radius: 12px;
+    padding: 10px 20px;
+    background: var(--customer-accent);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 900;
+    line-height: 1.1;
+    box-shadow: 0 8px 18px rgba(140, 74, 52, 0.16);
+}
+
+.customer-booking-review:hover,
+.customer-booking-review:focus {
+    background: var(--customer-accent-dark);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.customer-booking-review:disabled {
+    background: var(--customer-accent);
+    color: #fff;
+    cursor: default;
+    opacity: 0.72;
+    transform: none;
+}
+
+.customer-cancel-modal,
+.customer-review-modal {
     position: fixed;
     inset: 0;
     z-index: 1100;
@@ -3578,17 +3612,20 @@ body.modal-open {
     padding: 24px;
 }
 
-.customer-cancel-modal.is-open {
+.customer-cancel-modal.is-open,
+.customer-review-modal.is-open {
     display: flex;
 }
 
-.customer-cancel-modal-backdrop {
+.customer-cancel-modal-backdrop,
+.customer-review-modal-backdrop {
     position: absolute;
     inset: 0;
     background: rgba(15, 23, 42, 0.42);
 }
 
-.customer-cancel-modal-dialog {
+.customer-cancel-modal-dialog,
+.customer-review-modal-dialog {
     position: relative;
     z-index: 1;
     width: min(420px, 100%);
@@ -3598,20 +3635,50 @@ body.modal-open {
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
 }
 
-.customer-cancel-modal-dialog h3 {
+.customer-cancel-modal-dialog h3,
+.customer-review-modal-dialog h3 {
     margin: 0 0 10px;
     color: #111827;
     font-size: 22px;
     font-weight: 800;
 }
 
-.customer-cancel-modal-dialog p {
+.customer-cancel-modal-dialog p,
+.customer-review-modal-dialog p {
     margin: 0;
     color: #475569;
     line-height: 1.6;
 }
 
-.customer-cancel-modal-actions {
+.customer-review-field {
+    display: block;
+    margin-top: 16px;
+}
+
+.customer-review-field span {
+    display: block;
+    margin-bottom: 7px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.customer-review-field select,
+.customer-review-field textarea {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, 0.14);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: #111827;
+    font: inherit;
+}
+
+.customer-review-field textarea {
+    resize: vertical;
+}
+
+.customer-cancel-modal-actions,
+.customer-review-modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -3619,7 +3686,9 @@ body.modal-open {
 }
 
 .customer-cancel-modal-secondary,
-.customer-cancel-modal-primary {
+.customer-cancel-modal-primary,
+.customer-review-modal-secondary,
+.customer-review-modal-primary {
     border: 0;
     border-radius: 6px;
     padding: 10px 16px;
@@ -3627,12 +3696,14 @@ body.modal-open {
     cursor: pointer;
 }
 
-.customer-cancel-modal-secondary {
+.customer-cancel-modal-secondary,
+.customer-review-modal-secondary {
     background: #e5e7eb;
     color: #111827;
 }
 
-.customer-cancel-modal-primary {
+.customer-cancel-modal-primary,
+.customer-review-modal-primary {
     background: var(--customer-accent);
     color: #fff;
 }
@@ -5232,21 +5303,26 @@ body.modal-open {
 }
 
 .service-booking-time-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    flex-wrap: nowrap;
 }
 
 .service-booking-time-row select {
+    flex: 0 0 132px;
+    width: 132px;
+    min-width: 0;
     margin-bottom: 0;
 }
 
-.service-booking-time-divider {
-    color: #8c4a34;
-    font-size: 20px;
+.service-booking-time-divider,
+.service-booking-time-unit {
+    color: #8c4a34 !important;
+    font-size: 15px;
     font-weight: 900;
     line-height: 1;
+    white-space: nowrap;
 }
 
 .service-booking-form select:focus,

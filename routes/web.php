@@ -37,7 +37,59 @@ use Maatwebsite\Excel\Excel as ExcelWriter;
 */
 
 Route::prefix('customer')->name('customer.')->group(function () {
-    Route::view('/', 'customer.index')->name('home');
+    Route::get('/', function () {
+        $homeReviewModels = DanhGia::with([
+            'datPhong.khachHang',
+            'datPhong.chiTietDatPhong.phong.loaiPhong',
+        ])
+            ->orderByDesc('MaDG')
+            ->get();
+
+        $mapHomeReview = function (DanhGia $review) {
+            $booking = $review->datPhong;
+            $roomNames = $booking?->chiTietDatPhong
+                ?->map(fn ($detail) => $detail->phong?->loaiPhong?->TenLoaiPhong)
+                ->filter()
+                ->unique()
+                ->values()
+                ->implode(', ');
+
+            return [
+                'customerName' => $booking?->khachHang?->TenKH ?: 'Khách hàng Peach Valley',
+                'date' => $review->NgayDanhGia ? Carbon::parse($review->NgayDanhGia) : null,
+                'description' => $review->MoTa ?: 'Khách hàng đã đánh giá trải nghiệm tại Peach Valley.',
+                'rating' => max(1, min(5, (int) ($review->Sao ?? 5))),
+                'roomName' => $roomNames ?: 'Peach Valley',
+            ];
+        };
+
+        $homeReviews = $homeReviewModels->map($mapHomeReview)->values();
+        $homeCarouselReviews = $homeReviewModels->take(5)->map($mapHomeReview)->values();
+        $homeReviewAverage = $homeReviewModels->isNotEmpty()
+            ? round((float) $homeReviewModels->avg('Sao'), 1)
+            : 0;
+        $homeReviewDistribution = collect(range(5, 1))->mapWithKeys(function ($star) use ($homeReviewModels) {
+            $count = $homeReviewModels->where('Sao', $star)->count();
+            $percent = $homeReviewModels->isNotEmpty()
+                ? round(($count / $homeReviewModels->count()) * 100)
+                : 0;
+
+            return [$star => $percent];
+        });
+        $homeReviewRooms = $homeReviews
+            ->pluck('roomName')
+            ->filter(fn ($roomName) => $roomName && $roomName !== 'Peach Valley')
+            ->unique()
+            ->values();
+
+        return view('customer.index', [
+            'homeCarouselReviews' => $homeCarouselReviews,
+            'homeReviews' => $homeReviews,
+            'homeReviewAverage' => $homeReviewAverage,
+            'homeReviewDistribution' => $homeReviewDistribution,
+            'homeReviewRooms' => $homeReviewRooms,
+        ]);
+    })->name('home');
     Route::get('/promotion', [PromotionController::class, 'index'])->name('promotion');
     Route::view('/blog-single', 'customer.blog-single')->name('blog-single');
     Route::get('/services', function () {
@@ -103,6 +155,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 })
                 ->orderByDesc('MaDatPhong')
                 ->get()
+                ->filter(function (DatPhong $booking) {
+                    return \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->setTime(14, 0)->gte(now());
+                })
                 ->flatMap(function (DatPhong $booking) {
                     return $booking->chiTietDatPhong
                         ->map(function ($detail) use ($booking) {
@@ -242,6 +297,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 'hoaDon.chiTietHoaDons.loaiPhong',
                 'hoaDon.thanhToans',
                 'chiTietDatPhong.phong.loaiPhong',
+                'danhGia',
             ])
                 ->where('MaKH', $customerId)
                 ->orderByDesc('NgayDat')
@@ -364,6 +420,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::redirect('/admin/login', '/login');
 Route::redirect('/reception/login', '/login');
 Route::view('/forgot-password', 'auth.recoverpw')->name('auth.recoverpw');
+Route::view('/verify-otp', 'auth.verify-otp')->name('auth.verify-otp');
 Route::view('/new-password', 'auth.new-password')->name('auth.new-password');
 Route::view('/sign-up', 'auth.register')->name('auth.signup');
 Route::post('/register/step-1', [AuthController::class, 'registerStepOne'])->name('register.step1');
@@ -1030,13 +1087,17 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         $serviceRoomOptions = \App\Models\ChiTietDatPhong::select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
             ->with([
             'phong:MaPhong,SoPhong',
-            'datPhong:MaDatPhong,MaKH,TinhTrang',
+            'datPhong:MaDatPhong,MaKH,NgayNhanPhong,NgayTraPhong,TinhTrang',
             'datPhong.khachHang:MaKH,TenKH',
         ])
             ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN)
             ->orderBy('MaDatPhong')
             ->orderBy('MaPhong')
             ->get()
+            ->filter(function ($detail) {
+                return $detail->datPhong?->NgayTraPhong
+                    && \Illuminate\Support\Carbon::parse($detail->datPhong->NgayTraPhong)->setTime(14, 0)->gte(now());
+            })
             ->map(function ($detail) {
                 $booking = $detail->datPhong;
                 $roomNumber = $detail->phong?->SoPhong;
@@ -1048,6 +1109,8 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'roomId' => (string) $detail->MaPhong,
                     'roomNumber' => $roomNumber ? (string) $roomNumber : '',
                     'customerName' => $customerName ?: '',
+                    'checkIn' => $booking?->NgayNhanPhong ? \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString() : '',
+                    'checkOut' => $booking?->NgayTraPhong ? \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString() : '',
                     'label' => trim(
                         ($roomNumber ? "Phòng {$roomNumber}" : "Phòng #{$detail->MaPhong}")
                         . " - Đặt phòng #{$detail->MaDatPhong}"
