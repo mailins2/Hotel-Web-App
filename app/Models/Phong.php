@@ -12,7 +12,6 @@ class Phong extends Model
     protected $fillable = [
         'SoPhong',
         'MaLoaiPhong',
-        'TinhTrang'
     ];
     
     public static function bootSoftDeletes() {}

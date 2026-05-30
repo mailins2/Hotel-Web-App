@@ -62,8 +62,8 @@ class RoomReportService
                     'room_id' => $room->MaPhong,
                     'room_number' => $room->SoPhong,
                     'room_type' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
-                    'room_price' => $this->roomTypePriceForPeriod($room->loaiPhong, $fromDate, $endExclusive),
-                    'current_status' => $this->roomStatusLabel((int) ($room->TinhTrang ?? -1)),
+                    'room_price' => round((float) ($room->loaiPhong?->GiaPhong ?? 0)),
+                    'current_status' => $this->roomStatusLabel($this->currentRoomStatus($room)),
                     'booking_count' => count($bookingIds),
                     'rented_days' => $rentedDays,
                     'room_revenue' => round($roomRevenue),
@@ -124,5 +124,31 @@ class RoomReportService
             3 => 'Đang dọn dẹp',
             default => 'Không xác định',
         };
+    }
+
+    private function currentRoomStatus(Phong $room): int
+    {
+        $today = Carbon::today()->startOfDay();
+
+        $detailsToday = $room->chiTietDatPhong
+            ->filter(function (ChiTietDatPhong $detail) use ($today) {
+                $booking = $detail->datPhong;
+
+                return $booking
+                    && (int) ($detail->TrangThai ?? -1) !== ChiTietDatPhong::CANCELLED
+                    && in_array((int) ($booking->TinhTrang ?? -1), [0, 1, 2], true)
+                    && Carbon::parse($booking->NgayNhanPhong)->startOfDay()->lte($today)
+                    && Carbon::parse($booking->NgayTraPhong)->startOfDay()->gte($today);
+            });
+
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN)) {
+            return 2;
+        }
+
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED)) {
+            return 1;
+        }
+
+        return 0;
     }
 }

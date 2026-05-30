@@ -582,8 +582,6 @@ class DatPhongController extends Controller
 
             $roomDetail->update(['TrangThai' => ChiTietDatPhong::CHECKED_IN]);
 
-            Phong::where('MaPhong', $data['MaPhong'])->update(['TinhTrang' => 2]);
-
             $checkedInRoomCount = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
                 ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
                 ->count();
@@ -641,7 +639,6 @@ class DatPhongController extends Controller
 
             foreach ($datPhong->chiTietDatPhong as $ct) {
                 $ct->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
-                Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 3]);
             }
 
             DB::commit();
@@ -745,8 +742,6 @@ class DatPhongController extends Controller
         }
 
         DB::transaction(function () use ($ct, $request) {
-            Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 0]);
-            Phong::where('MaPhong', $request->newPhong)->update(['TinhTrang' => 2]);
             $ct->update(['MaPhong' => $request->newPhong]);
         });
 
@@ -802,7 +797,6 @@ class DatPhongController extends Controller
                 'TrangThai' => ChiTietDatPhong::CHECKED_IN,
             ]);
             $datPhong->increment('SoLuong');
-            Phong::where('MaPhong', $request->MaPhong)->update(['TinhTrang' => 2]);
         });
 
         return $this->success(null, 'Thêm phòng thành công');
@@ -835,7 +829,6 @@ class DatPhongController extends Controller
         }
 
         DB::transaction(function () use ($ct, $datPhong) {
-            Phong::where('MaPhong', $ct->MaPhong)->update(['TinhTrang' => 0]);
             $ct->delete();
             $datPhong->decrement('SoLuong');
         });

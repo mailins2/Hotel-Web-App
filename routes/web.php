@@ -441,6 +441,7 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 $buildReportData = function () {
     $reportDefaultTo = Carbon::today();
     $reportDefaultFrom = $reportDefaultTo->copy()->subMonth();
+    $today = $reportDefaultTo->toDateString();
     $serviceRevenueToday = $reportDefaultTo->toDateString();
     $reportDefaultFromDate = $reportDefaultFrom->toDateString();
     $reportDefaultToDate = $reportDefaultTo->toDateString();
@@ -476,19 +477,42 @@ $buildReportData = function () {
         $reportDefaultFrom->copy()->startOfDay(),
         $reportDefaultTo->copy()->endOfDay(),
     ])->avg('Sao'), 1);
-    $roomCount = Phong::count();
-    $roomUsingCount = Phong::where('TinhTrang', 2)->count();
-    $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
-    $roomStatusItems = Phong::with('loaiPhong')
-        ->get()
-        ->map(fn (Phong $room) => [
-            'room_id' => $room->MaPhong,
-            'room_number' => $room->SoPhong,
-            'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
-            'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
-            'status' => (int) ($room->TinhTrang ?? 0),
+    $roomStatusItems = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong' => function ($query) {
+                $query->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
+            'chiTietDatPhong.datPhong' => function ($query) use ($today) {
+                $query
+                    ->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [
+                        DatPhong::HOLD,
+                        DatPhong::CONFIRMED,
+                        DatPhong::CHECKED_IN,
+                    ]);
+            },
         ])
+        ->get()
+        ->map(function (Phong $room) {
+            $activeDetails = $room->chiTietDatPhong->filter(fn ($detail) => $detail->datPhong);
+            $status = match (true) {
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN) => 2,
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED) => 1,
+                default => 0,
+            };
+
+            return [
+                'room_id' => $room->MaPhong,
+                'room_number' => $room->SoPhong,
+                'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+                'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
+                'status' => $status,
+            ];
+        })
         ->values();
+    $roomUsingCount = $roomStatusItems->where('status', 2)->count();
+    $roomEmptyCount = $roomStatusItems->where('status', 0)->count();
     $roomTypeOptions = LoaiPhong::orderBy('TenLoaiPhong')
         ->get(['MaLoaiPhong', 'TenLoaiPhong']);
     $roomCapacityItems = Phong::select('MaPhong', 'MaLoaiPhong')
@@ -931,7 +955,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 
-        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong', 'TinhTrang'])
+        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong'])
             ->with([
             'loaiPhong:MaLoaiPhong,TenLoaiPhong',
             'chiTietDatPhong' => function ($query) {
@@ -970,7 +994,6 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $activeDetail = $activeDetails->first();
                 $activeBooking = $activeDetail?->datPhong;
                 $status = match (true) {
-                    (int) $room->TinhTrang === 3 => 'cleaning',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 'using',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
                         && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
