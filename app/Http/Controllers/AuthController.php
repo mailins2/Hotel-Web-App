@@ -2,8 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\Api\KhachHangController;
-use App\Http\Controllers\Api\TaiKhoanController;
+use App\Models\KhachHang;
 use App\Models\TaiKhoan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -253,49 +252,64 @@ class AuthController extends Controller
         try {
             DB::beginTransaction();
 
-            $storeKhachHangRequest = new Request([
+            $phone = preg_replace('/\D+/', '', (string) $registration['phone']);
+            $existingCustomer = KhachHang::where('SoDienThoai', $phone)->first();
+            $customerWithCccd = KhachHang::where('CCCD', $registration['cccd'])->first();
+
+            if (TaiKhoan::where('Email', $registration['email'] ?? null)->exists()) {
+                DB::rollBack();
+                $request->session()->forget('registration');
+
+                return redirect()
+                    ->route('auth.signup')
+                    ->withErrors(['register' => 'Email này đã được sử dụng.'])
+                    ->withInput(['email' => $registration['email'] ?? null]);
+            }
+
+            if ($customerWithCccd && (!$existingCustomer || (int) $customerWithCccd->MaKH !== (int) $existingCustomer->MaKH)) {
+                DB::rollBack();
+
+                return redirect()
+                    ->route('register.details')
+                    ->withErrors(['cccd' => 'CCCD này đã được sử dụng bởi khách hàng khác.'])
+                    ->withInput($request->except(['_token']));
+            }
+
+            $customerData = [
                 'TenKH' => $registration['full_name'],
-                'SoDienThoai' => $registration['phone'],
+                'SoDienThoai' => $phone,
                 'CCCD' => $registration['cccd'],
                 'NgaySinh' => $registration['birthday'],
                 'GioiTinh' => $registration['gender'],
                 'DiaChi' => $registration['address'],
-            ]);
+            ];
 
-            $storeKhachHangResponse = app(KhachHangController::class)->store($storeKhachHangRequest);
+            if ($existingCustomer) {
+                if (TaiKhoan::where('MaKH', $existingCustomer->MaKH)->exists()) {
+                    DB::rollBack();
+                    $request->session()->forget('registration');
 
-            if ($storeKhachHangResponse->getStatusCode() !== 201) {
-                DB::rollBack();
-                $request->session()->forget('registration');
+                    return redirect()
+                        ->route('auth.signup')
+                        ->withErrors(['register' => 'Số điện thoại này đã được đăng ký. Vui lòng đăng nhập.'])
+                        ->withInput(['email' => $registration['email'] ?? null]);
+                }
 
-                return redirect()
-                    ->route('auth.signup')
-                    ->withErrors(['register' => 'Không thể tạo thông tin khách hàng. Số điện thoại hoặc CCCD có thể đã được sử dụng.'])
-                    ->withInput(['email' => $registration['email'] ?? null]);
+                $existingCustomer->update($customerData);
+                $maKhachHang = $existingCustomer->MaKH;
+            } else {
+                $khachHang = KhachHang::create($customerData);
+                $maKhachHang = $khachHang->MaKH;
             }
 
-            $khachHangPayload = $storeKhachHangResponse->getData(true);
-            $maKhachHang = $khachHangPayload['data']['MaKH'] ?? null;
-
-            $storeTaiKhoanRequest = new Request([
+            TaiKhoan::create([
                 'Email' => $registration['email'] ?? null,
-                'MatKhau' => $registration['password'] ?? null,
+                'MatKhau' => Hash::make($registration['password'] ?? ''),
                 'LoaiTaiKhoan' => 0,
                 'TrangThai' => 1,
                 'MaKH' => $maKhachHang,
+                'MaNV' => null,
             ]);
-
-            $storeTaiKhoanResponse = app(TaiKhoanController::class)->store($storeTaiKhoanRequest);
-
-            if ($storeTaiKhoanResponse->getStatusCode() !== 201) {
-                DB::rollBack();
-                $request->session()->forget('registration');
-
-                return redirect()
-                    ->route('auth.signup')
-                    ->withErrors(['register' => 'Không thể tạo tài khoản. Email có thể đã được sử dụng.'])
-                    ->withInput(['email' => $registration['email'] ?? null]);
-            }
 
             DB::commit();
         } catch (Throwable $e) {

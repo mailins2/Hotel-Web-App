@@ -8,6 +8,7 @@ use App\Models\ChiTietDatPhong;
 use App\Models\DichVu;
 use App\Models\HoaDon;
 use App\Models\SuDungDichVu;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -116,17 +117,14 @@ class SuDungDichVuController extends Controller
                     throw new \RuntimeException('Chi co the dat dich vu cho phong da check-in.');
                 }
 
-                $serviceDate = isset($data['ThoiGian'])
-                    ? \Illuminate\Support\Carbon::parse($data['ThoiGian'])->toDateString()
-                    : now()->toDateString();
-                $minDate = max(
-                    \Illuminate\Support\Carbon::parse($datPhong->NgayNhanPhong)->toDateString(),
-                    now()->toDateString()
-                );
-                $maxDate = \Illuminate\Support\Carbon::parse($datPhong->NgayTraPhong)->toDateString();
+                $thoiGian = isset($data['ThoiGian'])
+                    ? Carbon::parse($data['ThoiGian'])
+                    : now();
+                $minServiceTime = now()->startOfMinute();
+                $maxServiceTime = Carbon::parse($datPhong->NgayTraPhong)->setTime(14, 0);
 
-                if ($serviceDate < $minDate || $serviceDate > $maxDate) {
-                    throw new \RuntimeException('Ngay su dung phai nam trong thoi gian luu tru.');
+                if ($thoiGian->lt($minServiceTime) || $thoiGian->gt($maxServiceTime)) {
+                    throw new \RuntimeException('Thoi gian su dung dich vu chi duoc tu luc check-in den 14:00 ngay tra phong.');
                 }
 
                 $hoaDon = HoaDon::where('MaDatPhong', $datPhong->MaDatPhong)
@@ -140,9 +138,7 @@ class SuDungDichVuController extends Controller
                 $createdServiceIds = [];
                 $createdDetailIds = [];
                 $addedSubtotal = 0;
-                $thoiGian = isset($data['ThoiGian'])
-                    ? \Illuminate\Support\Carbon::parse($data['ThoiGian'])->toDateTimeString()
-                    : now();
+                $thoiGian = $thoiGian->toDateTimeString();
                 $services = DichVu::whereIn('MaDV', $items->pluck('MaDV')->unique()->values())
                     ->get(['MaDV', 'TenDV', 'GiaDV'])
                     ->keyBy('MaDV');
