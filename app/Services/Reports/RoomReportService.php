@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Models\ChiTietDatPhong;
+use App\Models\LoaiPhong;
 use App\Models\Phong;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -61,7 +62,7 @@ class RoomReportService
                     'room_id' => $room->MaPhong,
                     'room_number' => $room->SoPhong,
                     'room_type' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
-                    'room_price' => round((float) ($room->loaiPhong?->GiaPhong ?? 0)),
+                    'room_price' => $this->roomTypePriceForPeriod($room->loaiPhong, $fromDate, $endExclusive),
                     'current_status' => $this->roomStatusLabel((int) ($room->TinhTrang ?? -1)),
                     'booking_count' => count($bookingIds),
                     'rented_days' => $rentedDays,
@@ -85,14 +86,33 @@ class RoomReportService
                     'room_type' => $roomType,
                     'room_price' => '',
                     'current_status' => '',
-                    'booking_count' => '',
-                    'rented_days' => '',
+                    'booking_count' => $items->sum('booking_count'),
+                    'rented_days' => $items->sum('rented_days'),
                     'room_revenue' => $items->sum('room_revenue'),
                     'occupancy_rate' => '',
                     'is_total' => true,
                 ]);
             })
             ->values();
+    }
+
+    private function roomTypePriceForPeriod(?LoaiPhong $roomType, Carbon $fromDate, Carbon $endExclusive): float
+    {
+        $basePrice = round((float) ($roomType?->GiaPhong ?? 0));
+        $promotion = $roomType?->khuyenMai;
+
+        if (!$roomType || !$promotion || !$promotion->NgayBatDau || !$promotion->NgayKetThuc) {
+            return $basePrice;
+        }
+
+        $promotionStart = Carbon::parse($promotion->NgayBatDau)->startOfDay();
+        $promotionEndExclusive = Carbon::parse($promotion->NgayKetThuc)->startOfDay()->addDay();
+
+        if ($promotionStart >= $endExclusive || $promotionEndExclusive <= $fromDate) {
+            return $basePrice;
+        }
+
+        return round($roomType->giaSauKhuyenMai($promotionStart));
     }
 
     private function roomStatusLabel(int $status): string

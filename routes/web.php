@@ -471,10 +471,12 @@ $buildReportData = function () {
         ->whereHas('khachHang')
         ->distinct()
         ->count('MaKH');
+    $todayBookingCount = DatPhong::whereDate('NgayDat', $reportDefaultTo->toDateString())->count();
     $averageRating = round((float) DanhGia::whereBetween('NgayDanhGia', [
         $reportDefaultFrom->copy()->startOfDay(),
         $reportDefaultTo->copy()->endOfDay(),
     ])->avg('Sao'), 1);
+    $roomCount = Phong::count();
     $roomUsingCount = Phong::where('TinhTrang', 2)->count();
     $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
     $roomStatusItems = Phong::with('loaiPhong')
@@ -521,7 +523,9 @@ $buildReportData = function () {
 
     return [
         'customerCount' => $customerCount,
+        'todayBookingCount' => $todayBookingCount,
         'averageRating' => $averageRating,
+        'roomCount' => $roomCount,
         'roomUsingCount' => $roomUsingCount,
         'roomEmptyCount' => $roomEmptyCount,
         'serviceRevenueItems' => $serviceRevenueItems,

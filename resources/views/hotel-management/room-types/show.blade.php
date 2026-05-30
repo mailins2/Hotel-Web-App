@@ -53,6 +53,7 @@
 
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mã loại phòng</div><div class="fw-semibold">{{ $roomType->MaLoaiPhong ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tên loại phòng</div><div class="fw-semibold">{{ $roomType->TenLoaiPhong ?? '--' }}</div></div></div>
+    <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Giá phòng</div><div class="fw-semibold">{{ $roomType->GiaPhong !== null ? number_format((float) $roomType->GiaPhong, 0, ',', '.') . ' VNĐ' : '--' }}</div></div></div>
     <div class="col-md-12 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Mô tả</div><div class="fw-semibold hm-room-type-description">{{ $roomType->Mota ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Người lớn</div><div class="fw-semibold">{{ $roomType->NguoiLon ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Trẻ em</div><div class="fw-semibold">{{ $roomType->TreEm ?? 0 }}</div></div></div>
