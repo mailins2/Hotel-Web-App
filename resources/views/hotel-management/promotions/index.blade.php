@@ -84,6 +84,39 @@
                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
                 };
 
+                const addDays = function (dateValue, days) {
+                    if (!dateValue) {
+                        return '';
+                    }
+
+                    const date = new Date(`${dateValue}T00:00:00`);
+
+                    if (Number.isNaN(date.getTime())) {
+                        return '';
+                    }
+
+                    date.setDate(date.getDate() + days);
+                    return date.toISOString().slice(0, 10);
+                };
+
+                const syncDateRange = function () {
+                    if (!startInput || !endInput) {
+                        return true;
+                    }
+
+                    const minEndDate = addDays(startInput.value, 1);
+                    endInput.min = minEndDate;
+
+                    if (minEndDate && endInput.value && endInput.value < minEndDate) {
+                        endInput.value = '';
+                    }
+
+                    const isInvalid = Boolean(startInput.value && endInput.value && endInput.value <= startInput.value);
+                    endInput.setCustomValidity(isInvalid ? 'Ngay ket thuc phai sau ngay bat dau.' : '');
+
+                    return !isInvalid;
+                };
+
                 const buildDeleteUrl = function (promotionId) {
                     return String(deleteUrlTemplate || '').replace('__PROMOTION_ID__', encodeURIComponent(promotionId || ''));
                 };
@@ -148,6 +181,11 @@
                     : null;
 
                 const applyFilters = function () {
+                    if (!syncDateRange()) {
+                        endInput.reportValidity();
+                        return;
+                    }
+
                     const keyword = ((searchInput ? searchInput.value : '') || '').trim().toLowerCase();
                     const startValue = startInput && startInput.value ? startInput.value : '';
                     const endValue = endInput && endInput.value ? endInput.value : '';
@@ -197,11 +235,17 @@
                 }
 
                 if (startInput) {
-                    startInput.addEventListener('change', applyFilters);
+                    startInput.addEventListener('change', function () {
+                        syncDateRange();
+                        applyFilters();
+                    });
                 }
 
                 if (endInput) {
-                    endInput.addEventListener('change', applyFilters);
+                    endInput.addEventListener('change', function () {
+                        syncDateRange();
+                        applyFilters();
+                    });
                 }
 
                 if (resetButton) {
@@ -214,11 +258,14 @@
                         }
                         if (endInput) {
                             endInput.value = '';
+                            endInput.min = '';
+                            endInput.setCustomValidity('');
                         }
                         applyFilters();
                     });
                 }
 
+                syncDateRange();
                 document.addEventListener('click', async function (event) {
                     const deleteButton = event.target && event.target.closest
                         ? event.target.closest('[data-delete-promotion-id]')
