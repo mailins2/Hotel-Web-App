@@ -380,7 +380,7 @@
         <div class="customer-booking-detail-summary">
           <div><span>Ngày nhận phòng</span><strong data-booking-detail-checkin>--</strong></div>
           <div><span>Ngày trả phòng</span><strong data-booking-detail-checkout>--</strong></div>
-          <div><span>Tổng số khách ở</span><strong data-booking-detail-guests>0 khách</strong></div>
+          <div><span>Số khách tối đa</span><strong data-booking-detail-guests>0 khách</strong></div>
           <div data-booking-detail-original-row hidden><span>Giá gốc</span><strong data-booking-detail-original>0 VND</strong></div>
           <div data-booking-detail-discount-row hidden><span data-booking-detail-discount-label>Khuyến mãi</span><strong data-booking-detail-discount>0 VND</strong></div>
           <div><span>Tổng tiền thanh toán</span><strong data-booking-detail-total>0 VND</strong></div>

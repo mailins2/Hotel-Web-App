@@ -58,7 +58,6 @@ class PhongController extends Controller
         $data = $query->get()->map(function ($phong) {
             $datPhongHienTai = $this->resolveDatPhongHienTai($phong);
 
-            $phong->TinhTrangGoc = (int) $phong->TinhTrang;
             $phong->TinhTrangHienTai = $this->resolveTinhTrangHienTai($phong);
             $phong->MaDatPhongHienTai = $datPhongHienTai?->MaDatPhong;
             $phong->DatPhongHienTai = $datPhongHienTai;
@@ -79,10 +78,6 @@ class PhongController extends Controller
 
     private function resolveTinhTrangHienTai(Phong $phong): int
     {
-        if ((int) $phong->TinhTrang === 3) {
-            return (int) $phong->TinhTrang;
-        }
-
         $detailsToday = $phong->chiTietDatPhong
             ->filter(fn ($detail) => $detail->datPhong);
 
@@ -124,7 +119,6 @@ class PhongController extends Controller
                 'required',
                 Rule::exists('LoaiPhong', 'MaLoaiPhong'),
             ],
-            'TinhTrang' => 'required|integer',
         ]);
 
         $phong = Phong::create($data);
@@ -155,7 +149,6 @@ class PhongController extends Controller
 
         $datPhongHienTai = $this->resolveDatPhongHienTai($phong);
 
-        $phong->TinhTrangGoc = (int) $phong->TinhTrang;
         $phong->TinhTrangHienTai = $this->resolveTinhTrangHienTai($phong);
         $phong->MaDatPhongHienTai = $datPhongHienTai?->MaDatPhong;
         $phong->DatPhongHienTai = $datPhongHienTai;
@@ -196,10 +189,6 @@ class PhongController extends Controller
             return $this->error('Khong tim thay phong', 404);
         }
 
-        if ((int) $phong->TinhTrang !== 3) {
-            return $this->error('Chi co the chuyen phong dang don dep ve trang thai trong.', 422);
-        }
-
         $hasCheckedInStay = ChiTietDatPhong::where('MaPhong', $phong->MaPhong)
             ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
             ->exists();
@@ -207,8 +196,6 @@ class PhongController extends Controller
         if ($hasCheckedInStay) {
             return $this->error('Phong nay van co luu tru dang su dung, khong the chuyen ve trong.', 409);
         }
-
-        $phong->update(['TinhTrang' => 0]);
 
         return $this->success([
             'MaPhong' => $phong->MaPhong,
@@ -265,8 +252,7 @@ class PhongController extends Controller
                 $q->with(['khuyenMai', 'hinhs', 'tienNghis']);
             }
         ])
-        ->select('MaPhong', 'SoPhong', 'TinhTrang', 'MaLoaiPhong')
-        ->where('TinhTrang', '!=', 2)
+        ->select('MaPhong', 'SoPhong', 'MaLoaiPhong')
         ->whereDoesntHave('chiTietDatPhong.datPhong', function ($q) use ($checkIn, $checkOut) {
             $q->whereIn('TinhTrang', [0, 1, 2])
                 ->where('NgayNhanPhong', '<', $checkOut)
@@ -294,7 +280,7 @@ class PhongController extends Controller
         })
         ->map(function ($rooms) use ($soPhong) {
             $loaiPhong = $rooms->first()->loaiPhong;
-            $soPhongTrong = $rooms->where('TinhTrang', 0)->count();
+            $soPhongTrong = $rooms->count();
             
             // 🔥 Tính giá (đồng bộ với API loai-phong)
             $giaPhong = (float) $loaiPhong->GiaPhong;
@@ -349,7 +335,7 @@ class PhongController extends Controller
                 'phongs' => $rooms->map(fn($p) => [
                     'MaPhong' => $p->MaPhong,
                     'SoPhong' => $p->SoPhong,
-                    'TinhTrang' => $p->TinhTrang,
+                    'TinhTrang' => 0,
                 ])->values(),
             ];
         })

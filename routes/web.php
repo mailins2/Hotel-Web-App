@@ -17,6 +17,7 @@ use App\Models\HoaDon;
 use App\Models\KhachHang;
 use App\Models\KhuyenMai;
 use App\Models\LoaiPhong;
+use App\Models\LuuTru;
 use App\Models\NhanVien;
 use App\Models\Phong;
 use App\Models\SuDungDichVu;
@@ -26,6 +27,7 @@ use App\Models\TienNghi;
 use App\Services\Reports\RevenueReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Excel as ExcelWriter;
@@ -441,16 +443,18 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 $buildReportData = function () {
     $reportDefaultTo = Carbon::today();
     $reportDefaultFrom = $reportDefaultTo->copy()->subMonth();
+    $today = $reportDefaultTo->toDateString();
     $serviceRevenueToday = $reportDefaultTo->toDateString();
     $reportDefaultFromDate = $reportDefaultFrom->toDateString();
     $reportDefaultToDate = $reportDefaultTo->toDateString();
-    $serviceRevenueItems = SuDungDichVu::with('dichVu')
+    $serviceRevenueItems = SuDungDichVu::with(['dichVu', 'chiTietHoaDon'])
         ->whereHas('dichVu')
         ->get()
         ->map(function (SuDungDichVu $usage) {
             $service = $usage->dichVu;
-            $quantity = max(0, (int) ($usage->SoLuong ?? 0));
-            $unitPrice = (float) ($service?->GiaDV ?? 0);
+            $invoiceDetail = $usage->chiTietHoaDon->first();
+            $quantity = max(0, (int) ($invoiceDetail?->SoLuong ?? $usage->SoLuong ?? 0));
+            $unitPrice = (float) ($invoiceDetail?->DonGia ?? $service?->GiaDV ?? 0);
 
             return [
                 'date' => $usage->ThoiGian ? Carbon::parse($usage->ThoiGian)->toDateString() : null,
@@ -467,28 +471,68 @@ $buildReportData = function () {
         ->values();
     $revenueItems = app(RevenueReportService::class)->invoiceItems();
 
-    $customerCount = DatPhong::whereNotNull('MaKH')
-        ->whereHas('khachHang')
-        ->distinct()
-        ->count('MaKH');
-    $todayBookingCount = DatPhong::whereDate('NgayDat', $reportDefaultTo->toDateString())->count();
+    $stayingGuestCount = LuuTru::whereHas('datPhong', function ($query) use ($today) {
+            $query
+                ->whereDate('NgayNhanPhong', '<=', $today)
+                ->whereDate('NgayTraPhong', '>=', $today)
+                ->whereIn('TinhTrang', [
+                    DatPhong::CONFIRMED,
+                    DatPhong::CHECKED_IN,
+                ]);
+        })
+        ->whereExists(function ($query) {
+            $query
+                ->select(DB::raw(1))
+                ->from('ChiTietDatPhong')
+                ->whereColumn('ChiTietDatPhong.MaDatPhong', 'LuuTru.MaDatPhong')
+                ->whereColumn('ChiTietDatPhong.MaPhong', 'LuuTru.MaPhong')
+                ->where('ChiTietDatPhong.TrangThai', ChiTietDatPhong::CHECKED_IN);
+        })
+        ->count();
+    $todayBookingCount = DatPhong::whereDate('NgayDat', $reportDefaultTo->toDateString())
+        ->where('TinhTrang', '!=', DatPhong::CANCELLED)
+        ->count();
     $averageRating = round((float) DanhGia::whereBetween('NgayDanhGia', [
         $reportDefaultFrom->copy()->startOfDay(),
         $reportDefaultTo->copy()->endOfDay(),
     ])->avg('Sao'), 1);
-    $roomCount = Phong::count();
-    $roomUsingCount = Phong::where('TinhTrang', 2)->count();
-    $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
-    $roomStatusItems = Phong::with('loaiPhong')
-        ->get()
-        ->map(fn (Phong $room) => [
-            'room_id' => $room->MaPhong,
-            'room_number' => $room->SoPhong,
-            'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
-            'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
-            'status' => (int) ($room->TinhTrang ?? 0),
+    $roomStatusItems = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong' => function ($query) {
+                $query->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
+            'chiTietDatPhong.datPhong' => function ($query) use ($today) {
+                $query
+                    ->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [
+                        DatPhong::CONFIRMED,
+                        DatPhong::CHECKED_IN,
+                    ]);
+            },
         ])
+        ->get()
+        ->map(function (Phong $room) {
+            $activeDetails = $room->chiTietDatPhong->filter(fn ($detail) => $detail->datPhong);
+            $status = match (true) {
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN) => 2,
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED
+                    && (int) $detail->datPhong->TinhTrang === DatPhong::CONFIRMED) => 1,
+                default => 0,
+            };
+
+            return [
+                'room_id' => $room->MaPhong,
+                'room_number' => $room->SoPhong,
+                'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+                'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
+                'status' => $status,
+            ];
+        })
         ->values();
+    $roomCount = $roomStatusItems->count();
+    $roomUsingCount = $roomStatusItems->where('status', 2)->count();
+    $roomEmptyCount = $roomStatusItems->where('status', 0)->count();
     $roomTypeOptions = LoaiPhong::orderBy('TenLoaiPhong')
         ->get(['MaLoaiPhong', 'TenLoaiPhong']);
     $roomCapacityItems = Phong::select('MaPhong', 'MaLoaiPhong')
@@ -522,7 +566,8 @@ $buildReportData = function () {
         ->values();
 
     return [
-        'customerCount' => $customerCount,
+        'customerCount' => $stayingGuestCount,
+        'stayingGuestCount' => $stayingGuestCount,
         'todayBookingCount' => $todayBookingCount,
         'averageRating' => $averageRating,
         'roomCount' => $roomCount,
@@ -746,9 +791,52 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'roomTypes' => LoaiPhong::orderByDesc('MaLoaiPhong')->get(),
                     ],
                     'rooms' => [
-                        'rooms' => Phong::with('loaiPhong')
+                        'rooms' => Phong::with([
+                            'loaiPhong',
+                            'chiTietDatPhong' => function ($query) {
+                                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                            },
+                            'chiTietDatPhong.datPhong' => function ($query) {
+                                $today = Carbon::today()->toDateString();
+
+                                $query->where('NgayNhanPhong', '<=', $today)
+                                    ->where('NgayTraPhong', '>=', $today)
+                                    ->whereIn('TinhTrang', [
+                                        DatPhong::HOLD,
+                                        DatPhong::CONFIRMED,
+                                        DatPhong::CHECKED_IN,
+                                    ]);
+                            },
+                        ])
                             ->orderByDesc('MaPhong')
-                            ->get(),
+                            ->get()
+                            ->map(function (Phong $room) {
+                                $activeDetails = $room->chiTietDatPhong
+                                    ->filter(fn ($detail) => $detail->datPhong)
+                                    ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+                                        \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+                                        \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                                            DatPhong::CONFIRMED => 2,
+                                            DatPhong::HOLD => 1,
+                                            default => 0,
+                                        },
+                                        default => 0,
+                                    });
+
+                                $status = match (true) {
+                                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 2,
+                                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
+                                        && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 1,
+                                    default => 0,
+                                };
+
+                                $room->TinhTrang = $status;
+                                $room->TinhTrangHienTai = $status;
+                                $room->MaDatPhongHienTai = $activeDetails->first()?->datPhong?->MaDatPhong;
+                                unset($room->chiTietDatPhong);
+
+                                return $room;
+                            }),
                     ],
                     'services' => [
                         'services' => DichVu::with('hinhs')
@@ -931,7 +1019,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 
-        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong', 'TinhTrang'])
+        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong'])
             ->with([
             'loaiPhong:MaLoaiPhong,TenLoaiPhong',
             'chiTietDatPhong' => function ($query) {
@@ -970,7 +1058,6 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $activeDetail = $activeDetails->first();
                 $activeBooking = $activeDetail?->datPhong;
                 $status = match (true) {
-                    (int) $room->TinhTrang === 3 => 'cleaning',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 'using',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
                         && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
