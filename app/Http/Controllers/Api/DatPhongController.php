@@ -265,6 +265,7 @@ class DatPhongController extends Controller
                     'before_or_equal:' . now()->addYear()->toDateString()
                 ],
                 'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
+                'TinhTrang' => 'sometimes|integer|in:0,1',
                 'LoaiPhongs' => 'required|array|min:1',
                 'LoaiPhongs.*.MaLoaiPhong' => [
                     'required',
@@ -294,6 +295,7 @@ class DatPhongController extends Controller
                 'before_or_equal:' . now()->addYear()->toDateString()
             ],
             'NgayTraPhong' => 'required|date|after:NgayNhanPhong',
+            'TinhTrang' => 'sometimes|integer|in:0,1',
             'MaLoaiPhong' => [
                 'required',
                 Rule::exists('LoaiPhong', 'MaLoaiPhong'),
@@ -369,7 +371,7 @@ class DatPhongController extends Controller
             'NgayNhanPhong' => $data['NgayNhanPhong'],
             'NgayTraPhong' => $data['NgayTraPhong'],
             'SoLuong' => $data['SoLuong'],
-            'TinhTrang' => 0,
+            'TinhTrang' => $data['TinhTrang'] ?? DatPhong::HOLD,
             'MaKM' => $data['MaKM'] ?? null,
         ]);
     }

@@ -204,7 +204,7 @@
     <div class="fd-shell">
         <div class="row g-3 mb-4">
             <div class="col-md-6 col-xl-4">
-                <a href="{{ route('reception.bookings.index') }}" class="fd-card fd-card-link">
+                <a href="{{ route('reception.bookings.create') }}" class="fd-card fd-card-link">
                     <span class="fd-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 7V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>

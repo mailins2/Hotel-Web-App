@@ -48,7 +48,7 @@
     <table class="table align-middle">
         <thead>
             <tr>
-                <th>Mã đặt phòng</th>
+                <th>Mã</th>
                 <th>Tên khách hàng</th>
                 <th>Phòng</th>
                 <th>Loại phòng</th>

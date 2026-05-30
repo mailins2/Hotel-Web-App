@@ -8,7 +8,7 @@
     $genderValue = $customer?->GioiTinh !== null ? (string) $customer->GioiTinh : '';
     $accountStatusValue = $customer?->taiKhoan?->TrangThai !== null
         ? (string) $customer->taiKhoan->TrangThai
-        : '1';
+        : '';
     $addressParts = collect(explode(',', (string) ($customer?->DiaChi ?? '')))
         ->map(fn ($part) => trim($part))
         ->filter()
@@ -24,24 +24,47 @@
     :is-edit="$isEditCustomer"
     :index-route="route('reception.customers.index')"
 >
+    <style>
+        .rc-date-display-field {
+            position: relative;
+        }
+        .rc-date-display-field .form-control {
+            color: transparent;
+            caret-color: transparent;
+        }
+        .rc-date-display-field .form-control:focus {
+            color: transparent;
+        }
+        .rc-date-display-field .form-control::-webkit-datetime-edit {
+            color: transparent;
+        }
+        .rc-date-display-value {
+            position: absolute;
+            left: 0.95rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #8a97aa;
+            font: inherit;
+        }
+    </style>
+
     <div class="col-12">
         <div id="customerFormAlert" class="alert d-none mb-4" role="alert"></div>
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Mã khách hàng</label>
-        <input id="customerId" type="text" class="form-control hm-readonly-input" value="{{ $customer?->MaKH ?? '--' }}" readonly disabled>
-    </div>
-
-    <div class="form-group col-md-6">
         <label class="form-label">Tên khách hàng</label>
-        <input id="customerName" type="text" class="form-control" value="{{ old('TenKH', $customer?->TenKH) }}" placeholder="Nguyễn Minh An" required>
+        <input id="customerName" type="text" class="form-control" value="{{ old('TenKH', $customer?->TenKH) }}" required>
         <div id="customerNameError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">Ngày sinh</label>
-        <input id="customerBirthday" type="date" class="form-control" value="{{ old('NgaySinh', $birthdayValue) }}" max="{{ now()->toDateString() }}" required>
+        <div class="rc-date-display-field">
+            <input id="customerBirthday" type="date" class="form-control" value="{{ old('NgaySinh', $birthdayValue) }}" max="{{ now()->toDateString() }}" lang="en-GB" required>
+            <span id="customerBirthdayDisplay" class="rc-date-display-value">{{ old('NgaySinh', $birthdayValue) ? \Carbon\Carbon::parse(old('NgaySinh', $birthdayValue))->format('d/m/Y') : 'dd/mm/yyyy' }}</span>
+        </div>
         <div id="customerBirthdayError" class="invalid-feedback"></div>
     </div>
 
@@ -58,13 +81,13 @@
 
     <div class="form-group col-md-6">
         <label class="form-label">Số điện thoại</label>
-        <input id="customerPhone" type="text" class="form-control" value="{{ old('SoDienThoai', $customer?->SoDienThoai) }}" placeholder="0901234567" inputmode="numeric" maxlength="10" required>
+        <input id="customerPhone" type="text" class="form-control" value="{{ old('SoDienThoai', $customer?->SoDienThoai) }}" inputmode="numeric" maxlength="10" required>
         <div id="customerPhoneError" class="invalid-feedback"></div>
     </div>
 
     <div class="form-group col-md-6">
         <label class="form-label">CCCD</label>
-        <input id="customerCccd" type="text" class="form-control" value="{{ old('CCCD', $customer?->CCCD) }}" placeholder="079204000111" inputmode="numeric" maxlength="12">
+        <input id="customerCccd" type="text" class="form-control" value="{{ old('CCCD', $customer?->CCCD) }}" inputmode="numeric" maxlength="12">
         <div id="customerCccdError" class="invalid-feedback"></div>
     </div>
 
@@ -89,21 +112,8 @@
 
     <div class="form-group col-md-12">
         <label class="form-label">Số nhà, đường</label>
-        <input id="customerAddressLine" type="text" class="form-control" value="{{ old('addressLine', $addressLineValue) }}" placeholder="12 Nguyễn Huệ">
+        <input id="customerAddressLine" type="text" class="form-control" value="{{ old('addressLine', $addressLineValue) }}">
         <div id="customerAddressLineError" class="invalid-feedback"></div>
-    </div>
-
-    <div class="form-group col-md-6">
-        <label class="form-label">Điểm tích lũy</label>
-        <input id="customerPoints" type="number" class="form-control hm-readonly-input" value="{{ $customer?->DIEM ?? 0 }}" disabled>
-    </div>
-
-    <div class="form-group col-md-6">
-        <label class="form-label">Trạng thái</label>
-        <select id="customerStatus" class="form-select hm-readonly-input" disabled>
-            <option value="1" @selected($accountStatusValue === '1')>Hoạt động</option>
-            <option value="0" @selected($accountStatusValue === '0')>Không hoạt động</option>
-        </select>
     </div>
 
     <div
@@ -133,6 +143,7 @@
                 const communesData = JSON.parse(config?.dataset.communes || '{}');
 
                 const alertBox = document.getElementById('customerFormAlert');
+                const customerBirthdayDisplay = document.getElementById('customerBirthdayDisplay');
                 const fields = {
                     name: document.getElementById('customerName'),
                     birthday: document.getElementById('customerBirthday'),
@@ -185,6 +196,16 @@
                     if (errorElement) errorElement.textContent = message;
                 }
 
+                function clearFieldError(fieldName) {
+                    const mapping = errorMap[fieldName];
+                    if (!mapping) return;
+
+                    const [fieldKey, errorId] = mapping;
+                    fields[fieldKey]?.classList.remove('is-invalid');
+                    const errorElement = document.getElementById(errorId);
+                    if (errorElement) errorElement.textContent = '';
+                }
+
                 function applyServerErrors(errors) {
                     Object.entries(errors || {}).forEach(([fieldName, messages]) => {
                         setFieldError(fieldName, Array.isArray(messages) ? messages[0] : String(messages));
@@ -203,6 +224,81 @@
                     input?.addEventListener('input', () => {
                         input.value = input.value.replace(/\D+/g, '').slice(0, maxLength);
                     });
+                }
+
+                function formatDateDisplay(value) {
+                    if (!value) {
+                        return 'dd/mm/yyyy';
+                    }
+
+                    const parts = value.split('-');
+                    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+                }
+
+                function syncBirthdayDisplay() {
+                    if (customerBirthdayDisplay) {
+                        customerBirthdayDisplay.textContent = formatDateDisplay(fields.birthday.value);
+                    }
+                }
+
+                function validateNameField() {
+                    const name = fields.name.value.trim();
+                    let message = '';
+
+                    if (name.length < 2) {
+                        message = 'Vui lòng nhập tên khách hàng.';
+                    } else if (!/^[\p{L}\s]+$/u.test(name)) {
+                        message = 'Tên khách hàng chỉ chứa chữ cái.';
+                    }
+
+                    message ? setFieldError('TenKH', message) : clearFieldError('TenKH');
+                    return !message;
+                }
+
+                function validateBirthdayField() {
+                    const today = new Date().toISOString().slice(0, 10);
+                    const value = fields.birthday.value;
+                    let message = '';
+
+                    if (!value) {
+                        message = 'Vui lòng chọn ngày sinh.';
+                    } else if (value > today) {
+                        message = 'Ngày sinh không được ở tương lai.';
+                    }
+
+                    message ? setFieldError('NgaySinh', message) : clearFieldError('NgaySinh');
+                    return !message;
+                }
+
+                function validateGenderField() {
+                    const message = fields.gender.value ? '' : 'Vui lòng chọn giới tính.';
+
+                    message ? setFieldError('GioiTinh', message) : clearFieldError('GioiTinh');
+                    return !message;
+                }
+
+                function validatePhoneField() {
+                    const phone = fields.phone.value.trim();
+                    let message = '';
+
+                    if (!phone) {
+                        message = 'Vui lòng nhập số điện thoại.';
+                    } else if (!/^0\d{9}$/.test(phone)) {
+                        message = 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.';
+                    }
+
+                    message ? setFieldError('SoDienThoai', message) : clearFieldError('SoDienThoai');
+                    return !message;
+                }
+
+                function validateCccdField() {
+                    const cccd = fields.cccd.value.trim();
+                    const message = cccd && !/^\d{12}$/.test(cccd)
+                        ? 'CCCD phải gồm đúng 12 chữ số.'
+                        : '';
+
+                    message ? setFieldError('CCCD', message) : clearFieldError('CCCD');
+                    return !message;
                 }
 
                 function optionText(select) {
@@ -238,9 +334,24 @@
                     }
                 }
 
-                function validatePayload() {
+                function validatePayload(shouldFocus = false) {
                     clearErrors();
                     clearAlert();
+
+                    const validations = [
+                        { field: fields.name, isValid: validateNameField() },
+                        { field: fields.birthday, isValid: validateBirthdayField() },
+                        { field: fields.gender, isValid: validateGenderField() },
+                        { field: fields.phone, isValid: validatePhoneField() },
+                        { field: fields.cccd, isValid: validateCccdField() },
+                    ];
+                    const firstInvalid = validations.find((validation) => !validation.isValid);
+
+                    if (firstInvalid && shouldFocus) {
+                        firstInvalid.field?.focus();
+                    }
+
+                    return !firstInvalid;
 
                     let valid = true;
                     const name = fields.name.value.trim();
@@ -277,7 +388,24 @@
 
                 normalizeDigits(fields.phone, 10);
                 normalizeDigits(fields.cccd, 12);
+                syncBirthdayDisplay();
                 renderDistricts();
+
+                fields.name?.addEventListener('input', () => {
+                    fields.name.value = fields.name.value.replace(/[^\p{L}\s]/gu, '');
+                    validateNameField();
+                });
+                fields.name?.addEventListener('blur', validateNameField);
+                fields.birthday?.addEventListener('input', () => {
+                    syncBirthdayDisplay();
+                    validateBirthdayField();
+                });
+                fields.birthday?.addEventListener('blur', validateBirthdayField);
+                fields.gender?.addEventListener('change', validateGenderField);
+                fields.phone?.addEventListener('input', validatePhoneField);
+                fields.phone?.addEventListener('blur', validatePhoneField);
+                fields.cccd?.addEventListener('input', validateCccdField);
+                fields.cccd?.addEventListener('blur', validateCccdField);
 
                 fields.province?.addEventListener('change', () => {
                     selectedDistrict = '';
@@ -291,7 +419,7 @@
                 form?.addEventListener('submit', async (event) => {
                     event.preventDefault();
 
-                    if (!validatePayload()) return;
+                    if (!validatePayload(true)) return;
 
                     const payload = {
                         TenKH: fields.name.value.trim().replace(/\s+/g, ' '),
