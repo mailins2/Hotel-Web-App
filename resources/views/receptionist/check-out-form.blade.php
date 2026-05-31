@@ -544,7 +544,7 @@
     <dialog id="checkoutSuccessDialog" class="co-dialog">
         <div class="co-dialog-body">
             <h3 class="co-dialog-title">Trả phòng thành công</h3>
-            <p class="co-dialog-text">Thanh toán checkout đã hoàn tất. Các phòng vừa trả đã chuyển sang trạng thái đang dọn.</p>
+            <p class="co-dialog-text">Thanh toán trả phòng đã hoàn tất. Các phòng vừa trả đã chuyển sang trạng thái đang dọn.</p>
             <div class="co-dialog-info mb-3">
                 <div class="co-dialog-label">Mã đặt phòng</div>
                 <div class="co-dialog-value">#{{ request('booking') ?? '--' }}</div>

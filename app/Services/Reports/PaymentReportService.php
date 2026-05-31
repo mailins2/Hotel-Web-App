@@ -59,8 +59,8 @@ class PaymentReportService
     private function paymentTypeLabel(int $type): string
     {
         return match ($type) {
-            0 => 'Đặt cọc',
-            1 => 'Thanh toán checkout',
+            0 => 'Thanh toán tiền phòng',
+            1 => 'Thanh toán trả phòng',
             default => 'Không xác định',
         };
     }

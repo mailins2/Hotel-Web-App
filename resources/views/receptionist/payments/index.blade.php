@@ -3,8 +3,54 @@
     subtitle="Danh sách quản lý thanh toán"
     table-title="Danh sách thanh toán"
 >
+    <style>
+        .rp-date-display-field {
+            position: relative;
+        }
+
+        .rp-date-display-field .form-control {
+            color: transparent;
+            caret-color: transparent;
+        }
+
+        .rp-date-display-field .form-control:focus,
+        .rp-date-display-field .form-control::-webkit-datetime-edit {
+            color: transparent;
+        }
+
+        .rp-date-display-value {
+            position: absolute;
+            left: 0.95rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #8a97aa;
+            font: inherit;
+        }
+
+        .rd-filter-panel .btn.btn-primary,
+        .rd-filter-panel .btn.btn-light {
+            display: none !important;
+        }
+
+        [data-payment-table-body] tr > :nth-child(10),
+        [data-payment-table-body] tr > :nth-child(11),
+        .table thead tr > :nth-child(10),
+        .table thead tr > :nth-child(11) {
+            display: none;
+        }
+
+        tr[data-payment-row] {
+            cursor: pointer;
+        }
+
+        tr[data-payment-row]:hover {
+            background: #fff7ed;
+        }
+    </style>
+
     <x-slot:filters>
-        <div class="col-lg-5">
+        <div class="col-md-6 col-lg-3">
             <label class="form-label">Tìm kiếm</label>
             <input type="text" class="form-control" placeholder="Tìm theo mã thanh toán, hóa đơn, khách hàng" data-payment-search>
         </div>
@@ -17,6 +63,30 @@
                     <option value="1">Đã thanh toán</option>
                     <option value="3">Đã hủy</option>
                 </select>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-2">
+            <label class="form-label">Loại thanh toán</label>
+            <div class="rd-select-wrap">
+                <select class="form-select" data-payment-type-filter>
+                    <option value="">Tất cả loại</option>
+                    <option value="0">Thanh toán tiền phòng</option>
+                    <option value="1">Thanh toán trả phòng</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-2">
+            <label class="form-label">Ngày thanh toán từ</label>
+            <div class="rp-date-display-field">
+                <input type="date" class="form-control" lang="en-GB" data-payment-date-from>
+                <span class="rp-date-display-value" data-date-display="payment-date-from">dd/mm/yyyy</span>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-2">
+            <label class="form-label">Ngày thanh toán đến</label>
+            <div class="rp-date-display-field">
+                <input type="date" class="form-control" lang="en-GB" data-payment-date-to>
+                <span class="rp-date-display-value" data-date-display="payment-date-to">dd/mm/yyyy</span>
             </div>
         </div>
     </x-slot:filters>
@@ -39,8 +109,8 @@
         ];
 
         $paymentTypes = [
-            0 => 'Đặt cọc',
-            1 => 'Thanh toán checkout',
+            0 => 'Thanh toán tiền phòng',
+            1 => 'Thanh toán trả phòng',
         ];
 
         $paymentMethods = [
@@ -95,7 +165,16 @@
                         $payment->MaGiaoDichCongThanhToan,
                     ])->filter()->implode(' ');
                 @endphp
-                <tr data-payment-row data-status="{{ $invoiceStatus }}" data-search="{{ \Illuminate\Support\Str::lower($searchText) }}">
+                <tr
+                    data-payment-row
+                    data-detail-url="{{ route('reception.payments.show', ['paymentId' => $payment->MaTT]) }}"
+                    data-status="{{ $transactionStatus }}"
+                    data-payment-type="{{ (int) ($payment->LoaiThanhToan ?? -1) }}"
+                    data-payment-date="{{ $payment->NgayThanhToan ? \Carbon\Carbon::parse($payment->NgayThanhToan)->toDateString() : '' }}"
+                    data-search="{{ \Illuminate\Support\Str::lower($searchText) }}"
+                    tabindex="0"
+                    role="link"
+                >
                     <td>{{ $payment->MaTT }}</td>
                     <td>{{ $payment->MaHD ?? '--' }}</td>
                     <td>{{ $payerName ?? '--' }}</td>
@@ -146,10 +225,13 @@
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.querySelector('[data-payment-search]');
             const statusFilter = document.querySelector('[data-payment-status-filter]');
+            const typeFilter = document.querySelector('[data-payment-type-filter]');
+            const dateFromInput = document.querySelector('[data-payment-date-from]');
+            const dateToInput = document.querySelector('[data-payment-date-to]');
+            const dateFromDisplay = document.querySelector('[data-date-display="payment-date-from"]');
+            const dateToDisplay = document.querySelector('[data-date-display="payment-date-to"]');
             const rows = Array.from(document.querySelectorAll('[data-payment-row]'));
             const filterEmpty = document.querySelector('[data-payment-filter-empty]');
-            const applyButton = document.querySelector('.rd-filter-panel .btn.btn-primary');
-            const resetButton = document.querySelector('.rd-filter-panel .btn.btn-light');
             const paginationWrap = document.querySelector('[data-payment-pagination-wrap]');
             const paginationInfo = document.querySelector('[data-payment-pagination-info]');
             const paginationPages = document.querySelector('[data-payment-pagination-pages]');
@@ -158,6 +240,20 @@
             const pageSize = 10;
             let currentPage = 1;
             let filteredRows = rows;
+
+            if (statusFilter) {
+                const statusLabel = statusFilter.closest('[class*="col-"]')?.querySelector('.form-label');
+                if (statusLabel) {
+                    statusLabel.textContent = 'Trạng thái giao dịch';
+                }
+
+                statusFilter.innerHTML = `
+                    <option value="">Tất cả trạng thái</option>
+                    <option value="0">Chờ xử lý</option>
+                    <option value="1">Thành công</option>
+                    <option value="2">Thất bại</option>
+                `;
+            }
 
             const renderPagination = () => {
                 const totalRows = filteredRows.length;
@@ -209,23 +305,75 @@
                 }
             };
 
+            const formatDate = (dateValue) => {
+                if (!dateValue) {
+                    return 'dd/mm/yyyy';
+                }
+
+                const dateParts = dateValue.split('-');
+                return dateParts.length === 3
+                    ? `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`
+                    : dateValue;
+            };
+
+            const updateDateDisplays = () => {
+                if (dateFromDisplay) {
+                    dateFromDisplay.textContent = formatDate(dateFromInput?.value || '');
+                }
+
+                if (dateToDisplay) {
+                    dateToDisplay.textContent = formatDate(dateToInput?.value || '');
+                }
+            };
+
             const applyFilters = () => {
                 const keyword = (searchInput?.value || '').trim().toLowerCase();
                 const status = statusFilter?.value || '';
+                const type = typeFilter?.value || '';
+                const dateFrom = dateFromInput?.value || '';
+                const dateTo = dateToInput?.value || '';
 
                 filteredRows = rows.filter((row) => {
                     const matchesKeyword = !keyword || (row.dataset.search || '').includes(keyword);
                     const matchesStatus = !status || row.dataset.status === status;
-                    return matchesKeyword && matchesStatus;
+                    const matchesType = !type || row.dataset.paymentType === type;
+                    const paymentDate = row.dataset.paymentDate || '';
+                    const matchesDateFrom = !dateFrom || (paymentDate && paymentDate >= dateFrom);
+                    const matchesDateTo = !dateTo || (paymentDate && paymentDate <= dateTo);
+                    return matchesKeyword && matchesStatus && matchesType && matchesDateFrom && matchesDateTo;
                 });
+
+                if (dateFrom || dateTo) {
+                    filteredRows.sort((firstRow, secondRow) => {
+                        const firstDate = firstRow.dataset.paymentDate || '';
+                        const secondDate = secondRow.dataset.paymentDate || '';
+                        return firstDate.localeCompare(secondDate);
+                    });
+                }
 
                 currentPage = 1;
                 renderPagination();
             };
 
-            applyButton?.addEventListener('click', applyFilters);
             searchInput?.addEventListener('input', applyFilters);
             statusFilter?.addEventListener('change', applyFilters);
+            typeFilter?.addEventListener('change', applyFilters);
+            dateFromInput?.addEventListener('input', () => {
+                updateDateDisplays();
+                applyFilters();
+            });
+            dateFromInput?.addEventListener('change', () => {
+                updateDateDisplays();
+                applyFilters();
+            });
+            dateToInput?.addEventListener('input', () => {
+                updateDateDisplays();
+                applyFilters();
+            });
+            dateToInput?.addEventListener('change', () => {
+                updateDateDisplays();
+                applyFilters();
+            });
             prevButton?.addEventListener('click', () => {
                 currentPage -= 1;
                 renderPagination();
@@ -234,16 +382,22 @@
                 currentPage += 1;
                 renderPagination();
             });
-            resetButton?.addEventListener('click', () => {
-                if (searchInput) {
-                    searchInput.value = '';
-                }
-                if (statusFilter) {
-                    statusFilter.value = '';
-                }
-                applyFilters();
-            });
+            rows.forEach((row) => {
+                const openDetail = () => {
+                    const detailUrl = row.dataset.detailUrl;
+                    if (detailUrl) {
+                        window.location.href = detailUrl;
+                    }
+                };
 
+                row.addEventListener('click', openDetail);
+                row.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        openDetail();
+                    }
+                });
+            });
+            updateDateDisplays();
             applyFilters();
         });
     </script>
