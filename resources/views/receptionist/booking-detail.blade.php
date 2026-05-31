@@ -35,6 +35,24 @@
         $selectedRoom = $selectedRoomDetail?->phong ?? $roomDetails->first()?->phong;
         $stayGuestsByRoom = ($booking->luuTrus ?? collect())->groupBy(fn ($guest) => (int) $guest->MaPhong);
         $serviceUsages = $booking->suDungDichVu ?? collect();
+        $invoiceDetails = collect($invoice?->chiTietHoaDons ?? []);
+        $selectedUsageIds = $serviceUsages->pluck('MaSuDung')->map(fn ($id) => (string) $id);
+        $selectedRoomTypeId = $selectedRoom?->MaLoaiPhong ? (string) $selectedRoom->MaLoaiPhong : null;
+        $selectedRoomCharge = $selectedRoomTypeId
+            ? $invoiceDetails->first(fn ($item) => $item->MaLoaiPhong && (string) $item->MaLoaiPhong === $selectedRoomTypeId)
+            : null;
+        $selectedServiceInvoiceDetails = $invoiceDetails
+            ->filter(fn ($item) => $item->MaSuDung && $selectedUsageIds->contains((string) $item->MaSuDung))
+            ->values();
+        $selectedInvoiceDetails = collect();
+
+        if ($selectedRoomCharge) {
+            $selectedInvoiceDetails->push($selectedRoomCharge);
+        }
+
+        $selectedInvoiceDetails = $selectedInvoiceDetails
+            ->merge($selectedServiceInvoiceDetails)
+            ->values();
     @endphp
 
     <style>
@@ -326,16 +344,17 @@
             <div class="col-12">
                 <div class="bd-section">
                     <h4 class="mb-3">Chi ti&#7871;t h&#243;a &#273;&#417;n</h4>
-                    @if($invoice && $invoice->chiTietHoaDons->isNotEmpty())
+                    @if($invoice && $selectedInvoiceDetails->isNotEmpty())
                         <div class="bd-list">
-                            @foreach($invoice->chiTietHoaDons as $item)
+                            @foreach($selectedInvoiceDetails as $item)
                                 @php
                                     $itemName = $item->loaiPhong?->TenLoaiPhong
                                         ?? $item->suDung?->dichVu?->TenDV
                                         ?? $item->denBu?->MoTa
                                         ?? $item->MoTa
                                         ?? $decode('Kho&#7843;n thu');
-                                    $lineTotal = (float) $item->SoLuong * (float) $item->DonGia;
+                                    $displayQuantity = $item->MaLoaiPhong ? 1 : (int) $item->SoLuong;
+                                    $lineTotal = (float) $displayQuantity * (float) $item->DonGia;
                                 @endphp
                                 <div class="bd-list-item">
                                     <div class="bd-list-line">
@@ -344,7 +363,7 @@
                                             <div class="bd-value">{{ $item->MoTa ?? $decode('Chi ti&#7871;t #') . $item->MaCTHD }}</div>
                                         </div>
                                         <div class="text-end">
-                                            <div class="bd-label">{{ $item->SoLuong }} x {{ $formatMoney($item->DonGia) }}</div>
+                                            <div class="bd-label">{{ $displayQuantity }} x {{ $formatMoney($item->DonGia) }}</div>
                                             <div class="bd-value">{{ $formatMoney($lineTotal) }}</div>
                                         </div>
                                     </div>
@@ -352,7 +371,7 @@
                             @endforeach
                         </div>
                     @else
-                        <div class="bd-note">Ch&#432;a c&#243; chi ti&#7871;t h&#243;a &#273;&#417;n &#273;&#7875; hi&#7875;n th&#7883;.</div>
+                        <div class="bd-note">Ch&#432;a c&#243; chi ti&#7871;t h&#243;a &#273;&#417;n cho ph&#242;ng n&#224;y.</div>
                     @endif
                 </div>
             </div>

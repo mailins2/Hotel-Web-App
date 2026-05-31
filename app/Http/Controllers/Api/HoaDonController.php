@@ -21,9 +21,17 @@ class HoaDonController extends Controller
     // 🔹 1. GET ALL
     public function index()
     {
-        $data = HoaDon::with(['datPhong', 'nhanVien', 'khuyenMai'])
+        $data = HoaDon::with(['datPhong', 'nhanVien', 'khuyenMai', 'thanhToans'])
             ->latest('MaHD')
-            ->get();
+            ->get()
+            ->map(function (HoaDon $hoaDon) {
+                $hoaDon->han_tat_toan = $hoaDon->datPhong?->NgayTraPhong;
+                $hoaDon->ngay_tat_toan = (int) $hoaDon->TrangThai === 1
+                    ? $hoaDon->thanhToans->max('NgayThanhToan')
+                    : null;
+
+                return $hoaDon;
+            });
 
         return response()->json($data);
     }
@@ -175,12 +183,20 @@ class HoaDonController extends Controller
         // 🔥 tính tiền realtime
         $daThanhToan = $hoaDon->thanhToans->sum('SoTien');
         $conNo = $hoaDon->TongTien - $daThanhToan;
+        $hanTatToan = $hoaDon->datPhong?->NgayTraPhong;
+        $ngayTatToan = (int) $hoaDon->TrangThai === 1
+            ? $hoaDon->thanhToans->max('NgayThanhToan')
+            : null;
+        $hoaDon->han_tat_toan = $hanTatToan;
+        $hoaDon->ngay_tat_toan = $ngayTatToan;
 
         return response()->json([
             'hoaDon' => $hoaDon,
             'TongTien' => $hoaDon->TongTien,
             'DaThanhToan' => $daThanhToan,
-            'ConNo' => $conNo
+            'ConNo' => $conNo,
+            'han_tat_toan' => $hanTatToan,
+            'ngay_tat_toan' => $ngayTatToan,
         ]);
     }
 

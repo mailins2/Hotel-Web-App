@@ -13,8 +13,8 @@
     };
 
     $transactionType = match ((int) ($payment->LoaiThanhToan ?? -1)) {
-        0 => 'Đặt cọc',
-        1 => 'Thanh toán checkout',
+        0 => 'Thanh toán tiền phòng',
+        1 => 'Thanh toán trả phòng',
         default => '--',
     };
 

@@ -13,7 +13,7 @@
             <div class="hm-select-wrap">
                 <select class="form-select" data-payment-type>
                     <option value="">Tất cả loại thanh toán</option>
-                    <option value="0">Đặt cọc</option>
+                    <option value="0">Thanh toán tiền phòng</option>
                     <option value="1">Thanh toán trả phòng</option>
                 </select>
             </div>
@@ -97,7 +97,7 @@
                 const mapPaymentType = function (value) {
                     switch (Number(value)) {
                         case 0:
-                            return 'Đặt cọc';
+                            return 'Thanh toán tiền phòng';
                         case 1:
                             return 'Thanh toán trả phòng';
                         default:

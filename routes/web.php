@@ -38,7 +38,66 @@ use Maatwebsite\Excel\Excel as ExcelWriter;
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('customer')->name('customer.')->group(function () {
+$loadCustomerAddressData = function () {
+    $cacheKey = 'address-kit.2025-07-01.all';
+
+    if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+        return \Illuminate\Support\Facades\Cache::get($cacheKey);
+    }
+
+    try {
+        $provincesResponse = \Illuminate\Support\Facades\Http::timeout(8)
+            ->retry(2, 200)
+            ->get('https://production.cas.so/address-kit/2025-07-01/provinces');
+
+        $provinces = collect($provincesResponse->json('provinces', []))
+            ->map(fn ($province) => [
+                'code' => $province['code'],
+                'name' => $province['name'],
+            ])
+            ->toArray();
+
+        $communeResponses = \Illuminate\Support\Facades\Http::pool(fn ($pool) => collect($provinces)
+            ->map(fn ($province) => $pool
+                ->as($province['code'])
+                ->timeout(8)
+                ->get("https://production.cas.so/address-kit/2025-07-01/provinces/{$province['code']}/communes"))
+            ->all());
+
+        $communes = [];
+
+        foreach ($provinces as $province) {
+            $response = $communeResponses[$province['code']] ?? null;
+
+            $communes[$province['code']] = collect($response?->json('communes', []) ?? [])
+                ->map(fn ($commune) => [
+                    'code' => $commune['code'],
+                    'name' => $commune['name'],
+                ])
+                ->toArray();
+        }
+
+        $addressData = [
+            'provinces' => $provinces,
+            'communes' => $communes,
+        ];
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $addressData, now()->addDays(30));
+
+        return $addressData;
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Address data fetch failed in customer profile', [
+            'message' => $e->getMessage(),
+        ]);
+
+        return [
+            'provinces' => [],
+            'communes' => [],
+        ];
+    }
+};
+
+Route::prefix('customer')->name('customer.')->group(function () use ($loadCustomerAddressData) {
     Route::get('/', function () {
         $homeReviewModels = DanhGia::with([
             'datPhong.khachHang',
@@ -244,7 +303,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'bookingPromotions' => $bookingPromotions,
         ]);
     })->name('info-booking');
-    Route::get('/profile', function () {
+    Route::get('/profile', function () use ($loadCustomerAddressData) {
         $authAccount = session('auth_account', []);
         $profileCustomer = null;
 
@@ -256,9 +315,13 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 ->first();
         }
 
+        $addressData = $loadCustomerAddressData();
+
         return view('customer.profile', [
             'profileAccount' => $authAccount,
             'profileCustomer' => $profileCustomer,
+            'provinces' => $addressData['provinces'],
+            'communes' => $addressData['communes'],
         ]);
     })->middleware('account.role:0')->name('profile');
     Route::get('/my-bookings', function () {
@@ -1042,7 +1105,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         ])
             ->orderBy('SoPhong')
             ->get()
-            ->map(function (Phong $room) {
+            ->map(function (Phong $room) use ($today) {
                 $activeDetails = $room->chiTietDatPhong
                     ->filter(fn ($detail) => $detail->datPhong)
                     ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
@@ -1074,6 +1137,12 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $roomNumber = (string) $room->SoPhong;
                 preg_match('/\d+/', $roomNumber, $matches);
                 $floor = isset($matches[0]) ? (int) substr($matches[0], 0, 1) : 0;
+                $isCheckInDueToday = $activeBooking?->NgayNhanPhong
+                    && Carbon::parse($activeBooking->NgayNhanPhong)->toDateString() === $today
+                    && $status === 'booked';
+                $isCheckOutDueToday = $activeBooking?->NgayTraPhong
+                    && Carbon::parse($activeBooking->NgayTraPhong)->toDateString() === $today
+                    && $status === 'using';
 
                 return [
                     'id' => $room->MaPhong,
@@ -1085,6 +1154,9 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'bookingDetailId' => $activeDetail?->MaCTDP,
                     'bookingId' => $activeBooking?->MaDatPhong,
                     'guestName' => $activeBooking?->khachHang?->TenKH,
+                    'isDueToday' => $isCheckInDueToday || $isCheckOutDueToday,
+                    'dueType' => $isCheckInDueToday ? 'check-in' : ($isCheckOutDueToday ? 'check-out' : null),
+                    'dueLabel' => $isCheckInDueToday ? 'Đến hạn nhận phòng' : ($isCheckOutDueToday ? 'Đến hạn trả phòng' : ''),
                 ];
             });
 
@@ -1172,7 +1244,23 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     })->name('bookings.index');
     Route::view('/bookings/create', 'receptionist.bookings.form')->name('bookings.create');
     Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
-    Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
+    Route::get('/bookings/{bookingId}', function ($bookingId) {
+        $booking = DatPhong::select(['MaDatPhong', 'MaKH', 'NgayDat', 'NgayNhanPhong', 'NgayTraPhong', 'SoLuong', 'TinhTrang'])
+            ->with([
+                'khachHang:MaKH,TenKH,SoDienThoai,CCCD,NgaySinh,GioiTinh,DiaChi',
+                'chiTietDatPhong:MaCTDP,MaDatPhong,MaPhong,TrangThai',
+                'chiTietDatPhong.phong:MaPhong,SoPhong,MaLoaiPhong',
+                'chiTietDatPhong.phong.loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm',
+                'luuTrus:MaLuuTru,MaDatPhong,MaPhong,TenKhach,NgaySinh,SoDienThoai,CCCD',
+                'luuTrus.phong:MaPhong,SoPhong',
+                'hoaDon:MaHD,MaDatPhong',
+            ])
+            ->findOrFail($bookingId);
+
+        return view('receptionist.bookings.show', [
+            'booking' => $booking,
+        ]);
+    })->name('bookings.show');
 
     Route::get('/services', function () {
         $serviceRoomOptions = \App\Models\ChiTietDatPhong::select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
@@ -1207,6 +1295,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                         . " - Đặt phòng #{$detail->MaDatPhong}"
                         . ($customerName ? " - {$customerName}" : '')
                     ),
+                    'label' => $roomNumber ? (string) $roomNumber : (string) $detail->MaPhong,
                 ];
             })
             ->values();
@@ -1227,6 +1316,10 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             ->get();
 
         return view('receptionist.services.index', [
+            'services' => DichVu::with('hinhs')
+                ->orderBy('LoaiDV')
+                ->orderBy('TenDV')
+                ->get(),
             'serviceRoomOptions' => $serviceRoomOptions,
             'serviceUsageItems' => $serviceUsageItems,
         ]);
@@ -1624,13 +1717,20 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'paymentData' => $paymentData,
         ]);
     })->name('payments.create');
-    Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
+    Route::get('/payments/{paymentId}', function ($paymentId) {
+        $payment = ThanhToan::with('hoaDon.datPhong.khachHang')->findOrFail($paymentId);
+
+        return view('receptionist.payments.show', [
+            'payment' => $payment,
+        ]);
+    })->name('payments.show');
     Route::get('/invoices', function () {
         $invoices = HoaDon::select(['MaHD', 'MaDatPhong', 'NgayLapHD', 'TongTien', 'DaThanhToan', 'MaNV', 'TrangThai'])
             ->with([
-            'datPhong:MaDatPhong,MaKH',
+            'datPhong:MaDatPhong,MaKH,NgayTraPhong',
             'datPhong.khachHang:MaKH,TenKH',
             'nhanVien:MaNV,TenNV',
+            'thanhToans:MaTT,MaHD,NgayThanhToan',
         ])
             ->orderByDesc('MaHD')
             ->get();
@@ -1640,7 +1740,23 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         ]);
     })->name('invoices.index');
     Route::view('/invoices/{invoiceId}/edit', 'receptionist.invoices.form')->name('invoices.edit');
-    Route::view('/invoices/{invoiceId}', 'receptionist.invoices.show')->name('invoices.show');
+    Route::get('/invoices/{invoiceId}', function ($invoiceId) {
+        $invoice = HoaDon::with([
+            'datPhong.khachHang',
+            'datPhong.chiTietDatPhong.phong.loaiPhong',
+            'nhanVien',
+            'khuyenMai',
+            'chiTietHoaDons.loaiPhong',
+            'chiTietHoaDons.suDung.dichVu',
+            'chiTietHoaDons.suDung.chiTietDatPhong.phong',
+            'chiTietHoaDons.denBu',
+            'thanhToans',
+        ])->findOrFail($invoiceId);
+
+        return view('receptionist.invoices.show', [
+            'invoice' => $invoice,
+        ]);
+    })->name('invoices.show');
 });
 //==================
 Route::get('/payment/vnpay-return', function (Request $request) {

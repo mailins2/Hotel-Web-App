@@ -18,6 +18,9 @@
                         @if($editRoute)
                             <a href="{{ $editRoute }}" class="btn btn-sm btn-warning" style="padding: 10px;">Chỉnh sửa</a>
                         @endif
+                        @isset($actions)
+                            {{ $actions }}
+                        @endisset
                         <a href="{{ $indexRoute }}" class="btn btn-sm btn-primary" style="padding: 10px;">Quay lại</a>
                     </div>
                 </div>
