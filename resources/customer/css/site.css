@@ -332,7 +332,9 @@ a:focus,
     opacity: 0.88;
 }
 
-.home-booking-section .booking-form[data-home-booking-search] .btn.is-loading::after {
+.home-booking-section
+    .booking-form[data-home-booking-search]
+    .btn.is-loading::after {
     content: "";
     width: 22px;
     height: 22px;
@@ -343,7 +345,10 @@ a:focus,
     animation: booking-submit-spin 0.7s linear infinite;
 }
 
-.home-booking-section .booking-form[data-home-booking-search] .btn.is-loading .booking-submit-content {
+.home-booking-section
+    .booking-form[data-home-booking-search]
+    .btn.is-loading
+    .booking-submit-content {
     display: none;
 }
 
@@ -352,7 +357,9 @@ a:focus,
     transform: none !important;
 }
 
-.home-booking-section .booking-form[data-home-booking-search] .booking-submit-content {
+.home-booking-section
+    .booking-form[data-home-booking-search]
+    .booking-submit-content {
     min-height: 0;
     color: #fff;
     font-size: 13px;
@@ -360,7 +367,9 @@ a:focus,
     letter-spacing: 0.04em;
 }
 
-.home-booking-section .booking-form[data-home-booking-search] .booking-submit-spinner {
+.home-booking-section
+    .booking-form[data-home-booking-search]
+    .booking-submit-spinner {
     width: 18px;
     height: 18px;
     display: inline-block;
@@ -686,10 +695,9 @@ a:focus,
 
 .room-filter-toolbar {
     display: grid;
-    grid-template-columns: minmax(220px, 1.5fr) minmax(150px, 0.8fr) minmax(
-            120px,
-            0.55fr
-        ) minmax(120px, 0.55fr) auto;
+    grid-template-columns:
+        minmax(220px, 1.5fr) minmax(150px, 0.8fr) minmax(120px, 0.55fr)
+        minmax(120px, 0.55fr) auto;
     align-items: end;
     gap: 12px;
     margin-bottom: 18px;
@@ -1016,11 +1024,11 @@ a:focus,
 
 .customer-room-price {
     display: inline-grid;
-    grid-template-columns: minmax(0, max-content) auto;
+    grid-template-columns: minmax(0, max-content) max-content;
     align-items: center;
     justify-content: start;
     justify-items: start;
-    gap: 6px 10px;
+    gap: 5px 12px;
     max-width: 100%;
 }
 
@@ -1029,7 +1037,8 @@ a:focus,
 }
 
 .customer-room-price-original {
-    grid-column: 1 / -1;
+    grid-column: 1;
+    justify-self: start;
     color: #9ca3af;
     font-size: 0.9em;
     font-weight: 600;
@@ -1041,7 +1050,8 @@ a:focus,
 .customer-room-price-current {
     display: inline-flex;
     align-items: baseline;
-    gap: 8px;
+    grid-column: 1;
+    gap: 7px;
     min-width: 0;
 }
 
@@ -1072,12 +1082,14 @@ a:focus,
 
 .room-result-price .customer-room-discount-tag {
     align-self: center;
-    margin-left: 4px;
 }
 
 .customer-room-discount-tag {
     display: inline-flex;
     align-items: center;
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
     min-height: 22px;
     padding: 3px 8px;
     border-radius: 999px;
@@ -1095,7 +1107,7 @@ a:focus,
 
 .room-list-price .customer-room-price {
     justify-content: center;
-    justify-items: center;
+    justify-items: start;
 }
 
 .room-list-price .customer-room-price-original {
@@ -1104,6 +1116,18 @@ a:focus,
 
 .room-list-price .customer-room-price-sale {
     font-size: 24px;
+}
+
+@media (max-width: 575.98px) {
+    .customer-room-price {
+        grid-template-columns: 1fr;
+        justify-items: start;
+    }
+
+    .customer-room-discount-tag {
+        grid-column: 1;
+        grid-row: auto;
+    }
 }
 
 .search-summary-card {
@@ -1942,7 +1966,9 @@ body.modal-open {
         grid-template-columns: 1fr;
     }
 
-    .home-booking-section .booking-form[data-home-booking-search] .booking-submit-content {
+    .home-booking-section
+        .booking-form[data-home-booking-search]
+        .booking-submit-content {
         min-height: 0;
     }
 
@@ -2294,6 +2320,114 @@ body.modal-open {
 
 .home-room-card {
     height: 100%;
+}
+
+.home-room-card .text {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.home-room-card .text .price {
+    display: block;
+    margin: 0 auto;
+}
+
+.home-room-card .text > p .per {
+    display: none;
+}
+
+.home-room-card .customer-room-price {
+    display: grid;
+    grid-template-columns: minmax(0, max-content) max-content;
+    justify-content: center;
+    justify-items: start;
+    align-items: center;
+    gap: 5px 16px;
+    margin: 2px auto 12px;
+}
+
+.home-room-card .customer-room-price-original {
+    grid-column: 1;
+    justify-self: start;
+    color: #9aa0ab;
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.home-room-card .customer-room-price-current {
+    display: inline-flex;
+    align-items: flex-end;
+    grid-column: 1;
+    gap: 7px;
+    min-width: 0;
+}
+
+.home-room-card .customer-room-price-sale {
+    color: var(--customer-accent);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 0.98;
+}
+
+.home-room-card .customer-room-price-per {
+    color: rgba(55, 65, 81, 0.64);
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.1;
+    text-transform: uppercase;
+    transform: translateY(-2px);
+}
+
+.home-room-card .customer-room-discount-tag {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    min-height: 24px;
+    padding: 4px 9px;
+    border-color: rgba(140, 74, 52, 0.2);
+    background: rgba(140, 74, 52, 0.08);
+    color: var(--customer-accent);
+    font-size: 12px;
+}
+
+.home-room-card .text .btn-custom {
+    min-width: 124px;
+    border-radius: 6px !important;
+    font-size: 15px;
+    font-weight: 800;
+}
+
+.home-room-card:hover .customer-room-price-original,
+.home-room-card:focus-within .customer-room-price-original {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.home-room-card:hover .customer-room-price-sale,
+.home-room-card:focus-within .customer-room-price-sale,
+.home-room-card:hover .customer-room-price-per,
+.home-room-card:focus-within .customer-room-price-per {
+    color: #fff;
+}
+
+.home-room-card:hover .customer-room-discount-tag,
+.home-room-card:focus-within .customer-room-discount-tag {
+    border-color: rgba(255, 255, 255, 0.38);
+    background: rgba(255, 255, 255, 0.16);
+    color: #fff;
+}
+
+@media (max-width: 575.98px) {
+    .home-room-card .customer-room-price {
+        grid-template-columns: 1fr;
+    }
+
+    .home-room-card .customer-room-discount-tag {
+        grid-column: 1;
+        grid-row: auto;
+    }
 }
 
 @keyframes homeRoomSlideLeft {
