@@ -17,6 +17,7 @@ use App\Models\HoaDon;
 use App\Models\KhachHang;
 use App\Models\KhuyenMai;
 use App\Models\LoaiPhong;
+use App\Models\LuuTru;
 use App\Models\NhanVien;
 use App\Models\Phong;
 use App\Models\SuDungDichVu;
@@ -26,6 +27,7 @@ use App\Models\TienNghi;
 use App\Services\Reports\RevenueReportService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Excel as ExcelWriter;
@@ -36,8 +38,119 @@ use Maatwebsite\Excel\Excel as ExcelWriter;
 |--------------------------------------------------------------------------
 */
 
-Route::prefix('customer')->name('customer.')->group(function () {
-    Route::view('/', 'customer.index')->name('home');
+$loadCustomerAddressData = function () {
+    $cacheKey = 'address-kit.2025-07-01.all';
+
+    if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+        return \Illuminate\Support\Facades\Cache::get($cacheKey);
+    }
+
+    try {
+        $provincesResponse = \Illuminate\Support\Facades\Http::timeout(8)
+            ->retry(2, 200)
+            ->get('https://production.cas.so/address-kit/2025-07-01/provinces');
+
+        $provinces = collect($provincesResponse->json('provinces', []))
+            ->map(fn ($province) => [
+                'code' => $province['code'],
+                'name' => $province['name'],
+            ])
+            ->toArray();
+
+        $communeResponses = \Illuminate\Support\Facades\Http::pool(fn ($pool) => collect($provinces)
+            ->map(fn ($province) => $pool
+                ->as($province['code'])
+                ->timeout(8)
+                ->get("https://production.cas.so/address-kit/2025-07-01/provinces/{$province['code']}/communes"))
+            ->all());
+
+        $communes = [];
+
+        foreach ($provinces as $province) {
+            $response = $communeResponses[$province['code']] ?? null;
+
+            $communes[$province['code']] = collect($response?->json('communes', []) ?? [])
+                ->map(fn ($commune) => [
+                    'code' => $commune['code'],
+                    'name' => $commune['name'],
+                ])
+                ->toArray();
+        }
+
+        $addressData = [
+            'provinces' => $provinces,
+            'communes' => $communes,
+        ];
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, $addressData, now()->addDays(30));
+
+        return $addressData;
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::warning('Address data fetch failed in customer profile', [
+            'message' => $e->getMessage(),
+        ]);
+
+        return [
+            'provinces' => [],
+            'communes' => [],
+        ];
+    }
+};
+
+Route::prefix('customer')->name('customer.')->group(function () use ($loadCustomerAddressData) {
+    Route::get('/', function () {
+        $homeReviewModels = DanhGia::with([
+            'datPhong.khachHang',
+            'datPhong.chiTietDatPhong.phong.loaiPhong',
+        ])
+            ->orderByDesc('MaDG')
+            ->get();
+
+        $mapHomeReview = function (DanhGia $review) {
+            $booking = $review->datPhong;
+            $roomNames = $booking?->chiTietDatPhong
+                ?->map(fn ($detail) => $detail->phong?->loaiPhong?->TenLoaiPhong)
+                ->filter()
+                ->unique()
+                ->values()
+                ->implode(', ');
+
+            return [
+                'customerName' => $booking?->khachHang?->TenKH ?: 'Khách hàng Peach Valley',
+                'date' => $review->NgayDanhGia ? Carbon::parse($review->NgayDanhGia) : null,
+                'description' => $review->MoTa ?: 'Khách hàng đã đánh giá trải nghiệm tại Peach Valley.',
+                'rating' => max(1, min(5, (int) ($review->Sao ?? 5))),
+                'roomName' => $roomNames ?: 'Peach Valley',
+            ];
+        };
+
+        $homeReviews = $homeReviewModels->map($mapHomeReview)->values();
+        $homeCarouselReviews = $homeReviewModels->take(5)->map($mapHomeReview)->values();
+        $homeReviewAverage = $homeReviewModels->isNotEmpty()
+            ? round((float) $homeReviewModels->avg('Sao'), 1)
+            : 0;
+        $homeReviewDistribution = collect(range(5, 1))->mapWithKeys(function ($star) use ($homeReviewModels) {
+            $count = $homeReviewModels->where('Sao', $star)->count();
+            $percent = $homeReviewModels->isNotEmpty()
+                ? round(($count / $homeReviewModels->count()) * 100)
+                : 0;
+
+            return [$star => $percent];
+        });
+        $homeReviewRooms = $homeReviews
+            ->pluck('roomName')
+            ->filter(fn ($roomName) => $roomName && $roomName !== 'Peach Valley')
+            ->unique()
+            ->values();
+
+        return view('customer.index', [
+            'homeCarouselReviews' => $homeCarouselReviews,
+            'homeReviews' => $homeReviews,
+            'homeReviewAverage' => $homeReviewAverage,
+            'homeReviewDistribution' => $homeReviewDistribution,
+            'homeReviewRooms' => $homeReviewRooms,
+        ]);
+    })->name('home');
     Route::get('/promotion', [PromotionController::class, 'index'])->name('promotion');
     Route::view('/blog-single', 'customer.blog-single')->name('blog-single');
     Route::get('/services', function () {
@@ -103,6 +216,9 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 })
                 ->orderByDesc('MaDatPhong')
                 ->get()
+                ->filter(function (DatPhong $booking) {
+                    return \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->setTime(14, 0)->gte(now());
+                })
                 ->flatMap(function (DatPhong $booking) {
                     return $booking->chiTietDatPhong
                         ->map(function ($detail) use ($booking) {
@@ -187,7 +303,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
             'bookingPromotions' => $bookingPromotions,
         ]);
     })->name('info-booking');
-    Route::get('/profile', function () {
+    Route::get('/profile', function () use ($loadCustomerAddressData) {
         $authAccount = session('auth_account', []);
         $profileCustomer = null;
 
@@ -199,9 +315,13 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 ->first();
         }
 
+        $addressData = $loadCustomerAddressData();
+
         return view('customer.profile', [
             'profileAccount' => $authAccount,
             'profileCustomer' => $profileCustomer,
+            'provinces' => $addressData['provinces'],
+            'communes' => $addressData['communes'],
         ]);
     })->middleware('account.role:0')->name('profile');
     Route::get('/my-bookings', function () {
@@ -242,6 +362,7 @@ Route::prefix('customer')->name('customer.')->group(function () {
                 'hoaDon.chiTietHoaDons.loaiPhong',
                 'hoaDon.thanhToans',
                 'chiTietDatPhong.phong.loaiPhong',
+                'danhGia',
             ])
                 ->where('MaKH', $customerId)
                 ->orderByDesc('NgayDat')
@@ -364,6 +485,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::redirect('/admin/login', '/login');
 Route::redirect('/reception/login', '/login');
 Route::view('/forgot-password', 'auth.recoverpw')->name('auth.recoverpw');
+Route::view('/verify-otp', 'auth.verify-otp')->name('auth.verify-otp');
 Route::view('/new-password', 'auth.new-password')->name('auth.new-password');
 Route::view('/sign-up', 'auth.register')->name('auth.signup');
 Route::post('/register/step-1', [AuthController::class, 'registerStepOne'])->name('register.step1');
@@ -384,16 +506,18 @@ Route::redirect('/dashboard', '/customer')->name('dashboard');
 $buildReportData = function () {
     $reportDefaultTo = Carbon::today();
     $reportDefaultFrom = $reportDefaultTo->copy()->subMonth();
+    $today = $reportDefaultTo->toDateString();
     $serviceRevenueToday = $reportDefaultTo->toDateString();
     $reportDefaultFromDate = $reportDefaultFrom->toDateString();
     $reportDefaultToDate = $reportDefaultTo->toDateString();
-    $serviceRevenueItems = SuDungDichVu::with('dichVu')
+    $serviceRevenueItems = SuDungDichVu::with(['dichVu', 'chiTietHoaDon'])
         ->whereHas('dichVu')
         ->get()
         ->map(function (SuDungDichVu $usage) {
             $service = $usage->dichVu;
-            $quantity = max(0, (int) ($usage->SoLuong ?? 0));
-            $unitPrice = (float) ($service?->GiaDV ?? 0);
+            $invoiceDetail = $usage->chiTietHoaDon->first();
+            $quantity = max(0, (int) ($invoiceDetail?->SoLuong ?? $usage->SoLuong ?? 0));
+            $unitPrice = (float) ($invoiceDetail?->DonGia ?? $service?->GiaDV ?? 0);
 
             return [
                 'date' => $usage->ThoiGian ? Carbon::parse($usage->ThoiGian)->toDateString() : null,
@@ -410,26 +534,68 @@ $buildReportData = function () {
         ->values();
     $revenueItems = app(RevenueReportService::class)->invoiceItems();
 
-    $customerCount = DatPhong::whereNotNull('MaKH')
-        ->whereHas('khachHang')
-        ->distinct()
-        ->count('MaKH');
+    $stayingGuestCount = LuuTru::whereHas('datPhong', function ($query) use ($today) {
+            $query
+                ->whereDate('NgayNhanPhong', '<=', $today)
+                ->whereDate('NgayTraPhong', '>=', $today)
+                ->whereIn('TinhTrang', [
+                    DatPhong::CONFIRMED,
+                    DatPhong::CHECKED_IN,
+                ]);
+        })
+        ->whereExists(function ($query) {
+            $query
+                ->select(DB::raw(1))
+                ->from('ChiTietDatPhong')
+                ->whereColumn('ChiTietDatPhong.MaDatPhong', 'LuuTru.MaDatPhong')
+                ->whereColumn('ChiTietDatPhong.MaPhong', 'LuuTru.MaPhong')
+                ->where('ChiTietDatPhong.TrangThai', ChiTietDatPhong::CHECKED_IN);
+        })
+        ->count();
+    $todayBookingCount = DatPhong::whereDate('NgayDat', $reportDefaultTo->toDateString())
+        ->where('TinhTrang', '!=', DatPhong::CANCELLED)
+        ->count();
     $averageRating = round((float) DanhGia::whereBetween('NgayDanhGia', [
         $reportDefaultFrom->copy()->startOfDay(),
         $reportDefaultTo->copy()->endOfDay(),
     ])->avg('Sao'), 1);
-    $roomUsingCount = Phong::where('TinhTrang', 2)->count();
-    $roomEmptyCount = Phong::where('TinhTrang', 0)->count();
-    $roomStatusItems = Phong::with('loaiPhong')
-        ->get()
-        ->map(fn (Phong $room) => [
-            'room_id' => $room->MaPhong,
-            'room_number' => $room->SoPhong,
-            'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
-            'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
-            'status' => (int) ($room->TinhTrang ?? 0),
+    $roomStatusItems = Phong::with([
+            'loaiPhong',
+            'chiTietDatPhong' => function ($query) {
+                $query->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+            },
+            'chiTietDatPhong.datPhong' => function ($query) use ($today) {
+                $query
+                    ->where('NgayNhanPhong', '<=', $today)
+                    ->where('NgayTraPhong', '>=', $today)
+                    ->whereIn('TinhTrang', [
+                        DatPhong::CONFIRMED,
+                        DatPhong::CHECKED_IN,
+                    ]);
+            },
         ])
+        ->get()
+        ->map(function (Phong $room) {
+            $activeDetails = $room->chiTietDatPhong->filter(fn ($detail) => $detail->datPhong);
+            $status = match (true) {
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN) => 2,
+                $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED
+                    && (int) $detail->datPhong->TinhTrang === DatPhong::CONFIRMED) => 1,
+                default => 0,
+            };
+
+            return [
+                'room_id' => $room->MaPhong,
+                'room_number' => $room->SoPhong,
+                'room_type_id' => $room->MaLoaiPhong ? (string) $room->MaLoaiPhong : '',
+                'room_type_name' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
+                'status' => $status,
+            ];
+        })
         ->values();
+    $roomCount = $roomStatusItems->count();
+    $roomUsingCount = $roomStatusItems->where('status', 2)->count();
+    $roomEmptyCount = $roomStatusItems->where('status', 0)->count();
     $roomTypeOptions = LoaiPhong::orderBy('TenLoaiPhong')
         ->get(['MaLoaiPhong', 'TenLoaiPhong']);
     $roomCapacityItems = Phong::select('MaPhong', 'MaLoaiPhong')
@@ -463,8 +629,11 @@ $buildReportData = function () {
         ->values();
 
     return [
-        'customerCount' => $customerCount,
+        'customerCount' => $stayingGuestCount,
+        'stayingGuestCount' => $stayingGuestCount,
+        'todayBookingCount' => $todayBookingCount,
         'averageRating' => $averageRating,
+        'roomCount' => $roomCount,
         'roomUsingCount' => $roomUsingCount,
         'roomEmptyCount' => $roomEmptyCount,
         'serviceRevenueItems' => $serviceRevenueItems,
@@ -685,9 +854,52 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'roomTypes' => LoaiPhong::orderByDesc('MaLoaiPhong')->get(),
                     ],
                     'rooms' => [
-                        'rooms' => Phong::with('loaiPhong')
+                        'rooms' => Phong::with([
+                            'loaiPhong',
+                            'chiTietDatPhong' => function ($query) {
+                                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                            },
+                            'chiTietDatPhong.datPhong' => function ($query) {
+                                $today = Carbon::today()->toDateString();
+
+                                $query->where('NgayNhanPhong', '<=', $today)
+                                    ->where('NgayTraPhong', '>=', $today)
+                                    ->whereIn('TinhTrang', [
+                                        DatPhong::HOLD,
+                                        DatPhong::CONFIRMED,
+                                        DatPhong::CHECKED_IN,
+                                    ]);
+                            },
+                        ])
                             ->orderByDesc('MaPhong')
-                            ->get(),
+                            ->get()
+                            ->map(function (Phong $room) {
+                                $activeDetails = $room->chiTietDatPhong
+                                    ->filter(fn ($detail) => $detail->datPhong)
+                                    ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
+                                        \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+                                        \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
+                                            DatPhong::CONFIRMED => 2,
+                                            DatPhong::HOLD => 1,
+                                            default => 0,
+                                        },
+                                        default => 0,
+                                    });
+
+                                $status = match (true) {
+                                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 2,
+                                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
+                                        && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 1,
+                                    default => 0,
+                                };
+
+                                $room->TinhTrang = $status;
+                                $room->TinhTrangHienTai = $status;
+                                $room->MaDatPhongHienTai = $activeDetails->first()?->datPhong?->MaDatPhong;
+                                unset($room->chiTietDatPhong);
+
+                                return $room;
+                            }),
                     ],
                     'services' => [
                         'services' => DichVu::with('hinhs')
@@ -870,7 +1082,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     Route::get('/dashboard', function () {
         $today = Carbon::today()->toDateString();
 
-        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong', 'TinhTrang'])
+        $rooms = Phong::select(['MaPhong', 'SoPhong', 'MaLoaiPhong'])
             ->with([
             'loaiPhong:MaLoaiPhong,TenLoaiPhong',
             'chiTietDatPhong' => function ($query) {
@@ -893,7 +1105,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         ])
             ->orderBy('SoPhong')
             ->get()
-            ->map(function (Phong $room) {
+            ->map(function (Phong $room) use ($today) {
                 $activeDetails = $room->chiTietDatPhong
                     ->filter(fn ($detail) => $detail->datPhong)
                     ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
@@ -909,7 +1121,6 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $activeDetail = $activeDetails->first();
                 $activeBooking = $activeDetail?->datPhong;
                 $status = match (true) {
-                    (int) $room->TinhTrang === 3 => 'cleaning',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 'using',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
                         && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
@@ -926,6 +1137,12 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $roomNumber = (string) $room->SoPhong;
                 preg_match('/\d+/', $roomNumber, $matches);
                 $floor = isset($matches[0]) ? (int) substr($matches[0], 0, 1) : 0;
+                $isCheckInDueToday = $activeBooking?->NgayNhanPhong
+                    && Carbon::parse($activeBooking->NgayNhanPhong)->toDateString() === $today
+                    && $status === 'booked';
+                $isCheckOutDueToday = $activeBooking?->NgayTraPhong
+                    && Carbon::parse($activeBooking->NgayTraPhong)->toDateString() === $today
+                    && $status === 'using';
 
                 return [
                     'id' => $room->MaPhong,
@@ -937,6 +1154,9 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'bookingDetailId' => $activeDetail?->MaCTDP,
                     'bookingId' => $activeBooking?->MaDatPhong,
                     'guestName' => $activeBooking?->khachHang?->TenKH,
+                    'isDueToday' => $isCheckInDueToday || $isCheckOutDueToday,
+                    'dueType' => $isCheckInDueToday ? 'check-in' : ($isCheckOutDueToday ? 'check-out' : null),
+                    'dueLabel' => $isCheckInDueToday ? 'Đến hạn nhận phòng' : ($isCheckOutDueToday ? 'Đến hạn trả phòng' : ''),
                 ];
             });
 
@@ -1024,19 +1244,39 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
     })->name('bookings.index');
     Route::view('/bookings/create', 'receptionist.bookings.form')->name('bookings.create');
     Route::view('/bookings/{bookingId}/edit', 'receptionist.bookings.form')->name('bookings.edit');
-    Route::view('/bookings/{bookingId}', 'receptionist.bookings.show')->name('bookings.show');
+    Route::get('/bookings/{bookingId}', function ($bookingId) {
+        $booking = DatPhong::select(['MaDatPhong', 'MaKH', 'NgayDat', 'NgayNhanPhong', 'NgayTraPhong', 'SoLuong', 'TinhTrang'])
+            ->with([
+                'khachHang:MaKH,TenKH,SoDienThoai,CCCD,NgaySinh,GioiTinh,DiaChi',
+                'chiTietDatPhong:MaCTDP,MaDatPhong,MaPhong,TrangThai',
+                'chiTietDatPhong.phong:MaPhong,SoPhong,MaLoaiPhong',
+                'chiTietDatPhong.phong.loaiPhong:MaLoaiPhong,TenLoaiPhong,NguoiLon,TreEm',
+                'luuTrus:MaLuuTru,MaDatPhong,MaPhong,TenKhach,NgaySinh,SoDienThoai,CCCD',
+                'luuTrus.phong:MaPhong,SoPhong',
+                'hoaDon:MaHD,MaDatPhong',
+            ])
+            ->findOrFail($bookingId);
+
+        return view('receptionist.bookings.show', [
+            'booking' => $booking,
+        ]);
+    })->name('bookings.show');
 
     Route::get('/services', function () {
         $serviceRoomOptions = \App\Models\ChiTietDatPhong::select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
             ->with([
             'phong:MaPhong,SoPhong',
-            'datPhong:MaDatPhong,MaKH,TinhTrang',
+            'datPhong:MaDatPhong,MaKH,NgayNhanPhong,NgayTraPhong,TinhTrang',
             'datPhong.khachHang:MaKH,TenKH',
         ])
             ->where('TrangThai', \App\Models\ChiTietDatPhong::CHECKED_IN)
             ->orderBy('MaDatPhong')
             ->orderBy('MaPhong')
             ->get()
+            ->filter(function ($detail) {
+                return $detail->datPhong?->NgayTraPhong
+                    && \Illuminate\Support\Carbon::parse($detail->datPhong->NgayTraPhong)->setTime(14, 0)->gte(now());
+            })
             ->map(function ($detail) {
                 $booking = $detail->datPhong;
                 $roomNumber = $detail->phong?->SoPhong;
@@ -1048,11 +1288,14 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     'roomId' => (string) $detail->MaPhong,
                     'roomNumber' => $roomNumber ? (string) $roomNumber : '',
                     'customerName' => $customerName ?: '',
+                    'checkIn' => $booking?->NgayNhanPhong ? \Illuminate\Support\Carbon::parse($booking->NgayNhanPhong)->toDateString() : '',
+                    'checkOut' => $booking?->NgayTraPhong ? \Illuminate\Support\Carbon::parse($booking->NgayTraPhong)->toDateString() : '',
                     'label' => trim(
                         ($roomNumber ? "Phòng {$roomNumber}" : "Phòng #{$detail->MaPhong}")
                         . " - Đặt phòng #{$detail->MaDatPhong}"
                         . ($customerName ? " - {$customerName}" : '')
                     ),
+                    'label' => $roomNumber ? (string) $roomNumber : (string) $detail->MaPhong,
                 ];
             })
             ->values();
@@ -1073,6 +1316,10 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             ->get();
 
         return view('receptionist.services.index', [
+            'services' => DichVu::with('hinhs')
+                ->orderBy('LoaiDV')
+                ->orderBy('TenDV')
+                ->get(),
             'serviceRoomOptions' => $serviceRoomOptions,
             'serviceUsageItems' => $serviceUsageItems,
         ]);
@@ -1470,13 +1717,20 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'paymentData' => $paymentData,
         ]);
     })->name('payments.create');
-    Route::view('/payments/{paymentId}', 'receptionist.payments.show')->name('payments.show');
+    Route::get('/payments/{paymentId}', function ($paymentId) {
+        $payment = ThanhToan::with('hoaDon.datPhong.khachHang')->findOrFail($paymentId);
+
+        return view('receptionist.payments.show', [
+            'payment' => $payment,
+        ]);
+    })->name('payments.show');
     Route::get('/invoices', function () {
         $invoices = HoaDon::select(['MaHD', 'MaDatPhong', 'NgayLapHD', 'TongTien', 'DaThanhToan', 'MaNV', 'TrangThai'])
             ->with([
-            'datPhong:MaDatPhong,MaKH',
+            'datPhong:MaDatPhong,MaKH,NgayTraPhong',
             'datPhong.khachHang:MaKH,TenKH',
             'nhanVien:MaNV,TenNV',
+            'thanhToans:MaTT,MaHD,NgayThanhToan',
         ])
             ->orderByDesc('MaHD')
             ->get();
@@ -1486,7 +1740,23 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
         ]);
     })->name('invoices.index');
     Route::view('/invoices/{invoiceId}/edit', 'receptionist.invoices.form')->name('invoices.edit');
-    Route::view('/invoices/{invoiceId}', 'receptionist.invoices.show')->name('invoices.show');
+    Route::get('/invoices/{invoiceId}', function ($invoiceId) {
+        $invoice = HoaDon::with([
+            'datPhong.khachHang',
+            'datPhong.chiTietDatPhong.phong.loaiPhong',
+            'nhanVien',
+            'khuyenMai',
+            'chiTietHoaDons.loaiPhong',
+            'chiTietHoaDons.suDung.dichVu',
+            'chiTietHoaDons.suDung.chiTietDatPhong.phong',
+            'chiTietHoaDons.denBu',
+            'thanhToans',
+        ])->findOrFail($invoiceId);
+
+        return view('receptionist.invoices.show', [
+            'invoice' => $invoice,
+        ]);
+    })->name('invoices.show');
 });
 //==================
 Route::get('/payment/vnpay-return', function (Request $request) {

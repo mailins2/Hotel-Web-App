@@ -35,7 +35,6 @@ class RevenueReportExport implements FromCollection, WithHeadings, ShouldAutoSiz
             ->map(fn (array $row) => [
                 $row['date'],
                 $row['invoice_count'],
-                $row['completed_booking_count'],
                 $row['room_revenue'],
                 $row['service_revenue'],
                 $row['compensation'],
@@ -52,7 +51,6 @@ class RevenueReportExport implements FromCollection, WithHeadings, ShouldAutoSiz
         return [
             'Ngày',
             'Số hóa đơn',
-            'Số booking hoàn thành',
             'Doanh thu tiền phòng',
             'Doanh thu dịch vụ',
             'Tiền đền bù',
@@ -67,13 +65,13 @@ class RevenueReportExport implements FromCollection, WithHeadings, ShouldAutoSiz
     public function columnFormats(): array
     {
         return [
+            'C' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'D' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'E' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'F' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'G' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'H' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
             'I' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
-            'J' => NumberFormat::FORMAT_NUMBER_COMMA_SEPARATED1,
         ];
     }
 
@@ -82,7 +80,7 @@ class RevenueReportExport implements FromCollection, WithHeadings, ShouldAutoSiz
         $highestRow = $sheet->getHighestRow();
 
         if ($highestRow > 9) {
-            $sheet->getStyle('A' . $highestRow . ':K' . $highestRow)->getFont()->setBold(true);
+            $sheet->getStyle('A' . $highestRow . ':J' . $highestRow)->getFont()->setBold(true);
         }
 
         return [];
@@ -100,6 +98,6 @@ class RevenueReportExport implements FromCollection, WithHeadings, ShouldAutoSiz
 
     protected function reportColumnRange(): string
     {
-        return 'A:K';
+        return 'A:J';
     }
 }

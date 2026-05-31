@@ -87,6 +87,39 @@
                     return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
                 };
 
+                const addDays = function (dateValue, days) {
+                    if (!dateValue) {
+                        return '';
+                    }
+
+                    const date = new Date(`${dateValue}T00:00:00`);
+
+                    if (Number.isNaN(date.getTime())) {
+                        return '';
+                    }
+
+                    date.setDate(date.getDate() + days);
+                    return date.toISOString().slice(0, 10);
+                };
+
+                const syncDateRange = function () {
+                    if (!startInput || !endInput) {
+                        return true;
+                    }
+
+                    const minEndDate = addDays(startInput.value, 1);
+                    endInput.min = minEndDate;
+
+                    if (minEndDate && endInput.value && endInput.value < minEndDate) {
+                        endInput.value = '';
+                    }
+
+                    const isInvalid = Boolean(startInput.value && endInput.value && endInput.value <= startInput.value);
+                    endInput.setCustomValidity(isInvalid ? 'Ngay ket thuc phai sau ngay bat dau.' : '');
+
+                    return !isInvalid;
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không có đánh giá phù hợp.</td></tr>';
@@ -117,6 +150,11 @@
                     : null;
 
                 const applyFilters = function () {
+                    if (!syncDateRange()) {
+                        endInput.reportValidity();
+                        return;
+                    }
+
                     const startValue = startInput && startInput.value ? startInput.value : '';
                     const endValue = endInput && endInput.value ? endInput.value : '';
                     const starValue = (starSelect ? starSelect.value : '') || '';
@@ -145,7 +183,35 @@
                 };
 
                 if (applyButton) {
-                    applyButton.addEventListener('click', applyFilters);
+                    applyButton.remove();
+                }
+
+                if (filterPanel) {
+                    const filterForm = filterPanel.querySelector('form');
+                    if (filterForm) {
+                        filterForm.addEventListener('submit', function (event) {
+                            event.preventDefault();
+                            applyFilters();
+                        });
+                    }
+                }
+
+                if (startInput) {
+                    startInput.addEventListener('change', function () {
+                        syncDateRange();
+                        applyFilters();
+                    });
+                }
+
+                if (endInput) {
+                    endInput.addEventListener('change', function () {
+                        syncDateRange();
+                        applyFilters();
+                    });
+                }
+
+                if (starSelect) {
+                    starSelect.addEventListener('change', applyFilters);
                 }
 
                 if (resetButton) {
@@ -155,6 +221,8 @@
                         }
                         if (endInput) {
                             endInput.value = '';
+                            endInput.min = '';
+                            endInput.setCustomValidity('');
                         }
                         if (starSelect) {
                             starSelect.value = '';
@@ -163,6 +231,7 @@
                     });
                 }
 
+                syncDateRange();
                 loadReviews();
             });
         </script>

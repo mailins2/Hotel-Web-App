@@ -40,7 +40,7 @@
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Số phòng</div><div class="fw-semibold">{{ $room->SoPhong ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Loại phòng</div><div class="fw-semibold">{{ $room?->loaiPhong?->TenLoaiPhong ?? '--' }}</div></div></div>
     <div class="col-md-6 mb-4"><div class="border rounded p-3 h-100"><div class="text-muted small mb-1">Tình trạng</div><div class="fw-semibold">{{ $statusLabel }}</div></div></div>
-    <div class="col-md-6 mb-4">
+    <!-- <div class="col-md-6 mb-4">
         <div class="border rounded p-3 h-100">
             <div class="text-muted small mb-1">Mã đặt phòng</div>
             <div class="fw-semibold">
@@ -51,5 +51,5 @@
                 @endif
             </div>
         </div>
-    </div>
+    </div> -->
 </x-hotel-management.show-page>

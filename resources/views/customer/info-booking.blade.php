@@ -56,6 +56,7 @@
                     value="{{ $bookingCustomerPhone }}"
                     inputmode="numeric" 
                     pattern="[0-9]*" 
+                    maxlength="10"
                     placeholder="0982 123 123"
                     data-validation="phone"
                     required>
@@ -245,7 +246,7 @@
         }
 
         function validatePhone(value) {
-          return /^[0-9\s\-\+()]+$/.test(value.trim()) && value.trim().length >= 10;
+          return /^0\d{9}$/.test(value.trim());
         }
 
         function formatCurrency(value) {
@@ -712,8 +713,8 @@
         // Real-time validation for phone (numbers only)
         phoneInput.addEventListener('input', function(e) {
           const value = e.target.value;
-          // Remove non-number characters (but allow spaces, dashes, parentheses)
-          const sanitized = value.replace(/[^0-9\s\-()]/g, '');
+          // Remove non-number characters and keep the same 10-digit phone rule as the receptionist form.
+          const sanitized = value.replace(/\D+/g, '').slice(0, 10);
           if (sanitized !== value) {
             e.target.value = sanitized;
           }
@@ -809,7 +810,7 @@
             document.getElementById('phone-error').textContent = 'Vui lòng nhập số điện thoại';
             hasError = true;
           } else if (!validatePhone(phone)) {
-            document.getElementById('phone-error').textContent = 'Số điện thoại không hợp lệ (tối thiểu 10 chữ số)';
+            document.getElementById('phone-error').textContent = 'Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0';
             hasError = true;
           }
 

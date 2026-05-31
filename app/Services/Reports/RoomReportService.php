@@ -3,6 +3,7 @@
 namespace App\Services\Reports;
 
 use App\Models\ChiTietDatPhong;
+use App\Models\LoaiPhong;
 use App\Models\Phong;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -62,7 +63,7 @@ class RoomReportService
                     'room_number' => $room->SoPhong,
                     'room_type' => $room->loaiPhong?->TenLoaiPhong ?? 'Chưa phân loại',
                     'room_price' => round((float) ($room->loaiPhong?->GiaPhong ?? 0)),
-                    'current_status' => $this->roomStatusLabel((int) ($room->TinhTrang ?? -1)),
+                    'current_status' => $this->roomStatusLabel($this->currentRoomStatus($room)),
                     'booking_count' => count($bookingIds),
                     'rented_days' => $rentedDays,
                     'room_revenue' => round($roomRevenue),
@@ -85,14 +86,33 @@ class RoomReportService
                     'room_type' => $roomType,
                     'room_price' => '',
                     'current_status' => '',
-                    'booking_count' => '',
-                    'rented_days' => '',
+                    'booking_count' => $items->sum('booking_count'),
+                    'rented_days' => $items->sum('rented_days'),
                     'room_revenue' => $items->sum('room_revenue'),
                     'occupancy_rate' => '',
                     'is_total' => true,
                 ]);
             })
             ->values();
+    }
+
+    private function roomTypePriceForPeriod(?LoaiPhong $roomType, Carbon $fromDate, Carbon $endExclusive): float
+    {
+        $basePrice = round((float) ($roomType?->GiaPhong ?? 0));
+        $promotion = $roomType?->khuyenMai;
+
+        if (!$roomType || !$promotion || !$promotion->NgayBatDau || !$promotion->NgayKetThuc) {
+            return $basePrice;
+        }
+
+        $promotionStart = Carbon::parse($promotion->NgayBatDau)->startOfDay();
+        $promotionEndExclusive = Carbon::parse($promotion->NgayKetThuc)->startOfDay()->addDay();
+
+        if ($promotionStart >= $endExclusive || $promotionEndExclusive <= $fromDate) {
+            return $basePrice;
+        }
+
+        return round($roomType->giaSauKhuyenMai($promotionStart));
     }
 
     private function roomStatusLabel(int $status): string
@@ -104,5 +124,31 @@ class RoomReportService
             3 => 'Đang dọn dẹp',
             default => 'Không xác định',
         };
+    }
+
+    private function currentRoomStatus(Phong $room): int
+    {
+        $today = Carbon::today()->startOfDay();
+
+        $detailsToday = $room->chiTietDatPhong
+            ->filter(function (ChiTietDatPhong $detail) use ($today) {
+                $booking = $detail->datPhong;
+
+                return $booking
+                    && (int) ($detail->TrangThai ?? -1) !== ChiTietDatPhong::CANCELLED
+                    && in_array((int) ($booking->TinhTrang ?? -1), [0, 1, 2], true)
+                    && Carbon::parse($booking->NgayNhanPhong)->startOfDay()->lte($today)
+                    && Carbon::parse($booking->NgayTraPhong)->startOfDay()->gte($today);
+            });
+
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_IN)) {
+            return 2;
+        }
+
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED)) {
+            return 1;
+        }
+
+        return 0;
     }
 }

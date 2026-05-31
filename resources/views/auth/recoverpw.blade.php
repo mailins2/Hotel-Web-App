@@ -20,20 +20,33 @@
                      <img src="{{ asset('images/logo_hotel.png') }}" alt="Peach Valley Hotel" class="auth-brand-logo">
                   </a>
                   <h2 class="mb-2">Quên mật khẩu</h2>
-                  <p>Nhập địa chỉ email để hướng dẫn đặt mật khẩu mới.</p>
-                  <form data-ui-only-form>
+                  <p>Nhập số điện thoại để xác thực tài khoản </p>
+                  <form data-forgot-password-form novalidate>
                      <div class="row">
                         <div class="col-lg-12">
                            <div class="floating-label form-group">
-                              <label for="email" class="form-label">Email</label>
-                              <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" aria-describedby="email" placeholder=" " required>
-                              @error('email')
-                                 <span class="auth-field-error">{{ $message }}</span>
-                              @enderror
+                              <label for="phone" class="form-label">Số điện thoại</label>
+                              <input
+                                 type="tel"
+                                 inputmode="numeric"
+                                 maxlength="10"
+                                 class="form-control @error('phone') is-invalid @enderror"
+                                 id="phone"
+                                 name="phone"
+                                 value="{{ old('phone') }}"
+                                 aria-describedby="phone-error"
+                                 placeholder=" "
+                                 required
+                              >
+                              <span id="phone-error" class="auth-field-error">
+                                 @error('phone')
+                                    {{ $message }}
+                                 @enderror
+                              </span>
                            </div>
                         </div>
                      </div>
-                     <button type="submit" class="btn btn-primary btn-block">Gửi yêu cầu</button>
+                     <button type="submit" class="btn btn-primary btn-block" data-forgot-password-submit>Nhận OTP</button>
                   </form>
                </div>
             </div>
@@ -52,17 +65,102 @@
 
       <script>
          document.addEventListener('DOMContentLoaded', () => {
-            const form = document.querySelector('[data-ui-only-form]');
+            const form = document.querySelector('[data-forgot-password-form]');
 
             if (!form) {
                return;
             }
 
-            form.addEventListener('submit', (event) => {
-               event.preventDefault();
+            const phoneInput = form.querySelector('#phone');
+            const phoneError = form.querySelector('#phone-error');
+            const submitButton = form.querySelector('[data-forgot-password-submit]');
+            const touched = {
+               phone: false,
+            };
 
-               if (!form.checkValidity()) {
-                  form.reportValidity();
+            const setPhoneError = (message) => {
+               if (phoneError) {
+                  phoneError.textContent = message || '';
+               }
+
+               phoneInput.classList.toggle('is-invalid', Boolean(message));
+            };
+
+            const validatePhone = () => {
+               const phone = phoneInput.value.trim();
+               phoneInput.value = phone;
+
+               if (!phone) {
+                  setPhoneError('Vui lòng nhập số điện thoại.');
+                  return false;
+               }
+
+               if (!/^0\d{9}$/.test(phone)) {
+                  setPhoneError('Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.');
+                  return false;
+               }
+
+               setPhoneError('');
+               return true;
+            };
+
+            phoneInput.addEventListener('input', () => {
+               phoneInput.value = phoneInput.value.replace(/\D+/g, '').slice(0, 10);
+
+               if (touched.phone) {
+                  validatePhone();
+               }
+            });
+
+            phoneInput.addEventListener('blur', () => {
+               touched.phone = true;
+               validatePhone();
+            });
+
+            form.addEventListener('submit', async (event) => {
+               event.preventDefault();
+               touched.phone = true;
+
+               if (!validatePhone()) {
+                  phoneInput.focus();
+                  return;
+               }
+
+               const originalText = submitButton.textContent;
+               submitButton.disabled = true;
+               submitButton.textContent = 'Đang kiểm tra...';
+
+               try {
+                  const response = await fetch('/api/quen-mat-khau/gui-otp', {
+                     method: 'POST',
+                     headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                     },
+                     body: JSON.stringify({
+                        phone: phoneInput.value.trim(),
+                     }),
+                  });
+                  const payload = await response.json().catch(() => ({}));
+
+                  if (!response.ok) {
+                     throw new Error(payload.message || 'Số điện thoại không tồn tại trong hệ thống.');
+                  }
+
+                  sessionStorage.removeItem('forgotPasswordVerifiedOtp');
+                  sessionStorage.removeItem('forgotPasswordVerifiedPhone');
+                  sessionStorage.setItem('forgotPasswordPhone', phoneInput.value.trim());
+                  if (payload.otp) {
+                     sessionStorage.setItem('forgotPasswordOtpHint', payload.otp);
+                  }
+
+                  window.location.href = `{{ route('auth.verify-otp') }}?phone=${encodeURIComponent(phoneInput.value.trim())}`;
+               } catch (error) {
+                  setPhoneError(error.message || 'Không thể gửi OTP. Vui lòng thử lại.');
+                  phoneInput.focus();
+               } finally {
+                  submitButton.disabled = false;
+                  submitButton.textContent = originalText;
                }
             });
          });

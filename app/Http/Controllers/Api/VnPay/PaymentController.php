@@ -7,7 +7,6 @@ use App\Models\ChiTietDatPhong;
 use App\Models\DatPhong;
 use App\Models\HoaDon;
 use App\Models\KhoKhuyenMai;
-use App\Models\Phong;
 use App\Models\ThanhToan;
 use App\Services\CustomerPointService;
 use Illuminate\Http\Request;
@@ -354,19 +353,9 @@ class PaymentController extends Controller
 
     private function confirmCheckout(DatPhong $datPhong): void
     {
-        $checkedInRoomIds = ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
-            ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
-            ->pluck('MaPhong')
-            ->filter()
-            ->values();
-
         ChiTietDatPhong::where('MaDatPhong', $datPhong->MaDatPhong)
             ->where('TrangThai', ChiTietDatPhong::CHECKED_IN)
             ->update(['TrangThai' => ChiTietDatPhong::CHECKED_OUT]);
-
-        if ($checkedInRoomIds->isNotEmpty()) {
-            Phong::whereIn('MaPhong', $checkedInRoomIds)->update(['TinhTrang' => 3]);
-        }
 
         $datPhong->update(['TinhTrang' => DatPhong::CHECKED_OUT]);
     }

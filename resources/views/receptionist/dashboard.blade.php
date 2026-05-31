@@ -73,16 +73,13 @@
 
         .fd-room,
         .fd-room-link {
+            position: relative;
             border-radius: 18px;
             padding: 0.85rem;
             min-height: 110px;
             display: block;
             text-decoration: none;
             transition: transform 0.18s ease, box-shadow 0.18s ease;
-        }
-
-        .fd-room {
-            position: relative;
         }
 
         .fd-room-link.fd-booked,
@@ -108,6 +105,27 @@
         .fd-booked { background: #fef3c7; color: #92400e; }
         .fd-using { background: #dbeafe; color: #1d4ed8; }
         .fd-cleaning { background: #f3e8ff; color: #7e22ce; }
+
+        .fd-room-alert {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 1.7rem;
+            height: 1.7rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 999px;
+            background: #fff;
+            color: #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.22);
+            box-shadow: 0 8px 18px rgba(120, 74, 44, 0.14);
+        }
+
+        .fd-room-alert svg {
+            width: 1rem;
+            height: 1rem;
+        }
 
         .fd-cleaning-action {
             width: 100%;
@@ -190,6 +208,29 @@
         .fd-legend-dot--cleaning { background: #7e22ce; }
         .fd-legend-dot--all { background: #9a4f35; }
 
+        .fd-bell-note {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+            color: #7b5a46;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .fd-bell-note .fd-room-alert {
+            position: static;
+            width: 1.45rem;
+            height: 1.45rem;
+            flex-shrink: 0;
+            box-shadow: none;
+        }
+
+        .fd-bell-note .fd-room-alert svg {
+            width: 0.9rem;
+            height: 0.9rem;
+        }
+
         .fd-list-item {
             display: flex;
             justify-content: space-between;
@@ -204,7 +245,7 @@
     <div class="fd-shell">
         <div class="row g-3 mb-4">
             <div class="col-md-6 col-xl-4">
-                <a href="{{ route('reception.bookings.index') }}" class="fd-card fd-card-link">
+                <a href="{{ route('reception.bookings.create') }}" class="fd-card fd-card-link">
                     <span class="fd-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 7V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -253,6 +294,15 @@
                     <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--using" data-room-status-filter="using"><span class="fd-legend-dot fd-legend-dot--using"></span>Đang sử dụng</button>
                     <button type="button" class="fd-legend-item fd-legend-button fd-legend-item--cleaning" data-room-status-filter="cleaning"><span class="fd-legend-dot fd-legend-dot--cleaning"></span>Đang dọn dẹp</button>
                 </div>
+                <div class="fd-bell-note">
+                    <span class="fd-room-alert" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M15 17H9M18 10.5C18 7.462 15.985 5 12 5S6 7.462 6 10.5C6 14.5 4.5 16 4.5 16H19.5S18 14.5 18 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 19C10.45 19.6 11.16 20 12 20C12.84 20 13.55 19.6 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <span>Biểu tượng chuông: phòng đến hạn nhận phòng hoặc trả phòng trong hôm nay.</span>
+                </div>
             </div>
 
             @forelse(($roomFloors ?? collect()) as $floor => $rooms)
@@ -262,7 +312,16 @@
                         @foreach($rooms as $room)
                             @php
                                 $roomClass = 'fd-' . $room['status'];
+                                $roomAlert = !empty($room['isDueToday'])
+                                    ? '<span class="fd-room-alert" title="' . e($room['dueLabel'] ?? 'Đến hạn') . '" aria-label="' . e($room['dueLabel'] ?? 'Đến hạn') . '">'
+                                        . '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">'
+                                        . '<path d="M15 17H9M18 10.5C18 7.462 15.985 5 12 5S6 7.462 6 10.5C6 14.5 4.5 16 4.5 16H19.5S18 14.5 18 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+                                        . '<path d="M10 19C10.45 19.6 11.16 20 12 20C12.84 20 13.55 19.6 14 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'
+                                        . '</svg>'
+                                    . '</span>'
+                                    : '';
                                 $roomBody = '<div class="fw-bold">' . e($room['number']) . '</div>'
+                                    . $roomAlert
                                     . '<div data-room-status-label>' . e($room['statusLabel']) . '</div>'
                                     . ($room['type'] ? '<div class="text-muted small mt-1">' . e($room['type']) . '</div>' : '')
                                     . ($room['status'] === 'cleaning'

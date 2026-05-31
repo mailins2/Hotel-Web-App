@@ -503,10 +503,10 @@
                                 <path opacity="0.4" d="M21.0881 9.21923C21.6925 6.84176 19.9205 4.70654 17.664 4.70654C17.4187 4.70654 17.1841 4.73356 16.9549 4.77949C16.9244 4.78669 16.8904 4.802 16.8725 4.82902C16.8519 4.86324 16.8671 4.90917 16.8895 4.93889C17.5673 5.89528 17.9568 7.0597 17.9568 8.30967C17.9568 9.50741 17.5996 10.6241 16.9728 11.5508C16.9083 11.6462 16.9656 11.775 17.0793 11.7948C17.2369 11.8227 17.3981 11.8371 17.5629 11.8416C19.2059 11.8849 20.6807 10.8213 21.0881 9.21923Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Khách hàng</div>
+                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Khách lưu trú</div>
                     </div>
-                    <h3 class="mb-2 text-center">{{ $customerCount ?? 0 }}</h3>
-                    <p class="report-stat-description">Số lượng khách hàng đã có mã đặt phòng</p>
+                    <h3 class="mb-2 text-center">{{ $stayingGuestCount ?? $customerCount ?? 0 }}</h3>
+                    <p class="report-stat-description">Số khách đang lưu trú</p>
                 </div>
             </div>
         </div>
@@ -525,10 +525,10 @@
                                 <path d="M16 16H18V18C18 18.5523 17.5523 19 17 19C16.4477 19 16 18.5523 16 18V16Z" fill="currentColor"></path>
                             </svg>
                         </div>
-                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Phòng đang sử dụng</div>
+                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Phòng đang ở</div>
                     </div>
                     <h3 class="mb-2 text-center">{{ $roomUsingCount ?? 0 }}</h3>
-                    <p class="report-stat-description">Số phòng hiện đang sử dụng</p>
+                    <p class="report-stat-description">Số phòng đang ở của khách sạn</p>
                 </div>
             </div>
         </div>
@@ -547,10 +547,10 @@
                                 <path d="M16.75 13.5C16.75 13.0858 17.0858 12.75 17.5 12.75C17.9142 12.75 18.25 13.0858 18.25 13.5C18.25 13.9142 17.9142 14.25 17.5 14.25C17.0858 14.25 16.75 13.9142 16.75 13.5Z" fill="white"></path>
                             </svg>
                         </div>
-                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Phòng trống</div>
+                        <div class="fw-bold text-uppercase mb-0 report-summary-title">Đặt phòng hôm nay</div>
                     </div>
-                    <h3 class="mb-2 text-center">{{ $roomEmptyCount ?? 0 }}</h3>
-                    <p class="report-stat-description">Số phòng hiện đang trống</p>
+                    <h3 class="mb-2 text-center">{{ $todayBookingCount ?? 0 }}</h3>
+                    <p class="report-stat-description">Số lượng đơn đặt phòng trong ngày</p>
                 </div>
             </div>
         </div>

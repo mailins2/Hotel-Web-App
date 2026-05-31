@@ -4,6 +4,7 @@
     'createRoute' => null,
     'createLabel' => null,
     'tableTitle' => 'Danh sách hóa đơn',
+    'showFilterActions' => true,
 ])
 
 <x-app-layout :assets="['animation']">
@@ -131,12 +132,14 @@
                             <form>
                                 <div class="row g-2 align-items-end">
                                     {{ $filters }}
-                                    <div class="col-md-auto">
-                                        <div class="d-flex justify-content-start gap-2 w-100">
-                                            <button type="button" class="btn btn-primary" style="padding: 10px 18px; white-space: nowrap;">Áp dụng</button>
-                                            <button type="button" class="btn btn-light btn-sm" style="padding: 10px 18px; white-space: nowrap;">Đặt lại</button>
+                                    @if($showFilterActions)
+                                        <div class="col-md-auto">
+                                            <div class="d-flex justify-content-start gap-2 w-100">
+                                                <button type="button" class="btn btn-primary" style="padding: 10px 18px; white-space: nowrap;">Áp dụng</button>
+                                                <button type="button" class="btn btn-light btn-sm" style="padding: 10px 18px; white-space: nowrap;">Đặt lại</button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    @endif
                                 </div>
                             </form>
                         </div>
