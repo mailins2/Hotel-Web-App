@@ -869,18 +869,19 @@ class DatPhongController extends Controller
             
             if ($dp->hoaDon) {
                 $maHD = $dp->hoaDon->MaHD;
-                $daThanhToan = (float) $dp->hoaDon->DaThanhToan;
                 $trangThaiHD = (int) $dp->hoaDon->TrangThai;
                 $maKM = $dp->hoaDon->MaKM;
                 
                 foreach ($dp->hoaDon->chiTietHoaDons as $cthd) {
+                    $giaSauKM = (float) $cthd->DonGia;
+                    $soLuong = (int) $cthd->SoLuong;
+                    
+                    // 🔥 CỘNG DỒN TẤT CẢ (phòng + dịch vụ)
+                    $tongTienGoc += $giaSauKM * $soLuong;
+                    
                     // Tiền phòng
                     if ($cthd->MaLoaiPhong && $cthd->loaiPhong) {
                         $giaGocPhong = (float) $cthd->loaiPhong->GiaPhong;
-                        $giaSauKM = (float) $cthd->DonGia;
-                        $soLuong = (int) $cthd->SoLuong;
-                        
-                        $tongTienGoc += $giaSauKM * $soLuong;
                         
                         $chiTietTien[] = [
                             'loai' => 'phong',
@@ -902,8 +903,8 @@ class DatPhongController extends Controller
                         $dichVuSuDung[] = [
                             'ten' => $dv->TenDV,
                             'gia' => (float) $dv->GiaDV,
-                            'soLuong' => (int) $cthd->SoLuong,
-                            'thanhTien' => (float) $cthd->DonGia,
+                            'soLuong' => $soLuong,
+                            'thanhTien' => $giaSauKM * $soLuong,
                             'thoiGian' => $cthd->suDungDichVu->ThoiGian,
                         ];
                         
@@ -911,11 +912,14 @@ class DatPhongController extends Controller
                             'loai' => 'dichvu',
                             'ten' => $dv->TenDV,
                             'gia' => (float) $dv->GiaDV,
-                            'soLuong' => (int) $cthd->SoLuong,
-                            'thanhTien' => (float) $cthd->DonGia,
+                            'soLuong' => $soLuong,
+                            'thanhTien' => $giaSauKM * $soLuong,
                         ];
                     }
                 }
+                
+                // 🔥 Đã thanh toán (giới hạn không vượt quá tổng)
+                $daThanhToan = min((float) $dp->hoaDon->DaThanhToan, $tongTienGoc);
                 
                 // Tính tiền sau giảm KM voucher
                 if ($dp->hoaDon->khuyenMai) {
@@ -927,6 +931,7 @@ class DatPhongController extends Controller
                 }
             }
 
+            // 🔥 Còn nợ = Tổng sau giảm - Đã thanh toán
             $conLai = max(0, $tongTienSauGiam - $daThanhToan);
 
             return [
