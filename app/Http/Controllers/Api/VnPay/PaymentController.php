@@ -25,7 +25,7 @@ class PaymentController extends Controller
             'redirect_url' => ['nullable', 'url'],
             'dat_phong_ids' => ['required', 'array', 'min:1'],
             'dat_phong_ids.*' => ['integer', 'exists:DatPhong,MaDatPhong'],
-            'bank_code' => ['required', 'string', Rule::in(['VNBANK', 'INTCARD'])],
+            'bank_code' => ['required', 'string', Rule::in(['VNBANK'])],
             'payment_type' => ['nullable', 'in:deposit,checkout'],
             'ma_nv' => ['required_if:payment_type,checkout', 'nullable', 'integer', 'exists:NhanVien,MaNV'],
         ]);

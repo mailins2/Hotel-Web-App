@@ -25,21 +25,41 @@
             object-position: center;
          }
 
-         .auth-divider {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin: 1.5rem 0 1rem;
-            color: #94a3b8;
-            font-size: 0.95rem;
+         .password-toggle-wrapper {
+            position: relative;
+            width: 100%;
          }
 
-         .auth-divider::before,
-         .auth-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0;
+         .password-toggle-wrapper .form-control {
+            padding-left: 3rem;
+         }
+
+         .password-toggle-button {
+            position: absolute;
+            top: 50%;
+            left: 0.75rem;
+            transform: translateY(-50%);
+            width: 2rem;
+            height: 2rem;
+            line-height: 0;
+            background: transparent;
+            border: none;
+            color: #667085;
+            cursor: pointer;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+         }
+
+         .password-toggle-button:hover {
+            color: #0f172a;
+         }
+
+         .password-toggle-button svg {
+            width: 1.1rem;
+            height: 1.1rem;
          }
 
          .auth-field-error {
@@ -82,7 +102,12 @@
                               <div class="col-lg-12">
                                  <div class="form-group">
                                     <label for="password" class="form-label">Mật khẩu*</label>
-                                    <input id="password" class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Nhap mat khau" name="password" required autocomplete="current-password">
+                                    <div class="password-toggle-wrapper">
+                                       <input id="password" class="form-control @error('password') is-invalid @enderror" type="password" placeholder="Nhap mat khau" name="password" required autocomplete="current-password">
+                                       <button type="button" class="password-toggle-button" data-target="password" aria-label="Hiện mật khẩu">
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                       </button>
+                                    </div>
                                     <span id="password-error" class="auth-field-error">@error('password') {{ $message }} @enderror</span>
                                  </div>
                               </div>
@@ -94,12 +119,6 @@
                               <button type="submit" class="btn btn-primary px-5">Đăng nhập</button>
                            </div>
                         </form>
-
-                        <div class="auth-divider">Hoặc tiếp tục với</div>
-                        <button type="button" class="auth-google-button text-decoration-none border-0 bg-transparent w-100">
-                           <img src="{{ asset('images/brands/gm.svg') }}" class="auth-google-icon" alt="Google">
-                           <span class="auth-google-label">Đăng nhập với google</span>
-                        </button>
 
                         <p class="mt-4 text-center">
                            Chưa có tài khoản? <a href="{{ route('auth.signup') }}" class="text-underline">Đăng kí ngay.</a>
@@ -153,6 +172,25 @@
 
             const email = document.getElementById('email');
             const password = document.getElementById('password');
+            const passwordToggles = form.querySelectorAll('.password-toggle-button');
+            const eyeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+            const eyeSlashIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94C16.25 19.2 14.21 20 12 20c-7 0-11-8-11-8a23.86 23.86 0 0 1 5.1-6.13"/><path d="M1 1l22 22"/><path d="M9.53 9.53a3 3 0 0 0 4.2 4.2"/></svg>';
+
+            passwordToggles.forEach((toggle) => {
+               toggle.addEventListener('click', () => {
+                  const targetId = toggle.getAttribute('data-target');
+                  const input = document.getElementById(targetId);
+                  if (!input) {
+                     return;
+                  }
+
+                  const isPassword = input.type === 'password';
+                  input.type = isPassword ? 'text' : 'password';
+                  toggle.innerHTML = isPassword ? eyeSlashIcon : eyeIcon;
+                  toggle.setAttribute('aria-label', isPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
+               });
+            });
+
             const setError = (input, id, message) => {
                const element = document.getElementById(id);
                if (element) element.textContent = message || '';

@@ -75,23 +75,6 @@
             height: 1.1rem;
          }
 
-         .auth-divider {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin: 1.5rem 0 1rem;
-            color: #94a3b8;
-            font-size: 0.95rem;
-         }
-
-         .auth-divider::before,
-         .auth-divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #e2e8f0;
-         }
-
          .auth-field-error {
             display: block;
             margin-top: 0.5rem;
@@ -191,11 +174,6 @@
                            </div>
                         </form>
 
-                        <div class="auth-divider">Hoặc đăng ký với<i></i></div>
-                        <button type="button" class="auth-google-button text-decoration-none border-0 bg-transparent w-100">
-                           <img src="{{ asset('images/brands/gm.svg') }}" class="auth-google-icon" alt="Google">
-                           <span class="auth-google-label">Tiếp tục với Google</span>
-                        </button>
 
                         <p class="mt-4 text-center">
                            Đã có tài khoản? <a href="{{ route('auth.signin') }}" class="text-underline"><b>Đăng nhập</b></a>

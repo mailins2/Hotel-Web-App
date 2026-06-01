@@ -70,8 +70,7 @@
               <div class="booking-policy">
                 <ul>
                   <li>Không thể chỉnh sửa sau khi đặt phòng.</li>
-                  <li>Thanh toán đặt cọc trước.</li>
-                  <li>Khách hàng có thể được yêu cầu thanh toán trước từ 30% đến 100% tổng giá trị đặt phòng, tùy theo hạng phòng, thời gian lưu trú, thời điểm đặt phòng và các chương trình ưu đãi/khuyến mãi đang áp dụng.</li>
+                  <li>Khách hàng cần thanh toán trước 100% tiền phòng để được xác nhận đăt phòng</li>
                 </ul>
               </div>
             </div>
@@ -91,17 +90,13 @@
               <h3>Phương thức thanh toán</h3>
               <div class="booking-payment-group">
                 <label class="booking-payment-option">
-                  <input type="radio" name="payment" data-payment-option="zalopay" disabled>
-                  <span class="booking-payment-title">Thanh toán với mã QR <span class="booking-payment-note">(đang bảo trì)</span></span>
+                  <input type="radio" name="payment" data-payment-option="zalopay">
+                  <span class="booking-payment-title">Thanh toán với mã QR</span>
                   <img src="{{ asset('customers/images/zalopay.png') }}" alt="ZaloPay" class="booking-payment-logo-image">
                 </label>
                 <label class="booking-payment-option is-selected">
                   <input type="radio" name="payment" data-payment-option="card-domestic" data-vnpay-bank-code="VNBANK" checked>
                   <span class="booking-payment-title">Thanh toán bằng thẻ nội địa</span>
-                </label>
-                <label class="booking-payment-option">
-                  <input type="radio" name="payment" data-payment-option="card-international" data-vnpay-bank-code="INTCARD">
-                  <span class="booking-payment-title">Thanh toán bằng thẻ quốc tế</span>
                 </label>
               </div>
             </div>
@@ -616,8 +611,8 @@
         async function createVnPayPayment(bankCode) {
           const booking = getStoredBooking();
 
-          if (!['VNBANK', 'INTCARD'].includes(bankCode)) {
-            throw new Error('Vui lòng chọn thẻ nội địa hoặc thẻ quốc tế.');
+          if (bankCode !== 'VNBANK') {
+            throw new Error('Vui lòng chọn thẻ nội địa.');
           }
 
           if (!booking || !booking.rooms.length) {
