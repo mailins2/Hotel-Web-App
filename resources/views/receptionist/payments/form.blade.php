@@ -490,10 +490,6 @@
                             <input type="radio" name="paymentMethod" value="card">
                             <div class="rp-method-title">Thẻ thanh toán nội địa</div>
                         </label>
-                        <label class="rp-method-option">
-                            <input type="radio" name="paymentMethod" value="international_card">
-                            <div class="rp-method-title">Thẻ thanh toán quốc tế</div>
-                        </label>
                     </div>
 
                     <div class="rp-actions">
@@ -919,11 +915,6 @@
 
                 if (method === 'card') {
                     await createVnPayCheckoutPayment(amount, bookingId, 'VNBANK');
-                    return;
-                }
-
-                if (method === 'international_card') {
-                    await createVnPayCheckoutPayment(amount, bookingId, 'INTCARD');
                     return;
                 }
 

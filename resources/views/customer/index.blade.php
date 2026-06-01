@@ -335,12 +335,12 @@
           }
           return `
             <span class="customer-room-price">
-              <span class="customer-room-price-original">${originalPrice.toLocaleString('vi-VN')} VNĐ</span>
+              <span class="customer-room-price-original customer-room-price-original--labeled"><span class="customer-room-price-original-value">${originalPrice.toLocaleString('vi-VN')} VNĐ</span></span>
+              <span class="customer-room-discount-tag">-${discountPercent}%</span>
               <span class="customer-room-price-current">
                 <span class="customer-room-price-sale">${salePrice.toLocaleString('vi-VN')}</span>
                 <span class="customer-room-price-per">VNĐ/Đêm</span>
               </span>
-              <span class="customer-room-discount-tag">-${discountPercent}%</span>
             </span>
           `;
         };

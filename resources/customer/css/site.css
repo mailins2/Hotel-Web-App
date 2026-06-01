@@ -1039,12 +1039,35 @@ a:focus,
 .customer-room-price-original {
     grid-column: 1;
     justify-self: start;
-    color: #9ca3af;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #8b95a5;
     font-size: 0.9em;
     font-weight: 600;
     line-height: 1.15;
     text-decoration: line-through;
     white-space: nowrap;
+}
+
+.customer-room-price-original--labeled {
+    text-decoration: none;
+}
+
+.customer-room-price-original-value {
+    position: relative;
+}
+
+.customer-room-price-original-value::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.65;
+    transform: translateY(-50%);
 }
 
 .customer-room-price-current {
@@ -1087,18 +1110,20 @@ a:focus,
 .customer-room-discount-tag {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1 / span 2;
     justify-self: start;
     min-height: 22px;
     padding: 3px 8px;
     border-radius: 999px;
-    background: #fff1e8;
-    border: 1px solid rgba(140, 74, 52, 0.22);
-    color: #8c4a34;
+    background: #8c4a34;
+    border: 1px solid rgba(140, 74, 52, 0.2);
+    color: #fff;
     font-size: 12px;
     font-weight: 800;
     line-height: 1;
+    box-shadow: 0 8px 18px rgba(140, 74, 52, 0.16);
 }
 
 .booking-item-price .customer-room-price {
@@ -1616,18 +1641,19 @@ a:focus,
 }
 
 .booking-summary-room-unit-price {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
     gap: 4px 8px;
 }
 
 .booking-summary-room-unit-label {
-    padding-top: 1px;
+    flex: 0 0 auto;
 }
 
 .booking-summary-room-unit-value {
-    min-width: 0;
+    flex: 0 0 auto;
+    min-width: max-content;
 }
 
 .booking-summary-room-unit-value .customer-room-price {
@@ -1649,8 +1675,9 @@ a:focus,
 }
 
 .booking-summary-room-unit-meta {
-    grid-column: 2;
+    flex: 0 0 auto;
     color: #4b5563;
+    white-space: nowrap;
 }
 
 .booking-promo {
@@ -2344,16 +2371,20 @@ body.modal-open {
     justify-content: center;
     justify-items: start;
     align-items: center;
-    gap: 5px 16px;
-    margin: 2px auto 12px;
+    gap: 6px 12px;
+    margin: 4px auto 14px;
+    padding: 10px 14px;
+    border: 1px solid rgba(140, 74, 52, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 248, 244, 0.72);
 }
 
 .home-room-card .customer-room-price-original {
     grid-column: 1;
     justify-self: start;
     color: #9aa0ab;
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
     line-height: 1;
 }
 
@@ -2367,8 +2398,8 @@ body.modal-open {
 
 .home-room-card .customer-room-price-sale {
     color: var(--customer-accent);
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 30px;
+    font-weight: 800;
     line-height: 0.98;
 }
 
@@ -2383,13 +2414,13 @@ body.modal-open {
 
 .home-room-card .customer-room-discount-tag {
     grid-column: 2;
-    grid-row: 2;
+    grid-row: 1 / span 2;
     justify-self: start;
-    min-height: 24px;
-    padding: 4px 9px;
-    border-color: rgba(140, 74, 52, 0.2);
-    background: rgba(140, 74, 52, 0.08);
-    color: var(--customer-accent);
+    min-height: 28px;
+    padding: 5px 10px;
+    border-color: rgba(140, 74, 52, 0.18);
+    background: var(--customer-accent);
+    color: #fff;
     font-size: 12px;
 }
 
@@ -2405,6 +2436,12 @@ body.modal-open {
     color: rgba(255, 255, 255, 0.72);
 }
 
+.home-room-card:hover .customer-room-price,
+.home-room-card:focus-within .customer-room-price {
+    border-color: rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.1);
+}
+
 .home-room-card:hover .customer-room-price-sale,
 .home-room-card:focus-within .customer-room-price-sale,
 .home-room-card:hover .customer-room-price-per,
@@ -2415,7 +2452,7 @@ body.modal-open {
 .home-room-card:hover .customer-room-discount-tag,
 .home-room-card:focus-within .customer-room-discount-tag {
     border-color: rgba(255, 255, 255, 0.38);
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.18);
     color: #fff;
 }
 
@@ -4531,6 +4568,10 @@ body.modal-open {
 }
 
 .promotion-card-save {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     min-width: 92px;
     border: 0 solid #fff;
     border-radius: 6px;
@@ -4546,12 +4587,38 @@ body.modal-open {
         transform 0.2s ease;
 }
 
+.promotion-card-save:disabled {
+    cursor: progress;
+    opacity: 0.78;
+    transform: none;
+}
+
+.promotion-card-save.is-loading {
+    background: #8c4a34;
+    color: #fff;
+}
+
+.promotion-card-save-spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    border-top-color: #fff;
+    border-radius: 999px;
+    animation: promotionSaveSpin 0.75s linear infinite;
+}
+
 .promotion-card-save:hover,
 .promotion-card-save:focus {
     background: #8c4a34;
     /* border: 0 solid #fff; */
     color: #fff;
     transform: translateY(-1px);
+}
+
+@keyframes promotionSaveSpin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .promotion-login-modal,

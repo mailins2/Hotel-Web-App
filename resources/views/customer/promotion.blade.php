@@ -94,7 +94,7 @@
                 <button
                   type="button"
                   class="promotion-card-save"
-                  onclick="copyToClipboard('{{ $promotion->MaKM }}', {{ (int) ($promotion->Diem ?? 0) }})"
+                  onclick="copyToClipboard('{{ $promotion->MaKM }}', {{ (int) ($promotion->Diem ?? 0) }}, this)"
                 >Lưu mã</button>
               </div>
 
@@ -186,7 +186,25 @@
         document.body.classList.remove('modal-open');
       }
 
-      async function copyToClipboard(text, pointsRequired) {
+      function setPromotionSaveLoading(button, isLoading) {
+        if (!button) return;
+
+        if (isLoading) {
+          button.dataset.originalText = button.textContent.trim();
+          button.classList.add('is-loading');
+          button.disabled = true;
+          button.setAttribute('aria-busy', 'true');
+          button.innerHTML = '<span class="promotion-card-save-spinner" aria-hidden="true"></span><span>Đang lưu</span>';
+          return;
+        }
+
+        button.classList.remove('is-loading');
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = button.dataset.originalText || 'Lưu mã';
+      }
+
+      async function copyToClipboard(text, pointsRequired, button) {
         if (!window.PeachPromotionAuth || !window.PeachPromotionAuth.isLoggedIn) {
           openPromotionLoginModal();
           return;
@@ -207,6 +225,8 @@
           );
           return;
         }
+
+        setPromotionSaveLoading(button, true);
 
         try {
           const response = await fetch('/api/kho-khuyen-mai/doi-bang-diem', {
@@ -245,6 +265,8 @@
         } catch (error) {
           console.error('Lỗi khi lưu mã khuyến mãi: ', error);
           openPromotionFeedbackModal('Không thể lưu mã', 'Có lỗi xảy ra khi lưu mã. Vui lòng thử lại sau.');
+        } finally {
+          setPromotionSaveLoading(button, false);
         }
       }
       document.addEventListener('DOMContentLoaded', function () {
