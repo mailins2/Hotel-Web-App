@@ -5740,3 +5740,198 @@ body.modal-open {
         gap: 0;
     }
 }
+
+.customer-chatbot {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1300;
+    font-family: "Nunito Sans", Arial, sans-serif;
+}
+
+.customer-chatbot-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 58px;
+    height: 58px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--customer-accent);
+    color: #fff;
+    box-shadow: 0 16px 38px rgba(31, 41, 55, 0.22);
+    cursor: pointer;
+    font-size: 17px;
+    font-weight: 900;
+    letter-spacing: 0;
+}
+
+.customer-chatbot-toggle .icon-comment {
+    color: #fff;
+    font-size: 25px;
+    line-height: 1;
+}
+
+.customer-chatbot-toggle:hover,
+.customer-chatbot-toggle:focus {
+    background: var(--customer-accent-dark);
+    outline: none;
+}
+
+.customer-chatbot-panel {
+    position: absolute;
+    right: 0;
+    bottom: 74px;
+    width: min(360px, calc(100vw - 32px));
+    overflow: hidden;
+    border: 1px solid rgba(140, 74, 52, 0.16);
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 24px 70px rgba(31, 41, 55, 0.24);
+}
+
+.customer-chatbot-panel[hidden] {
+    display: none;
+}
+
+.customer-chatbot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 18px 16px;
+    background: #fff7f3;
+    border-bottom: 1px solid rgba(140, 74, 52, 0.12);
+}
+
+.customer-chatbot-kicker {
+    margin: 0 0 2px;
+    color: var(--customer-accent);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.customer-chatbot-header h2 {
+    margin: 0;
+    color: #1f2937;
+    font-size: 18px;
+    font-weight: 900;
+    line-height: 1.25;
+}
+
+.customer-chatbot-close {
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(140, 74, 52, 0.1);
+    color: var(--customer-accent);
+    cursor: pointer;
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.customer-chatbot-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    height: 300px;
+    padding: 16px;
+    overflow-y: auto;
+    background: #fff;
+}
+
+.customer-chatbot-message {
+    max-width: 86%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: #263238;
+    font-size: 14px;
+    line-height: 1.45;
+    word-break: break-word;
+}
+
+.customer-chatbot-message.is-bot {
+    align-self: flex-start;
+    background: #f5f1ee;
+}
+
+.customer-chatbot-message.is-user {
+    align-self: flex-end;
+    background: var(--customer-accent);
+    color: #fff;
+}
+
+.customer-chatbot-suggestions {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 14px;
+    overflow-x: auto;
+    background: #fff;
+}
+
+.customer-chatbot-suggestions button {
+    flex: 0 0 auto;
+    min-height: 34px;
+    border: 1px solid rgba(140, 74, 52, 0.18);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--customer-accent);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.customer-chatbot-form {
+    display: flex;
+    gap: 8px;
+    padding: 14px;
+    border-top: 1px solid rgba(140, 74, 52, 0.12);
+    background: #fff;
+}
+
+.customer-chatbot-form input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 42px;
+    border: 1px solid rgba(140, 74, 52, 0.18);
+    border-radius: 6px;
+    padding: 0 12px;
+    color: #263238;
+}
+
+.customer-chatbot-form input:focus {
+    border-color: rgba(140, 74, 52, 0.42);
+    outline: none;
+}
+
+.customer-chatbot-form button {
+    flex: 0 0 auto;
+    min-width: 64px;
+    min-height: 42px;
+    border: 0;
+    border-radius: 6px;
+    background: var(--customer-accent);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 900;
+}
+
+@media (max-width: 575.98px) {
+    .customer-chatbot {
+        right: 16px;
+        bottom: 16px;
+    }
+
+    .customer-chatbot-panel {
+        bottom: 70px;
+    }
+
+    .customer-chatbot-messages {
+        height: min(320px, 48vh);
+    }
+}

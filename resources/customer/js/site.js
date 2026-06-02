@@ -1388,6 +1388,124 @@ const initPaymentOptions = () => {
     update(checkedOption?.dataset.paymentOption || "");
 };
 
+const initCustomerChatbot = () => {
+    const root = document.querySelector("[data-customer-chatbot]");
+    if (!root) {
+        return;
+    }
+
+    const panel = root.querySelector("[data-chatbot-panel]");
+    const toggleButton = root.querySelector("[data-chatbot-toggle]");
+    const closeButton = root.querySelector("[data-chatbot-close]");
+    const form = root.querySelector("[data-chatbot-form]");
+    const input = root.querySelector("[data-chatbot-input]");
+    const messages = root.querySelector("[data-chatbot-messages]");
+    const suggestions = root.querySelectorAll("[data-chatbot-suggestion]");
+
+    const replies = [
+        {
+            keywords: ["dat phong", "dat phong", "booking", "phong trong", "chon phong"],
+            answer: "Bạn có thể vào mục Phòng, chọn ngày nhận - trả phòng và số khách, sau đó bấm Đặt phòng để tiếp tục.",
+        },
+        {
+            keywords: ["nhan phong", "check in", "checkin", "tra phong", "check out", "checkout"],
+            answer: "Thông thường giờ nhận phòng là 14:00 và giờ trả phòng là 12:00. Nếu cần đến sớm, bạn có thể liên hệ khách sạn trước.",
+        },
+        {
+            keywords: ["thanh toan", "vnpay", "qr", "tra tien", "hoa don"],
+            answer: "Website hỗ trợ thanh toán qua VNPAY/QR theo quy trình đặt phòng. Sau khi thanh toán, bạn có thể kiểm tra lịch sử đặt phòng trong tài khoản.",
+        },
+        {
+            keywords: ["khuyen mai", "uu dai", "diem", "voucher", "ma giam"],
+            answer: "Bạn có thể xem các ưu đãi hiện có tại mục Khuyến mãi. Nếu đã đăng nhập, điểm tích lũy và ưu đãi của bạn sẽ hiển thị trong ví khuyến mãi.",
+        },
+        {
+            keywords: ["dich vu", "nha hang", "spa", "golf", "an uong", "giai tri"],
+            answer: "Peach Valley có các dịch vụ như nhà hàng, spa, golf và một số tiện ích khác. Bạn có thể xem chi tiết tại mục Dịch vụ.",
+        },
+        {
+            keywords: ["lien he", "so dien thoai", "email", "dia chi", "hotline"],
+            answer: "Bạn có thể liên hệ Peach Valley qua số 0987098120, email info@peachvalley.vn hoặc địa chỉ 26K đường Yersin, Đà Lạt, Lâm Đồng.",
+        },
+        {
+            keywords: ["huy", "doi lich", "doi phong", "chinh sach"],
+            answer: "Với yêu cầu hủy hoặc đổi lịch đặt phòng, bạn nên liên hệ khách sạn để nhận hỗ trợ theo tình trạng đơn đặt phòng hiện tại.",
+        },
+    ];
+
+    const normalize = (value) =>
+        String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase();
+
+    const addMessage = (text, type = "bot") => {
+        const message = document.createElement("div");
+        message.className = `customer-chatbot-message is-${type}`;
+        message.textContent = text;
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
+    };
+
+    const getReply = (question) => {
+        const normalizedQuestion = normalize(question);
+        const matchedReply = replies.find((reply) =>
+            reply.keywords.some((keyword) => normalizedQuestion.includes(normalize(keyword))),
+        );
+
+        return (
+            matchedReply?.answer ||
+            "Mình chưa có câu trả lời chính xác cho câu hỏi này. Bạn có thể hỏi về đặt phòng, thanh toán, khuyến mãi, dịch vụ hoặc thông tin liên hệ."
+        );
+    };
+
+    const sendQuestion = (question) => {
+        const trimmedQuestion = String(question || "").trim();
+        if (!trimmedQuestion) {
+            return;
+        }
+
+        addMessage(trimmedQuestion, "user");
+        input.value = "";
+        window.setTimeout(() => addMessage(getReply(trimmedQuestion)), 220);
+    };
+
+    const openPanel = () => {
+        panel.hidden = false;
+        toggleButton.setAttribute("aria-expanded", "true");
+        input.focus();
+    };
+
+    const closePanel = () => {
+        panel.hidden = true;
+        toggleButton.setAttribute("aria-expanded", "false");
+    };
+
+    toggleButton.setAttribute("aria-expanded", "false");
+    toggleButton.addEventListener("click", () => {
+        if (panel.hidden) {
+            openPanel();
+        } else {
+            closePanel();
+        }
+    });
+    closeButton.addEventListener("click", closePanel);
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendQuestion(input.value);
+    });
+
+    suggestions.forEach((button) => {
+        button.addEventListener("click", () => {
+            openPanel();
+            sendQuestion(button.dataset.chatbotSuggestion);
+        });
+    });
+};
+
 document.addEventListener(
     "DOMContentLoaded",
     () => {
@@ -1403,6 +1521,7 @@ document.addEventListener(
         initNativeDatePickers();
         initNavbarCollapse();
         initPaymentOptions();
+        initCustomerChatbot();
         window.setTimeout(hideLoader, 250);
     },
     { once: true },

@@ -47,3 +47,5 @@
     </div>
   </div>
 </footer>
+
+@include('customer.partials.chatbot')
