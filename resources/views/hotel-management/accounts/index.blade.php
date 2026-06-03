@@ -109,6 +109,36 @@
                         || '--';
                 };
 
+                const resolveDeletionPreview = function (account) {
+                    const customer = (account && account.khachHang) || (account && account.khach_hang) || null;
+                    const employee = (account && account.nhanVien) || (account && account.nhan_vien) || null;
+                    const customerBookingCount = Number((customer && customer.dat_phongs_count) || 0);
+                    const employeeInvoiceCount = Number((employee && employee.hoa_dons_count) || 0);
+                    const blockingMessages = [];
+
+                    if (customerBookingCount > 0) {
+                        blockingMessages.push(customerBookingCount + ' đặt phòng');
+                    }
+
+                    if (employeeInvoiceCount > 0) {
+                        blockingMessages.push(employeeInvoiceCount + ' hóa đơn nhân viên đã xử lý');
+                    }
+
+                    if (blockingMessages.length > 0) {
+                        return {
+                            willDeactivate: true,
+                            message: 'Tài khoản có dữ liệu liên quan: ' + blockingMessages.join(', ') + '. Hệ thống sẽ khóa tài khoản.',
+                            confirmText: 'Khóa',
+                        };
+                    }
+
+                    return {
+                        willDeactivate: false,
+                        message: 'Tài khoản này không có dữ liệu liên quan và sẽ được xóa khỏi hệ thống.',
+                        confirmText: 'Xóa',
+                    };
+                };
+
                 const renderRows = function (rows) {
                     if (!rows.length) {
                         tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Không có tài khoản phù hợp.</td></tr>';
@@ -250,11 +280,19 @@
                         return;
                     }
 
+                    const selectedAccount = accounts.find(function (account) {
+                        return String(account && account.MaTK ? account.MaTK : '') === String(accountId);
+                    });
+                    const deletionPreview = resolveDeletionPreview(selectedAccount);
+
                     const confirmed = await window.hmConfirmDeletion({
-                        title: 'Xóa tài khoản?',
-                        message: 'Bạn muốn xóa tài khoản này?',
+                        title: deletionPreview.willDeactivate ? 'Khóa tài khoản?' : 'Xóa tài khoản?',
+                        message: deletionPreview.willDeactivate
+                            ? 'Tài khoản này sẽ bị khóa.'
+                            : 'Tài khoản này có thể xóa.',
                         recordLabel: 'Mã tài khoản: ' + accountId,
-                        note: 'Có dữ liệu liên quan thì hệ thống sẽ khóa tài khoản thay vì xóa.',
+                        note: deletionPreview.message,
+                        confirmText: deletionPreview.confirmText,
                     });
 
                     if (!confirmed) {
@@ -274,7 +312,9 @@
                             throw new Error(payload && payload.message ? payload.message : 'Không thể xóa tài khoản.');
                         }
 
-                        if (payload.action === 'deactivated') {
+                        const accountWasDeactivated = payload.action === 'deactivated';
+
+                        if (accountWasDeactivated) {
                             accounts = accounts.map(function (account) {
                                 return String(account.MaTK || '') === String(accountId)
                                     ? Object.assign({}, account, payload.data || {}, { TrangThai: 0 })
@@ -288,9 +328,11 @@
 
                         loadAccounts();
                         window.hmShowToast({
-                            type: payload.action === 'deactivated' ? 'warning' : 'success',
-                            title: payload.action === 'deactivated' ? 'Đã khóa tài khoản' : 'Đã xóa',
-                            message: payload.message || 'Thao tác thành công.',
+                            type: accountWasDeactivated ? 'warning' : 'success',
+                            title: accountWasDeactivated ? 'Tài khoản đã bị khóa' : 'Tài khoản đã bị xóa',
+                            message: accountWasDeactivated
+                                ? (payload.message || 'Tài khoản có dữ liệu liên quan nên đã bị khóa.')
+                                : (payload.message || 'Tài khoản không có dữ liệu liên quan nên đã bị xóa khỏi hệ thống.'),
                         });
                     } catch (error) {
                         window.hmShowToast({

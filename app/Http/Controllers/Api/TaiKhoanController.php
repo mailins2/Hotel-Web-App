@@ -127,14 +127,17 @@ class TaiKhoanController extends Controller
             return response()->json([
                 'message' => $decision['message'],
                 'action' => 'deactivated',
-                'data' => $taiKhoan->fresh(['khachHang', 'nhanVien']),
+                'data' => $taiKhoan->fresh([
+                    'khachHang' => fn ($query) => $query->withCount('datPhongs'),
+                    'nhanVien' => fn ($query) => $query->withCount('hoaDons'),
+                ]),
             ], 200);
         }
 
         $taiKhoan->delete();
 
         return response()->json([
-            'message' => 'Đã xóa tài khoản',
+            'message' => 'Tài khoản đã bị xóa khỏi hệ thống.',
             'action' => 'deleted',
         ], 200);
     }

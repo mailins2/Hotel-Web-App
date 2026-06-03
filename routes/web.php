@@ -841,7 +841,10 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
             Route::get('/', function () use ($viewBase, $module) {
                 $viewData = match ($module) {
                     'accounts' => [
-                        'accounts' => TaiKhoan::with(['khachHang', 'nhanVien'])
+                        'accounts' => TaiKhoan::with([
+                            'khachHang' => fn ($query) => $query->withCount('datPhongs'),
+                            'nhanVien' => fn ($query) => $query->withCount('hoaDons'),
+                        ])
                             ->orderByDesc('MaTK')
                             ->get(),
                     ],
