@@ -191,7 +191,7 @@
                 <strong data-booking-total>6,689,250 VND</strong>
               </div>
               <div class="booking-summary-deposit">
-                <span>Tiền đặt cọc:</span>
+                <span>Tổng thanh toán:</span>
                 <strong data-booking-deposit>6,689,250 VND</strong>
               </div>
               <button type="button" id="paymentBtn" class="btn btn-primary booking-submit booking-submit-full" data-payment-submit>Thanh toán với VNPAY</button>
@@ -201,6 +201,17 @@
         </div>
       </div>
     </section>
+
+    <div class="service-booking-warning-modal" data-payment-error-modal hidden>
+      <div class="service-booking-warning-backdrop" data-payment-error-close></div>
+      <div class="service-booking-warning-dialog" role="dialog" aria-modal="true" aria-labelledby="payment_error_title">
+        <button type="button" class="service-booking-warning-close" data-payment-error-close aria-label="Đóng">&times;</button>
+        <div class="service-booking-warning-icon">!</div>
+        <h2 id="payment_error_title">Không thể đặt phòng</h2>
+        <p data-payment-error-message>Đã có lỗi xảy ra. Vui lòng thử lại.</p>
+        <button type="button" class="service-booking-warning-action" data-payment-error-close>Đóng</button>
+      </div>
+    </div>
 
     @include('customer.partials.footer')
 
@@ -223,6 +234,8 @@
         const bookingDateBlocks = document.querySelectorAll('.booking-date-block');
         const bookingNights = document.querySelector('.booking-date-divider span:first-child');
         const paymentStatus = document.querySelector('[data-payment-status]');
+        const paymentErrorModal = document.querySelector('[data-payment-error-modal]');
+        const paymentErrorMessage = document.querySelector('[data-payment-error-message]');
         const zaloPayPaymentUrl = @json(url('/api/zalopay-payment'));
         const vnPayPaymentUrl = @json(url('/api/vnpay-payment'));
         const datPhongStoreUrl = @json(url('/api/dat-phong'));
@@ -410,6 +423,35 @@
           paymentStatus.hidden = !message;
           paymentStatus.textContent = message || '';
           paymentStatus.style.color = isError ? '#dc2626' : '';
+        }
+
+        function openPaymentErrorModal(message) {
+          const fallbackMessage = 'Không thể tiếp tục đến thanh toán. Vui lòng kiểm tra lại thông tin hoặc chọn phòng khác.';
+          const displayMessage = String(message || fallbackMessage).trim() || fallbackMessage;
+
+          setPaymentStatus(displayMessage, true);
+
+          if (!paymentErrorModal || !paymentErrorMessage) {
+            return;
+          }
+
+          paymentErrorMessage.textContent = displayMessage;
+          paymentErrorModal.hidden = false;
+          document.body.classList.add('modal-open');
+          window.requestAnimationFrame(() => paymentErrorModal.classList.add('is-open'));
+        }
+
+        function closePaymentErrorModal() {
+          if (!paymentErrorModal) {
+            return;
+          }
+
+          paymentErrorModal.classList.remove('is-open');
+          document.body.classList.remove('modal-open');
+
+          window.setTimeout(() => {
+            paymentErrorModal.hidden = true;
+          }, 150);
         }
 
         function focusFirstInvalidField() {
@@ -810,6 +852,7 @@
           }
 
           if (hasError) {
+            openPaymentErrorModal('Vui lòng kiểm tra lại thông tin người đặt phòng.');
             setPaymentStatus('Vui lòng kiểm tra lại thông tin người đặt phòng.', true);
             focusFirstInvalidField();
             return;
@@ -832,6 +875,7 @@
               createVnPayPayment(bankCode)
                 .catch((error) => {
                   console.error('VNPAY payment error:', error);
+                  openPaymentErrorModal(error.message || 'Không thể tạo thanh toán VNPAY.');
                   setPaymentStatus(error.message || 'Không thể tạo thanh toán VNPAY.', true);
                   paymentBtn.disabled = false;
                 });
@@ -839,6 +883,7 @@
             }
 
             if (selectedPayment !== 'zalopay') {
+              openPaymentErrorModal('Vui lòng chọn phương thức thanh toán hợp lệ.');
               setPaymentStatus('Vui lòng chọn phương thức thanh toán hợp lệ.', true);
               return;
             }
@@ -849,11 +894,22 @@
             createZaloPayPayment()
               .catch((error) => {
                 console.error('ZaloPay payment error:', error);
+                openPaymentErrorModal(error.message || 'Không thể tạo thanh toán ZaloPay.');
                 setPaymentStatus(error.message || 'Không thể tạo thanh toán ZaloPay.', true);
                 paymentBtn.disabled = false;
               });
           }
         }
+
+        document.querySelectorAll('[data-payment-error-close]').forEach((button) => {
+          button.addEventListener('click', closePaymentErrorModal);
+        });
+
+        document.addEventListener('keydown', function(event) {
+          if (event.key === 'Escape' && paymentErrorModal && !paymentErrorModal.hidden) {
+            closePaymentErrorModal();
+          }
+        });
 
         // Payment button validation
         paymentBtn.addEventListener('click', handlePaymentSubmit);

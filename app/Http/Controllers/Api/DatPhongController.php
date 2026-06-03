@@ -173,7 +173,7 @@ class DatPhongController extends Controller
                     ->get();
 
                 if ($availableRooms->count() < $soLuong) {
-                    throw new \Exception('Khong du phong trong');
+                    throw new \Exception('Không đủ phòng trống');
                 }
 
                 foreach ($availableRooms as $room) {
