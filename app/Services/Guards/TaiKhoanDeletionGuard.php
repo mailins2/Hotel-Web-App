@@ -24,7 +24,7 @@ class TaiKhoanDeletionGuard extends AbstractDeletionGuard
             return [
                 'action' => 'deactivate',
                 'allowed' => true,
-                'message' => 'Tài khoản có dữ liệu liên quan: ' . implode(', ', $blockingMessages) . '. Đã khóa tài khoản.',
+                'message' => 'Tài khoản có dữ liệu liên quan: ' . implode(', ', $blockingMessages) . '. Tài khoản đã bị khóa, không bị xóa khỏi hệ thống.',
             ];
         }
 

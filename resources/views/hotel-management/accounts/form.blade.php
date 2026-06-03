@@ -36,10 +36,6 @@
             <option value="0">Khách hàng</option>
             <option value="1">Nhân viên</option>
             <option value="2">Quản lý</option>
-            @if (request()->routeIs('hotel.accounts.edit'))
-                <option value="3">Kế toán</option>
-                <option value="4">Nhân viên kinh doanh</option>
-            @endif
         </select>
         <div class="invalid-feedback" id="account-type-error"></div>
     </div>
@@ -72,7 +68,7 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Mật khẩu</label>
+        <label class="form-label">Mật khẩu mới</label>
         <input
             type="password"
             class="form-control"
@@ -84,7 +80,7 @@
     </div>
 
     <div class="form-group col-md-6">
-        <label class="form-label">Xác nhận mật khẩu</label>
+        <label class="form-label">Xác nhận mật khẩu mới</label>
         <input
             type="password"
             class="form-control"
