@@ -25,6 +25,10 @@ use App\Http\Controllers\Api\VnPay\PaymentController as VnPayPaymentController;
 use App\Http\Controllers\Api\AuthMobileController;
 use App\Http\Controllers\Api\ForgotPasswordController;
 use App\Http\Controllers\Api\DoiMatKhauController;
+use App\Http\Controllers\Api\ChatbotController;
+
+Route::post('/chatbot/message', [ChatbotController::class, 'message'])
+    ->middleware('throttle:20,1');
 
 Route::apiResource('tien-nghi', TienNghiController::class);
 
