@@ -1388,7 +1388,7 @@ const initPaymentOptions = () => {
     update(checkedOption?.dataset.paymentOption || "");
 };
 
-const initCustomerChatbot = () => {
+const initCustomerChatbotLegacy = () => {
     const root = document.querySelector("[data-customer-chatbot]");
     if (!root) {
         return;
@@ -1405,7 +1405,7 @@ const initCustomerChatbot = () => {
     const replies = [
         {
             keywords: ["dat phong", "dat phong", "booking", "phong trong", "chon phong"],
-            answer: "Bạn có thể vào mục Phòng, chọn ngày nhận - trả phòng và số khách, sau đó bấm Đặt phòng để tiếp tục.",
+            answer: "Bạn có thể chọn ngày nhận - trả phòng, số phòng và số khách ở trang chủ, sau đó bấm Tìm kiếm để tiếp tục.",
         },
         {
             keywords: ["nhan phong", "check in", "checkin", "tra phong", "check out", "checkout"],
@@ -1502,6 +1502,219 @@ const initCustomerChatbot = () => {
         button.addEventListener("click", () => {
             openPanel();
             sendQuestion(button.dataset.chatbotSuggestion);
+        });
+    });
+};
+
+const initCustomerChatbot = () => {
+    const root = document.querySelector("[data-customer-chatbot]");
+    if (!root) {
+        return;
+    }
+
+    const panel = root.querySelector("[data-chatbot-panel]");
+    const toggleButton = root.querySelector("[data-chatbot-toggle]");
+    const closeButton = root.querySelector("[data-chatbot-close]");
+    const form = root.querySelector("[data-chatbot-form]");
+    const input = root.querySelector("[data-chatbot-input]");
+    const messages = root.querySelector("[data-chatbot-messages]");
+    const suggestions = root.querySelectorAll("[data-chatbot-suggestion]");
+    let isWaitingForAi = false;
+
+    const replies = [
+        {
+            keywords: ["dat phong", "booking", "phong trong", "chon phong"],
+            answer: "Bạn có thể chọn ngày nhận - trả phòng, số phòng và số khách ở trang chủ, sau đó bấm Tìm kiếm để tiếp tục.",
+        },
+        {
+            keywords: ["nhan phong", "check in", "checkin", "tra phong", "check out", "checkout"],
+            answer: "Thông thường giờ nhận phòng là 14:00 và giờ trả phòng là 12:00. Nếu cần đến sớm, bạn có thể liên hệ khách sạn trước.",
+        },
+        {
+            keywords: ["thanh toan", "vnpay", "qr", "tra tien", "hoa don"],
+            answer: "Website hỗ trợ thanh toán qua VNPAY/QR theo quy trình đặt phòng. Sau khi thanh toán, bạn có thể kiểm tra lịch sử đặt phòng trong tài khoản.",
+        },
+        {
+            keywords: ["khuyen mai", "uu dai", "diem", "voucher", "ma giam"],
+            answer: "Bạn có thể xem các ưu đãi hiện có tại mục Khuyến mãi. Nếu đã đăng nhập, điểm tích lũy và ưu đãi của bạn sẽ hiển thị trong ví khuyến mãi.",
+        },
+        {
+            keywords: ["dich vu", "nha hang", "spa", "golf", "an uong", "giai tri"],
+            answer: "Peach Valley có các dịch vụ như nhà hàng, spa, golf và một số tiện ích khác. Bạn có thể xem chi tiết tại mục Dịch vụ.",
+        },
+        {
+            keywords: ["lien he", "so dien thoai", "email", "dia chi", "hotline"],
+            answer: "Bạn có thể liên hệ Peach Valley qua số 0987098120, email info@peachvalley.vn hoặc địa chỉ 26K đường Yersin, Đà Lạt, Lâm Đồng.",
+        },
+        {
+            keywords: ["huy", "doi lich", "doi phong", "chinh sach"],
+            answer: "Với yêu cầu hủy hoặc đổi lịch đặt phòng, bạn nên liên hệ khách sạn để nhận hỗ trợ theo tình trạng đơn đặt phòng hiện tại.",
+        },
+    ];
+
+    const normalize = (value) =>
+        String(value || "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/Đ/g, "D")
+            .toLowerCase();
+
+    const setMessageContent = (message, text, type = "bot") => {
+        if (type !== "bot") {
+            message.textContent = text;
+            return;
+        }
+
+        message.innerHTML = "";
+        const lines = String(text || "")
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean);
+
+        if (!lines.length) {
+            message.textContent = "";
+            return;
+        }
+
+        let list = null;
+        lines.forEach((line) => {
+            const bulletMatch = line.match(/^(?:[-*•]|\d+[.)])\s+(.+)$/);
+
+            if (bulletMatch) {
+                if (!list) {
+                    list = document.createElement("ul");
+                    message.appendChild(list);
+                }
+
+                const item = document.createElement("li");
+                item.textContent = bulletMatch[1];
+                list.appendChild(item);
+                return;
+            }
+
+            list = null;
+            const paragraph = document.createElement("p");
+            paragraph.textContent = line;
+            message.appendChild(paragraph);
+        });
+    };
+
+    const addMessage = (text, type = "bot") => {
+        const message = document.createElement("div");
+        message.className = `customer-chatbot-message is-${type}`;
+        setMessageContent(message, text, type);
+        messages.appendChild(message);
+        messages.scrollTop = messages.scrollHeight;
+        return message;
+    };
+
+    const getLocalReply = (question) => {
+        const normalizedQuestion = normalize(question);
+        const matchedReply = replies.find((reply) =>
+            reply.keywords.some((keyword) => normalizedQuestion.includes(normalize(keyword))),
+        );
+
+        return matchedReply?.answer || null;
+    };
+
+    const askAi = async (question) => {
+        const response = await fetch("/api/chatbot/message", {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                message: question,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("AI chatbot request failed");
+        }
+
+        const result = await response.json();
+        return (
+            result.answer ||
+            "Mình chưa có đủ thông tin để trả lời chính xác. Bạn có thể hỏi rõ hơn hoặc liên hệ khách sạn để được hỗ trợ."
+        );
+    };
+
+    const sendQuestion = async (question, usePresetReply = false) => {
+        const trimmedQuestion = String(question || "").trim();
+        if (!trimmedQuestion || isWaitingForAi) {
+            return;
+        }
+
+        addMessage(trimmedQuestion, "user");
+        input.value = "";
+
+        const localReply = usePresetReply ? getLocalReply(trimmedQuestion) : null;
+        if (localReply) {
+            window.setTimeout(() => addMessage(localReply), 220);
+            return;
+        }
+
+        isWaitingForAi = true;
+        const thinkingMessage = addMessage("", "bot");
+        thinkingMessage.classList.add("is-thinking");
+        thinkingMessage.setAttribute("aria-label", "Bot đang trả lời");
+        thinkingMessage.innerHTML = `
+            <span class="customer-chatbot-typing" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+            </span>
+        `;
+
+        try {
+            setMessageContent(thinkingMessage, await askAi(trimmedQuestion));
+            thinkingMessage.classList.remove("is-thinking");
+            thinkingMessage.removeAttribute("aria-label");
+        } catch (error) {
+            setMessageContent(
+                thinkingMessage,
+                "Hiện tại mình chưa kết nối được AI. Bạn có thể hỏi lại sau hoặc liên hệ Peach Valley qua số 0987098120 để được hỗ trợ nhanh hơn.",
+            );
+            thinkingMessage.classList.remove("is-thinking");
+            thinkingMessage.removeAttribute("aria-label");
+        } finally {
+            isWaitingForAi = false;
+            messages.scrollTop = messages.scrollHeight;
+        }
+    };
+
+    const openPanel = () => {
+        panel.hidden = false;
+        toggleButton.setAttribute("aria-expanded", "true");
+        input.focus();
+    };
+
+    const closePanel = () => {
+        panel.hidden = true;
+        toggleButton.setAttribute("aria-expanded", "false");
+    };
+
+    toggleButton.setAttribute("aria-expanded", "false");
+    toggleButton.addEventListener("click", () => {
+        if (panel.hidden) {
+            openPanel();
+        } else {
+            closePanel();
+        }
+    });
+    closeButton.addEventListener("click", closePanel);
+
+    form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        sendQuestion(input.value);
+    });
+
+    suggestions.forEach((button) => {
+        button.addEventListener("click", () => {
+            openPanel();
+            sendQuestion(button.dataset.chatbotSuggestion, true);
         });
     });
 };

@@ -16,7 +16,7 @@
 
     <div class="customer-chatbot-suggestions" aria-label="Cau hoi goi y">
       <button type="button" data-chatbot-suggestion="Tôi muốn đặt phòng">Đặt phòng</button>
-      <button type="button" data-chatbot-suggestion="Giờ nhận phòng và trả phòng là mấy giờ?">Nhận/trả phòng</button>
+      <button type="button" data-chatbot-suggestion="Giờ nhận phòng và trả phòng là mấy giờ?">Nhận/trả</button>
       <button type="button" data-chatbot-suggestion="Khách sạn có dịch vụ gì?">Dịch vụ</button>
       <button type="button" data-chatbot-suggestion="Tôi cần liên hệ khách sạn">Liên hệ</button>
     </div>
