@@ -602,11 +602,13 @@
                             </div>
                             <div class="report-date-field">
                                 <label>Từ ngày</label>
-                                <input class="form-control report-date-input" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay" data-main-report-from>
+                                <input class="form-control report-date-input" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultFromDate ?? now()->subMonth()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Tu ngay" data-report-date-display="main-report-from" readonly>
+                                <input type="hidden" id="main-report-from" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" data-main-report-from>
                             </div>
                             <div class="report-date-field">
                                 <label>Đến ngày</label>
-                                <input class="form-control report-date-input" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay" data-main-report-to>
+                                <input class="form-control report-date-input" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultToDate ?? now()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Den ngay" data-report-date-display="main-report-to" readonly>
+                                <input type="hidden" id="main-report-to" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" data-main-report-to>
                             </div>
                         </div>
                     </div>
@@ -666,11 +668,13 @@
                             <div class="report-date-controls report-date-controls--compact">
                                 <div class="report-date-field">
                                     <label>Từ ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay doanh thu dich vu" data-service-revenue-from>
+                                    <input class="form-control report-date-input" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultFromDate ?? now()->subMonth()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Tu ngay doanh thu dich vu" data-report-date-display="service-revenue-from" readonly>
+                                    <input type="hidden" id="service-revenue-from" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" data-service-revenue-from>
                                 </div>
                                 <div class="report-date-field">
                                     <label>Đến ngày</label>
-                                    <input class="form-control report-date-input" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay doanh thu dich vu" data-service-revenue-to>
+                                    <input class="form-control report-date-input" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultToDate ?? now()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Den ngay doanh thu dich vu" data-report-date-display="service-revenue-to" readonly>
+                                    <input type="hidden" id="service-revenue-to" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" data-service-revenue-to>
                                 </div>
                             </div>
                         </div>
@@ -728,11 +732,13 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-4">
                             <label class="form-label">Từ ngày</label>
-                            <input class="form-control" type="date" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" aria-label="Tu ngay bao cao Excel" data-export-report-from>
+                            <input class="form-control" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultFromDate ?? now()->subMonth()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Tu ngay bao cao Excel" data-report-date-display="export-report-from" readonly>
+                            <input type="hidden" id="export-report-from" value="{{ $reportDefaultFromDate ?? now()->subMonth()->toDateString() }}" data-export-report-from>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Đến ngày</label>
-                            <input class="form-control" type="date" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" aria-label="Den ngay bao cao Excel" data-export-report-to>
+                            <input class="form-control" type="text" value="{{ \Carbon\Carbon::parse($reportDefaultToDate ?? now()->toDateString())->format('d/m/Y') }}" placeholder="DD/MM/YYYY" aria-label="Den ngay bao cao Excel" data-report-date-display="export-report-to" readonly>
+                            <input type="hidden" id="export-report-to" value="{{ $reportDefaultToDate ?? now()->toDateString() }}" data-export-report-to>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Chu kỳ</label>
@@ -925,6 +931,64 @@
             const chartTop = 20;
             const chartBottom = 335;
             const dayMs = 24 * 60 * 60 * 1000;
+            const reportDateBindings = new WeakMap();
+
+            const formatIsoDateForDisplay = function (value) {
+                const parts = String(value || '').split('-');
+
+                return parts.length === 3 ? [parts[2], parts[1], parts[0]].join('/') : '';
+            };
+
+            const formatDisplayDateForIso = function (value) {
+                const parts = String(value || '').split('/');
+
+                return parts.length === 3 ? [parts[2], parts[1], parts[0]].join('-') : '';
+            };
+
+            const syncReportDateDisplay = function (hiddenInput) {
+                const binding = reportDateBindings.get(hiddenInput);
+
+                if (!binding) {
+                    return;
+                }
+
+                const displayValue = formatIsoDateForDisplay(hiddenInput.value);
+
+                if (binding.display.value !== displayValue) {
+                    binding.picker.setDate(displayValue);
+                }
+            };
+
+            const initializeReportDateInputs = function () {
+                document.querySelectorAll('[data-report-date-display]').forEach(function (displayInput) {
+                    const hiddenInput = document.getElementById(displayInput.dataset.reportDateDisplay);
+
+                    if (!hiddenInput || typeof Datepicker === 'undefined') {
+                        return;
+                    }
+
+                    const picker = new Datepicker(displayInput, {
+                        autohide: true,
+                        buttonClass: 'btn',
+                        format: 'dd/mm/yyyy',
+                        language: 'vi'
+                    });
+
+                    reportDateBindings.set(hiddenInput, {
+                        display: displayInput,
+                        picker: picker
+                    });
+
+                    displayInput.addEventListener('changeDate', function () {
+                        const isoValue = formatDisplayDateForIso(displayInput.value);
+
+                        if (isoValue && hiddenInput.value !== isoValue) {
+                            hiddenInput.value = isoValue;
+                            hiddenInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    });
+                });
+            };
 
             const renderMainReportDetailOptions = function () {
                 if (!mainReportTypeSelect || !mainReportDetailSelect) {
@@ -971,6 +1035,21 @@
                 if (fromElement.value && toElement.value && toElement.value < fromElement.value) {
                     toElement.value = fromElement.value;
                 }
+
+                const fromBinding = reportDateBindings.get(fromElement);
+                const toBinding = reportDateBindings.get(toElement);
+
+                if (fromBinding && toBinding) {
+                    fromBinding.picker.setOptions({
+                        maxDate: formatIsoDateForDisplay(toElement.value)
+                    });
+                    toBinding.picker.setOptions({
+                        minDate: formatIsoDateForDisplay(fromElement.value)
+                    });
+                }
+
+                syncReportDateDisplay(fromElement);
+                syncReportDateDisplay(toElement);
             };
 
             const toDateKey = function (date) {
@@ -1604,6 +1683,7 @@
                 });
             };
 
+            initializeReportDateInputs();
             bindDateRange(mainReportFromInput, mainReportToInput, renderMainReportChart);
             bindDateRange(fromInput, toInput, renderServiceRevenueChart);
             bindDateRange(exportReportFromInput, exportReportToInput);
@@ -1651,4 +1731,8 @@
             renderRoomStatusChart();
         });
     </script>
+
+    @push('scripts')
+        <script src="{{ asset('vendor/vanillajs-datepicker/dist/js/locales/vi.js') }}"></script>
+    @endpush
 </x-app-layout>
