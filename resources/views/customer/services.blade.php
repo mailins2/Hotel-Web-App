@@ -267,6 +267,31 @@
         white-space: nowrap;
       }
 
+      .service-booking-date-field {
+        position: relative;
+      }
+
+      .service-booking-date-field input[type="date"] {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        opacity: 0;
+        cursor: pointer;
+      }
+
+      .service-booking-date-display {
+        display: block;
+        width: 100%;
+        min-height: 50px;
+        padding: 14px 16px;
+        border: 1px solid rgba(140, 74, 52, 0.18);
+        border-radius: 8px;
+        background: #fff;
+        color: #4f2b21;
+        font-size: 15px;
+        line-height: 20px;
+      }
+
       .service-booking-total {
         display: flex;
         align-items: center;
@@ -405,7 +430,10 @@
             </div>
             <div>
               <label for="service_booking_date">Ngày sử dụng</label>
-              <input id="service_booking_date" type="date" data-service-date required>
+              <div class="service-booking-date-field">
+                <span class="service-booking-date-display" data-service-date-display aria-hidden="true">dd/mm/yyyy</span>
+                <input id="service_booking_date" type="date" data-service-date required>
+              </div>
             </div>
           </div>
 
@@ -612,6 +640,7 @@
           const totalPrice = modal.querySelector('[data-service-booking-total]');
           const form = modal.querySelector('[data-service-booking-form]');
           const dateInput = modal.querySelector('[data-service-date]');
+          const dateDisplay = modal.querySelector('[data-service-date-display]');
           const hourSelect = modal.querySelector('[data-service-hour]');
           const minuteSelect = modal.querySelector('[data-service-minute]');
           const timeInput = modal.querySelector('[data-service-time]');
@@ -651,6 +680,15 @@
           const now = new Date();
           const todayValue = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
           const toDateValue = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+          const formatDateDisplay = (value) => {
+            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            return match ? `${match[3]}/${match[2]}/${match[1]}` : 'dd/mm/yyyy';
+          };
+          const syncDateDisplay = () => {
+            if (dateDisplay) {
+              dateDisplay.textContent = formatDateDisplay(dateInput?.value || '');
+            }
+          };
           const parseLocalDateTime = (dateValue, hour = '00', minute = '00') => {
             if (!dateValue) {
               return null;
@@ -814,6 +852,7 @@
               dateInput.value = minDate;
             }
 
+            syncDateDisplay();
             updateTimeOptions();
           };
 
@@ -842,6 +881,7 @@
 
           if (dateInput) {
             dateInput.value = dateInput.value || todayValue;
+            syncDateDisplay();
           }
 
           if (hourSelect) {
@@ -854,10 +894,12 @@
 
           [dateInput, hourSelect, minuteSelect].forEach((input) => {
             input?.addEventListener('change', () => {
+              syncDateDisplay();
               updateTimeOptions();
               validateServiceWindow();
             });
             input?.addEventListener('input', () => {
+              syncDateDisplay();
               updateTimeOptions();
               validateServiceWindow();
             });

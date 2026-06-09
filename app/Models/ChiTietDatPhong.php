@@ -14,6 +14,7 @@ class ChiTietDatPhong extends Model
     const CHECKED_IN = 1;
     const CHECKED_OUT = 2;
     const CANCELLED = 3;
+    const CLEANED = 4;
 
     protected $fillable = [
         'MaDatPhong',
