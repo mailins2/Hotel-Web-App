@@ -860,7 +860,10 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                         'rooms' => Phong::with([
                             'loaiPhong',
                             'chiTietDatPhong' => function ($query) {
-                                $query->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                                $query->whereNotIn('TrangThai', [
+                                    \App\Models\ChiTietDatPhong::CANCELLED,
+                                    \App\Models\ChiTietDatPhong::CLEANED,
+                                ]);
                             },
                             'chiTietDatPhong.datPhong' => function ($query) {
                                 $today = Carbon::today()->toDateString();
@@ -871,6 +874,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                                         DatPhong::HOLD,
                                         DatPhong::CONFIRMED,
                                         DatPhong::CHECKED_IN,
+                                        DatPhong::CHECKED_OUT,
                                     ]);
                             },
                         ])
@@ -881,6 +885,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                                     ->filter(fn ($detail) => $detail->datPhong)
                                     ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
                                         \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+                                        \App\Models\ChiTietDatPhong::CHECKED_OUT => 2,
                                         \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
                                             DatPhong::CONFIRMED => 2,
                                             DatPhong::HOLD => 1,
@@ -891,6 +896,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
 
                                 $status = match (true) {
                                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 2,
+                                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_OUT) => 3,
                                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
                                         && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 1,
                                     default => 0,
@@ -975,6 +981,7 @@ Route::middleware('account.role:2')->prefix('hotel')->name('hotel.')->group(func
                                         DatPhong::HOLD,
                                         DatPhong::CONFIRMED,
                                         DatPhong::CHECKED_IN,
+                                        DatPhong::CHECKED_OUT,
                                     ]);
                             },
                         ])->findOrFail($recordId),
@@ -1091,7 +1098,10 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
             'chiTietDatPhong' => function ($query) {
                 $query
                     ->select(['MaCTDP', 'MaDatPhong', 'MaPhong', 'TrangThai'])
-                    ->where('TrangThai', '!=', \App\Models\ChiTietDatPhong::CANCELLED);
+                    ->whereNotIn('TrangThai', [
+                        \App\Models\ChiTietDatPhong::CANCELLED,
+                        \App\Models\ChiTietDatPhong::CLEANED,
+                    ]);
             },
             'chiTietDatPhong.datPhong' => function ($query) use ($today) {
                 $query
@@ -1102,6 +1112,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                         DatPhong::HOLD,
                         DatPhong::CONFIRMED,
                         DatPhong::CHECKED_IN,
+                        DatPhong::CHECKED_OUT,
                     ]);
             },
             'chiTietDatPhong.datPhong.khachHang:MaKH,TenKH',
@@ -1113,6 +1124,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                     ->filter(fn ($detail) => $detail->datPhong)
                     ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
                         \App\Models\ChiTietDatPhong::CHECKED_IN => 3,
+                        \App\Models\ChiTietDatPhong::CHECKED_OUT => 2,
                         \App\Models\ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
                             DatPhong::CONFIRMED => 2,
                             DatPhong::HOLD => 1,
@@ -1125,6 +1137,7 @@ Route::middleware('account.role:1')->prefix('reception')->name('reception.')->gr
                 $activeBooking = $activeDetail?->datPhong;
                 $status = match (true) {
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_IN) => 'using',
+                    $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::CHECKED_OUT) => 'cleaning',
                     $activeDetails->contains(fn ($detail) => (int) $detail->TrangThai === \App\Models\ChiTietDatPhong::BOOKED
                         && in_array((int) $detail->datPhong->TinhTrang, [DatPhong::HOLD, DatPhong::CONFIRMED], true)) => 'booked',
                     default => 'empty',

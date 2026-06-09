@@ -42,12 +42,12 @@ class PhongController extends Controller
         $query = Phong::with([
             'loaiPhong.khuyenMai',
             'chiTietDatPhong' => function ($q) {
-                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+                $q->whereNotIn('TrangThai', [ChiTietDatPhong::CANCELLED, ChiTietDatPhong::CLEANED]);
             },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
-                    ->whereIn('TinhTrang', [0, 1, 2]);
+                    ->whereIn('TinhTrang', [0, 1, 2, 3]);
             },
         ])->whereHas('loaiPhong');
 
@@ -85,6 +85,10 @@ class PhongController extends Controller
             return 2;
         }
 
+        if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::CHECKED_OUT)) {
+            return 3;
+        }
+
         if ($detailsToday->contains(fn ($detail) => (int) $detail->TrangThai === ChiTietDatPhong::BOOKED
             && in_array((int) $detail->datPhong->TinhTrang, [0, 1], true))) {
             return 1;
@@ -99,6 +103,7 @@ class PhongController extends Controller
             ->filter(fn ($detail) => $detail->datPhong)
             ->sortByDesc(fn ($detail) => match ((int) $detail->TrangThai) {
                 ChiTietDatPhong::CHECKED_IN => 3,
+                ChiTietDatPhong::CHECKED_OUT => 2,
                 ChiTietDatPhong::BOOKED => match ((int) $detail->datPhong->TinhTrang) {
                     1 => 2,
                     0 => 1,
@@ -134,12 +139,12 @@ class PhongController extends Controller
         $phong = Phong::with([
             'loaiPhong.khuyenMai',
             'chiTietDatPhong' => function ($q) {
-                $q->where('TrangThai', '!=', ChiTietDatPhong::CANCELLED);
+                $q->whereNotIn('TrangThai', [ChiTietDatPhong::CANCELLED, ChiTietDatPhong::CLEANED]);
             },
             'chiTietDatPhong.datPhong' => function ($q) use ($today) {
                 $q->where('NgayNhanPhong', '<=', $today)
                     ->where('NgayTraPhong', '>=', $today)
-                    ->whereIn('TinhTrang', [0, 1, 2]);
+                    ->whereIn('TinhTrang', [0, 1, 2, 3]);
             },
         ])->find($id);
 
@@ -196,6 +201,10 @@ class PhongController extends Controller
         if ($hasCheckedInStay) {
             return $this->error('Phong nay van co luu tru dang su dung, khong the chuyen ve trong.', 409);
         }
+
+        ChiTietDatPhong::where('MaPhong', $phong->MaPhong)
+            ->where('TrangThai', ChiTietDatPhong::CHECKED_OUT)
+            ->update(['TrangThai' => ChiTietDatPhong::CLEANED]);
 
         return $this->success([
             'MaPhong' => $phong->MaPhong,
