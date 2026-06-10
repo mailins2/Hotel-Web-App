@@ -42,7 +42,8 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
-        $request->session()->put('auth_account', [
+
+        $accountData = [
             'MaTK' => $taiKhoan->MaTK,
             'Email' => $taiKhoan->Email,
             'LoaiTaiKhoan' => $taiKhoan->LoaiTaiKhoan,
@@ -50,7 +51,13 @@ class AuthController extends Controller
             'MaNV' => $taiKhoan->nhanVien?->MaNV,
             'ChucVu' => $taiKhoan->nhanVien?->ChucVu,
             'Ten' => $taiKhoan->khachHang?->TenKH ?? $taiKhoan->nhanVien?->TenNV,
-        ]);
+        ];
+
+        $request->session()->put('auth_account', $accountData);
+        $request->session()->put(
+            'auth_accounts.' . (int) $taiKhoan->LoaiTaiKhoan,
+            $accountData
+        );
 
         $redirectTo = $request->input('redirect');
 
